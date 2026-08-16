@@ -1672,3 +1672,68 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bz-gate.md [ok]: Gate complete — **PASS**: Review verdict PASS (all 9 spec blocks verified); Full repo gate 180/180 tasks successful (125 cached); Audit 0 vulnerabilities; check:manifest up-to-date (165/31 unchanged); comparison doc already current at adapt commit `e6e01ae5`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-gate.md
+
+## 2026-08-15 16:38:23 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bz-gate.md [ok]: Summary: **Review verdict**: PASS (all 9 spec blocks, lazy gating, round-trip byte-identity, invalid-input semantics verified; 4
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-gate.md
+
+## 2026-08-15 16:45:26 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md [ok]: 核验摘要 (batch CA：单元格链接自动检测，iris 独有): **设计** — 表级 prop `IrisTableProps.autoLink?: boolean`（默认 off，additive，manifest propCount 165→166）：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md
+
+## 2026-08-15 17:01:32 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md [ok]: Files changed (1 commit): `feat(table): grid 批 CA——单元格链接自动检测（iris 独有）` — core `auto-link.ts` `detectAutoLink` (URL `/^https?:\/\/\S+$/i` + email byte-identical to `mask.ts` `EMAIL_RE`, whole-text anchored, never throws) + barrel export · react `props.ts` `autoLink?: boolean` (after `compareWith`) + `Table.tsx` (import/destructure/module helper `renderAutoLinkCell` next to `contextCellText` — mask→formatter??raw display chain, `typeof string` gate; render branch after `col.link` before `col.formatter` — link column wins, fall-through byte-同形) + NEW `auto-link.test.tsx`. Tests added (15): core 8 (url/url-tail/scheme-case/email/plain/embedded/empty/ftp-host) · react 7 (url anchor _blank+noreferrer/email anchor/no-match plain/link column wins/formatter chain/no-prop lazy/stopPropagation). Verification (all ✅): core test **1525/1525** (1517→1525) · react typecheck **clean** · react test **2392/2392** (2385→2392) · react lint **0 errors** (1 pre-existing complexity warning) · iris-ui-spec.py **0 violations** · gen:manifest regenerated (propCount 165→**166**, eventCount 31 unchanged, manifest 69/69). Constraints: core framework-free · react-only · additive; test files ≤500 lines; types.ts/styles.ts/i18n/三框架 zero change. What is left: Runner's review/gate stage.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ca-adapt.md
+
+## 2026-08-15 17:03:53 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-adapt.md [ok]: Report: **Commits** (2, following BZ convention):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ca-adapt.md
+
+## 2026-08-15 17:16:13 — stage 'review' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-review.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ca-review.md
+
+## 2026-08-15 17:17:53 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cb-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-baseline.md
+
+## 2026-08-15 17:19:04 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cc-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-baseline.md
+
+## 2026-08-15 17:20:28 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-baseline.md
+
+## 2026-08-15 17:21:22 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ce-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-baseline.md
+
+## 2026-08-15 17:23:01 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-baseline.md
+
+## 2026-08-15 18:03:06 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cb-baseline.md [ok]: 核验摘要 (batch CB：最近筛选，iris 独有): **设计** — 表级 prop `IrisTableProps.recentFilters?: boolean`（默认 off，additive，manifest propCount 166→167）：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-baseline.md
+
+## 2026-08-15 18:15:47 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cb-adapt.md [ok]: Report: **Commits** (2, following CA/BZ convention):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-adapt.md
+
+## 2026-08-15 18:22:16 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cb-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 1 low + 3 info findings): **Verification run (all on HEAD `30ce5381`):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-review.md

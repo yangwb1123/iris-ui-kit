@@ -82,7 +82,7 @@ import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
-import type { IrisTableProps, IrisTableProxyConfig } from './props'
+import type { IrisTableEmptyState, IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
 import { createPortal } from 'react-dom'
@@ -1119,6 +1119,81 @@ const STATE_ROW_STYLE: React.CSSProperties = {
   padding: '32px 12px',
   textAlign: 'center',
   color: 'var(--iris-muted)',
+}
+
+/** Inline style for the empty-state action button (batch CF, iris 独有 — vxe
+ * has no empty-state action): mirrors the error-row retry button token for
+ * token — all `--iris-*` tokens, zero magic values. */
+const EMPTY_ACTION_STYLE: React.CSSProperties = {
+  border: '1px solid var(--iris-border)',
+  background: 'var(--iris-surface)',
+  color: 'var(--iris-foreground)',
+  borderRadius: 'var(--iris-radius-sm, 4px)',
+  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+  fontSize: 'var(--iris-font-size-sm, 13px)',
+  cursor: 'pointer',
+}
+
+/** Discriminator guard: a plain object (not null, not an array, not a React
+ * element) is the `IrisTableEmptyState` descriptor; every other ReactNode
+ * (strings, elements, fragments, iterables) stays on the node path. */
+function isEmptyStateObject(
+  state: React.ReactNode | IrisTableEmptyState,
+): state is IrisTableEmptyState {
+  return (
+    typeof state === 'object' &&
+    state !== null &&
+    !Array.isArray(state) &&
+    !React.isValidElement(state)
+  )
+}
+
+/** Empty-state text: descriptor `.text` (or the localized fallback) vs node. */
+function emptyTextOf(
+  state: React.ReactNode | IrisTableEmptyState,
+  fallback: string,
+): React.ReactNode {
+  return isEmptyStateObject(state) ? (state.text ?? fallback) : (state ?? fallback)
+}
+
+/** Empty-state action button descriptor: `.action` only, null otherwise. */
+function emptyActionOf(
+  state: React.ReactNode | IrisTableEmptyState,
+): { label: string; onClick: () => void } | null {
+  return isEmptyStateObject(state) ? (state.action ?? null) : null
+}
+
+/** Empty row content: node path renders untouched (zero wrapper — existing
+ * ReactNode `emptyState` behaves byte-identically); descriptor path renders
+ * the text span (12px `marginInlineEnd` when an action follows — error-row
+ * retry precedent, RTL-safe) plus the action button on the same centered row. */
+function renderEmptyState(
+  state: React.ReactNode | IrisTableEmptyState,
+  fallback: string,
+): React.ReactNode {
+  if (!isEmptyStateObject(state)) return state ?? fallback
+  const action = emptyActionOf(state)
+  return (
+    <>
+      <span
+        style={{
+          marginInlineEnd: action ? 'var(--iris-space-sm, 12px)' : 0,
+        }}
+      >
+        {emptyTextOf(state, fallback)}
+      </span>
+      {action ? (
+        <button
+          type="button"
+          data-iris-empty-action=""
+          onClick={action.onClick}
+          style={EMPTY_ACTION_STYLE}
+        >
+          {action.label}
+        </button>
+      ) : null}
+    </>
+  )
 }
 
 /** Empty parse result shared by the query bar (STABLE reference). */
@@ -9475,7 +9550,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         ) : bodyData.length === 0 ? (
           <div role="row" data-iris-table-row="empty" style={STATE_ROW_STYLE}>
-            {emptyState ?? t('table.empty')}
+            {renderEmptyState(emptyState, t('table.empty'))}
           </div>
         ) : virtualScroll ? (
           // Virtualize flat, tree, detail AND tree+detail (batch AE): every

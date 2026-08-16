@@ -1,5 +1,9 @@
 export { IrisTable, type IrisTableProps } from './Table'
-export { type IrisTableFormConfig, type IrisTablePagerConfig } from './props'
+export {
+  type IrisTableFormConfig,
+  type IrisTablePagerConfig,
+  type IrisTableEmptyState,
+} from './props'
 export { type IrisTableHandle } from './types'
 export {
   type IrisTableColumn,

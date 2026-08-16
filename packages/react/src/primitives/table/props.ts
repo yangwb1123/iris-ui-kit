@@ -71,6 +71,16 @@ export interface IrisTableFormConfig {
   onReset?: (values: Record<string, string>) => void
 }
 
+/** Empty-state descriptor (iris 独有 — vxe has no empty-state action button):
+ * object form of `emptyState` renders centered text (optional) plus an inline
+ * action button. A plain ReactNode stays on the node path untouched. */
+export interface IrisTableEmptyState {
+  /** Empty-state text (falls back to the localized default when omitted). */
+  text?: ReactNode
+  /** Action button rendered inline after the text. */
+  action?: { label: string; onClick: () => void }
+}
+
 /** Pager configuration (vxe-grid pagerConfig parity). */
 export interface IrisTablePagerConfig {
   /** Rows-per-page options rendered as a size selector next to the pager. A
@@ -522,8 +532,11 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * shrink the interval but never uncheck); a plain click still toggles a
    * single row. Default false. */
   selectionDrag?: boolean
-  /** Empty state node (replaces the row body when `data` is empty). */
-  emptyState?: ReactNode
+  /** Empty state node (replaces the row body when `data` is empty). Also accepts
+   * an `IrisTableEmptyState` descriptor (iris 独有 — vxe has no empty-state
+   * action button): `{ text?, action? }` renders the text plus an inline action
+   * button on the same row. */
+  emptyState?: ReactNode | IrisTableEmptyState
   /** Show the loading state instead of rows. */
   loading?: boolean
   /** Show the error state instead of rows (takes precedence over loading). */

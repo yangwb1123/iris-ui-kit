@@ -36825,9 +36825,9 @@
         },
         {
           "name": "emptyState",
-          "type": "ReactNode",
+          "type": "ReactNode | IrisTableEmptyState",
           "optional": true,
-          "description": "Empty state node (replaces the row body when `data` is empty)."
+          "description": "an `IrisTableEmptyState` descriptor (iris 独有 — vxe has no empty-state action button): `{ text?, action? }` renders the text plus an inline action"
         },
         {
           "name": "loading",
@@ -37837,9 +37837,9 @@
             },
             {
               "name": "emptyState",
-              "type": "ReactNode",
+              "type": "ReactNode | IrisTableEmptyState",
               "optional": true,
-              "description": "Empty state node (replaces the row body when `data` is empty)."
+              "description": "an `IrisTableEmptyState` descriptor (iris 独有 — vxe has no empty-state action button): `{ text?, action? }` renders the text plus an inline action"
             },
             {
               "name": "loading",
@@ -38174,6 +38174,7 @@
             "IrisTableEditDirtyConfig",
             "IrisTableEditStartParams",
             "IrisTableEditor",
+            "IrisTableEmptyState",
             "IrisTableFilterOption",
             "IrisTableFilterValues",
             "IrisTableFooterMethodParams",

@@ -1,29 +1,33 @@
 Gate stage complete — **PASS** ✅
 
-## Report
+## Summary
 
-**Verdict**: FAIL with concrete fixes → fixes applied, full gate re-run, **PASS** ✅ (review of `358fb1c6`/`b6f6623e` against `batch-cq-baseline.md`: 2 blocking findings — MEDIUM layout + LOW duplicated coercion — both fixed and re-verified)
+**Verdict was FAIL** with 2 concrete fixes — both applied, full gate re-run green, committed.
 
-**Gate commit**: `feat(table): grid 批 CQ——编辑实时预览（iris 独有）`
+### Fixes applied (review findings)
 
-| Step                                                                   | Result                                                                                   |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Full repo gate (`turbo run test typecheck lint build --concurrency=2`) | **180/180 tasks successful** (2m58s, 125 cached)                                         |
-| `audit:security`                                                       | **No known vulnerabilities found**                                                       |
-| `audit:tokens`                                                         | exit 1, all pre-existing/unrelated warnings (identical to HEAD)                          |
-| `gen:manifest` + `check:manifest`                                      | up to date — 155×4 components, 86 tokens, IrisTable **177 props / 31 events**, zero diff |
-| Comparison doc                                                         | 批 CQ iris-独有 row + 构建状态 entry updated (review-fix notes + counts)                 |
+1. **MEDIUM — preview/error rendered beside (not below) the editor**: the editing cell was a `display: flex` **row** (`alignItems: center`), so the preview sat right of the input. Fixed:
+   - Editing cell now gets `flexWrap: 'wrap'` (Table.tsx, non-editing cells untouched)
+   - `EDIT_PREVIEW_STYLE` + validation-error div get `flexBasis: '100%'` (+`minWidth: 0`) — browser lays editor / preview / error on separate full-width lines, stacked below (the spec's 下方 contract, Chrome-verified behavior)
+   - **Browser-level assertion**: new jsdom test pins the exact CSS contract the browser consumes — `flexWrap: wrap` only while editing, `flexBasis: 100%` on preview/error, in-flow order editor → preview → error
+2. **LOW — duplicated draft coercion**: preview-only `editPreviewDraft` merged into a single module-level `coerceEditDraft(row, col, draft)`; the commit/validate path's `coerceValueFor` now delegates to it — a future editor type can't silently drift the preview from the commit coercion. Equivalent behavior (14/14 edit-preview tests pass, full table suite 1242/1242).
 
-**Final test counts** (independent rerun):
+### Gate results
+
+| Step                                                                   | Result                                                                                        |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Full repo gate (`turbo run test typecheck lint build --concurrency=2`) | **180/180 tasks successful** (2m58s, 125 cached)                                              |
+| `audit:security`                                                       | **No known vulnerabilities found** (0)                                                        |
+| `audit:tokens`                                                         | exit 1, pre-existing/unrelated warnings only                                                  |
+| `gen:manifest` + `check:manifest`                                      | **up to date** — 155×4 components, 86 tokens, IrisTable **177 props / 31 events**, zero diff  |
+| Comparison doc                                                         | 批 CQ iris-独有 row + 构建状态 entry updated (review-fix notes, `react 2556→2570，14 新测试`) |
+
+### Final test counts (independent rerun)
 
 - **core: 1559/1559** (framework-free invariant intact — zero core changes)
-- **react: 2570/2570** (2569 → +1 layout-contract test; edit-preview file 13 → 14)
+- **react: 2570/2570** (2569 → +1 layout-contract test)
+- manifest propCount **177** / eventCount **31** · audit **0**
 
-manifest propCount **177** / eventCount **31** · audit **0**
+### Commit
 
-## Review fixes applied (both blocking findings)
-
-1. **MEDIUM — preview/error must stack BELOW the editor** (`Table.tsx` cell style + `styles.ts` `EDIT_PREVIEW_STYLE` + error div):
-   - The editing cell now gets `flexWrap: 'wrap'` while editing; the preview (`EDIT_PREVIEW_STYLE`) and the validation error div each get `flexBasis: '100%'` (+`minWidth: 0`), so the browser lays the editor, preview, error on **separate full-width flex lines, in flow** — the spec's 下方/下面 contract (previously flex-row side-by-side: input shrank, preview sat right of it).
-   - Browser-level assertion: new jsdom test (`edit-preview.test.tsx`) pins the exact CSS contract the browser consumes — cell `flexWrap: wrap` only while editing (non-editing cells stay `''`), preview/error `flexBasis: 100%` + `minWidth: 0`, and in-flow order editor → preview → error. (jsdom cannot compute layout; the flex properties are the layout's source of truth, the same contract the reviewer verified headless-Chrome.)
-2. **LOW — single shared draft coercion**: `editPreviewDraft` (preview-only, option-list parameter) was merged into one module-level `coerceEditDraft(row, col, draft)`; the commit/validate path's `coerceValueFor` now delegates to it (was a byte-identical duplicate). A future editor type cannot silently drift the preview from the commit coercion. 0 deletions semantics preserved; additive only.
+`2be104fe` — `feat(table): grid 批 CQ——编辑实时预览（iris 独有）` (8 files: 2 source + styles + test + comparison doc + DECISIONS stage record + gate/review reports + adapt doc; working tree clean, `.vinxi` excluded)

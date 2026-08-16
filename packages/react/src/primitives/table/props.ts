@@ -446,6 +446,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * (fail-closed).
    */
   editPreview?: boolean
+  /** Batch CR (iris 独有 — vxe has no equivalent; Excel status-bar parity):
+   * show a full-width horizontal strip directly below the toolbar
+   * (`data-iris-column-totals`) with the column totals for every
+   * `summary === 'sum'` column — aggregated over the CURRENT body rows with
+   * the exact summary-row value pipeline (`aggregate` + the
+   * `aggregateAccuracy` rounding gate + `renderSummary` fallback), one grid
+   * cell per leaf column (`data-iris-column-totals-cell`) so tracks stay
+   * aligned; non-sum columns render empty placeholders. The strip shows even
+   * with an empty body (`0`). Additive; default off (fail-closed).
+   */
+  columnTotals?: boolean
   /** Batch CJ (iris 独有 — vxe has no shortcut help): show a `?` toolbar
    * trigger that opens a floating panel listing every built-in keyboard
    * shortcut with its EFFECTIVE key — the same normalized map every handler

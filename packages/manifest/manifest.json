@@ -36661,6 +36661,12 @@
           "description": "formatter-applied result below the editing cell — recomputed per keystroke from the session draft through the SAME display chain as the committed cell (mask → formatter, with the commit path's draft coercion for number/select editors), rendered as a muted small line (`data-iris-edit-preview`). Only columns with a `formatter` render a preview. Additive; default off (fail-closed)."
         },
         {
+          "name": "columnTotals",
+          "type": "boolean",
+          "optional": true,
+          "description": "show a full-width horizontal strip directly below the toolbar (`data-iris-column-totals`) with the column totals for every `summary === 'sum'` column — aggregated over the CURRENT body rows with the exact summary-row value pipeline (`aggregate` + the `aggregateAccuracy` rounding gate + `renderSummary` fallback), one grid cell per leaf column (`data-iris-column-totals-cell`) so tracks stay aligned; non-sum columns render empty placeholders. The strip shows even with an empty body (`0`). Additive; default off (fail-closed)."
+        },
+        {
           "name": "shortcutHints",
           "type": "boolean",
           "optional": true,
@@ -37734,6 +37740,12 @@
               "type": "boolean",
               "optional": true,
               "description": "formatter-applied result below the editing cell — recomputed per keystroke from the session draft through the SAME display chain as the committed cell (mask → formatter, with the commit path's draft coercion for number/select editors), rendered as a muted small line (`data-iris-edit-preview`). Only columns with a `formatter` render a preview. Additive; default off (fail-closed)."
+            },
+            {
+              "name": "columnTotals",
+              "type": "boolean",
+              "optional": true,
+              "description": "show a full-width horizontal strip directly below the toolbar (`data-iris-column-totals`) with the column totals for every `summary === 'sum'` column — aggregated over the CURRENT body rows with the exact summary-row value pipeline (`aggregate` + the `aggregateAccuracy` rounding gate + `renderSummary` fallback), one grid cell per leaf column (`data-iris-column-totals-cell`) so tracks stay aligned; non-sum columns render empty placeholders. The strip shows even with an empty body (`0`). Additive; default off (fail-closed)."
             },
             {
               "name": "shortcutHints",
@@ -39333,7 +39345,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 177,
+        "propCount": 178,
         "eventCount": 31
       }
     },

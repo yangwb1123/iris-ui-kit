@@ -2092,3 +2092,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cq-gate.md [ok]: Verdict: FAIL → fixes applied → **PASS**: review 2 blocking findings fixed (1. MEDIUM: editing cell flex-wrap + preview/error flexBasis 100% 整行堆叠在编辑器下方——并排问题 Chrome 实测修正 + jsdom CSS 契约断言；2. LOW: 草稿强转收敛为 commit/validate 与预览单一共享 coerceEditDraft)。Full gate 180/180 tasks successful (2m58s, 125 cached) · audit:security 0 vulns · audit:tokens exit 1 pre-existing only · gen:manifest + check:manifest up to date (IrisTable 177 props / 31 events, zero diff) · comparison doc 批 CQ entries updated · core 1559/1559 · react 2570/2570 (2569→+1 layout-contract test)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-gate.md
+
+## 2026-08-16 06:09:38 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cq-gate.md [ok]: Summary: **Verdict was FAIL** with 2 concrete fixes — both applied, full gate re-run green, committed.; Fixes applied (review findings): 1. **MEDIUM — preview/error rendered beside (not below) the editor**: the editing cell was a `display: flex` **row** (`a; Gate results: | Step | Result |; Final test counts (independent rerun): - **core: 1559/1559** (framework-free invariant intact — zero core changes); Commit: `2be104fe`—`feat(table): grid 批 CQ——编辑实时预览（iris 独有）` (8 files: 2 source + styles + test + comparison doc + DECISIONS s
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-gate.md
+
+## 2026-08-16 06:16:28 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cr-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-baseline.md

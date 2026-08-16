@@ -104,6 +104,7 @@ import {
   CELL_NOTE_STYLE,
   CHAR_COUNT_HANDLE_SHIFT_STYLE,
   CHAR_COUNT_STYLE,
+  COLUMN_TOTALS_STYLE,
   COPY_FLASH_BG,
   EDIT_PREVIEW_STYLE,
   PRESENCE_LABEL_STYLE,
@@ -2452,6 +2453,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   editAutoHeight,
   charCount,
   editPreview,
+  columnTotals,
   shortcutHints,
   onSelectAllChange,
   onScroll,
@@ -5720,6 +5722,32 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ),
     [leafColumns, filteredData],
   )
+  // Batch CR column totals (iris 独有, Excel status-bar parity): per-leaf
+  // column SUM for the totals strip — only `summary === 'sum'` columns,
+  // aggregated over the CURRENT body rows with the exact summary-row value
+  // pipeline (`aggregate` → `aggregateAccuracy` rounding gate, batch P's
+  // single rounding point). Non-sum columns stay absent — the strip renders
+  // an empty placeholder to keep track alignment. Empty body → core
+  // `aggregate` returns 0 for sum, so the strip shows `0` (fiat). Zero new
+  // state; the display applies `renderSummary ?? String` at render (footer
+  // parity, byte-for-byte).
+  const columnTotalsValues = React.useMemo<Record<string, number>>(() => {
+    const out: Record<string, number> = {}
+    if (!columnTotals) return out
+    const accuracy =
+      aggregateAccuracy !== undefined && aggregateAccuracy >= 0 && aggregateAccuracy <= 100
+        ? aggregateAccuracy
+        : undefined
+    for (const col of leafColumns) {
+      if (col.summary !== 'sum') continue
+      const rawValue = aggregate(bodyData, (r) => getCellValue(r, col), 'sum')
+      out[col.key] =
+        rawValue != null && accuracy !== undefined && Number.isFinite(rawValue)
+          ? Number(rawValue.toFixed(accuracy))
+          : rawValue
+    }
+    return out
+  }, [columnTotals, leafColumns, bodyData, aggregateAccuracy])
   // Batch BI column sparkline (iris 独有): one O(n) render memo — the
   // filteredData row-identity index plus per-column RAW value arrays — so
   // each visible cell costs one Map lookup + an O(i) prefix slice (O(n²)
@@ -9461,6 +9489,32 @@ export function IrisTable<Row extends Record<string, unknown>>({
               t={t}
             />
           ) : null}
+        </div>
+      ) : null}
+      {columnTotals ? (
+        <div data-iris-column-totals="" style={{ ...COLUMN_TOTALS_STYLE, gridTemplateColumns }}>
+          {selectable !== 'none' ? (
+            <div role="cell" data-iris-column-totals-cell="__selection" style={baseCellStyle} />
+          ) : null}
+          {leafColumns.map((col) => {
+            const value = columnTotalsValues[col.key]
+            return (
+              <div
+                key={col.key}
+                data-iris-column-totals-cell={col.key}
+                style={{
+                  ...baseCellStyle,
+                  justifyContent: justifyFor(col.align),
+                }}
+              >
+                {value != null
+                  ? col.renderSummary
+                    ? col.renderSummary(value, bodyData)
+                    : String(value)
+                  : null}
+              </div>
+            )
+          })}
         </div>
       ) : null}
       {fnr && fnrOpen ? (

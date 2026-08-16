@@ -24,6 +24,21 @@ export const BASE_CELL_STYLE: React.CSSProperties = {
 export const borderStyle = (bordered: boolean): string =>
   bordered ? '1px solid var(--iris-border)' : 'none'
 
+/** Column-totals strip (batch CR, iris 独有): full-width grid bar directly
+   below the toolbar showing the sum of every `summary === 'sum'` column —
+   one cell per leaf column so tracks align with the body grid (the shared
+   `gridTemplateColumns` string is spread on top). Same border language as
+   the sibling bars (toolbar / fnr): token-only. */
+export const COLUMN_TOTALS_STYLE: React.CSSProperties = {
+  display: 'grid',
+  alignItems: 'center',
+  border: '1px solid var(--iris-border)',
+  borderBottom: 'none',
+  background: 'var(--iris-surface)',
+  fontSize: 'var(--iris-font-size-sm, 13px)',
+  fontWeight: 600,
+}
+
 /* Range-stats panel (batch AJ, iris 独有): rendered INSIDE the floating bar
    container (which is position:absolute via useFloating, so an absolutely
    positioned child anchors to it) and dropped BELOW the bar with a small

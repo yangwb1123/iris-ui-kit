@@ -2222,3 +2222,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cv-gate.md [ok]: Gate 完成 — FAIL 已修复并全量复跑：**Verdict**（batch-cv-review.md）: FAIL — 1 medium spec violation + 2 informational；修复 resolvePinnedCount gapped 态前缀预算（Table.tsx resolve 从全部左固定宽改为前导前缀宽，resolve(0) ≡ leftPinnedCount）+ T18 gapped 回归测试（独立 pinned-drag-gapped.test.tsx——filesize 门 pinned-drag.test.tsx 回 493 ≤500；先验：还原旧实现 1 failed/17 passed）；全量门禁 turbo run test typecheck lint build --concurrency=2 **180/180 tasks**（125 cached）· react 2636/2636（2618+18）· core 1559/1559 · vue 1531 · solid 1008 · svelte 947 · 合计 8684 tests · audit **0 vulns** · gen:manifest + check:manifest up to date（182 props/31 events 零 diff）· comparison doc 批 CV 段更新（review 修复 + 18 测试 + react 2636）· commit 见 batch-cv-gate.md。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-gate.md
+
+## 2026-08-16 09:07:18 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cv-gate.md [ok]: Summary: **Verdict**: `batch-cv-review.md` → **FAIL** — 1 medium spec violation (Finding 1) + 2 informational.; Full gate: | Gate | Result |; Final test counts: - **core: 1559/1559** (framework-free, zero core changes); Commit: **`ace9950c`** `feat(table): grid 批 CV——冻结边界拖拽（iris 独有）` — fix (Table.tsx, 12 lines) + T18 regression (new file, 68 line
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-gate.md
+
+## 2026-08-16 09:10:56 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-baseline.md
+
+## 2026-08-16 09:30:00 — stage 'adapt' — PASS (batch CW)
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md [ok]: 导入预览 `importPreview`（iris 独有）——`importPreview?: boolean` 表级 prop（props.ts `zoomConfig` 后，propCount 182→183/eventCount 32 不变）：parseCsv/行构建零改动，门恰在 `toolbar.onImport?.(rows)` 调用点分裂——开时挂起 rows 到本地 state，固定居中 modal（Dialog backdrop/`--iris-z-modal` 先例）显示前 5 行（表头 = 首行键序，模块 helper `previewColumnsFromRows`）+ 超 5 行 `table.total` 注；确认 = `onImport(全部行)` 恰一次 + 关闭、取消/Esc（仅开时 window 监听）/backdrop = 零调用；off 路径字节不变；+3 i18n 键 en+zh；react 2636→2648（12 新测试 import-preview.test.tsx 252 行）；core 仅 i18n 键（1559 不变）、三框架零改动；spec 0 违规 · lint 0 error · prettier clean · gen:manifest（182→183 props）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md

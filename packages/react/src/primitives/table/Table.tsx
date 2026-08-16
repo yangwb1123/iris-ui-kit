@@ -225,6 +225,15 @@ function isColDragOutLeft(x: number, rootLeft: number): boolean {
   return x < rootLeft
 }
 
+/** Batch CW import preview (iris 独有): the preview table's column headers
+ * come from the FIRST parsed row's keys — every row is built by the same
+ * `Object.fromEntries(header.map(...))`, so key order is stable across rows.
+ * Null/empty → zero columns (header-only CSV still opens the preview). */
+function previewColumnsFromRows(rows: Record<string, unknown>[] | null): string[] {
+  if (!rows || rows.length === 0) return []
+  return Object.keys(rows[0])
+}
+
 /** The copy-flash background — empty object outside the flashed rect so the
  * spread adds nothing (no operators in the hot arrow). */
 function copyFlashCellStyle(
@@ -2656,6 +2665,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   formConfig,
   toolbar,
   zoomConfig,
+  importPreview,
   layouts,
   tooltipConfig,
   annotations,
@@ -4476,6 +4486,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const [hintsOpen, setHintsOpen] = React.useState(false)
   const hintsAnchorRef = React.useRef<HTMLButtonElement | null>(null)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
+  // Batch CW import preview (iris 独有 — vxe has no pre-import preview):
+  // when `importPreview` is on, the parsed rows are held in local state and
+  // shown in a centered modal BEFORE `onImport` fires; confirm calls
+  // `onImport` with the FULL payload, cancel / Esc / backdrop close with
+  // zero calls. null = closed. Re-seeded per selection (the file input's
+  // value is cleared below, so re-picking the same file re-triggers).
+  const [importPreviewRows, setImportPreviewRows] = React.useState<
+    Record<string, unknown>[] | null
+  >(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !toolbar?.onImport) return
@@ -4488,11 +4507,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const rows = body.map((cells: string[]) =>
         Object.fromEntries(header.map((h: string, i: number) => [h, cells[i] ?? ''])),
       )
-      toolbar.onImport?.(rows)
+      // Batch CW gate: `importPreview` splits exactly at the call — parse and
+      // row-build are unchanged; off means byte-identical direct import.
+      if (importPreview) {
+        setImportPreviewRows(rows)
+      } else {
+        toolbar.onImport?.(rows)
+      }
     }
     reader.readAsText(file)
     e.target.value = ''
   }
+  const confirmImportPreview = () => {
+    if (!importPreviewRows) return
+    toolbar?.onImport?.(importPreviewRows)
+    setImportPreviewRows(null)
+  }
+  const cancelImportPreview = () => setImportPreviewRows(null)
+  const importPreviewColumns = previewColumnsFromRows(importPreviewRows)
+  // Esc closes the preview while it is open only (zoom precedent — no global
+  // listener otherwise).
+  React.useEffect(() => {
+    if (!importPreviewRows) return
+    const onWindowKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setImportPreviewRows(null)
+    }
+    window.addEventListener('keydown', onWindowKey)
+    return () => window.removeEventListener('keydown', onWindowKey)
+  }, [importPreviewRows])
   const toggleColumnVisibility = (key: string) => {
     const next = { ...(columnVisibility ?? {}) }
     next[key] = !(columnVisibility?.[key] !== false)
@@ -9692,6 +9734,159 @@ export function IrisTable<Row extends Record<string, unknown>>({
               >
                 {t('table.batchEdit.apply')}
               </button>
+            </div>
+          ) : null}
+          {/* Batch CW import preview (iris 独有 — vxe has no pre-import
+            preview): a fixed centered modal (Dialog backdrop/z-index
+            precedent) over the parsed rows. First 5 rows in a plain table
+            (headers = the first row's keys, stable by construction); a
+            `table.total` note when more; 确认 fires `onImport` with ALL
+            rows, 取消 / Esc / backdrop close with zero calls. Presence-gated
+            → zero nodes when idle. */}
+          {importPreviewRows ? (
+            <div
+              data-iris-import-preview-backdrop=""
+              onPointerDown={(e) => {
+                if (e.target === e.currentTarget) setImportPreviewRows(null)
+              }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+                zIndex: 'var(--iris-z-modal, 1200)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 'var(--iris-space-lg, 24px)',
+              }}
+            >
+              <div
+                data-iris-import-preview=""
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('table.importPreview.title')}
+                style={{
+                  background: 'var(--iris-surface-floating, var(--iris-surface))',
+                  color: 'var(--iris-foreground)',
+                  border: '1px solid var(--iris-border)',
+                  borderRadius: 'var(--iris-radius-lg, 8px)',
+                  boxShadow: 'var(--iris-shadow-xl)',
+                  padding: 'var(--iris-space-lg, 24px)',
+                  maxWidth: '90vw',
+                  maxHeight: '85vh',
+                  overflow: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--iris-space-sm, 12px)',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
+                }}
+              >
+                <div style={{ fontWeight: 600, color: 'var(--iris-foreground)' }}>
+                  {t('table.importPreview.title')}
+                </div>
+                {importPreviewColumns.length > 0 ? (
+                  <table
+                    data-iris-import-preview-table=""
+                    style={{
+                      borderCollapse: 'collapse',
+                      fontSize: 'var(--iris-font-size-sm, 13px)',
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        {importPreviewColumns.map((h) => (
+                          <th
+                            key={h}
+                            data-iris-import-preview-header={h}
+                            style={{
+                              border: '1px solid var(--iris-border)',
+                              padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                              background: 'var(--iris-surface)',
+                              color: 'var(--iris-foreground)',
+                              textAlign: 'start',
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreviewRows.slice(0, 5).map((row, ri) => (
+                        <tr key={ri}>
+                          {importPreviewColumns.map((h) => (
+                            <td
+                              key={h}
+                              data-iris-import-preview-cell={`${ri}:${h}`}
+                              style={{
+                                border: '1px solid var(--iris-border)',
+                                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                                color: 'var(--iris-foreground)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {String(row[h] ?? '')}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : null}
+                {importPreviewRows.length > 5 ? (
+                  <div
+                    data-iris-import-preview-total=""
+                    style={{
+                      color: 'var(--iris-muted)',
+                      fontSize: 'var(--iris-font-size-xs, 12px)',
+                    }}
+                  >
+                    {t('table.total', { total: importPreviewRows.length })}
+                  </div>
+                ) : null}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 'var(--iris-space-xs, 8px)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    data-iris-import-preview-cancel=""
+                    onClick={cancelImportPreview}
+                    style={{
+                      border: '1px solid var(--iris-border)',
+                      cursor: 'pointer',
+                      background: 'var(--iris-surface)',
+                      color: 'var(--iris-foreground)',
+                      fontSize: 'var(--iris-font-size-sm, 13px)',
+                      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                      borderRadius: 'var(--iris-radius-sm, 4px)',
+                    }}
+                  >
+                    {t('table.importPreview.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    data-iris-import-preview-confirm=""
+                    onClick={confirmImportPreview}
+                    style={{
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: 'var(--iris-primary)',
+                      color: 'var(--iris-primary-foreground)',
+                      fontSize: 'var(--iris-font-size-sm, 13px)',
+                      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                      borderRadius: 'var(--iris-radius-sm, 4px)',
+                    }}
+                  >
+                    {t('table.importPreview.confirm')}
+                  </button>
+                </div>
+              </div>
             </div>
           ) : null}
           {columnWidthsReset ? (

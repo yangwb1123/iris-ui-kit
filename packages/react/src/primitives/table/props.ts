@@ -344,6 +344,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * table root as a fullscreen overlay (fixed, inset 0, popover z-index);
    * Esc exits. Local state — no parent props needed. */
   zoomConfig?: { showButton?: boolean }
+  /** Import preview (iris 独有 — vxe has no pre-import preview): when true,
+   * the toolbar ⇪ CSV import shows a centered modal previewing the first 5
+   * parsed rows (plus a total-count note when more) before anything lands;
+   * 确认 calls `toolbar.onImport` with ALL parsed rows, 取消 / Esc / backdrop
+   * close with zero calls. Default false — the import lands directly (vxe
+   * parity). */
+  importPreview?: boolean
   /** Section layouts (vxe-grid layouts parity, batch U, suppression-only):
    * `form`/`toolbar` `'hidden'` skips that section (the config stays
    * accepted); `pager` `'hidden'` skips the proxy pager. Defaults render

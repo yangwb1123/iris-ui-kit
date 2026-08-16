@@ -36554,6 +36554,12 @@
           "description": "toolbar renders a toggle (⛶ when not zoomed, ✕ when zoomed) that pins the table root as a fullscreen overlay (fixed, inset 0, popover z-index);"
         },
         {
+          "name": "importPreview",
+          "type": "boolean",
+          "optional": true,
+          "description": "the toolbar ⇪ CSV import shows a centered modal previewing the first 5 parsed rows (plus a total-count note when more) before anything lands; 确认 calls `toolbar.onImport` with ALL parsed rows, 取消 / Esc / backdrop close with zero calls. Default false — the import lands directly (vxe"
+        },
+        {
           "name": "layouts",
           "type": "{ form?: 'top' | 'hidden'; toolbar?: 'top' | 'hidden'; pager?: 'bottom' | 'hidden' }",
           "optional": true,
@@ -37658,6 +37664,12 @@
               "type": "{ showButton?: boolean }",
               "optional": true,
               "description": "toolbar renders a toggle (⛶ when not zoomed, ✕ when zoomed) that pins the table root as a fullscreen overlay (fixed, inset 0, popover z-index);"
+            },
+            {
+              "name": "importPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "the toolbar ⇪ CSV import shows a centered modal previewing the first 5 parsed rows (plus a total-count note when more) before anything lands; 确认 calls `toolbar.onImport` with ALL parsed rows, 取消 / Esc / backdrop close with zero calls. Default false — the import lands directly (vxe"
             },
             {
               "name": "layouts",
@@ -39398,7 +39410,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 182,
+        "propCount": 183,
         "eventCount": 32
       }
     },

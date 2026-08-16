@@ -1922,3 +1922,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cj-gate.md [ok]: 批 CJ Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-cj-review.md`, 0 MAJOR / 0 MEDIUM; 1 P3 + 1 P4 info). **P3 fixed in this gate**: `props.ts` `shortcutHints` JSDoc `*/` moved to its own line per the `charCount` precedent — regenerated manifest description no longer truncates at `…Additive; default`, now carries the full fail-closed ending `Additive; default off (fail-closed).`. Gate results: full repo gate **180/180** (4m29s, 54 cached) · audit:security **0** · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount 170 / eventCount 31, only diff = P3-fixed description) · gen:docs-reference + check:docs-reference up to date · iris-ui-spec 0 violations (1416 files) · framework-free invariant holds (core 0 framework imports) · comparison doc updated (iris 独有 表格快捷键提示 shortcutHints row + 构建状态 批 CJ entry) · batch-ci-gate.md CI final polish folded in. Final test counts: **react 2492/2492** (11 new shortcut-hints) · **core 1548/1548** (6 new formatters) · manifest propCount 170 / eventCount 31 · audit 0
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cj-gate.md
+
+## 2026-08-15 22:54:25 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cj-gate.md [ok]: ✅ Batch CJ Gate — PASS: **Review verdict**: PASS (0 MAJOR / 0 MEDIUM). The single **P3** finding was fixed in this gate: `props.ts` `shortcutHin; Gate results: | Step | Result |; Final test counts: - **core: 1548/1548** (6 new `formatKeyBinding`/`formatKeyBindings` tests, 1542→1548); Commit: **`bdc437a9`** — `feat(table): grid 批 CJ——表格快捷键提示（iris 独有）` (9 files, +153/−20: comparison doc, DECISIONS.md, batch-ci-g
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cj-gate.md
+
+## 2026-08-15 22:59:08 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ck-baseline.md [ok]: Summary of the baseline (batch CK：单元格文本搜索高亮 — iris 独有): **Design** — `searchHighlight?: string` (additive, fail-closed), one core pure splitter, one module helper, two call sit
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ck-baseline.md
+
+## 2026-08-15 23:09:59 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ck-adapt.md [ok]: Report — batch CK：单元格文本搜索高亮（iris 独有）; Files changed (10 in impl commit `d208c8fc`, 7 source + 3 tests; adapt report in `d967b26f`): | File | Change |; Verification (all green): - **core test**: 1559 passed (was 1548, +11); What's left: - Review/gate stages: `batch-ck-review.md` / `batch-ck-gate.md` + comparison-doc row (批 CJ precedent puts docs + compari
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ck-adapt.md
+
+## 2026-08-15 23:13:56 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ck-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-ck-review.md`; What I checked: **Spec correctness** — every baseline point verified against the code:; Findings: 1. **P4 (cosmetic)** — `props.ts:549-550`: JSDoc line-wrap produces "`render`/ `html`" (stray space after slash) in the
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ck-review.md
+
+## 2026-08-16 07:15:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ck-gate.md [ok]: 批 CK Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-ck-review.md`, 0 MAJOR / 0 MEDIUM; 1 P4 cosmetic + 1 P4 info). **P4 fixed in this gate**: `props.ts` `searchHighlight` JSDoc reflowed so the backticked token list `` `render`/`html`/`link`/`autoLink`/sparkline `` sits on one line — regenerated manifest description no longer carries the stray space (`` `render`/ `html` ``), verified in both manifest.json occurrences; fail-closed ending `Additive; default off (fail-closed).` intact. P4 #2 (baseline prose file-count inconsistency) info-only, no action. Gate results: full repo gate **180/180** (3m39s, 110 cached; first attempt hit pre-existing ssr-nuxt .nuxt race — nuxi prepare vs nuxt build concurrent write — verified green in isolation 6/6, rerun clean) · audit:security **0** · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount **171** / eventCount 31, only diff = P4-fixed description) · gen:docs-reference + check:docs-reference up to date · iris-ui-spec 0 violations (1416 files) · framework-free invariant holds (core 0 framework imports) · comparison doc updated (iris 独有 单元格文本搜索高亮 searchHighlight row + 构建状态 批 CK entry) · prettier clean. Final test counts: **react 2503/2503** (11 new search-highlight incl. fnr-coexistence T10) · **core 1559/1559** (11 new splitSearchHits) · manifest propCount 171 / eventCount 31 · audit 0
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ck-gate.md

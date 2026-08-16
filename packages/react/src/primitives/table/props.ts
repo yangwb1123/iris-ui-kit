@@ -545,9 +545,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * occurrence renders as an inline `<mark data-iris-search-hit>` (the
    * surface-selected token — the same search-highlight language fnr uses for
    * matched cells). Display-only: no bar, no match state, no write-back —
-   * the distinction from fnr is the mechanism, not the query. `render`/
-   * `html`/`link`/`autoLink`/sparkline cells are untouched (documented
-   * fiats). Additive; default off (fail-closed).
+   * the distinction from fnr is the mechanism, not the query.
+   * `render`/`html`/`link`/`autoLink`/sparkline cells are untouched
+   * (documented fiats). Additive; default off (fail-closed).
    */
   searchHighlight?: string
   /** Built-in undo/redo (iris 独有 — vxe has no built-in undoRedoHistory): when enabled, every data mutation (row ops, paste, find&replace, range clear, cell/row edits, batch edit) records the POST-change row list; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — never while an inline editor is open. The toolbar renders ↶/↷ buttons after the title (disabled from canUndo/canRedo); restores prune selection keys that no longer exist. Additive — default off. */

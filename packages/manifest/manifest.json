@@ -36821,7 +36821,7 @@
           "name": "searchHighlight",
           "type": "string",
           "optional": true,
-          "description": "case-insensitive literal-substring search over each text cell's display chain (mask → formatter ?? raw — the same text autoLink consumes); every occurrence renders as an inline `<mark data-iris-search-hit>` (the surface-selected token — the same search-highlight language fnr uses for matched cells). Display-only: no bar, no match state, no write-back — the distinction from fnr is the mechanism, not the query. `render`/ `html`/`link`/`autoLink`/sparkline cells are untouched (documented fiats). Additive; default off (fail-closed)."
+          "description": "case-insensitive literal-substring search over each text cell's display chain (mask → formatter ?? raw — the same text autoLink consumes); every occurrence renders as an inline `<mark data-iris-search-hit>` (the surface-selected token — the same search-highlight language fnr uses for matched cells). Display-only: no bar, no match state, no write-back — the distinction from fnr is the mechanism, not the query. `render`/`html`/`link`/`autoLink`/sparkline cells are untouched (documented fiats). Additive; default off (fail-closed)."
         },
         {
           "name": "undo",
@@ -37851,7 +37851,7 @@
               "name": "searchHighlight",
               "type": "string",
               "optional": true,
-              "description": "case-insensitive literal-substring search over each text cell's display chain (mask → formatter ?? raw — the same text autoLink consumes); every occurrence renders as an inline `<mark data-iris-search-hit>` (the surface-selected token — the same search-highlight language fnr uses for matched cells). Display-only: no bar, no match state, no write-back — the distinction from fnr is the mechanism, not the query. `render`/ `html`/`link`/`autoLink`/sparkline cells are untouched (documented fiats). Additive; default off (fail-closed)."
+              "description": "case-insensitive literal-substring search over each text cell's display chain (mask → formatter ?? raw — the same text autoLink consumes); every occurrence renders as an inline `<mark data-iris-search-hit>` (the surface-selected token — the same search-highlight language fnr uses for matched cells). Display-only: no bar, no match state, no write-back — the distinction from fnr is the mechanism, not the query. `render`/`html`/`link`/`autoLink`/sparkline cells are untouched (documented fiats). Additive; default off (fail-closed)."
             },
             {
               "name": "undo",

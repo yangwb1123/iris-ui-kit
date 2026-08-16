@@ -128,6 +128,11 @@ function rangeFillTargetAttr(isTarget: boolean): string | undefined {
   return isTarget ? 'true' : undefined
 }
 
+/** Batch CL expand-animation attr value (undefined hides it — fail-closed). */
+function expandAnimAttr(on: boolean): string | undefined {
+  return on ? 'true' : undefined
+}
+
 /** Extra cell style for the fill-handle host (relative + above pinned) and
  * the drag-target highlight (token-driven background). */
 function rangeFillCellStyle(handleCell: boolean, targetCell: boolean): React.CSSProperties {
@@ -421,6 +426,23 @@ const TABLE_ROW_CSS = `
 [data-iris-table-tree-toggle][data-iris-tree-loading] {
   opacity: 0.55;
   animation: iris-table-caret-spin 900ms linear infinite;
+}
+/* Batch CL expand animation (iris 独有 — vxe has no expand animation): the
+   detail panel / tree row plays a max-height + opacity ENTER transition on
+   expand. Both endpoints force overflow hidden so content is never
+   permanently clipped — the animation ends back at the base state. Cap and
+   duration are token-driven with fallbacks (motion token precedent). */
+@keyframes iris-table-expand-enter {
+  from { max-height: 0; opacity: 0; overflow: hidden; }
+  to { max-height: var(--iris-table-expand-max, 512px); opacity: 1; overflow: hidden; }
+}
+[data-iris-expand-anim="true"] {
+  animation: iris-table-expand-enter var(--iris-duration-md, 200ms) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-iris-expand-anim="true"] {
+    animation: none;
+  }
 }
 @media print {
   [data-iris-table-toolbar] {
@@ -2346,6 +2368,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onTreeExpandChange,
   getSubRows,
   lazyLoad,
+  expandAnimation = false,
   keyboardNavigation = false,
   tableShortcuts = false,
   keymap,
@@ -2389,6 +2412,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // height), IrisVirtualScroll (slot height source) and PageUp/PageDown
   // (paging step) — all three read this same resolved source.
   const effectiveRowHeight = rowHeight ?? virtualScroll?.itemHeight
+  // Batch CL: detail/tree expand animation (iris 独有) — inert in virtual
+  // mode: lazy slots mount on scroll and would replay the animation (and the
+  // hot path stays untouched). Fail-closed when the prop is off.
+  const expandAnimOn = expandAnimation === true && !virtualScroll
   // Batch BC: scope the external tables for this render — every getCellValue
   // / querySortedData evaluation below runs synchronously during THIS render,
   // and React's render walk is atomic per component (assigned before any
@@ -7166,6 +7193,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         aria-setsize={treeMeta ? treeMeta.setSize : undefined}
         aria-posinset={treeMeta ? treeMeta.posInset : undefined}
         data-iris-table-row={String(k ?? idx)}
+        data-iris-expand-anim={expandAnimAttr(expandAnimOn && (treeMeta?.depth ?? 0) > 0)}
         data-iris-table-row-selected={selected ? 'true' : undefined}
         data-iris-row-editing={rowMode && rowEditing?.k === k ? 'true' : undefined}
         data-iris-row-current={currentRowKey === k ? 'true' : undefined}
@@ -7861,6 +7889,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         <div
           role="row"
           data-iris-table-row-detail={String(rowKeyOf(row, idx))}
+          data-iris-expand-anim={expandAnimAttr(expandAnimOn)}
           style={{ display: 'grid', gridTemplateColumns }}
         >
           <div

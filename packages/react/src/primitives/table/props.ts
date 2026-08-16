@@ -441,6 +441,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   getSubRows?: (row: Row) => Row[] | undefined
   /** Lazy tree (vxe lazyLoad parity): a row with no `getSubRows` children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row). */
   lazyLoad?: (row: Row, load: (children: Row[]) => void) => void
+  /** Batch CL (iris 独有 — vxe has no expand animation):
+   * animate detail-panel and tree-row expansion with a max-height + opacity
+   * enter transition (token-driven — `--iris-table-expand-max` cap and
+   * `--iris-duration-md` duration, both with fallbacks;
+   * `prefers-reduced-motion: reduce` turns the animation off entirely).
+   * Pure CSS entrance — zero state/effect; root tree rows (depth 0) stay
+   * static. Inert in virtual mode (lazy slots would replay the animation on
+   * scroll-mount). Additive; default off (fail-closed).
+   */
+  expandAnimation?: boolean
   /**
    * Enable WAI-ARIA grid keyboard navigation (single-tabstop roving cell
    * focus). Arrow keys move one cell; Home/End jump to the row's first/last

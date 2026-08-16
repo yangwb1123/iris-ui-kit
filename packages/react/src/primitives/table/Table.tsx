@@ -62,6 +62,7 @@ import {
   createCellEdit,
   createRemoteTableSource,
   createSortable,
+  detectColumnType,
   insertRowInList,
   matchTableKey,
   memoizedFormulaValue,
@@ -75,6 +76,7 @@ import {
   updateRowInList,
   validateEditRulesAsync,
   type CellEdit,
+  type DetectedColumnType,
   type FormulaTables,
   type RemoteTableSource,
   type RemoteTableSourceState,
@@ -2590,6 +2592,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerSpanMethod,
   headerAlign,
   footerAlign,
+  autoDetectTypes,
   summaryRowStyle = 'default',
   aggregateAccuracy,
   highlightHoverRow = true,
@@ -2819,13 +2822,51 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return hasPreset(safeColumns) ? safeColumns.map(applyPreset) : safeColumns
   }, [safeColumns])
 
+  // Batch CX (iris 独有): auto-detected column types — the one-shot effect
+  // below fills `detectedTypes` from the FIRST non-empty liveData; this memo
+  // applies the detected kinds onto the preset columns, filling ONLY the
+  // fields the caller left undefined (explicit `align`/`sortType` always win
+  // — preset defaults survive). number → right + 'number' sort; string/date/
+  // boolean → left + 'string'. Reference-preserving when the prop is off or
+  // nothing was detected: the result IS `presetColumns` (byte-identical with
+  // the pre-prop render path). `orderedColumns` (and everything downstream)
+  // consumes this. The state/ref are declared HERE (before the memo reads
+  // them); the one-shot detection effect itself lives next to the other
+  // data-arrival effects below.
+  const [detectedTypes, setDetectedTypes] = React.useState<Record<string, DetectedColumnType>>({})
+  const detectTypesRef = React.useRef(false)
+  const detectedColumns = React.useMemo(() => {
+    if (!autoDetectTypes || Object.keys(detectedTypes).length === 0) return presetColumns
+    const fillDetected = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
+      const kind = detectedTypes[col.key]
+      if (!kind) return col
+      const next = { ...col } as IrisTableColumn<Row>
+      if (kind === 'number') {
+        if (col.align === undefined) next.align = 'right'
+        if (col.sortType === undefined) next.sortType = 'number'
+      } else {
+        if (col.align === undefined) next.align = 'left'
+        if (col.sortType === undefined) next.sortType = 'string'
+      }
+      return next
+    }
+    const applyDetected = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
+      const resolved = fillDetected(col)
+      if (resolved.children && resolved.children.length > 0) {
+        return { ...resolved, children: resolved.children.map(applyDetected) }
+      }
+      return resolved
+    }
+    return presetColumns.map(applyDetected)
+  }, [autoDetectTypes, presetColumns, detectedTypes])
+
   const orderedColumns = React.useMemo(() => {
-    if (!columnOrder || columnOrder.length === 0) return presetColumns
-    const ordered = presetColumns.filter((c) => columnOrderIndex.has(c.key))
-    const rest = presetColumns.filter((c) => !columnOrderIndex.has(c.key))
+    if (!columnOrder || columnOrder.length === 0) return detectedColumns
+    const ordered = detectedColumns.filter((c) => columnOrderIndex.has(c.key))
+    const rest = detectedColumns.filter((c) => !columnOrderIndex.has(c.key))
     ordered.sort((a, b) => columnOrderIndex.get(a.key)! - columnOrderIndex.get(b.key)!)
     return [...ordered, ...rest]
-  }, [presetColumns, columnOrder, columnOrderIndex])
+  }, [detectedColumns, columnOrder, columnOrderIndex])
 
   const displayColumns = React.useMemo(() => {
     let cols = orderedColumns
@@ -3103,6 +3144,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!freshness) return
     setFreshnessAt(Date.now())
   }, [freshness, liveData])
+
+  // Batch CX (iris 独有): auto-detect column types — ONE-SHOT on the FIRST
+  // non-empty liveData arrival (mount-time `data`, the first proxy page, or
+  // the first post-hydration data). Each leaf column's kind is inferred by
+  // the core `detectColumnType` over its first 50 non-nullish values; the
+  // `detectedColumns` memo above then fills align + sortType only where the
+  // caller left them undefined. The ref guard makes it one-shot per mount —
+  // later data re-feeds / edit write-backs never re-detect (a column's kind
+  // is a structural declaration, not per-page noise; in proxy mode the
+  // inference thus samples the FIRST page only). Formula columns are skipped
+  // — their sortType is the caller's contract on the COMPUTED value (batch
+  // AO). SSR-safe: effects never run during renderToString, so server HTML
+  // is byte-identical and the fill lands post-hydration.
+  React.useEffect(() => {
+    if (!autoDetectTypes || detectTypesRef.current) return
+    if (liveData.length === 0) return
+    detectTypesRef.current = true
+    const next: Record<string, DetectedColumnType> = {}
+    for (const col of flattenLeafColumns(presetColumns)) {
+      if (col.formula) continue
+      next[col.key] = detectColumnType(liveData.map((row) => getCellValue(row, col)))
+    }
+    setDetectedTypes(next)
+  }, [autoDetectTypes, liveData, presetColumns])
 
   // ── Built-in audit log (iris 独有, batch AT) ───────────────────────────
   // A core createAuditLog keeps a bounded (200) ring of ONE entry per

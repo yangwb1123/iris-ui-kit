@@ -169,6 +169,21 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Footer/summary cell alignment (vxe footer-align parity): `footerAlign`
    * wins over the column's `align`. Applies to summary, footer-method, footer-data. */
   footerAlign?: IrisTableAlign
+  /**
+   * Auto-detect column types (batch CX, iris 独有 — vxe requires the caller
+   * to declare `sortType` per column; no auto inference): on FIRST data
+   * arrival, each leaf column's value kind (`string`/`number`/`date`/
+   * `boolean`) is inferred by the core `detectColumnType` from its first 50
+   * non-nullish values (all-samples-agree; mixed columns and numeric/boolean
+   * STRINGS fall back to `string`). Detected columns receive the matching
+   * default alignment + `sortType` — `number` → right-aligned + `'number'`
+   * sort, everything else → left + `'string'` — filling ONLY the fields the
+   * caller left `undefined` (explicit `align`/`sortType` always win; preset
+   * defaults survive). One-shot per mount (later data re-feeds never
+   * re-detect); SSR-safe (effect-driven, the fill lands post-hydration).
+   * Default false — byte-identical with the pre-prop render path.
+   */
+  autoDetectTypes?: boolean
   /** Batch CM (iris 独有 — vxe has no summary sticky parity): `'sticky'` pins
    * the GLOBAL summary row (op row or footerMethod rows — the two renders
    * that occupy the same footer slot) to the viewport's bottom edge inside

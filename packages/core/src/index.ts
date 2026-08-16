@@ -251,6 +251,7 @@ export {
   type ColumnPreset,
   type ColumnPresetDescriptor,
 } from './column-preset'
+export { detectColumnType, type DetectedColumnType } from './column-type'
 export {
   evaluateFormula,
   memoizedFormulaValue,

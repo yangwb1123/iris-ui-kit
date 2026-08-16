@@ -1757,3 +1757,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cc-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low + 4 info): **Verification (all green, on HEAD `1ce53cbf`):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-review.md
+
+## 2026-08-15 18:53:33 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cc-gate.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low + 4 info): All gate steps executed:; Commits: - `71b93bd8` — `feat(table): grid 批 CC——编辑自动换行（iris 独有）` (gate-stage docs delta; implementation was already at `0c8b31e9; Final test counts: - **core: 1533/1533** (99 files)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-gate.md
+
+## 2026-08-15 19:11:53 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-baseline.md [ok]: Baseline essence (batch CD：行拖拽插入指示线, iris 独有): **Design** — no new prop (additive fail-closed: `rowDrag` is already opt-in at props.ts:358). During an active drag, a 1
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-baseline.md
+
+## 2026-08-15 19:23:07 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-adapt.md [ok]: Report: **Commits** (2, per CB/CA convention):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-adapt.md
+
+## 2026-08-15 19:41:57 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low / 3 info): Verdict written to `docs/vxe-grid/batch-cd-review.md`.; Verification (all green, on HEAD `9f14eb13`): | Check | Result |; Key inspection results: - **Spec correctness**: single pure `resolveRowDragDrop` (Table.tsx:171) shared by move + up handlers; side = pointer vs; Findings (no blockers): 1. **[low]** Table.tsx:8916-8918 — comment claims the line renders "below … pinned columns", but pinned cells are z1 whi
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-review.md

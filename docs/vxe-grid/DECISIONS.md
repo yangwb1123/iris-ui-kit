@@ -1782,3 +1782,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cd-gate.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low + 3 info): All gate steps executed:; Commits: - `fca66df9` — `feat(table): grid 批 CD——行拖拽插入指示线（iris 独有）` (gate-stage docs delta; implementation was already at `9c1a1ed1`); Final test counts: - **core: 1533/1533** (99 files); react: 2419/2419 (214 files, incl. new row-drag-indicator.test.tsx 10/10)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-gate.md
+
+## 2026-08-15 19:47:23 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-gate.md [ok]: Verdict: PASS (0 blocker / 0 major; 2 low / 3 info): | Step | Result |; Commits: - `fca66df9` — `feat(table): grid 批 CD——行拖拽插入指示线（iris 独有）` (gate-stage docs delta; implementation already at `9c1a1ed1`); Final test counts: - **core: 1533/1533** (99 files)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-gate.md
+
+## 2026-08-15 19:51:48 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ce-baseline.md [ok]: Baseline essence (batch CE：复制选中高亮 — clipConfig 复制反馈, iris 独有): **Design** — zero new props (additive fail-closed: gated entirely by existing `clipConfig`, copy path):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-baseline.md
+
+## 2026-08-15 20:00:24 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ce-adapt.md [ok]: Report: **Commits**:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-adapt.md
+
+## 2026-08-15 20:07:09 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ce-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 0 low / 6 info): Verdict written to `docs/vxe-grid/batch-ce-review.md`. No files modified.; Verification results (HEAD `f57bff81`): | Check | Result |; Inspection highlights: - **Spec correctness** — spec was `clipConfig 复制成功后选中单元格短暂高亮（data-iris-copy-flash，600ms 后移除，token 色）；测试（高亮出现/消失）`. Imple
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-review.md

@@ -1,19 +1,19 @@
-Gate stage complete. Final summary:
+Gate stage complete. ✅
 
-## Verdict: **PASS** (0 blocker / 0 major; 2 low + 3 info)
+## Verdict: PASS (0 blocker / 0 major; 2 low / 3 info)
 
-All gate steps executed:
-
-| Step           | Result                                                                                                                                              |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full repo gate | `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful** (135 cached, 2m18s)                                            |
-| Audit          | **0 vulnerabilities** (`No known vulnerabilities found`)                                                                                            |
-| Manifest       | `gen:manifest` regenerated → `check:manifest` up to date, **zero diff** (155 comps × 4 frameworks, IrisTable propCount **168** / eventCount **31**) |
-| Comparison doc | `docs/vxe-grid-comparison.md` updated — iris 独有 `rowDrag` 行拖拽插入指示线 entry (批 CD, persistState row) + 构建状态 批 CD (line 293)            |
+| Step           | Result                                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Full repo gate | `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful** (135 cached, 2m18s)                                |
+| Audit          | **0 vulnerabilities** (`No known vulnerabilities found`)                                                                                |
+| Manifest       | `gen:manifest` → `check:manifest` **up to date, zero diff** (155 comps × 4 frameworks, IrisTable propCount **168** / eventCount **31**) |
+| Comparison doc | `docs/vxe-grid-comparison.md` updated: 批 CD entry in iris 独有 `rowDrag` cell + 构建状态 paragraph; prettier clean                     |
 
 ## Commits
 
-- `fca66df9` — `feat(table): grid 批 CD——行拖拽插入指示线（iris 独有）` (gate-stage docs delta; implementation was already at `9c1a1ed1`)
+- `fca66df9` — `feat(table): grid 批 CD——行拖拽插入指示线（iris 独有）` (gate-stage docs delta; implementation already at `9c1a1ed1`)
+- `130ea8aa` — `docs(table): batch CD gate report`
+- `594e8513` — `docs(table): record batch CD gate stage`
 
 Working tree clean, `.vinxi` excluded.
 
@@ -23,4 +23,4 @@ Working tree clean, `.vinxi` excluded.
 - **react: 2419/2419** (214 files, incl. new `row-drag-indicator.test.tsx` 10/10)
 - vue 1531 · solid 974 + 34 hydration · svelte 916 + 31 hydration (unchanged — core/react-only scope per baseline)
 
-The 2 low findings (misleading comment on line z-order vs pinned columns; no upward net-zero/below-last-row boundary test) are documented in the review and deferred — the shared pure function makes risk low, consistent with prior batch precedent.
+The 2 low findings (line z-order comment; missing upward net-zero/below-last-row boundary test) are documented in the review and deferred per precedent — the shared pure `resolveRowDragDrop` keeps risk low.

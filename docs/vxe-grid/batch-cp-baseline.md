@@ -1,0 +1,8 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-cp-baseline.md` (no source files touched — only the new baseline added to the pre-existing dirt).
+
+**Key findings from the current IrisTable:**
+
+- **`size` mechanism is the anchor**: `data-size={size}` on the root (Table.tsx:9452), and `styles.ts` TABLE_ROW_CSS sets `--iris-cell-pad-y` (4px small / 2px mini) via `[data-iris-table][data-size="..."]`; every cell (header/body/summary/footer) reads `var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)` from `baseCellStyle`. So density is exactly a sibling `data-density` attr overriding the same var.
+- **Design**: `density?: 'comfortable'|'compact'|'cozy'` (default comfortable, no rule = byte-identical) with compact→6px / cozy→4px rules **placed after** the size presets (same specificity, later wins); `densityToggle?: boolean` → ghost-button `data-iris-density-toggle` cycling comfortable→compact→cozy→comfortable via local state (zoom precedent), effective = `toggle ? state : prop`, joins the toolbar render gate, invalid values fail-closed to comfortable; +4 i18n keys en+zh. Zero core/types.ts/handle/persistState changes.
+- **File map**: props.ts (propCount 174→176) · styles.ts · Table.tsx (6 touch points) · core i18n.ts + plugin-locale-zh · new `test/density-toggle.test.tsx` · comparison doc row + manifest regen (adapt phase).
+- **Test plan**: react +12 (2544→2556) — default attr, tier attrs, size coexistence, fail-closed, gate admission, cycle behavior (3 clicks/4 states), seed-once, layouts suppression, zh label, and a structural lock that cells still read the var chain (CSS-only, zero inline).

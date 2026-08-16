@@ -1,38 +1,40 @@
-Done. Batch CP (数据密度切换) is complete.
+All green. Batch CP complete.
 
-## Report — 批 CP：行密度三档 + 工具栏密度切换（iris 独有）
+## Report — 批 CP：数据密度切换（iris 独有）
 
-### Files changed
+### Files changed (2 commits)
 
-| File                                                          | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/react/src/primitives/table/props.ts`                | `export type IrisTableDensity = 'comfortable' \| 'compact' \| 'cozy'`（具名导出类型，scanner enum 可解析）+ `density?: IrisTableDensity` + `densityToggle?: boolean` 两单行 prop（`size` 之后，propCount 174→176）                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `packages/react/src/primitives/table/styles.ts`               | 共享 `TABLE_ROW_CSS`（styles.ts:257，供其它消费方）在 size 预置之后追加 `[data-iris-table][data-density="compact"] { --iris-cell-pad-y: 6px; }` / `cozy → 4px`（同特异性后胜，density 叠在 size 之上；comfortable 声明无规则字节不变）                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `packages/react/src/primitives/table/Table.tsx`               | react 注入的单例 sheet（Table.tsx:449 本地 `TABLE_ROW_CSS`）同款两规则（react 实际生效路径）· import `IrisTableDensity` · 模块级 `nextDensity` helper（循环函数，远离单元格箭头复杂度预算）· destructure `density`/`densityToggle = false` · zoom 先例本地 state `densityState` + `densityProp` 校验（非法 fail-closed comfortable）+ `effectiveDensity = toggle ? state : prop` · 根 `data-density={effectiveDensity}` · 工具栏渲染门加 `densityToggle` · zoom 钮后新增 ghost 按钮 `data-iris-density-toggle`（内容 = 当前档位 i18n 文案、`data-iris-density` 随按钮态、aria-label/title = `table.density: <档位>`，token-only 样式） |
-| `packages/core/src/i18n.ts`                                   | +4 en 默认键：`table.density`/`density.comfortable`/`density.compact`/`density.cozy`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `packages/plugin-locale-zh/src/core/index.ts`                 | +4 zh 键（宽松/紧凑/密集）——plugin 覆盖全量守卫（defaultMessages 无英回退）保持绿                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `packages/react/src/primitives/table/density-toggle.test.tsx` | NEW — 12 tests, 150 lines                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `packages/manifest/{manifest.json,llms.txt}`                  | regenerated：propCount **174→176**（`density` enum `['comfortable','compact','cozy']` 解析成功）、events 31 不变、155×4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `docs/vxe-grid-comparison.md`                                 | 「iris 独有」节新增 批 CP 行 + 构建状态尾部追加                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+**`58555eb2`** — `feat(table): grid 批 CP——数据密度切换（iris 独有）`
 
-### Tests added (12, content-only)
+| File                                                          | Change                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/react/src/primitives/table/props.ts`                | `export type IrisTableDensity = 'comfortable' \| 'compact' \| 'cozy'`（具名导出类型）+ `density?` / `densityToggle?` 单行 props（propCount 174→176，scanner enum 解析成功）                                                                                         |
+| `packages/react/src/primitives/table/styles.ts`               | 共享 sheet 在 size 预置后追加 `compact → --iris-cell-pad-y: 6px` / `cozy → 4px`（同特异性后胜，comfortable 无规则字节不变）                                                                                                                                         |
+| `packages/react/src/primitives/table/Table.tsx`               | react 实际注入的本地 sheet 同款两规则 · `nextDensity` 模块 helper · `densityState` 本地 state（zoom 先例）+ 非法 fail-closed · 根 `data-density` · 工具栏门 + `data-iris-density-toggle` 循环按钮（`effective = toggle ? state : prop`，i18n 档位文案，token-only） |
+| `packages/core/src/i18n.ts`                                   | +4 en 键 `table.density(.comfortable/.compact/.cozy)`                                                                                                                                                                                                               |
+| `packages/plugin-locale-zh/src/core/index.ts`                 | +4 zh 键（宽松/紧凑/密集）——en/zh 全覆盖守卫保持绿                                                                                                                                                                                                                  |
+| `packages/react/src/primitives/table/density-toggle.test.tsx` | NEW — **12 tests, 192 lines**（≤500 ✓）                                                                                                                                                                                                                             |
+| `packages/manifest/{manifest.json,llms.txt}`                  | regenerated：propCount **174→176**、events 31 不变                                                                                                                                                                                                                  |
+| `docs/vxe-grid-comparison.md`                                 | 「iris 独有」节 批 CP 行 + 构建状态尾部                                                                                                                                                                                                                             |
 
-default attr（comfortable 发射 + 无工具栏/按钮）· tier attrs（compact/cozy 随 rerender）· size 共存（small+compact / mini+cozy 双属性）· fail-closed（非法值 → comfortable）· gate admission（densityToggle 单独开即出工具栏）· layouts 隐藏抑制 · cycle behavior（3 击 4 态 comfortable→compact→cozy→comfortable）· seed-once（初始 comfortable + 按钮同步）· toggle 胜 prop（density="cozy"+toggle → 按钮态驱动）· 无 toggle 时 prop 档位生效且无按钮 · zh label（IrisI18nProvider 覆盖 → 宽松/紧凑）· structural lock（注入 sheet 与共享 sheet 双查规则存在 + 共享 sheet 中位于 size 预置之后 + 根无 inline `--iris-cell-pad-y` + 单元格仍读共享 var 链）。
+**`546c70ff`** — `docs(vxe-grid): batch CP adapt report`
 
-### Counts
+### Tests added (12)
 
-- **core: 1559/1559**（仅 i18n 默认键，框架无关不变式 intact）
-- **react: 2556/2556**（2544→+12，连续两轮 clean）· **plugin-locale-zh: 6/6**（en/zh 覆盖守卫）
-- react typecheck **clean** · react lint **0 errors**（1 条既有 IrisTable complexity 警告，与既往批次同源）· `iris-ui-spec.py --mode all --json` → **0 violations**（1416 文件）
-- manifest 176 props / 31 events / 155×4 / 86 tokens（已 `pnpm gen:manifest` 重新生成并入库）
+default attr · tier attrs · size 共存 · fail-closed · gate admission · layouts 隐藏抑制 · cycle behavior（3 击 4 态）· seed-once · toggle 胜 prop · 无 toggle 时 prop 生效 · zh label · structural lock（双 sheet 规则 + 位于 size 预置之后 + 纯 CSS 零 inline + var 链）
 
-### Notes / deviations from baseline
+### Verification (all ✅)
 
-- **react 注入 sheet 位置**：基线把密度规则放在 `styles.ts` 的 `TABLE_ROW_CSS`；核查发现 react 适配器实际注入的是 **Table.tsx 本地副本**（styles.ts 那份无任何 import 消费）。为让密度在 react 真正生效，规则同时落两份 sheet（styles.ts 共享版供其它消费方 + Table.tsx 注入版）；结构锁测试双查两处。
-- i18n en 档位名与 spec 字面一致（Comfortable/Compact/Cozy），zh 取语义三档（宽松/紧凑/密集）。
+- core test **1559/1559**（仅 i18n 默认键，框架无关 intact）· plugin-locale-zh **6/6**
+- react typecheck **clean** · react test **2556/2556**（2544→+12，恰合基线）
+- react lint **0 errors**（1 条既有 IrisTable complexity 警告）· spec **0 violations**
+- `pnpm gen:manifest` 重新生成并已提交
+
+### Deviation from baseline
+
+基线将密度规则只放 `styles.ts` 的 `TABLE_ROW_CSS`；核查发现 react 注入的是 **Table.tsx 本地副本**（styles.ts 那份无消费方），故规则落两份 sheet 保证 react 真正生效，结构锁测试双查。
 
 ### What is left
 
-- runner 的 review/gate 阶段；工作树 `DECISIONS.md`/`batch-co-gate.md` 为既有 BY-gate 残留（未触碰）；`batch-cp-baseline.md` 为 runner 基线文件
-- vue/solid/svelte 对齐延后（react-only scope，基线明文）
-- 架构铁律维持：core 零框架依赖（本次仅 i18n 默认文案键）、适配器薄桥、纯 additive
+- runner 的 review/gate 阶段；工作树 `DECISIONS.md`/`batch-co-gate.md` 为既有残留（未触碰）
+- vue/solid/svelte 对齐延后（react-only scope）

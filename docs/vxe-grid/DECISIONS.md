@@ -2042,3 +2042,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-co-review.md [ok]: Verification (all independently re-run): | Check | Result |; Spec correctness (spot-verified): - Header byte-exact `time,type,rowKey,column,old,new`; `time` = `formatClock(new Date(e.at))` — **byte-identical** to Au; Findings (none blocking): 1. **[Info]** per-field same-source test compares `String()` vs `csvField` semantics — equal for the test data; serializ
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-co-review.md
+
+## 2026-08-16 01:25:07 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-co-gate.md [ok]: Report: **Commit**: `d01f6c97` — `feat(table): grid 批 CO——表格时间线导出（iris 独有）` (implementation landed earlier at `ddb1cb97`; this g; Gate results: | Step | Result |; Final test counts: - **core: 1559/1559** (zero core changes — framework-free invariant intact)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-co-gate.md
+
+## 2026-08-16 01:30:12 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cp-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-baseline.md
+
+## 2026-08-16 01:42:57 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cp-adapt.md [ok]: Report — 批 CP：数据密度切换（iris 独有）; Files changed (2 commits): **`58555eb2`** — `feat(table): grid 批 CP——数据密度切换（iris 独有）`; Tests added (12): default attr · tier attrs · size 共存 · fail-closed · gate admission · layouts 隐藏抑制 · cycle behavior（3 击 4 态）· seed-once ·; Verification (all ✅): - core test **1559/1559**（仅 i18n 默认键，框架无关 intact）· plugin-locale-zh **6/6**; Deviation from baseline: 基线将密度规则只放 `styles.ts` 的 `TABLE_ROW_CSS`；核查发现 react 注入的是 **Table.tsx 本地副本**（styles.ts 那份无消费方），故规则落两份 sheet 保证 react 真正生效，
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-adapt.md
+
+## 2026-08-16 01:48:43 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cp-review.md [ok]: VERDICT: **PASS**: Reviewed `58555eb2` (feat) + `546c70ff` (docs) against `batch-cp-baseline.md`. Verdict written to `docs/vxe-grid/batch-c; Verification (all green): - **core test** 1559/1559 · **plugin-locale-zh** 6/6 (en/zh guard incl. 4 new keys); Spec correctness confirmed: `density`fail-closed default comfortable; compact→6px / cozy→4px rules after size presets (same specificity, later wins; Findings (non-blocking): 1. **Low** —`IrisTableDensity` not re-exported from the table barrel (`index.ts`), so it's absent from the manifest typ
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-review.md
+
+## 2026-08-16 02:05:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md [ok]: Gate complete — verdict **PASS** ✅; Gate results: Full repo gate **180/180 tasks successful** (6m22s, 54 cached) · audit **0 vulnerabilities** · gen:manifest + check:manifest up to date (IrisTable **176 props / 31 events**, zero diff) · comparison doc 批 CP rows already committed in `58555eb2`, verified consistent; Final test counts (independent rerun): **core 1559/1559** · **react 2556/2556** (2544 → +12 new density tests); Review findings (4 non-blocking: barrel re-export Low / dead TABLE_ROW_CSS Info / data-density nit / orphaned comment nit) accepted as documented
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md

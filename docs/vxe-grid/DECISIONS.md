@@ -2235,5 +2235,20 @@
 
 ## 2026-08-16 09:30:00 — stage 'adapt' — PASS (batch CW)
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md [ok]: 导入预览 `importPreview`（iris 独有）——`importPreview?: boolean` 表级 prop（props.ts `zoomConfig` 后，propCount 182→183/eventCount 32 不变）：parseCsv/行构建零改动，门恰在 `toolbar.onImport?.(rows)` 调用点分裂——开时挂起 rows 到本地 state，固定居中 modal（Dialog backdrop/`--iris-z-modal` 先例）显示前 5 行（表头 = 首行键序，模块 helper `previewColumnsFromRows`）+ 超 5 行 `table.total` 注；确认 = `onImport(全部行)` 恰一次 + 关闭、取消/Esc（仅开时 window 监听）/backdrop = 零调用；off 路径字节不变；+3 i18n 键 en+zh；react 2636→2648（12 新测试 import-preview.test.tsx 252 行）；core 仅 i18n 键（1559 不变）、三框架零改动；spec 0 违规 · lint 0 error · prettier clean · gen:manifest（182→183 props）。
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md [ok]: 导入预览 `importPreview`（iris 独有）——`importPreview?: boolean` 表级 prop（props.ts `zoomConfig` 后，propCount 182→183/eventCount 32 不变）：parseCsv/行构建零改动，门恰在 `toolbar.onImport?.(rows)` 调用点分裂——开时挂起 rows 到本地 state，固定居中 modal（Dialog backdrop/`--iris-z-modal` 先例）显示前 5 行（表头 = 首行键序，模块 helper `previewColumnsFromRows`）+ 超 5 行 `table.total` 注；确认 = `onImport(全部行)` 恰一次 + 关闭、取消/Esc（仅开时 window 监听）/backdrop = 零调用；off 路径字节不变；+3 i18n 键 en+zh；react 2636→2648（12 新测试 import-preview.test.tsx 243 行）；core 仅 i18n 键（1559 不变）、三框架零改动；spec 0 违规 · lint 0 error · prettier clean · gen:manifest（182→183 props）。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md
+
+## 2026-08-16 09:27:17 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md [ok]: 批 CW：导入预览（iris 独有）— Complete: | File | Change |; Files changed (9): | File | Change |; Tests added (12): Spec-mandated ① exact-5-of-7 + total note + CSV-ordered headers ② confirm → `onImport` once with all 7, closes ③ cancel ; Verification (all green): - core **1559/1559** (logic untouched — 3 i18n default keys only; framework-free invariant intact); Deviations / what's left: - **`onImport([])` header-only test dropped as infeasible**: `parseCsv` never yields body-less rows (blank lines push `[
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-adapt.md
+
+## 2026-08-16 09:40:16 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-review.md [ok]: Verdict: **PASS** — 0 spec violations, 1 minor + 2 informational; Verification performed: | Check | Result |; Findings: 1. **minor (a11y)** — `Table.tsx:9765-9766`: `aria-modal="true"` without focus trap / scroll lock / focus restore (focus
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-review.md
+
+## 2026-08-16 09:57:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-gate.md [ok]: Gate 完成 — **Verdict**（batch-cw-review.md）: **PASS** — 0 spec violations，1 minor（a11y 建议：aria-modal 无焦点陷阱/滚动锁——非 spec fiat，留待后续）+ 2 informational（adapt 253/DECISIONS 252 行 → 实际 243 已修）；全量门禁 turbo run test typecheck lint build --concurrency=2 **180/180 tasks**（54 cached）· react **2648/2648**（2636+12）· core **1559/1559** · audit **0 vulns** · gen:manifest + check:manifest up to date（183 props/32 events 零 diff）· comparison doc iris 独有表补批 CV（门禁漏行）+ 批 CW 两行 · commit 见 batch-cw-gate.md。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-gate.md

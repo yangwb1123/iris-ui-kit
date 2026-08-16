@@ -2177,3 +2177,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cu-adapt.md [ok]: Report — 批 CU：带格式复制（iris 独有）: **Commit**: `5b5c85e9 feat(table): grid 批 CU——带格式复制（iris 独有）`; Files changed (3 source + 1 test + manifest + docs): props.ts clipConfig +copyWithFormat (propCount 180/eventCount 31 不变, 嵌套字段 BP 先例) / Table.tsx buildRangeCopy 3rd param + 2 value branches + 2 call sites / types.ts formatter doc 1 sentence / copy-with-format.test.tsx 14 tests / manifest regenerated (clipConfig type 串 + 描述更新) / comparison doc 3 spots; Verification: core 1559/1559, react typecheck clean + 2618/2618 (2604+14), lint 0 errors (1 pre-existing warning), spec 0 violations (1416 files), check:manifest up to date
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-adapt.md
+
+## 2026-08-16 08:21:18 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cu-adapt.md [ok]: Report — 批 CU：带格式复制（iris 独有）: The feature itself was already implemented and committed (`5b5c85e9 feat(table): grid 批 CU——带格式复制`), but the follow-up s; Situation: The feature itself was already implemented and committed (`5b5c85e9 feat(table): grid 批 CU——带格式复制`), but the follow-up s; What I changed (1 file, commit `09393338`): `packages/react/src/primitives/table/props.ts` — completed the scanner-hygiene fix correctly:; Feature state (committed `5b5c85e9`, verified on final HEAD): - **Implementation**: `buildRangeCopy` gains 3rd param `copyWithFormat`; 2 value branches (html + tsv/csv) switch format; Gate counts (all on final HEAD): | Gate | Result |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-adapt.md
+
+## 2026-08-16 08:24:00 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cu-review.md [ok]: Summary: Reviewed the batch-CU feature across two commits (`5b5c85e9` feature + `09393338` scanner-hygiene fix). All verification
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-review.md
+
+## 2026-08-16 08:45:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cu-gate.md [ok]: Gate 完成 — PASS: **Verdict**: 审核 PASS（spec 正确性/additive only/manifest hygiene/core framework-free/CSS tokens 全绿，2 条 informational 不阻塞）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-gate.md

@@ -2102,3 +2102,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cr-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-baseline.md
+
+## 2026-08-16 06:28:02 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cr-adapt.md [ok]: Report — 批 CR：列汇总条（iris 独有）: **Committed**: `76f94398 feat(table): grid 批 CR——列汇总条（iris 独有）`; Files changed (4 source + manifest + docs): | File | Change |; Implementation (spec-literal): Bar renders **directly below the toolbar** (nextElementSibling, before `data-iris-table` root), independent of toolbar v; Verification (all ✅): - `@iris-ui-kit/core test`: **1559/1559** (core untouched; framework-free grep 0); What is left: - Review stage (`batch-cr-review.md`) then gate stage, per the batch pipeline.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-adapt.md
+
+## 2026-08-16 06:34:26 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cr-review.md [ok]: Review summary: **Verification (all executed fresh):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-review.md
+
+## 2026-08-16 06:48:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cr-gate.md [ok]: Gate stage complete for grid 批 CR（列汇总条，iris 独有）.: Review verdict: **PASS** — verification all executed fresh (core 1559/1559, react 2582/2582, typecheck clean, lint 0 errors, check:manifest up to date, spec audit 0 violations); 2 LOW + 3 INFO findings, **none blocking**; Gate results: - **Full repo gate** (`turbo run test typecheck lint build --concurrency=2`): **180/180 tasks successful** (2m9s, 125 cached); Final test counts (independent rerun): - **core: 1559/1559** (100 files; framework-free invariant intact — zero core changes); Commit: source + manifest + comparison doc committed at adapt `76f94398`; gate-stage docs delta committed separately; working tree clean; `.vinxi` excluded
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-gate.md

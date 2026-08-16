@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
+import { cloneRowInList, insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -80,6 +80,82 @@ describe('removeRowFromList', () => {
 
   it('handles an empty list', () => {
     expect(removeRowFromList([], 'id', 1)).toEqual([])
+  })
+})
+
+describe('cloneRowInList', () => {
+  it('clones ALL field values with a fresh auto id, inserted right after the source', () => {
+    const next = cloneRowInList(rows, 'id', 2)
+    expect(next.map((r) => r.id)).toEqual([1, 2, 4, 3])
+    expect(next[2]).toEqual({ id: 4, name: 'Bob' }) // 克隆内容 = 源行全部字段
+    expect(next[2]).not.toBe(rows[1]) // 新对象
+    expect(rows).toEqual([
+      { id: 1, name: 'Alice' },
+      { id: 2, name: 'Bob' },
+      { id: 3, name: 'Charlie' },
+    ])
+  })
+
+  it('clone of the last row appends at the end (sourceIndex + 1)', () => {
+    const next = cloneRowInList(rows, 'id', 3)
+    expect(next.map((r) => r.id)).toEqual([1, 2, 3, 4])
+    expect(next[3]).toEqual({ id: 4, name: 'Charlie' })
+  })
+
+  it('clone of the FIRST row inserts at index 1 (right after the source)', () => {
+    const next = cloneRowInList(rows, 'id', 1)
+    expect(next.map((r) => r.id)).toEqual([1, 4, 2, 3])
+    expect(next[1]).toEqual({ id: 4, name: 'Alice' })
+  })
+
+  it('explicit index inserts the clone there (before the source works)', () => {
+    const next = cloneRowInList(rows, 'id', 2, 0)
+    expect(next.map((r) => r.id)).toEqual([4, 1, 2, 3])
+    expect(next[0]).toEqual({ id: 4, name: 'Bob' })
+    const mid = cloneRowInList(rows, 'id', 1, 3)
+    expect(mid.map((r) => r.id)).toEqual([1, 2, 3, 4])
+    expect(mid[3]).toEqual({ id: 4, name: 'Alice' })
+  })
+
+  it('clamps out-of-range indexes to the ends', () => {
+    expect(cloneRowInList(rows, 'id', 2, -5).map((r) => r.id)).toEqual([4, 1, 2, 3])
+    expect(cloneRowInList(rows, 'id', 2, 99).map((r) => r.id)).toEqual([1, 2, 3, 4])
+  })
+
+  it('missing key returns the ORIGINAL reference (silent no-op)', () => {
+    expect(cloneRowInList(rows, 'id', 99)).toBe(rows)
+    const empty: Row[] = []
+    expect(cloneRowInList(empty, 'id', 1)).toBe(empty) // 空列表同样原引用
+  })
+
+  it('keeps every other row object by identity', () => {
+    const next = cloneRowInList(rows, 'id', 2)
+    expect(next[0]).toBe(rows[0])
+    expect(next[1]).toBe(rows[1])
+    expect(next[3]).toBe(rows[2])
+    expect(next).not.toBe(rows)
+  })
+
+  it('clone key is unique even when a string key is cloned (numeric auto id, 1 when none)', () => {
+    const stringKeyed = [
+      { id: 'a', name: 'x' },
+      { id: 'b', name: 'y' },
+    ] as Row[]
+    const next = cloneRowInList(stringKeyed, 'id', 'a')
+    // 字符串 key 不参与 numeric max → auto id 从 1 起
+    expect(next[1]?.id).toBe(1)
+    expect(next[1]).toEqual({ id: 1, name: 'x' })
+    expect(next[0]).toBe(stringKeyed[0]) // 源行不动
+  })
+
+  it('clone id = max numeric key + 1 even when the source is NOT the max', () => {
+    const mixed = [
+      { id: 1, name: 'a' },
+      { id: 7, name: 'b' },
+    ] as Row[]
+    const next = cloneRowInList(mixed, 'id', 1)
+    expect(next[1]?.id).toBe(8)
+    expect(next[1]).toEqual({ id: 8, name: 'a' })
   })
 })
 

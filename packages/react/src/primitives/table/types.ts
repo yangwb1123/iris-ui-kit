@@ -562,6 +562,8 @@ export interface IrisTableMergeFooterItem {
 export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
   /** Insert a row at `index` (default: end). A missing `rowKeyField` value gets an auto id. */
   insertRow: (row: Row, index?: number) => void
+  /** Clone the row with `key` (iris 独有): all field values shallow-copied onto a fresh auto id, inserted right after the source (or at `index`); missing key is a silent no-op. */
+  cloneRow: (key: string | number, index?: number) => void
   /** Remove the row with `key`; its selection is pruned. */
   removeRow: (key: string | number) => void
   /** Batch-remove several rows by key (vxe removeRows parity): missing keys are silent no-ops, selection is pruned, one onDataChange fires. */

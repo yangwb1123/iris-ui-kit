@@ -46,6 +46,32 @@ export function insertRowInList<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Clone the row with `key` and insert the copy (iris 独有 — vxe-grid has no
+ * clone-row API). All field values are shallow-copied onto a NEW row object;
+ * the clone always gets a FRESH auto id (max numeric key + 1, 1 when none) so
+ * key addressing / selection / dirty-point tracking stay sound (string keys
+ * never participate in the numeric max). Default insert position is right
+ * AFTER the source row; an explicit `index` is clamped into `[0, rows.length]`
+ * like insertRowInList. Returns the ORIGINAL array reference when no row
+ * matches; never mutates inputs.
+ */
+export function cloneRowInList<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  rowKeyField: string,
+  key: string | number,
+  index?: number,
+): Row[] {
+  const sourceIndex = rows.findIndex((row) => (row as Record<string, unknown>)[rowKeyField] === key)
+  if (sourceIndex < 0) return rows as Row[]
+  const source = rows[sourceIndex]!
+  const clone = { ...source, [rowKeyField]: nextAutoId(rows, rowKeyField) } as Row
+  const at = index === undefined ? sourceIndex + 1 : Math.max(0, Math.min(index, rows.length))
+  const next = rows.slice()
+  next.splice(at, 0, clone)
+  return next
+}
+
+/**
  * Remove the row with `key` from a list (vxe-grid remove parity). Returns the
  * ORIGINAL array reference when no row matches; never mutates the input.
  */

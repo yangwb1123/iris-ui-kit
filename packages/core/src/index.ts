@@ -370,7 +370,7 @@ export {
   type RemoteTableParams,
 } from './remote-table'
 export { buildFormValues, mergeFormFilters, seedFormValues } from './table-form'
-export { insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
+export { insertRowInList, removeRowFromList, updateRowInList, cloneRowInList } from './table-rows'
 export {
   createTabsNav,
   isClosable,

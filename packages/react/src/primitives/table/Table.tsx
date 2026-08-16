@@ -55,6 +55,7 @@ import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
   applyColumnPreset,
+  cloneRowInList,
   columnLetter,
   copyText,
   createCellEdit,
@@ -4978,6 +4979,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   handleRef.current = {
     insertRow: (row, index) => {
       commitRowList(insertRowInList(externalDataRef.current ?? [], rowKey, row, index), 'insert')
+    },
+    cloneRow: (key, index) => {
+      const rows = externalDataRef.current ?? []
+      const next = cloneRowInList(rows, rowKey, key, index)
+      if (next !== rows) commitRowList(next, 'insert')
     },
     removeRow: (key) => {
       const rows = externalDataRef.current ?? []

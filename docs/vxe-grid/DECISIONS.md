@@ -1962,3 +1962,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cl-adapt.md [ok]: 批 CL（行展开动画）完成并提交。spec `expandAnimation?: boolean`——详情/树形展开入场过渡（max-height+opacity，token+fallback；reduced-motion 关闭；测试属性存在/样式）。实现：props.ts `lazyLoad` 后加 prop（manifest propCount 171→172）· Table.tsx 4 触点（模块 helper `expandAnimAttr` + destructure + `expandAnimOn = expandAnimation === true && !virtualScroll` 派生 + 两注入点：detail wrap `data-iris-expand-anim`、tree row depth>0 门 root 不动）· 活单例 TABLE_ROW_CSS +3 规则（`@keyframes iris-table-expand-enter` max-height `0 → var(--iris-table-expand-max,512px)` + opacity `0→1`、双端 overflow hidden、`--iris-duration-md,200ms` ease-out、`@media (prefers-reduced-motion: reduce){animation:none}`）· 新测试 expand-animation.test.tsx 8 例（fail-closed 双查/detail 展开收起/keyframes/duration token/reduced-motion 块/树 depth 门/初始展开重放/虚拟惰性双路径）。两显式 fiat：虚拟模式惰性（滚动挂载重放动画+热路径）、收起瞬时卸载（与虚拟器均高槽模型冲突，收起沿用 caret 旋转）。验证：core 1559/1559（零改动）· react 2511/2511（2503→+8）· typecheck ✓ · lint 0 errors（1 既有 complexity warning）· iris-ui-spec 0 violations（1416 files）· gen:manifest 再生成 + check:manifest up to date（172 props/31 events/155×4/86 tokens）。零改动：core/types/i18n/styles.ts（dormant copy，batch-BE 教训）/solid·vue·svelte/虚拟体/TableBody。comparison-doc 行（row 84）+ 构建状态尾注已同步（沿用近批先例）。遗留：review/gate 阶段 + arch-check ratchet（HEAD 同态陈旧，pre-existing）。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cl-adapt.md
+
+## 2026-08-15 23:39:47 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cl-adapt.md [ok]: Report — batch CL：行展开动画（iris 独有）: **Spec**: `expandAnimation?: boolean` — detail/tree expand transition (max-height/opacity, tokens, reduced-motion off); ; Files changed (commit `9325e4ef`, 9 files): | File | Change |; Verification (all green): - **core test**: 1559/1559 (zero core changes — framework-free invariant intact); Explicit fiats (per baseline): - Virtual mode inert: lazy slots mount on scroll → would replay animation + hit the hot path; What's left: - Review/gate stages (`batch-cl-review.md` / `batch-cl-gate.md` + full repo gate). Comparison row 84 + build-status entr
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cl-adapt.md
+
+## 2026-08-15 23:46:48 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cl-review.md [ok]: Summary: **Implementation verified spec-correct, additive-only, framework-free:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cl-review.md

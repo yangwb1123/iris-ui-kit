@@ -127,12 +127,19 @@ const DRIFT_EXEMPT = new Set([
   '--iris-font-size-base', '--iris-z-modal', '--iris-z-popover',
   '--iris-z-toast', '--iris-z-tooltip', '--iris-space-2xl', '--iris-space-3xl',
   '--iris-space-4xl', '--iris-space-5xl',
+  // grid 批 CL: Table expand-animation (Table.tsx TABLE_ROW_CSS).
+  // --iris-duration-md is 4-framework shared via motion/styles.ts (unscanned),
+  // --iris-table-expand-max is a React-only runtime fallback var like cell-bg.
+  '--iris-duration-md', '--iris-table-expand-max',
 ])
 
 const RUNTIME_INJECTED_VARS = new Set([
   '--iris-anim-dialog', '--iris-anim-popover', '--iris-anim-toast',
   '--iris-anim-tooltip', '--iris-cell-bg', '--iris-row-bg',
   '--iris-letter-spacing-wide',
+  // grid 批 CL: Table expand-animation keyframes (Table.tsx TABLE_ROW_CSS)
+  '--iris-duration-md',
+  '--iris-table-expand-max',
 ])
 
 const LEGACY_TOKEN_PREFIXES = ['--iris-color-']

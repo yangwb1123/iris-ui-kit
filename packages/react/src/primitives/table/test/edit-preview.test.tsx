@@ -229,4 +229,36 @@ describe('IrisTable editPreview — 编辑实时预览 (live formatter preview)'
     // Preview renders BEFORE the error in flow (error stays the last line).
     expect(el.compareDocumentPosition(err!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
+
+  it('layout contract: the editing cell wraps so preview/error stack UNDER the editor (below-line fix)', () => {
+    const validatedCols: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        editable: true,
+        formatter: (v) => `Name: ${String(v)}`,
+        validate: (v) => (String(v).length < 5 ? 'Too short' : null),
+      },
+    ]
+    render(<IrisTable columns={validatedCols} data={rows} rowKey="id" editPreview />)
+    // Non-editing cells stay single-line (no wrap).
+    expect(editCell(2, 'name').style.flexWrap).toBe('')
+    openEditor(1, 'name')
+    // The editing cell wraps its children — the browser lays each flex line
+    // out separately, so a full-basis line always lands UNDER the previous
+    // one (the spec's 下方/下面 contract, empirically verified in Chrome).
+    const cell = editCell(1, 'name')
+    expect(cell.style.flexWrap).toBe('wrap')
+    const el = preview()!
+    expect(el.style.flexBasis).toBe('100%') // full-width line: never beside the editor
+    expect(el.style.minWidth).toBe('0') // ellipsis needs a shrinkable flex line
+    // Validation error takes its own full-width line below the preview.
+    fireEvent.change(editor()!, { target: { value: 'Al' } })
+    const err = document.querySelector('[data-iris-table-editor-error]') as HTMLElement
+    expect(err).not.toBeNull()
+    expect(err.style.flexBasis).toBe('100%')
+    // In-flow order editor → preview → error (each wraps under the previous).
+    expect(editor()!.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(el.compareDocumentPosition(err) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })

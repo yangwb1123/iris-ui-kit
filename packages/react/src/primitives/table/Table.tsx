@@ -1011,29 +1011,31 @@ interface EditorSurfaceProps<Row extends Record<string, unknown>> {
 }
 
 /**
- * Batch CQ (iris 独有): the draft the live preview formats — the same
- * coercion the commit path applies (select editors resolve the option's TYPED
- * value, number editors coerce to Number with the raw-value fallback, text /
- * textarea pass through), so `formatter` receives exactly what the committed
- * cell would feed it. A number stays a number — a formatter that calls
- * `.toFixed` on the committed value never crashes on a string draft (and the
- * preview is byte-faithful to the committed cell's display chain).
+ * Batch CQ (iris 独有): THE single source of truth for edit-draft coercion.
+ * The commit/validate path (`coerceValueFor`) and the live-preview path
+ * (batch CQ) both funnel through here, so the preview can never silently
+ * drift from what a future editor type actually commits. Select editors
+ * resolve the option's TYPED value (a number option commits a number, a
+ * string option a string — vxe edit-render parity), number editors coerce to
+ * Number with the raw-value fallback, text/textarea pass through as strings.
+ * A number stays a number — a formatter that calls `.toFixed` on the
+ * committed value never crashes on a string draft (and the preview is
+ * byte-faithful to the committed cell's display chain).
  */
-function editPreviewDraft<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
+function coerceEditDraft<Row extends Record<string, unknown>>(
   row: Row,
-  draft: string,
-  selectOptions: ReadonlyArray<{ value: string | number; label: string }> | undefined,
+  col: IrisTableColumn<Row>,
+  draft: unknown,
 ): unknown {
-  if (col.editor === 'select' && selectOptions) {
-    const opt = selectOptions.find((o) => String(o.value) === draft)
+  if (col.editor === 'select') {
+    if (!col.editOptions) return String(draft)
+    if (typeof draft !== 'string') return draft
+    const opt = col.editOptions.find((o) => String(o.value) === draft)
     return opt ? opt.value : draft
   }
-  if (col.editor === 'number') {
-    const n = Number(draft)
-    return draft === '' || Number.isNaN(n) ? getCellValue(row, col) : n
-  }
-  return draft
+  const s = String(draft)
+  if (col.editor !== 'number') return s
+  return s === '' || Number.isNaN(Number(s)) ? getCellValue(row, col) : Number(s)
 }
 
 /**
@@ -1247,15 +1249,18 @@ function EditorSurface<Row extends Record<string, unknown>>({
         </datalist>
       ) : null}
       {/* Batch CQ (iris 独有 — vxe has no equivalent): live preview of the
-      formatter-applied draft — the draft coerced like the commit path, then
-      the same mask → formatter display chain as the committed cell (batch AY
-      contract), so the preview is byte-faithful to what the cell will show.
-      Recomputed per keystroke through the session-store subscription above
-      (zero new state); only columns with a formatter render it (fail-closed).
-      Rendered in-flow BEFORE the validation error (same slot family). */}
+      formatter-applied draft — the draft coerced like the commit path (the
+      SHARED coerceEditDraft, so the preview can never drift from the commit
+      coercion), then the same mask → formatter display chain as the
+      committed cell (batch AY contract), so the preview is byte-faithful to
+      what the cell will show. Recomputed per keystroke through the
+      session-store subscription above (zero new state); only columns with a
+      formatter render it (fail-closed). Rendered in-flow BEFORE the
+      validation error (same slot family) — the editing cell wraps while
+      editing and this line's flexBasis 100% stacks it UNDER the editor. */}
       {editPreview && col.formatter ? (
         <div data-iris-edit-preview="" style={EDIT_PREVIEW_STYLE}>
-          {col.formatter(applyCellMask(editPreviewDraft(col, row, draft, selectOptions), col), row)}
+          {col.formatter(applyCellMask(coerceEditDraft(row, col, draft), col), row)}
         </div>
       ) : null}
       {/* validConfig.showMessage=false: validation still blocks the commit and
@@ -1270,6 +1275,10 @@ function EditorSurface<Row extends Record<string, unknown>>({
             marginTop: 'var(--iris-space-xxs, 4px)',
             fontSize: 'var(--iris-font-size-xs, 12px)',
             color: 'var(--iris-danger)',
+            // Batch CQ review fix: full flex line like the preview — stacks
+            // UNDER the editor (the editing cell wraps while editing).
+            flexBasis: '100%',
+            minWidth: 0,
           }}
         >
           {error}
@@ -3625,22 +3634,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     idx: number
   } | null>(null)
   const cellId = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
-  const coerceValueFor = (row: Row, col: IrisTableColumn<Row>, draft: unknown): unknown => {
-    // Select editors commit the option's TYPED value (vxe edit-render parity):
-    // a number option commits a number, a string option a string. Drafts that
-    // already carry the typed form (select onChange stores it) pass through;
-    // string drafts (e.g. the initial seed) resolve against editOptions by
-    // String(value) so validation and commit see the typed value.
-    if (col.editor === 'select') {
-      if (!col.editOptions) return String(draft)
-      if (typeof draft !== 'string') return draft
-      const opt = col.editOptions.find((o) => String(o.value) === draft)
-      return opt ? opt.value : draft
-    }
-    const s = String(draft)
-    if (col.editor !== 'number') return s
-    return s === '' || Number.isNaN(Number(s)) ? getCellValue(row, col) : Number(s)
-  }
+  // Single shared coercion — delegates to the module-level coerceEditDraft so
+  // the commit/validate path and the batch-CQ live preview can never drift
+  // apart on a future editor type.
+  const coerceValueFor = (row: Row, col: IrisTableColumn<Row>, draft: unknown): unknown =>
+    coerceEditDraft(row, col, draft)
   const coerceValue = (col: IrisTableColumn<Row>, draft: unknown): unknown =>
     coerceValueFor(editCtxRef.current!.row, col, draft)
   /** Current row object for a row key (row edit mode resolves at commit time). */
@@ -7877,7 +7875,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...copyFlashCellStyle(copyFlashRange, idx, ci),
                 borderBottom: borderStyle,
                 cursor: lockedRender.cursor,
-                ...(editing ? { padding: '4px 8px' } : null),
+                // Batch CQ review fix: the editing cell wraps — the editor,
+                // live preview and validation error each take a full flex line
+                // (flexBasis 100% below), so preview/error stack UNDER the
+                // editor instead of squeezing beside it.
+                ...(editing ? { padding: '4px 8px', flexWrap: 'wrap' } : null),
                 ...pinnedStyle(col.key),
                 ...(cellStyle?.(row, col, idx) ?? null),
                 ...conditionalCellStyle(conditionalStyles, row, col.key, raw),

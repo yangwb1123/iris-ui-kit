@@ -2077,3 +2077,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cq-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-baseline.md
+
+## 2026-08-16 05:48:01 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cq-adapt.md [ok]: Report — 批 CQ：编辑实时预览（iris 独有）: **2 commits:**; Files changed (9 + adapt doc): | File | Change |; Tests added (13): preview renders · live grow/shrink updates · no-formatter gate · fail-closed default · mask-before-formatter parity · ro; Verification (all ✅): - core test **1559/1559** (core untouched, framework-free intact); Deviations from baseline (2, documented in adapt report): 1. **13 tests not 12** — the baseline's arithmetic disagreed with its own 13-case enumeration; implemented per enumerati
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-adapt.md
+
+## 2026-08-16 05:58:27 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cq-review.md [ok]: Verdict: **FAIL** — written to `docs/vxe-grid/batch-cq-review.md`: - **core test** 1559/1559 ✓ · core framework-free grep clean ✓; Verification (all green except the blocking finding): - **core test** 1559/1559 ✓ · core framework-free grep clean ✓; Confirmed correct: Double gate `editPreview && col.formatter`, fail-closed default, mask→formatter chain byte-identical to the committed-ce; Blocking finding (empirically verified, not jsdom-detectable): 1. **MEDIUM** — Table.tsx:1256-1262 + styles.ts:109-125 (`EDIT_PREVIEW_STYLE`), styles.ts:16: the editing cell is `displ
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-review.md
+
+## 2026-08-16 06:08:49 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cq-gate.md [ok]: Verdict: FAIL → fixes applied → **PASS**: review 2 blocking findings fixed (1. MEDIUM: editing cell flex-wrap + preview/error flexBasis 100% 整行堆叠在编辑器下方——并排问题 Chrome 实测修正 + jsdom CSS 契约断言；2. LOW: 草稿强转收敛为 commit/validate 与预览单一共享 coerceEditDraft)。Full gate 180/180 tasks successful (2m58s, 125 cached) · audit:security 0 vulns · audit:tokens exit 1 pre-existing only · gen:manifest + check:manifest up to date (IrisTable 177 props / 31 events, zero diff) · comparison doc 批 CQ entries updated · core 1559/1559 · react 2570/2570 (2569→+1 layout-contract test)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-gate.md

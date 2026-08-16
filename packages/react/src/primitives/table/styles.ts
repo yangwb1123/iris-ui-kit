@@ -122,6 +122,10 @@ export const EDIT_PREVIEW_STYLE: React.CSSProperties = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   minWidth: 0,
+  // Batch CQ review fix: a full flex line — the editing cell wraps while
+  // editing, so a 100% basis puts this line UNDER the editor (same slot
+  // family as the validation error), never beside it.
+  flexBasis: '100%',
   pointerEvents: 'none',
 }
 

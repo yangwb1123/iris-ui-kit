@@ -36622,6 +36622,12 @@
           "description": "Batch CC (iris 独有): textarea editors auto-grow their height with content — 1 row to start, up to a 6-row cap, then scroll inside the editor (measured via scrollHeight on input, no re-render loop). Off by default (fail-closed; batch I's rows=3 stays)."
         },
         {
+          "name": "charCount",
+          "type": "boolean",
+          "optional": true,
+          "description": "a live character count in the editing cell's bottom-right corner (cell AND row edit modes, recomputed per keystroke from the session draft) plus a cell-count/sum badge at the selected range's bottom-right cell when `cellRange` has a live selection (a pure reduction over the rangeStats material — count = Σ column non-null counts, sum = Σ numeric column sums, `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as the summary row). Additive; default off (fail-closed)."
+        },
+        {
           "name": "onSelectAllChange",
           "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
           "optional": true,
@@ -37632,6 +37638,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Batch CC (iris 独有): textarea editors auto-grow their height with content — 1 row to start, up to a 6-row cap, then scroll inside the editor (measured via scrollHeight on input, no re-render loop). Off by default (fail-closed; batch I's rows=3 stays)."
+            },
+            {
+              "name": "charCount",
+              "type": "boolean",
+              "optional": true,
+              "description": "a live character count in the editing cell's bottom-right corner (cell AND row edit modes, recomputed per keystroke from the session draft) plus a cell-count/sum badge at the selected range's bottom-right cell when `cellRange` has a live selection (a pure reduction over the rangeStats material — count = Σ column non-null counts, sum = Σ numeric column sums, `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as the summary row). Additive; default off (fail-closed)."
             },
             {
               "name": "onSelectAllChange",
@@ -39207,7 +39219,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 168,
+        "propCount": 169,
         "eventCount": 31
       }
     },

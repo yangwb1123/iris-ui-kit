@@ -393,6 +393,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onAutosave?: (rows: Row[]) => void
   /** Batch CC (iris 独有): textarea editors auto-grow their height with content — 1 row to start, up to a 6-row cap, then scroll inside the editor (measured via scrollHeight on input, no re-render loop). Off by default (fail-closed; batch I's rows=3 stays). */
   editAutoHeight?: boolean
+  /** Batch CG (iris 独有 — vxe has no equivalent; Excel-style status-bar parity):
+   * a live character count in the editing cell's bottom-right corner (cell AND
+   * row edit modes, recomputed per keystroke from the session draft) plus a
+   * cell-count/sum badge at the selected range's bottom-right cell when
+   * `cellRange` has a live selection (a pure reduction over the rangeStats
+   * material — count = Σ column non-null counts, sum = Σ numeric column sums,
+   * `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as
+   * the summary row). Additive; default off (fail-closed).
+   */
+  charCount?: boolean
   /** Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys. */
   onSelectAllChange?: (state: boolean | 'indeterminate', selection: Array<string | number>) => void
   /** Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden). */

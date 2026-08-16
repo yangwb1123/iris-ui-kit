@@ -94,6 +94,8 @@ import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { TablePerfPanel } from './PerfPanel'
 import {
   CELL_NOTE_STYLE,
+  CHAR_COUNT_HANDLE_SHIFT_STYLE,
+  CHAR_COUNT_STYLE,
   COPY_FLASH_BG,
   PRESENCE_LABEL_STYLE,
   RANGE_FILL_HANDLE_STYLE,
@@ -173,6 +175,101 @@ function renderRangeFillHandle(
       style={RANGE_FILL_HANDLE_STYLE}
     />
   )
+}
+
+/* Batch CG charCount (iris 独有 — vxe has no equivalent): the selection badge
+   lives at the range's bottom-right cell — the same corner as the fill handle
+   — and is a pure reduction over the EXISTING rangeStatsData memo (the same
+   material the stats panel consumes): count = Σ column non-null counts, sum =
+   Σ numeric column sums (null when NO column in the range has numeric data).
+   Returns null when there is nothing to show (no range / no entries). */
+function rangeCharCount(
+  entries: RangeStatsEntry[] | null,
+): { count: number; sum: number | null } | null {
+  if (!entries || entries.length === 0) return null
+  let count = 0
+  let sum = 0
+  let hasNumeric = false
+  for (const entry of entries) {
+    count += entry.stats.count
+    if (entry.stats.sum !== null) {
+      hasNumeric = true
+      sum += entry.stats.sum
+    }
+  }
+  return { count, sum: hasNumeric ? sum : null }
+}
+
+/** Batch CG: is this cell the selection badge host (the range's bottom-right
+ *  cell)? The same corner the fill handle occupies, hence the collision
+ *  handling in the badge render. Feature-gated on `charCount` (fail-closed). */
+function isRangeCharCountHost(
+  charCount: boolean | undefined,
+  range: { end: { row: number; col: number } } | null,
+  idx: number,
+  ci: number,
+): boolean {
+  return charCount === true && range !== null && range.end.row === idx && range.end.col === ci
+}
+
+/** Batch CG: the selection badge at the range's bottom-right cell — count (+ sum
+ *  when the range has numeric data), the sum rounded via the SAME
+ *  aggregateAccuracy gate as the summary row / selection summary. Shifts up
+ *  (bottom 10px) when the cell is also the fill-handle host so the 6px handle
+ *  stays usable. Rendered inside the cell div (the host cell gains position:
+ *  relative from charCountCellStyle, so the chip anchors to the cell box). */
+function renderRangeCharCountBadge(
+  charCount: boolean | undefined,
+  activeRange: { end: { row: number; col: number } } | null,
+  rangeStatsData: RangeStatsEntry[] | null,
+  aggregateAccuracy: number | undefined,
+  idx: number,
+  ci: number,
+  fillHandleCell: boolean,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): React.ReactNode {
+  if (!isRangeCharCountHost(charCount, activeRange, idx, ci)) return null
+  const stats = rangeCharCount(rangeStatsData)
+  if (stats === null) return null
+  const accuracy =
+    aggregateAccuracy !== undefined && aggregateAccuracy >= 0 && aggregateAccuracy <= 100
+      ? aggregateAccuracy
+      : undefined
+  const sumText =
+    stats.sum !== null && accuracy !== undefined
+      ? String(Number(stats.sum.toFixed(accuracy)))
+      : stats.sum !== null
+        ? String(stats.sum)
+        : null
+  return (
+    <span
+      data-iris-char-count=""
+      data-iris-char-count-range=""
+      style={fillHandleCell ? CHAR_COUNT_HANDLE_SHIFT_STYLE : CHAR_COUNT_STYLE}
+    >
+      {t('table.charCount.range', { count: String(stats.count) })}
+      {sumText !== null ? ` · ${t('table.charCount.rangeSum', { sum: sumText })}` : null}
+    </span>
+  )
+}
+
+/** Batch CG: the charCount corner badge anchors to a RELATIVE cell — the
+ *  editing cell (badge inside the editor surface) and the selection badge host
+ *  (the range's bottom-right cell). Empty object when nothing renders so the
+ *  spread adds nothing to the hot row arrow; `editing && charCount` gates the
+ *  editing case (fail-closed: an open editor without the prop shows nothing). */
+function charCountCellStyle(
+  editing: boolean,
+  charCount: boolean | undefined,
+  activeRange: { end: { row: number; col: number } } | null,
+  idx: number,
+  ci: number,
+): React.CSSProperties {
+  if (!charCount) return {}
+  if (editing || isRangeCharCountHost(charCount, activeRange, idx, ci)) {
+    return { position: 'relative' }
+  }
+  return {}
 }
 
 /**
@@ -780,6 +877,12 @@ interface EditorSurfaceProps<Row extends Record<string, unknown>> {
    *  (1 row start, 6-row cap), sized via scrollHeight on input. Off by
    *  default (fail-closed; batch I's rows=3 stays). */
   editAutoHeight?: boolean
+  /** Batch CG (iris 独有): show a live character count in the cell's
+   *  bottom-right corner — `String(draft).length`, recomputed per keystroke
+   *  via the existing session-store subscription (zero new state). */
+  charCount?: boolean
+  /** i18n translator (the parent's useI18n instance — same `t` the table uses). */
+  t: (key: string, params?: Record<string, string | number>) => string
 }
 
 /**
@@ -803,6 +906,8 @@ function EditorSurface<Row extends Record<string, unknown>>({
   onSessionIdle,
   suggestOptions,
   editAutoHeight,
+  charCount,
+  t,
 }: EditorSurfaceProps<Row>): React.ReactElement {
   const state = useStore(session.store)
   const ref = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null)
@@ -1004,6 +1109,16 @@ function EditorSurface<Row extends Record<string, unknown>>({
         >
           {error}
         </div>
+      ) : null}
+      {/* Batch CG (iris 独有): live character count at the cell's bottom-right
+      corner — String(draft).length recomputed per keystroke through the
+      session-store subscription above (zero new state). The host cell gains
+      position: relative from charCountCellStyle so the chip anchors to the
+      cell box; pointer-transparent so typing is never intercepted. */}
+      {charCount ? (
+        <span data-iris-char-count="" data-iris-char-count-edit="" style={CHAR_COUNT_STYLE}>
+          {t('table.charCount', { count: String(draft.length) })}
+        </span>
       ) : null}
     </>
   )
@@ -2132,6 +2247,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   editAutosave,
   onAutosave,
   editAutoHeight,
+  charCount,
   onSelectAllChange,
   onScroll,
   tableRef,
@@ -7298,6 +7414,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   striped && idx % 2 === 1,
                 ),
                 ...rangeFillCellStyle(fillHandleCell, fillTargetCell),
+                // Batch CG: the charCount corner badge anchors to a relative
+                // cell (editing cell + selection badge host) — spread AFTER
+                // rangeFillCellStyle so the handle host keeps its zIndex 2
+                // (relative is idempotent there).
+                ...charCountCellStyle(editing, charCount, activeRange, idx, ci),
                 // Batch CE: the copy-flash background sits AFTER the
                 // fnr/range-fill backgrounds (flash wins while active) but
                 // BEFORE lockedRender.style (BE discipline: lock stripes /
@@ -7415,6 +7536,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         focusToken={rowFocus.colKey === col.key ? rowFocus.seq : 0}
                         suggestOptions={suggestOptions}
                         editAutoHeight={editAutoHeight}
+                        charCount={charCount}
+                        t={t}
                       />
                     )
                   })()
@@ -7432,6 +7555,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     focusToken={0}
                     suggestOptions={suggestOptions}
                     editAutoHeight={editAutoHeight}
+                    charCount={charCount}
+                    t={t}
                   />
                 )
               ) : sparklineCell(col, raw) ? (
@@ -7490,6 +7615,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 (displayValue as React.ReactNode)
               )}
               {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
+              {/* Batch CG (iris 独有): the selection badge at the range's
+              bottom-right cell — count (+ sum when numeric data exists),
+              reusing the rangeStatsData memo the stats panel consumes. */}
+              {renderRangeCharCountBadge(
+                charCount,
+                activeRange,
+                rangeStatsData,
+                aggregateAccuracy,
+                idx,
+                ci,
+                fillHandleCell,
+                t,
+              )}
               {renderCellNoteBadge(noteInfo.note)}
               {renderPresenceLabels(presenceEntries)}
             </div>

@@ -73,6 +73,39 @@ export const RANGE_STATS_VALUE_STYLE: React.CSSProperties = {
   textAlign: 'right',
 }
 
+/* Batch CG charCount (iris 独有 — vxe has no equivalent): the tiny corner
+   chip showing the live character count (editing cell, rendered inside the
+   editor surface) or the range cell-count/sum (selected range's bottom-right
+   cell). Both anchor to the cell box (the host cell gains position: relative
+   from the render), absolutely positioned at the logical inline-end corner,
+   token-only, pointer-transparent so it never intercepts editor typing / cell
+   clicks. zIndex 4 keeps it above the fill handle (zIndex 3) when they share
+   the corner — though the handle host shifts the badge up (10px) instead, so
+   the 6px handle stays usable (see CHAR_COUNT_HANDLE_SHIFT_STYLE). */
+export const CHAR_COUNT_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  bottom: 2,
+  insetInlineEnd: 2,
+  fontSize: 'var(--iris-font-size-xs, 12px)',
+  lineHeight: 1.4,
+  color: 'var(--iris-muted)',
+  background: 'var(--iris-surface, var(--iris-background))',
+  padding: '0 var(--iris-space-xxs, 4px)',
+  borderRadius: 'var(--iris-radius-sm, 4px)',
+  border: '1px solid var(--iris-border)',
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+  zIndex: 4,
+}
+
+/* Batch CG: the same chip, but shifted 8px up (bottom 10) so it clears the
+   6px fill handle sitting at bottom 2 when the badge host is ALSO the handle
+   host (the range's bottom-right cell). */
+export const CHAR_COUNT_HANDLE_SHIFT_STYLE: React.CSSProperties = {
+  ...CHAR_COUNT_STYLE,
+  bottom: 10,
+}
+
 /* Batch AQ drag fill (iris 独有 — vxe has no fill parity): the 6px primary
    square rendered inside the range's bottom-right cell (data-iris-range-fill).
    Positioned right/bottom with a small offset per the batch AQ fiat; the host

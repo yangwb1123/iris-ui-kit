@@ -151,6 +151,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Footer/summary cell alignment (vxe footer-align parity): `footerAlign`
    * wins over the column's `align`. Applies to summary, footer-method, footer-data. */
   footerAlign?: IrisTableAlign
+  /** Batch CM (iris 独有 — vxe has no summary sticky parity): `'sticky'` pins
+   * the GLOBAL summary row (op row or footerMethod rows — the two renders
+   * that occupy the same footer slot) to the viewport's bottom edge inside
+   * the fixed-height scroll container (`position: sticky; bottom: 0`;
+   * gated by `[data-iris-table-fixed-height]`, same z-index 1 as pinned
+   * columns). Two explicit fiats: per-group summary rows never stick (groups
+   * would fight over the bottom edge) and footerData rows never stick
+   * (contractually rendered below the summary). Pure CSS additive; default
+   * `'default'` — fail-closed, no sticky attr. */
+  summaryRowStyle?: 'default' | 'sticky'
   /**
    * Decimal places for summary/footer aggregate values (vxe
    * aggregateAccuracyConfig parity, batch P): a finite numeric op result is

@@ -133,6 +133,11 @@ function expandAnimAttr(on: boolean): string | undefined {
   return on ? 'true' : undefined
 }
 
+/** Batch CM summary-sticky attr value (undefined hides it — fail-closed). */
+function summaryStickyAttr(on: boolean): string | undefined {
+  return on ? 'true' : undefined
+}
+
 /** Extra cell style for the fill-handle host (relative + above pinned) and
  * the drag-target highlight (token-driven background). */
 function rangeFillCellStyle(handleCell: boolean, targetCell: boolean): React.CSSProperties {
@@ -416,6 +421,17 @@ const TABLE_ROW_CSS = `
   position: sticky;
   top: 0;
   z-index: 2;
+}
+/* Batch CM summary sticky (iris 独有 — vxe has no summary sticky parity):
+   with summaryRowStyle = 'sticky' the GLOBAL summary row sticks to the
+   scroll container's bottom edge. Gated by fixed-height (the root is the
+   scroll container); z-index 1 mirrors pinned columns (below the sticky
+   header's z2). The row already carries an opaque --iris-surface background
+   + 2px top border, so no inline style changes are needed. */
+[data-iris-table-fixed-height] [data-iris-summary-sticky="true"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
 }
 /* Lazy tree loading caret (batch J): keyframes can't be inline, so they live
    in the singleton stylesheet; opacity + spin use token-driven values. */
@@ -2262,6 +2278,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerSpanMethod,
   headerAlign,
   footerAlign,
+  summaryRowStyle = 'default',
   aggregateAccuracy,
   highlightHoverRow = true,
   showHeaderOverflow = true,
@@ -8004,6 +8021,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
       role="row"
       data-iris-table-row="summary"
       data-iris-group-summary={groupKey !== undefined ? groupKey : undefined}
+      data-iris-summary-sticky={summaryStickyAttr(
+        summaryRowStyle === 'sticky' && groupKey === undefined,
+      )}
       style={{
         display: 'grid',
         gridTemplateColumns,
@@ -8186,6 +8206,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               role="row"
               data-iris-table-row="summary"
               data-iris-table-footer-method-row={String(rowIndex)}
+              data-iris-summary-sticky={summaryStickyAttr(summaryRowStyle === 'sticky')}
               style={{
                 display: 'grid',
                 gridTemplateColumns,

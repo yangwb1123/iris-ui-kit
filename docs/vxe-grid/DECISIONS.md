@@ -1972,3 +1972,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cl-review.md [ok]: Summary: **Implementation verified spec-correct, additive-only, framework-free:**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cl-review.md
+
+## 2026-08-15 23:56:04 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cl-gate.md [ok]: Verdict → action: Review **PASS** with one P2: `audit:tokens` regression (5→7 warnings). Fixed in `scripts/audit-tokens.mjs` by adding `--; Gate results: | Step | Result |; Final test counts: - **core: 1559/1559** (zero core changes); Commit: `0826c69d`—`feat(table): grid 批 CL——行展开动画（iris 独有）` (6 files: audit-tokens.mjs P2 fix + gate/review reports + harness
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cl-gate.md
+
+## 2026-08-16 00:00:19 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cm-baseline.md [ok]: Baseline essence — 列合计行增强（iris 独有）: **Spec**: `summaryRowStyle?: 'default' | 'sticky'` —— 全局列合计行 `position: sticky; bottom: 0` 吸附视口底缘；测试（sticky 属性存在/样式）。vxe
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cm-baseline.md
+
+## 2026-08-16 08:15:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cm-adapt.md [ok]: 批 CM（列合计行粘性）完成。spec `summaryRowStyle?: 'default' | 'sticky'`——全局列合计行 `position: sticky; bottom: 0` 吸附 fixed-height 容器底缘（测试 sticky 属性/样式）。实现：props.ts `footerAlign` 后加 prop（manifest propCount 172→173，enum `["default","sticky"]`）· Table.tsx 4 触点（模块 helper `summaryStickyAttr` + destructure 默认 `'default'` + 两注入点：`renderSummaryRow` 行 div `summaryRowStyle === 'sticky' && groupKey === undefined`（groupKey 区分全局/组汇总）+ `renderFooterStack` footerMethod 替换行（无 groupKey 作用域，全局槽位恒粘））· 活单例 TABLE_ROW_CSS +1 规则 `[data-iris-table-fixed-height] [data-iris-summary-sticky="true"] { position: sticky; bottom: 0; z-index: 1 }`（表头 z2/钉列 z1 层级同构，行已有 --iris-surface 背景零 inline 改动）· 新测试 summary-sticky.test.tsx 8 例（fail-closed 双查/显式 default/sticky 属性+聚合不变/样式选择器+sticky+bottom:0+z-index/footerMethod 槽位+footerData 排除/组汇总排除/虚拟滚动保留/非法值 fail-closed）。两显式 fiat：组汇总行不粘（多组争底缘）、footerData 不粘（契约渲染于汇总之下）。验证：core 1559/1559（零改动）· react 2519/2519（2511→+8）· typecheck ✓ · lint 0 errors（1 既有 complexity warning）· iris-ui-spec 0 violations（1416 files）· gen:manifest 再生成（173 props/31 events/155×4/86 tokens）。零改动：core/types/i18n/styles.ts（dormant copy）/solid·vue·svelte/虚拟体。comparison-doc 行（row 85）+ 构建状态尾注已同步（沿用近批先例）。遗留：review/gate 阶段 + arch-check ratchet（HEAD 同态陈旧，pre-existing）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cm-adapt.md

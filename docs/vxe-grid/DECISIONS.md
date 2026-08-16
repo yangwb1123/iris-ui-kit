@@ -2252,3 +2252,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cw-gate.md [ok]: Gate 完成 — **Verdict**（batch-cw-review.md）: **PASS** — 0 spec violations，1 minor（a11y 建议：aria-modal 无焦点陷阱/滚动锁——非 spec fiat，留待后续）+ 2 informational（adapt 253/DECISIONS 252 行 → 实际 243 已修）；全量门禁 turbo run test typecheck lint build --concurrency=2 **180/180 tasks**（54 cached）· react **2648/2648**（2636+12）· core **1559/1559** · audit **0 vulns** · gen:manifest + check:manifest up to date（183 props/32 events 零 diff）· comparison doc iris 独有表补批 CV（门禁漏行）+ 批 CW 两行 · commit 见 batch-cw-gate.md。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-gate.md
+
+## 2026-08-16 09:52:13 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cw-gate.md [ok]: Verdict: `batch-cw-review.md` → **PASS** (0 spec violations, 1 minor a11y suggestion + 2 informational). No code fixes required.; Full gate: | Gate | Result |; Final test counts: - **core: 1559/1559** (framework-free; +3 default i18n keys only); Doc updates (iris 独有 section): - Added **批 CW row** to the comparison table after 批 CU; Commit: **`e1bd7b2d`** `feat(table): grid 批 CW——导入预览（iris 独有）` — 5 files, +91/−27 (gate bookkeeping only; implementation + manif
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cw-gate.md
+
+## 2026-08-16 09:55:53 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cx-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cx-baseline.md
+
+## 2026-08-16 10:14:57 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cx-adapt.md [ok]: 批 CX：列类型自动检测（iris 独有）— Complete ✅: Commit: **`ee15bbae`** `feat(table): grid 批 CX——列类型自动检测（iris 独有）` — 11 files, +530/−8.; Files changed (4 impl + 2 tests + manifest + docs): | File | Change |; Detection semantics (core): First 50 non-nullish samples, all-samples-agree; `number`/`boolean` by typeof (NaN/Infinity vote number — typeof parity ; React bridge: Number → right + `'number'` sort; string/date/boolean → left + `'string'` — filling **only undefined** fields (explicit ; Verification (all green): - core **1569/1569** (+10) · react **2660/2660** (+12), typecheck clean · lint **0 errors**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cx-adapt.md
+
+## 2026-08-16 10:32:30 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cx-review.md [ok]: Review complete — **PASS** ✅: Verdict written to `docs/vxe-grid/batch-cx-review.md`. I did **not** modify any implementation files.; Gates run (HEAD `ee15bbae`): - **core test** 1569/1569 (+10) · **react test** 2660/2660 (+12) · **react/core typecheck** clean · **lint** 0 errors (c; Spec/adversarial checks: - **Header-gap fix** verified end-to-end: header cells consume `headerAlign ?? col.align ?? 'left'` from the `displayCol; 4 LOW findings (non-blocking): 1. **F1** `Table.tsx:2847-2849`— string-detected column with a different-typed`sortBy` field flips 'auto' numeric sort
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cx-review.md
+
+## 2026-08-16 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cx-gate.md [ok]: Gate 完成 — **Verdict**（batch-cx-review.md）: **PASS** ✅ — 4 LOW findings 全非阻塞（F1 sortBy 不同型翻转 = 显式字段赢设计、F2 date 排序惰性 = baseline fiat、F3 采样侧 cap perf nit one-shot、F4 gitignored components.md 本阶段已再生成），零代码修复；全量门禁 turbo run test typecheck lint build --concurrency=2 **180/180 tasks**（65 cached）· core **1569/1569**（+10）· react **2660/2660**（+12）· vue 1531 · solid 1008 · svelte 947 · **repo total 8718** · audit **0 vulns** · gen:manifest + check:manifest up to date（184 props/32 events 零 diff，ee15bbae 已带）· gen:docs-reference + check:docs-reference up to date（F4 解决，components.md gitignored 不入库）· comparison doc iris 独有节已在 ee15bbae 就位（表第 71 行 + 构建状态段尾）零补充；DECISIONS + adapt 后置段 + review 携带；commit 见 batch-cx-gate.md。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cx-gate.md

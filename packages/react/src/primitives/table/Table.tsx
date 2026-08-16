@@ -1622,6 +1622,140 @@ function ColumnResizeHandle({
   )
 }
 
+/** Width resolution shared by the pinned boundary (batch CV) and pinnedOffsets:
+ * explicit override → column-declared number → default approximation. */
+function resolvedColumnWidth<Row extends Record<string, unknown>>(
+  col: IrisTableColumn<Row>,
+  widths: Record<string, number>,
+): number {
+  return widths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
+}
+
+/** Number of leading leaf columns pinned left, capped at `cap` (the first
+ * right-pinned index — a left boundary never crosses into the right block).
+ * Reads through the SAME pinOf throat as every render path. */
+function leftPinnedCount<Row extends Record<string, unknown>>(
+  cols: readonly IrisTableColumn<Row>[],
+  pinOf: (col: IrisTableColumn<Row>) => 'left' | 'right' | null,
+  cap: number,
+): number {
+  let count = 0
+  for (let i = 0; i < cap; i += 1) {
+    if (pinOf(cols[i]!) === 'left') count = i + 1
+    else return count
+  }
+  return count
+}
+
+/** New left-pinned count for a boundary drag (batch CV): the widest prefix
+ * whose cumulative width stays within `budget` (the boundary position
+ * relative to the lead columns' trailing edge = current pinned width + dx),
+ * clamped to `cap`. Widths approximate via resolvedColumnWidth — the same
+ * fallback chain as pinnedOffsets (documented fiat). */
+function pinnedCountFromBudget<Row extends Record<string, unknown>>(
+  cols: readonly IrisTableColumn<Row>[],
+  widthOf: (col: IrisTableColumn<Row>) => number,
+  budget: number,
+  cap: number,
+): number {
+  let acc = 0
+  for (let i = 0; i < cap; i += 1) {
+    const w = widthOf(cols[i]!)
+    if (acc + w <= budget) acc += w
+    else return i
+  }
+  return cap
+}
+
+/**
+ * Draggable separator at the pinned boundary (batch CV, iris 独有 — vxe has
+ * no pinned boundary handle): rendered inside the LAST left-pinned leaf
+ * header cell, whose trailing edge inherits the cell's sticky positioning.
+ * Pointer drag shows a translateX ghost and commits on release; Arrow-Left /
+ * Arrow-Right nudge the count by one (resolve(0) = the current count).
+ * `role="separator"` + `aria-orientation` follow the window-splitter pattern
+ * (ColumnResizeHandle precedent). The React onPointerDown stopPropagation
+ * keeps the columnDrag arm-race away — the NATIVE useDrag listener on the
+ * span itself still arms (react-drag order: native at span → React root
+ * dispatch, so the cell's synthetic pointerdown never runs).
+ */
+function PinnedDragHandle({
+  colKey,
+  label,
+  resolve,
+  commit,
+}: {
+  colKey: string
+  label: string
+  resolve: (dx: number) => number
+  commit: (count: number) => void
+}): React.ReactElement {
+  const ref = React.useRef<HTMLSpanElement | null>(null)
+  const [dx, setDx] = React.useState(0)
+  const dragging = dx !== 0
+
+  useDrag({
+    handle: ref,
+    onStart: () => setDx(0),
+    onDrag: ({ dx }) => setDx(dx),
+    onEnd: ({ dx }) => {
+      commit(resolve(dx))
+      setDx(0)
+    },
+  })
+
+  return (
+    <span
+      ref={ref}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={`Adjust pinned column count at ${label}`}
+      tabIndex={0}
+      data-iris-pinned-drag-handle=""
+      data-column-key={colKey}
+      data-iris-pinned-drag-active={dragging ? 'true' : undefined}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          e.stopPropagation()
+          commit(resolve(0) - 1)
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          e.stopPropagation()
+          commit(resolve(0) + 1)
+        }
+      }}
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: 8,
+        cursor: 'col-resize',
+        touchAction: 'none',
+        userSelect: 'none',
+        zIndex: 2,
+        transform: dragging ? `translateX(${dx}px)` : undefined,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        data-iris-pinned-drag-line=""
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          insetInlineStart: '50%',
+          width: 2,
+          background: 'var(--iris-primary)',
+          transform: 'translateX(-50%)',
+        }}
+      />
+    </span>
+  )
+}
+
 function getCellValue<Row extends Record<string, unknown>>(
   row: Row,
   column: IrisTableColumn<Row>,
@@ -2486,6 +2620,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnPinMenu,
   pinnedColumns,
   onColumnPinnedChange,
+  pinnedDrag = false,
+  onPinnedCountChange,
   onRowClick,
   onRowDblClick,
   onCellEdit,
@@ -3408,6 +3544,59 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!pinsControlled) setPinsInternal((prev) => ({ ...prev, [key]: side }))
     onColumnPinnedChange?.(key, side)
   }
+
+  // ── Pinned-count boundary drag (batch CV, iris 独有 — vxe has no pinned
+  // boundary handle): `pinnedDrag` renders a draggable separator at the LAST
+  // left-pinned leaf header's trailing edge. Left-only count — the boundary
+  // exists only while ≥1 leaf is pinned left, and never crosses the first
+  // right-pinned index (the hard cap). Widths approximate through
+  // resolvedColumnWidth (pinnedOffsets' fallback chain — fiat). `resolve`
+  // maps a drag dx (boundary displacement) to a count via pinnedCountFromBudget
+  // (resolve(0) = the CURRENT count, used by the keyboard nudge); `commit`
+  // writes `setColumnPinned('left' | null)` per CHANGED column (the SAME dual-
+  // channel throat as the pin menu — controlled parents get
+  // `onColumnPinnedChange` per column, no optimistic flip) and fires
+  // `onPinnedCountChange` once; no-op drags fire nothing.
+  const firstRightPinnedIndex = React.useMemo(() => {
+    const i = leafColumns.findIndex((col) => pinOf(col) === 'right')
+    return i < 0 ? leafColumns.length : i
+  }, [leafColumns, pinOf])
+  const pinnedBoundaryCol = React.useMemo(() => {
+    if (!pinnedDrag) return null
+    for (let i = firstRightPinnedIndex - 1; i >= 0; i -= 1) {
+      const col = leafColumns[i]!
+      if (pinOf(col) === 'left') return col
+    }
+    return null
+  }, [pinnedDrag, leafColumns, pinOf, firstRightPinnedIndex])
+  const resolvePinnedCount = React.useCallback(
+    (dx: number): number => {
+      const widthOf = (col: IrisTableColumn<Row>): number => resolvedColumnWidth(col, columnWidths)
+      let currentWidth = 0
+      for (let i = 0; i < firstRightPinnedIndex; i += 1) {
+        const col = leafColumns[i]!
+        if (pinOf(col) === 'left') currentWidth += widthOf(col)
+      }
+      return pinnedCountFromBudget(leafColumns, widthOf, currentWidth + dx, firstRightPinnedIndex)
+    },
+    [leafColumns, firstRightPinnedIndex, columnWidths, pinOf],
+  )
+  const commitPinnedCount = React.useCallback(
+    (count: number): void => {
+      if (!pinnedDrag) return
+      const clamped = Math.max(0, Math.min(firstRightPinnedIndex, count))
+      const current = leftPinnedCount(leafColumns, pinOf, firstRightPinnedIndex)
+      if (clamped === current) return
+      for (let i = 0; i < firstRightPinnedIndex; i += 1) {
+        const col = leafColumns[i]!
+        const target: 'left' | null = i < clamped ? 'left' : null
+        if (pinOf(col) === target) continue
+        setColumnPinned(col.key, target)
+      }
+      onPinnedCountChange?.(clamped)
+    },
+    [pinnedDrag, leafColumns, firstRightPinnedIndex, pinOf, setColumnPinned, onPinnedCountChange],
+  )
 
   // ── persistState (batch AG, iris 独有 — vxe has no built-in persistence) ─
   // The table is CONTROLLED — every piece is parent-owned through its change
@@ -10236,6 +10425,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         {multiIdx + 1}
                       </span>
                     ) : null}
+                    {isLeaf && pinnedBoundaryCol && pinnedBoundaryCol.key === col.key ? (
+                      <PinnedDragHandle
+                        colKey={col.key}
+                        label={col.title}
+                        resolve={resolvePinnedCount}
+                        commit={commitPinnedCount}
+                      />
+                    ) : null}
                   </div>
                 )
               }),
@@ -10442,7 +10639,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       {multiIdx + 1}
                     </span>
                   ) : null}
-                  {resizableColumns ? (
+                  {pinnedBoundaryCol && pinnedBoundaryCol.key === col.key ? (
+                    <PinnedDragHandle
+                      colKey={col.key}
+                      label={col.title}
+                      resolve={resolvePinnedCount}
+                      commit={commitPinnedCount}
+                    />
+                  ) : null}
+                  {resizableColumns && !(pinnedBoundaryCol && pinnedBoundaryCol.key === col.key) ? (
                     <ColumnResizeHandle
                       colKey={col.key}
                       label={col.title}

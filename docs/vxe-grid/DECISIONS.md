@@ -2192,3 +2192,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cu-gate.md [ok]: Gate 完成 — PASS: **Verdict**: 审核 PASS（spec 正确性/additive only/manifest hygiene/core framework-free/CSS tokens 全绿，2 条 informational 不阻塞）。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-gate.md
+
+## 2026-08-16 08:32:28 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cu-gate.md [ok]: Verdict: `batch-cu-review.md`: **PASS** (spec correctness / additive-only / manifest hygiene / core framework-free / CSS tokens a; Gate results: | Step | Result |; Final test counts: - **core: 1559/1559** (100 files, framework-free invariant intact — zero core changes); Commit: **`15bbc1d4`** `feat(table): grid 批 CU——带格式复制（iris 独有）` — gate-stage bookkeeping only: `DECISIONS.md` (gate entry), amen
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-gate.md
+
+## 2026-08-16 08:38:04 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cv-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-baseline.md
+
+## 2026-08-16 08:47:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cv-adapt.md [ok]: Report — 批 CV：冻结边界拖拽（iris 独有）: **Commit**: `HEAD` feat(table): grid 批 CV——冻结边界拖拽（iris 独有）; Files changed (2 source + 1 test + manifest + docs): props.ts pinnedDrag + onPinnedCountChange (propCount 180→182/eventCount 31→32, 单行函数 prop) / Table.tsx destructure + PinnedDragHandle (useDrag + translateX ghost + Arrow ±1 + stopPropagation 防 columnDrag 抢臂) + 2 纯 module helpers (leftPinnedCount/pinnedCountFromBudget) + resolvedColumnWidth + firstRightPinnedIndex/pinnedBoundaryCol memos + commitPinnedCount/resolvePinnedCount + flat/grouped 双分支 + boundary 列 resize 句柄抑制 / pinned-drag.test.tsx 17 tests / manifest regenerated / comparison doc 2 spots; Verification: core 1559/1559（框架无关零改动）, react typecheck clean + 2635/2635 (2618+17), lint 0 errors (1 pre-existing complexity warning), spec 0 violations (1416 files), check:manifest up to date
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-adapt.md

@@ -270,6 +270,27 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * (`null` = unpin), in both controlled and uncontrolled modes (lift-ready).
    */
   onColumnPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
+  /**
+   * Pinned-count boundary drag (batch CV, iris 独有 — vxe has no pinned
+   * boundary handle): when true, the LAST left-pinned leaf header's trailing
+   * edge carries a draggable separator handle (8px grip + 2px primary line,
+   * sticky inside the pinned cell) that adjusts the number of left-pinned
+   * columns — drag right pins more / drag left unpins, commit-on-release (a
+   * translateX ghost follows the pointer while dragging); Arrow-Left/Right
+   * nudge the count by one. The commit writes `setColumnPinned('left' |
+   * null)` per CHANGED column (the SAME dual-channel throat as the pin menu —
+   * `onColumnPinnedChange` fires per column in both modes, no optimistic
+   * flip when controlled) and then fires `onPinnedCountChange` once; no-op
+   * drags fire nothing. Left-only count: no handle without at least one
+   * left-pinned column; the boundary never crosses the first right-pinned
+   * index (hard cap); widths approximate via the pinnedOffsets fallback
+   * chain (non-numeric → default, fiat). While on, the boundary column's
+   * `resizableColumns` handle is suppressed (a resize grip on the same edge
+   * would fight the boundary drag). Additive — default off.
+   */
+  pinnedDrag?: boolean
+  /** Fired once per pinned-boundary commit with the new left-pinned column count (0 = none), AFTER the per-column `onColumnPinnedChange` calls. */
+  onPinnedCountChange?: (count: number) => void
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Row double-click (vxe row-dblclick parity). */

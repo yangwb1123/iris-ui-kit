@@ -2117,3 +2117,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cr-gate.md [ok]: Gate stage complete for grid 批 CR（列汇总条，iris 独有）.: Review verdict: **PASS** — verification all executed fresh (core 1559/1559, react 2582/2582, typecheck clean, lint 0 errors, check:manifest up to date, spec audit 0 violations); 2 LOW + 3 INFO findings, **none blocking**; Gate results: - **Full repo gate** (`turbo run test typecheck lint build --concurrency=2`): **180/180 tasks successful** (2m9s, 125 cached); Final test counts (independent rerun): - **core: 1559/1559** (100 files; framework-free invariant intact — zero core changes); Commit: source + manifest + comparison doc committed at adapt `76f94398`; gate-stage docs delta committed separately; working tree clean; `.vinxi` excluded
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-gate.md
+
+## 2026-08-16 06:39:13 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cr-gate.md [ok]: Verdict: `batch-cr-review.md`: **PASS** — 2 LOW + 3 INFO findings, none blocking (LOWs were optional a11y/radius polish; arch-che; Gate results: | Step | Result |; Final test counts (independent rerun): - **core: 1559/1559** (100 files; framework-free invariant intact — zero core changes); Commits: - `76f94398` — source + manifest + comparison doc (adapt stage)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cr-gate.md
+
+## 2026-08-16 06:48:29 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cs-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cs-baseline.md

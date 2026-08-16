@@ -457,6 +457,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * with an empty body (`0`). Additive; default off (fail-closed).
    */
   columnTotals?: boolean
+  /** Batch CS (iris 独有 — vxe has no equivalent; vxe keeps the pixel offset, never re-anchors).
+   * In virtual mode, an expansion commit re-locates the first visible row
+   * (the content anchor, with its partial offset) in the NEW plan and
+   * writes `newIndex × slotHeight + relativeTop` — the rows under the
+   * cursor stay put across tree/detail expand AND collapse. Uniform slot
+   * heights only (`rowHeight`/`virtualScroll.itemHeight` functions are
+   * pixel-only — the variable-height offset tree is child-internal);
+   * non-virtual tables are inert (documented fiat); full-set restores
+   * (`expandAll` / `persistState` replay) fall back to the virtualizer's
+   * re-clamp; a single-key commit stays exact. Additive; default off
+   * (fail-closed).
+   */
+  expandScrollPreserve?: boolean
   /** Batch CJ (iris 独有 — vxe has no shortcut help): show a `?` toolbar
    * trigger that opens a floating panel listing every built-in keyboard
    * shortcut with its EFFECTIVE key — the same normalized map every handler

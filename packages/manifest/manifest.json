@@ -36667,6 +36667,12 @@
           "description": "show a full-width horizontal strip directly below the toolbar (`data-iris-column-totals`) with the column totals for every `summary === 'sum'` column — aggregated over the CURRENT body rows with the exact summary-row value pipeline (`aggregate` + the `aggregateAccuracy` rounding gate + `renderSummary` fallback), one grid cell per leaf column (`data-iris-column-totals-cell`) so tracks stay aligned; non-sum columns render empty placeholders. The strip shows even with an empty body (`0`). Additive; default off (fail-closed)."
         },
         {
+          "name": "expandScrollPreserve",
+          "type": "boolean",
+          "optional": true,
+          "description": "In virtual mode, an expansion commit re-locates the first visible row (the content anchor, with its partial offset) in the NEW plan and writes `newIndex × slotHeight + relativeTop` — the rows under the cursor stay put across tree/detail expand AND collapse. Uniform slot heights only (`rowHeight`/`virtualScroll.itemHeight` functions are pixel-only — the variable-height offset tree is child-internal); non-virtual tables are inert (documented fiat); full-set restores (`expandAll` / `persistState` replay) fall back to the virtualizer's re-clamp; a single-key commit stays exact. Additive; default off (fail-closed)."
+        },
+        {
           "name": "shortcutHints",
           "type": "boolean",
           "optional": true,
@@ -37746,6 +37752,12 @@
               "type": "boolean",
               "optional": true,
               "description": "show a full-width horizontal strip directly below the toolbar (`data-iris-column-totals`) with the column totals for every `summary === 'sum'` column — aggregated over the CURRENT body rows with the exact summary-row value pipeline (`aggregate` + the `aggregateAccuracy` rounding gate + `renderSummary` fallback), one grid cell per leaf column (`data-iris-column-totals-cell`) so tracks stay aligned; non-sum columns render empty placeholders. The strip shows even with an empty body (`0`). Additive; default off (fail-closed)."
+            },
+            {
+              "name": "expandScrollPreserve",
+              "type": "boolean",
+              "optional": true,
+              "description": "In virtual mode, an expansion commit re-locates the first visible row (the content anchor, with its partial offset) in the NEW plan and writes `newIndex × slotHeight + relativeTop` — the rows under the cursor stay put across tree/detail expand AND collapse. Uniform slot heights only (`rowHeight`/`virtualScroll.itemHeight` functions are pixel-only — the variable-height offset tree is child-internal); non-virtual tables are inert (documented fiat); full-set restores (`expandAll` / `persistState` replay) fall back to the virtualizer's re-clamp; a single-key commit stays exact. Additive; default off (fail-closed)."
             },
             {
               "name": "shortcutHints",
@@ -39345,7 +39357,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 178,
+        "propCount": 179,
         "eventCount": 31
       }
     },

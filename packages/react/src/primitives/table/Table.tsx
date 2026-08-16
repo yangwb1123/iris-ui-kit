@@ -146,6 +146,46 @@ function summaryStickyAttr(on: boolean): string | undefined {
   return on ? 'true' : undefined
 }
 
+// One virtual body slot (batch AE + CS): a `detail` entry occupies a single
+// itemHeight slot — content taller than the slot scrolls INSIDE the detail
+// cell, so the virtualized body stays uniform-height. Hoisted to module scope
+// (was a component-local alias) so the batch-CS anchor helper
+// (`virtualItemKeyOf`) can share the shape with the plan constructor without
+// a local/global split.
+type BodyPlanEntry<Row extends Record<string, unknown>> =
+  | { kind: 'group-header'; groupKey: string; count: number; depth?: number; value?: string }
+  | { kind: 'row'; row: Row; rowIndex: number }
+  | { kind: 'group-summary'; groupKey: string; rows: Row[] }
+  | { kind: 'detail'; row: Row; rowIndex: number }
+
+/** Batch CS: stable identity for a body-plan entry — mirrors the keyOf passed
+ * to IrisVirtualScroll, so the recorded content anchor can be re-located in a
+ * NEW plan after an expansion commit (single source of truth for both sites). */
+function virtualItemKeyOf<Row extends Record<string, unknown>>(
+  item: BodyPlanEntry<Row>,
+  rowKeyOf: (row: Row, rowIndex?: number) => string | number,
+): string {
+  if (item.kind === 'group-header') return `group:${item.groupKey}`
+  if (item.kind === 'group-summary') return `group-summary:${item.groupKey}`
+  if (item.kind === 'detail') return `${String(rowKeyOf(item.row, item.rowIndex))}::detail`
+  return String(rowKeyOf(item.row, item.rowIndex))
+}
+
+/** Batch CS: the single key that differs between two expansion key lists — or
+ * null when they are identical / differ by multiple keys. The discriminator
+ * between a single-key toggle (exact anchor math) and a full-set restore
+ * (`expandAll` / `persistState` replay → the virtualizer's re-clamp handles
+ * it, documented fiat). */
+function singleKeyDiff(prev: readonly string[], next: readonly string[]): string | null {
+  if (prev === next) return null
+  const prevSet = new Set(prev)
+  const nextSet = new Set(next)
+  const added = next.filter((k) => !prevSet.has(k))
+  const removed = prev.filter((k) => !nextSet.has(k))
+  if (added.length + removed.length !== 1) return null
+  return added[0] ?? removed[0] ?? null
+}
+
 /** Batch CP density-cycle helper (module scope): the toolbar toggle cycles
  * comfortable → compact → cozy → comfortable (zoom toggle precedent). */
 function nextDensity(d: IrisTableDensity): IrisTableDensity {
@@ -2454,6 +2494,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   charCount,
   editPreview,
   columnTotals,
+  expandScrollPreserve = false,
   shortcutHints,
   onSelectAllChange,
   onScroll,
@@ -3282,6 +3323,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const expandedKeys = useStore(expansion.store)
   const isRowExpandable = (row: Row, idx: number): boolean =>
     hasDetail && (rowExpandable ? rowExpandable(row, idx) : true)
+
+  // Batch CS: expandScrollPreserve (iris 独有) — virtual tables keep the
+  // CONTENT anchor (the first visible plan entry + its partial offset) in
+  // place across an expansion commit. Pixel scrollTop alone survives the
+  // virtualizer rebuild (IrisVirtualScroll's local state), but a node/detail
+  // panel expanded ABOVE the viewport shifts every row below by the inserted
+  // height — the rows being read jump. Uniform slot heights only (a fn
+  // `rowHeight`/`itemHeight` makes the offset tree child-internal →
+  // pixel-only preserve); non-virtual tables are inert (documented fiat).
+  const slotHeight = effectiveRowHeight ?? virtualScroll?.itemHeight
+  const expandScrollOn =
+    expandScrollPreserve === true &&
+    virtualScroll !== undefined &&
+    typeof slotHeight === 'number' &&
+    slotHeight > 0
+  // Latest viewport scrollTop — IrisVirtualScroll owns the scroll state and
+  // the Table does NOT re-render on scroll, so the onScroll wiring below
+  // mirrors it into this ref (the transition layout effect reads it).
+  const virtualScrollTopRef = React.useRef(0)
+  // The recorded content anchor { key, relativeTop } from the last STABLE
+  // plan — the transition render skips the re-record so the pre-toggle anchor
+  // survives into the transition layout effect. `relativeTop` is the anchor
+  // slot's offset past the viewport top (∈ [0, slotHeight)).
+  const preserveAnchorRef = React.useRef<{ key: string; relativeTop: number } | null>(null)
+  // Expanded keys at the last commit — the render phase reads it to skip
+  // anchor recording on the transition render; the layout effect advances it.
+  const prevExpandedKeysRef = React.useRef<string[]>(expandedKeys)
 
   const widthsControlled = columnWidthsProp !== undefined
   const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
@@ -5847,15 +5915,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // column drives the plan. Each row entry keeps its ORIGINAL bodyData index
   // so seq/striped/span/checkMethod semantics are untouched. A per-group
   // summary entry is appended when any leaf column has a `summary` op (same
-  // aggregate ops as the footer, computed over the group's rows).
-  type BodyPlanEntry =
-    | { kind: 'group-header'; groupKey: string; count: number; depth?: number; value?: string }
-    | { kind: 'row'; row: Row; rowIndex: number }
-    | { kind: 'group-summary'; groupKey: string; rows: Row[] }
-    // One virtual slot per expanded detail panel (batch AE): a `detail` entry
-    // occupies a single itemHeight slot — content taller than the slot scrolls
-    // INSIDE the detail cell, so the virtualized body stays uniform-height.
-    | { kind: 'detail'; row: Row; rowIndex: number }
+  // aggregate ops as the footer, computed over the group's rows). The
+  // `BodyPlanEntry` shape lives at module scope (batch CS hoist) so the
+  // anchor helper shares it — one type for plan constructor + key helper.
   // Batch BH (iris 独有): group-header collapse state. Uncontrolled: an
   // internal Set seeded from `defaultGroupCollapsed`. Controlled: derived from
   // the `groupCollapsed` prop with NO optimistic flip — the rendered body only
@@ -5904,12 +5966,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return keys.length > 0 ? keys : null
   }, [groupBy, leafColumns])
   const groupCol = leafColumns.find((c) => c.groupBy)
-  const groupPlan = React.useMemo<BodyPlanEntry[] | null>(() => {
+  const groupPlan = React.useMemo<BodyPlanEntry<Row>[] | null>(() => {
     if (treeMode) return null
     if (groupByKeys) {
       const indexOf = new Map<Row, number>()
       bodyData.forEach((r, i) => indexOf.set(r, i))
-      const plan: BodyPlanEntry[] = []
+      const plan: BodyPlanEntry<Row>[] = []
       const hasSummary = leafColumns.some((c) => c.summary)
       const cols = groupByKeys
         .map((k) => leafColumns.find((c) => c.key === k))
@@ -5950,7 +6012,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const groups = groupRows(bodyData, (row) => String(getCellValue(row, groupCol)))
     const indexOf = new Map<Row, number>()
     bodyData.forEach((r, i) => indexOf.set(r, i))
-    const plan: BodyPlanEntry[] = []
+    const plan: BodyPlanEntry<Row>[] = []
     const hasSummary = leafColumns.some((c) => c.summary)
     for (const g of groups) {
       plan.push({ kind: 'group-header', groupKey: g.key, count: g.rows.length })
@@ -8492,7 +8554,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // slot right after its row — expansion toggles change `expandedKeys`, which
   // flows into this plan and thus into `items.length` (the virtualizer rebuilds
   // on count change and re-clamps, so the scroll stays sane on collapse).
-  const virtualItems = React.useMemo<BodyPlanEntry[]>(() => {
+  const virtualItems = React.useMemo<BodyPlanEntry<Row>[]>(() => {
     if (groupPlan) return groupPlan
     // Only the virtual body consumes this plan (the non-virtual path renders
     // detail wraps inline via renderBodyEntry); gate the detail slots on
@@ -8500,7 +8562,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!virtualScroll || !hasDetail) {
       return bodyData.map((row, rowIndex) => ({ kind: 'row' as const, row, rowIndex }))
     }
-    const plan: BodyPlanEntry[] = []
+    const plan: BodyPlanEntry<Row>[] = []
     for (let i = 0; i < bodyData.length; i += 1) {
       const row = bodyData[i]!
       plan.push({ kind: 'row', row, rowIndex: i })
@@ -8510,6 +8572,68 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     return plan
   }, [groupPlan, virtualScroll, hasDetail, bodyData, expandedKeys, rowKeyOf, isRowExpandable])
+
+  // Batch CS: record the content anchor (first visible plan entry + partial
+  // offset) while the plan is STABLE. The transition render skips the write
+  // (`prevExpandedKeysRef` still holds the pre-toggle keys), so the pre-toggle
+  // anchor survives into the transition layout effect below. The onScroll
+  // wiring re-records on every scroll (fresh scrollTop, the plan in the
+  // closure is the current stable one); this render-time pass covers mount +
+  // plan changes that arrive without a scroll event (proxy page load, …).
+  // Fail-closed when the prop is off / non-virtual / variable-height.
+  if (expandScrollOn && prevExpandedKeysRef.current === expandedKeys && virtualItems.length > 0) {
+    const top = virtualScrollTopRef.current
+    const index = Math.min(Math.floor(top / slotHeight), virtualItems.length - 1)
+    preserveAnchorRef.current = {
+      key: virtualItemKeyOf(virtualItems[index]!, rowKeyOf),
+      relativeTop: top - index * slotHeight,
+    }
+  }
+
+  // Batch CS: the expansion-transition layout effect — runs AFTER
+  // IrisVirtualScroll's own re-clamp (child layout effects run before
+  // parent), so the DOM viewport already reflects the new plan's clamp
+  // bound. A single-key expansion commit re-locates the recorded anchor key
+  // in the NEW plan and writes `newIndex × slotHeight + relativeTop` — exact
+  // index math, zero delta bookkeeping. Full-set restores (`expandAll` /
+  // `persistState` replay) fall back to the virtualizer's re-clamp; an anchor
+  // whose slot vanished (a collapsed detail panel — the `::detail` entry is
+  // removed from the plan) falls back to the pixel preserve.
+  React.useLayoutEffect(() => {
+    const prev = prevExpandedKeysRef.current
+    if (prev === expandedKeys) return
+    prevExpandedKeysRef.current = expandedKeys
+    if (!expandScrollOn) return
+    if (!singleKeyDiff(prev, expandedKeys)) return
+    const anchor = preserveAnchorRef.current
+    const viewport = rootRef.current?.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+    if (!anchor || !viewport) return
+    const index = virtualItems.findIndex((item) => virtualItemKeyOf(item, rowKeyOf) === anchor.key)
+    if (index < 0) return
+    // Scrollable bound from the PLAN math (uniform slot heights): a real
+    // browser clamps the scrollTop setter to its own range (total − viewport)
+    // anyway, and jsdom reports scrollHeight/clientHeight as 0 — so the plan
+    // total is the only portable clamp and it is exact for this uniform body.
+    const max = Math.max(0, virtualItems.length * slotHeight)
+    const top = Math.min(index * slotHeight + anchor.relativeTop, max)
+    viewport.scrollTop = top
+    virtualScrollTopRef.current = top
+  }, [expandedKeys, virtualItems])
+
+  // Batch CS: the virtual viewport's scrollTop mirror + anchor re-record —
+  // wired to IrisVirtualScroll's (previously unused) `onScroll`. The Table
+  // never re-renders on scroll (scrollTop lives in the child), so the anchor
+  // must refresh HERE with the current stable plan from the closure; the
+  // transition layout effect above then re-locates it in the new plan.
+  const handleVirtualScrollScroll = (top: number): void => {
+    virtualScrollTopRef.current = top
+    if (!expandScrollOn || slotHeight <= 0 || virtualItems.length === 0) return
+    const index = Math.min(Math.floor(top / slotHeight), virtualItems.length - 1)
+    preserveAnchorRef.current = {
+      key: virtualItemKeyOf(virtualItems[index]!, rowKeyOf),
+      relativeTop: top - index * slotHeight,
+    }
+  }
 
   // Footer stack (batch P): footerMethod rows → summary row → footerData rows
   // — in that order, whichever render (footerMethod REPLACES the summary op
@@ -10285,15 +10409,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
             itemHeight={effectiveRowHeight ?? virtualScroll.itemHeight}
             height={virtualScroll.height}
             buffer={virtualScroll.buffer}
-            keyOf={(item) =>
-              item.kind === 'group-header'
-                ? `group:${item.groupKey}`
-                : item.kind === 'group-summary'
-                  ? `group-summary:${item.groupKey}`
-                  : item.kind === 'detail'
-                    ? `${String(rowKeyOf(item.row, item.rowIndex))}::detail`
-                    : String(rowKeyOf(item.row, item.rowIndex))
-            }
+            keyOf={(item) => virtualItemKeyOf(item, rowKeyOf)}
+            onScroll={handleVirtualScrollScroll}
             renderItem={(item) =>
               item.kind === 'group-header'
                 ? renderGroupHeader(item, { height: '100%' })

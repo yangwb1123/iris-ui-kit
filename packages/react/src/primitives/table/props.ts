@@ -381,6 +381,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   editAutosave?: boolean
   /** Batch BQ (iris 独有): parent persistence hook fired by `editAutosave` with the post-commit row list. */
   onAutosave?: (rows: Row[]) => void
+  /** Batch CC (iris 独有): textarea editors auto-grow their height with content — 1 row to start, up to a 6-row cap, then scroll inside the editor (measured via scrollHeight on input, no re-render loop). Off by default (fail-closed; batch I's rows=3 stays). */
+  editAutoHeight?: boolean
   /** Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys. */
   onSelectAllChange?: (state: boolean | 'indeterminate', selection: Array<string | number>) => void
   /** Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden). */

@@ -36616,6 +36616,12 @@
           "description": "Batch BQ (iris 独有): parent persistence hook fired by `editAutosave` with the post-commit row list."
         },
         {
+          "name": "editAutoHeight",
+          "type": "boolean",
+          "optional": true,
+          "description": "Batch CC (iris 独有): textarea editors auto-grow their height with content — 1 row to start, up to a 6-row cap, then scroll inside the editor (measured via scrollHeight on input, no re-render loop). Off by default (fail-closed; batch I's rows=3 stays)."
+        },
+        {
           "name": "onSelectAllChange",
           "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
           "optional": true,
@@ -37620,6 +37626,12 @@
               "type": "(rows: Row[]) => void",
               "optional": true,
               "description": "Batch BQ (iris 独有): parent persistence hook fired by `editAutosave` with the post-commit row list."
+            },
+            {
+              "name": "editAutoHeight",
+              "type": "boolean",
+              "optional": true,
+              "description": "Batch CC (iris 独有): textarea editors auto-grow their height with content — 1 row to start, up to a 6-row cap, then scroll inside the editor (measured via scrollHeight on input, no re-render loop). Off by default (fail-closed; batch I's rows=3 stays)."
             },
             {
               "name": "onSelectAllChange",
@@ -39194,7 +39206,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 167,
+        "propCount": 168,
         "eventCount": 31
       }
     },

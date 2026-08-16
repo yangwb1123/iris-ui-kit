@@ -713,6 +713,10 @@ interface EditorSurfaceProps<Row extends Record<string, unknown>> {
    *  column key → suggestion strings, computed by the parent over the body
    *  data so this surface stays free of it. Only the text editor consumes it. */
   suggestOptions?: ReadonlyMap<string, string[]>
+  /** Batch CC (iris 独有): auto-height textarea editor — grows with content
+   *  (1 row start, 6-row cap), sized via scrollHeight on input. Off by
+   *  default (fail-closed; batch I's rows=3 stays). */
+  editAutoHeight?: boolean
 }
 
 /**
@@ -735,6 +739,7 @@ function EditorSurface<Row extends Record<string, unknown>>({
   focusToken,
   onSessionIdle,
   suggestOptions,
+  editAutoHeight,
 }: EditorSurfaceProps<Row>): React.ReactElement {
   const state = useStore(session.store)
   const ref = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null)
@@ -746,6 +751,17 @@ function EditorSurface<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     if (state.editing === null) onSessionIdle?.()
   }, [state.editing, onSessionIdle])
+  // Batch CC: on open, size the auto-height textarea from its pre-filled
+  // draft (scrollHeight) — multi-line values arrive already sized; growth /
+  // shrink while typing is handled by onInput below (no setState, no
+  // re-render loop — the surface re-renders per keystroke anyway via the
+  // session store, but the inline height is written straight to the DOM).
+  React.useEffect(() => {
+    if (!editAutoHeight) return
+    const el = ref.current
+    if (!el || el.tagName !== 'TEXTAREA') return
+    applyEditorAutoHeight(el as HTMLTextAreaElement)
+  }, [editAutoHeight])
   const setRef = (el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null): void => {
     ref.current = el
     registerRef(el)
@@ -825,15 +841,20 @@ function EditorSurface<Row extends Record<string, unknown>>({
       ) : col.editor === 'textarea' ? (
         // vxe edit-render textarea parity (batch I): Enter commits, Shift+Enter
         // inserts a newline, Escape cancels — same commit/aria surface.
+        // Batch CC: editAutoHeight starts at 1 row and grows with content
+        // (6-row cap) via scrollHeight measured on input.
         <textarea
           ref={setRef}
-          rows={3}
+          rows={editAutoHeight ? 1 : 3}
           value={draft}
           data-iris-table-editor=""
           data-iris-table-editor-textarea=""
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error && showError ? errorId : undefined}
           onChange={(e) => session.setDraft(e.target.value)}
+          onInput={(e) => {
+            if (editAutoHeight) applyEditorAutoHeight(e.currentTarget)
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Tab') {
               onTab(e, e.shiftKey ? -1 : 1)
@@ -923,6 +944,61 @@ function EditorSurface<Row extends Record<string, unknown>>({
       ) : null}
     </>
   )
+}
+
+/** Batch CC (iris 独有): the auto-height textarea editor grows with content,
+ *  capped at this many rows (spec: max 6). */
+const EDITOR_AUTO_MAX_ROWS = 6
+/** Batch CC: line-height fallback when getComputedStyle reports 'normal' /
+ *  an empty string (jsdom has no layout) or an absurd unitless value. */
+const EDITOR_AUTO_FALLBACK_LINE_HEIGHT = 16
+
+/**
+ * Batch CC (iris 独有): pure size mapping for the auto-height textarea — from
+ * the measured scrollHeight (and the session's line height) to the inline
+ * `height` / `maxHeight` / `overflowY` trio. `height` grows with content
+ * (floor = one line, cap = EDITOR_AUTO_MAX_ROWS lines) so shrinking content
+ * shrinks the editor too; `overflowY` is `auto` only when content STRICTLY
+ * exceeds the cap — exactly 6 rows has no scrollbar. Exported for unit tests
+ * (the math lives here, not in jsdom's zero-layout DOM).
+ */
+export function autoHeightSize(
+  scrollHeight: number,
+  lineHeight: number,
+): { height: number; maxHeight: number; overflowY: 'auto' | 'hidden' } {
+  const maxHeight = EDITOR_AUTO_MAX_ROWS * lineHeight
+  return {
+    height: Math.max(lineHeight, Math.min(scrollHeight, maxHeight)),
+    maxHeight,
+    overflowY: scrollHeight > maxHeight ? 'auto' : 'hidden',
+  }
+}
+
+/** Batch CC: the editor's line height, measured once per session (module-level
+ *  cache — the surface re-measures nothing per keystroke). */
+let editorAutoLineHeight: number | null = null
+
+/** Batch CC: read + cache the textarea's line height; 'normal'/empty/absurd
+ *  values (jsdom) fall back to EDITOR_AUTO_FALLBACK_LINE_HEIGHT. */
+function measureEditorLineHeight(el: HTMLTextAreaElement): number {
+  if (editorAutoLineHeight !== null) return editorAutoLineHeight
+  let lh = EDITOR_AUTO_FALLBACK_LINE_HEIGHT
+  if (typeof window !== 'undefined') {
+    const cs = window.getComputedStyle(el).lineHeight
+    const parsed = cs && cs !== 'normal' ? Number.parseFloat(cs) : NaN
+    if (Number.isFinite(parsed) && parsed >= 8) lh = parsed
+  }
+  editorAutoLineHeight = lh
+  return lh
+}
+
+/** Batch CC: measure + apply the auto-height trio (height/maxHeight/overflowY)
+ *  to a textarea editor from its current scrollHeight. */
+function applyEditorAutoHeight(el: HTMLTextAreaElement): void {
+  const size = autoHeightSize(el.scrollHeight, measureEditorLineHeight(el))
+  el.style.height = `${size.height}px`
+  el.style.maxHeight = `${size.maxHeight}px`
+  el.style.overflowY = size.overflowY
 }
 
 const RESIZE_STEP = 16
@@ -1905,6 +1981,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onEditClosed,
   editAutosave,
   onAutosave,
+  editAutoHeight,
   onSelectAllChange,
   onScroll,
   tableRef,
@@ -7061,6 +7138,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         onSessionIdle={() => onRowSessionIdle(id)}
                         focusToken={rowFocus.colKey === col.key ? rowFocus.seq : 0}
                         suggestOptions={suggestOptions}
+                        editAutoHeight={editAutoHeight}
                       />
                     )
                   })()
@@ -7077,6 +7155,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     onSessionIdle={undefined}
                     focusToken={0}
                     suggestOptions={suggestOptions}
+                    editAutoHeight={editAutoHeight}
                   />
                 )
               ) : sparklineCell(col, raw) ? (

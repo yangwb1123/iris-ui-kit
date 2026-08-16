@@ -1827,3 +1827,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cf-gate.md [ok]: Verdict: PASS (0 blocker / 0 major; 1 low / 3 info): low fixed with gate (portal misclassification in isEmptyStateObject — `'$$typeof' in state` excludes React portals from descriptor path, +1 regression test, react 2439→2440); full gate 180/180, audit 0 vulnerabilities, gen:manifest + check:manifest zero diff (155 comps, propCount 168), comparison doc updated (iris 独有 + 构建状态)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-gate.md
+
+## 2026-08-15 20:47:22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-gate.md [ok]: Verdict: PASS (0 blocker / 0 major; 1 low / 3 info): The single **low** finding (review's key finding #1) was fixed as part of this gate per repo precedent (批 BK/批 BT 门禁修复随 ; Gate results: | Step | Result |; Commit: - **`20457794`** (`20457794d5c444de72a589e15fe34f782277b483`) — `feat(table): grid 批 CF——空态动作按钮（iris 独有）` — 8 files (imp; Final test counts: - **core: 1533/1533** (99 files, unchanged — core framework-free zero-touch)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-gate.md
+
+## 2026-08-15 21:06:26 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cg-baseline.md [ok]: Baseline essence (batch CG：单元格字数统计 — iris 独有): **Design** — one additive prop, two gated render sites, fail-closed:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cg-baseline.md
+
+## 2026-08-15 21:19:09 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cg-adapt.md [ok]: Report: **Commits**: `777a8e4b` (feat) + `9e9e55e6`-ish (docs adapt report)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cg-adapt.md
+
+## 2026-08-15 21:25:18 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cg-review.md [ok]: Verdict: **PASS**: Review written to `docs/vxe-grid/batch-cg-review.md`. No implementation files modified.; Verification results (HEAD `8d883dc2` = `777a8e4b` feat + docs): | Check | Result |; Spec conformance highlights: - `charCount?: boolean` after `editAutoHeight` (`props.ts:405`); additive-only (all hunks pure additions; types.ts / sol; Findings (1 low / 4 info, none blocking): 1. **low** `Table.tsx:237-244` — sum rounding lacks the `Number.isFinite(stats.sum)` guard the summary row/selection sum
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cg-review.md

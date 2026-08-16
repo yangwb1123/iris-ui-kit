@@ -785,6 +785,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    */
   autoLink?: boolean
   /**
+   * Recent filters (batch CB, iris 独有 — vxe has no "recent filters"
+   * concept): when true, every filter-panel confirm (non-empty checked
+   * set) records `{ key, values, ts }` into a core `createRecentFilters`
+   * ring (newest-first, 10 entries, MRU — re-confirming the same set
+   * bumps it to the top). The filter panel shows the recent entries
+   * above the options; clicking one applies it immediately (across
+   * columns) and closes. Additive — default off.
+   */
+  recentFilters?: boolean
+  /**
    * Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only
    * additions): row ops, proxy/view/selection methods, and (batch BZ) the
    * full view-state JSON export/import — `exportStateJson()` /

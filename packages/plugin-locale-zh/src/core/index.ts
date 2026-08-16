@@ -60,6 +60,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.filterConfirm': '确定',
   'table.filterClear': '清除',
   'table.filter': '筛选',
+  'table.recentFilters': '最近筛选',
   'table.distribution': '值分布',
   'table.distribution.others': '其余 {count} 个',
   'table.summary': '摘要',

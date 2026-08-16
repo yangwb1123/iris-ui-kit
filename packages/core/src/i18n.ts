@@ -124,6 +124,7 @@ export const defaultMessages: I18nMessages = {
   'table.filterConfirm': 'Confirm',
   'table.filterClear': 'Clear',
   'table.filter': 'Filter',
+  'table.recentFilters': 'Recent filters',
   'table.distribution': 'Value distribution',
   'table.distribution.others': '{count} more',
   'table.summary': 'Column summary',

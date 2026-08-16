@@ -36986,6 +36986,12 @@
           "description": "Cell auto-link (batch CA, iris 独有 — vxe has no URL/email auto- detection): when true, text cells run their display chain (mask → formatter ?? raw) through core `detectAutoLink`; a whole-text URL/email match renders an `<a data-iris-auto-link>` (_blank + noreferrer) instead of plain text. Non-matching text falls through to the formatter/raw branch unchanged; an explicit `col.link` column still wins (evaluated before autoLink). Additive — default off."
         },
         {
+          "name": "recentFilters",
+          "type": "boolean",
+          "optional": true,
+          "description": "Recent filters (batch CB, iris 独有 — vxe has no \"recent filters\" concept): when true, every filter-panel confirm (non-empty checked set) records `{ key, values, ts }` into a core `createRecentFilters` ring (newest-first, 10 entries, MRU — re-confirming the same set bumps it to the top). The filter panel shows the recent entries above the options; clicking one applies it immediately (across columns) and closes. Additive — default off."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -37984,6 +37990,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Cell auto-link (batch CA, iris 独有 — vxe has no URL/email auto- detection): when true, text cells run their display chain (mask → formatter ?? raw) through core `detectAutoLink`; a whole-text URL/email match renders an `<a data-iris-auto-link>` (_blank + noreferrer) instead of plain text. Non-matching text falls through to the formatter/raw branch unchanged; an explicit `col.link` column still wins (evaluated before autoLink). Additive — default off."
+            },
+            {
+              "name": "recentFilters",
+              "type": "boolean",
+              "optional": true,
+              "description": "Recent filters (batch CB, iris 独有 — vxe has no \"recent filters\" concept): when true, every filter-panel confirm (non-empty checked set) records `{ key, values, ts }` into a core `createRecentFilters` ring (newest-first, 10 entries, MRU — re-confirming the same set bumps it to the top). The filter panel shows the recent entries above the options; clicking one applies it immediately (across columns) and closes. Additive — default off."
             },
             {
               "name": "tableRef",
@@ -39182,7 +39194,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 166,
+        "propCount": 167,
         "eventCount": 31
       }
     },

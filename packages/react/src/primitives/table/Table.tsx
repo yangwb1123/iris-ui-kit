@@ -13,6 +13,7 @@ import {
   createAuditLog,
   createPerfStats,
   createVersionHistory,
+  createRecentFilters,
   detectAutoLink,
   flattenLeafColumns,
   flattenTree,
@@ -39,6 +40,8 @@ import {
   type AuditLog,
   type AuditLogType,
   type VersionHistory,
+  type RecentFilterEntry,
+  type RecentFilters,
   diffRows,
   type RowDiff,
   type RowDiffCellChange,
@@ -1945,6 +1948,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   versionHistory,
   compareWith,
   autoLink = false,
+  recentFilters = false,
   formulaTables,
   printable = false,
   seq = false,
@@ -2421,6 +2425,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   const history = historyRef.current
   const historySuppressRef = React.useRef(false)
+
+  // ── Built-in recent filters (iris 独有, batch CB) ────────────────────
+  // A core createRecentFilters keeps a bounded (10) ring of ONE entry per
+  // filter-panel confirm — the column key + the checked values,
+  // newest-first with (key, values-SET) MRU de-dupe. The record point is
+  // applyFilterValues (the confirm throat): non-empty sets only (empty =
+  // clear semantics, mergeFilterValues precedent) and controlled-
+  // irrelevant (records even without an onFilterValuesChange handler).
+  // The controller is created once (ref-once, mirrors auditRef) and stays
+  // inert unless the `recentFilters` prop is on (recentEnabledRef gate —
+  // off = zero cost, no record ever). The filter panel snapshots
+  // `list()` at open (key={filterPanelSeq} remount seeds it) — zero
+  // useSyncExternalStore subscription.
+  const recentEnabledRef = React.useRef(recentFilters)
+  recentEnabledRef.current = recentFilters
+  const recentRef = React.useRef<RecentFilters | null>(null)
+  if (recentRef.current === null) {
+    recentRef.current = createRecentFilters()
+  }
+  const recent = recentRef.current
 
   // ── Compare view (iris 独有, batch AU) ────────────────────────────────
   // A pure diff of the live rows against the `compareWith` snapshot by
@@ -4065,6 +4089,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   const applyFilterValues = (colKey: string, values: string[]): void => {
     onFilterValuesChange?.({ ...(filterValues ?? {}), [colKey]: values })
+    // Batch CB: record recent filters — non-empty sets only (an empty set is
+    // the clear semantics, mergeFilterValues precedent). Records even without
+    // an onFilterValuesChange handler (controlled-irrelevant).
+    if (recentEnabledRef.current && values.length > 0) {
+      recentRef.current?.record(colKey, values)
+    }
+  }
+  // Clicking a recent entry applies it immediately — possibly across columns
+  // (the entry carries its own column key) — and closes the panel. The
+  // re-record inside applyFilterValues bumps the entry to the top (MRU).
+  const applyRecentFilter = (entry: RecentFilterEntry): void => {
+    applyFilterValues(entry.key, entry.values)
+    closeFilterPanel()
   }
   const clearFilterValues = (colKey: string): void => {
     const next = { ...(filterValues ?? {}) }
@@ -9371,6 +9408,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   onClear={clearFilterValues}
                   onClose={closeFilterPanel}
                   t={t}
+                  recent={recentFilters ? recent.list() : []}
+                  onApplyRecent={applyRecentFilter}
+                  columns={displayColumns}
                 />
               )
             })()

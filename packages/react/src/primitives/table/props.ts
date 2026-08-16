@@ -630,12 +630,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * Batch BP (iris 独有 — vxe clipboard-config has no output-format switch): `copyFormat` selects the copy OUTPUT format for BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制 button) — `'tsv'` (default, byte-identical to batch O) / `'csv'` (RFC-4180, headerless range fiat like the 导出 CSV download) / `'html'` (a `<table>` fragment via core `toHtml`, with a header row of column titles — the toHtml contract — and the masked cell values, the batch-AY invariant across all three formats). Paste is unaffected — it always reads `\t`-delimited text. Invalid runtime values fail-closed to `'tsv'`.
    * Batch CU (iris 独有 — vxe clipboard-config always copies raw values, no format-preserving copy): `copyWithFormat` copies the FORMATTED text of formatter columns (the `contextCellText` display chain — mask → formatter → String, the same chain as the context-menu 复制值) instead of the raw/masked value, across ALL THREE `copyFormat` serializers. Only `col.formatter` columns switch chains — non-formatter columns stay byte-identical — and the formatted STRING still flows through the same serializers (RFC-4180 quoting + OWASP neutralization still apply). `exportRaw`'s copy-path skip is superseded on formatter columns (mask → formatter always); exports are untouched.
    */
-  clipConfig?: {
-    copy?: boolean
-    paste?: boolean
-    copyFormat?: 'tsv' | 'csv' | 'html'
-    copyWithFormat?: boolean
-  }
+  // NOTE: keep the inline object single-line — the manifest scanner reads member types line-wise (multi-line object props degrade to a bare object type, rowDrag precedent).
+  // prettier-ignore
+  clipConfig?: { copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html'; copyWithFormat?: boolean }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
   fnr?: boolean
   /** Batch CK (iris 独有 — vxe has no inline search highlight): a

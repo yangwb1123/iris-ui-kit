@@ -1997,3 +1997,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cm-review.md [ok]: Checks performed: | Check | Result |; Findings (both informational, non-blocking): 1. **P4** — Manifest description ends mid-phrase ("Pure CSS additive; default") because the generator (`packages/manifes
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cm-review.md
+
+## 2026-08-16 00:27:57 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cm-gate.md [ok]: Report: **Verdict → action**: Review **PASS** (2 informational P4s, non-blocking — no fixes required). Source implementation alr; Gate results: | Step | Result |; Final test counts: - **core: 1559/1559** (zero core changes, framework-free invariant intact); Commit: `b48e802ca5465876565788bee3e73eb01ef0c55b` — `feat(table): grid 批 CM——列合计行增强（iris 独有）` (5 files: batch-cm-gate/review re
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cm-gate.md
+
+## 2026-08-16 00:34:54 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cn-baseline.md [ok]: Baseline summary — 批 CN：单元格拖拽移动（iris 独有）: **Design** — `cellDrag?: boolean` (additive, fail-closed), mirroring the rangeFill (batch AQ) gesture mold end-to-end; z
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cn-baseline.md
+
+## 2026-08-16 00:50:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cn-adapt.md [ok]: 批 CN（单元格拖拽移动，iris 独有）完成。spec `cellDrag?: boolean`——cellRange 选中后按住范围左上角顶缘 move grip（`data-iris-range-move`，12×4 主色 pill，cursor: move，z 3）拖拽剪切移动整块到新位置，经一次 `commitRowList(next, 'edit')`（batch AL undo 漏斗），选择跟随移动块（Excel 对齐）。实现：props.ts `rangeFill` 后加 prop（manifest propCount 173→174，events 31 不变）· styles.ts 活 `RANGE_MOVE_STYLE`（RANGE_FILL_HANDLE_STYLE 先例，left/right 0 + auto margin 居中——RTL 中性）· Table.tsx：import + 3 模块 helper（`isRangeMoveGripCell`/`rangeMoveCellStyle`/`renderRangeMoveGrip`）+ destructure `cellDrag = false` + `cellDragTarget` state + 3 handlers（fill AQ 逐行同构：elementFromPoint → closest 命中、越界保持最后解析端、pointerup 重臂 dismissal、pointercancel 零提交）+ `moveRangeFromHandle`（**越界 clamp** `dstRow = clamp(targetRow, 0, body.length − h)` / `dstCol = clamp(…, 0, cols.length − w)` 整块恒落表内；clamp 后 == 源 → 零提交 no-op；**剪切两阶段 ONE commit**：可写源→可写目标写入 + 未覆盖源单元格清空——重叠安全原子滑动；公式列不读/写/清、locked/readonly 两阶段存活（batch BE）、keyless 行跳过；`startRange`+`extendRange`+`updateRangeToolbarAnchor` 选择跟随）+ 3 根门触点（pointermove/up/cancel 门拓宽 + cellDragTarget 清空）+ dismiss 监听拓宽 `[data-iris-range-fill], [data-iris-range-move]`（`[rangeFill, cellDrag]` deps）· 新测试 cell-drag-move.test.tsx 16 例（2 fail-closed、grip 渲染/按压存活、移动三例：单格/2×2 块/重叠下滑、越界三例：下/上/右 clamp、pointercancel、按压即放 no-op、公式列跳过、locked 存活、keyless no-op、undo）。两显式 fiat：无 dest 预览（spec 静默）、单顶缘 grip 非四边区域。验证：core 1559/1559（零改动，框架无关不变量完好）· react 2535/2535（2519→+16）· typecheck ✓ · lint 0 errors（1 既有 complexity warning）· iris-ui-spec 0 violations（1416 files）· gen:manifest 再生成（174 props/31 events/155×4/86 tokens）。零改动：core/types/i18n/events/solid·vue·svelte。遗留：review/gate 阶段 + arch-check ratchet（HEAD 同态陈旧，pre-existing）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cn-adapt.md

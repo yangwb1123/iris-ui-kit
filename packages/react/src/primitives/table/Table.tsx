@@ -103,6 +103,7 @@ import {
   PRESENCE_LABEL_STYLE,
   RANGE_FILL_HANDLE_STYLE,
   RANGE_FILL_TARGET_BG,
+  RANGE_MOVE_STYLE,
   SEARCH_HIT_STYLE,
   WATERMARK_WRAPPER_STYLE,
   WATERMARK_OVERLAY_STYLE,
@@ -196,6 +197,47 @@ function renderRangeFillHandle(
       data-iris-range-fill=""
       onPointerDown={(e) => onPointerDown(e, row, col)}
       style={RANGE_FILL_HANDLE_STYLE}
+    />
+  )
+}
+
+/* Batch CN cell drag-move helpers (module scope): same discipline as the
+   Batch AQ fill helpers — the per-cell move-grip logic stays OUT of the
+   row-render arrow so the eslint complexity budget on that hot callback is
+   untouched. Each helper is a pure function of its inputs. */
+
+/** True when this cell is the range's top-left cell hosting the move grip. */
+function isRangeMoveGripCell(
+  cellDrag: boolean,
+  range: { start: { row: number; col: number } } | null,
+  idx: number,
+  ci: number,
+): boolean {
+  return cellDrag && range !== null && range.start.row === idx && range.start.col === ci
+}
+
+/** Host style for the move-grip cell: relative + above pinned sticky cells
+ * (zIndex 2 — the same anchor the fill-handle host uses; both styles spread
+ * relative, which is idempotent). */
+function rangeMoveCellStyle(gripCell: boolean): React.CSSProperties {
+  return gripCell ? { position: 'relative', zIndex: 2 } : {}
+}
+
+/** The 12×4 move grip (data-iris-range-move) on the range's top edge,
+ * rendered only in the range's top-left cell; pointerdown starts the drag
+ * (and stops the cell click, fill-handle precedent). */
+function renderRangeMoveGrip(
+  gripCell: boolean,
+  row: number,
+  col: number,
+  onPointerDown: (e: React.PointerEvent, row: number, col: number) => void,
+): React.ReactNode {
+  if (!gripCell) return null
+  return (
+    <span
+      data-iris-range-move=""
+      onPointerDown={(e) => onPointerDown(e, row, col)}
+      style={RANGE_MOVE_STYLE}
     />
   )
 }
@@ -2395,6 +2437,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onGroupCollapseChange,
   cellRange = false,
   rangeFill = false,
+  cellDrag = false,
   clipConfig,
   fnr = false,
   searchHighlight,
@@ -6592,6 +6635,131 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [cellRangeCtrl, rowKey, commitRowList, updateRangeToolbarAnchor],
   )
 
+  // ── Cell drag-move (batch CN, iris 独有 — vxe has no cell-move parity) ──
+  // The move grip (data-iris-range-move, 12×4 primary pill) renders on the
+  // range's TOP edge at its top-left cell; dragging it to another cell
+  // CUT-MOVES the whole block there (剪切移动 — source cells not covered by
+  // the destination rect are cleared; locked/readonly and formula cells
+  // survive both phases) and the selection follows the moved block (Excel
+  // parity). `cellDragTarget` holds the drag-end cell while dragging: the
+  // SAME hit-testing mold as the fill handle — elementFromPoint →
+  // closest('[data-iris-cell-row][data-iris-cell-col]') (leaf cells only).
+  const [cellDragTarget, setCellDragTarget] = React.useState<{
+    row: number
+    col: number
+  } | null>(null)
+
+  const handleCellDragPointerDown = (e: React.PointerEvent, row: number, col: number): void => {
+    if (e.button !== 0) return
+    // preventDefault stops the compatibility click → the cell's onClick
+    // (startRange/extendRange) never fires from a grip press.
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* jsdom has no real pointer capture */
+    }
+    setCellDragTarget({ row, col })
+  }
+
+  const handleCellDragPointerMove = (e: React.PointerEvent): void => {
+    if (cellDragTarget === null) return
+    const el = document.elementFromPoint(e.clientX, e.clientY)
+    const cellEl = el?.closest('[data-iris-cell-row][data-iris-cell-col]') as HTMLElement | null
+    if (!cellEl) return // outside the body → keep the last resolved drag end
+    const r = Number(cellEl.dataset.irisCellRow)
+    const c = Number(cellEl.dataset.irisCellCol)
+    if (Number.isNaN(r) || Number.isNaN(c)) return
+    setCellDragTarget((prev) =>
+      prev && prev.row === r && prev.col === c ? prev : { row: r, col: c },
+    )
+  }
+
+  const handleCellDragPointerUp = (): void => {
+    // Batch AQ fix mirrored: the drag is over, so the next Escape / outside
+    // press must dismiss the range again (self-cleaning suppression flag).
+    suppressRangeDismissRef.current = false
+    if (cellDragTarget === null) return
+    const { row, col } = cellDragTarget
+    setCellDragTarget(null)
+    moveRangeFromHandle(row, col)
+  }
+
+  /** Cut-move of the whole range block to (targetRow, targetCol): the drag
+   * end CLAMPS so the block always fits (越界 — Excel parity), a clamped
+   * destination equal to the source block is a zero-commit no-op, and the
+   * two phases (writable source → writable dest writes + clears of source
+   * cells NOT covered by the dest rect) land in ONE commitRowList — an
+   * overlap-safe atomic slide. Formula columns are never read/written/
+   * cleared; locked/readonly cells survive both phases (batch BE); keyless
+   * rows are skipped. Selection follows the moved block. */
+  const moveRangeFromHandle = React.useCallback(
+    (targetRow: number, targetCol: number): void => {
+      const range = cellRangeCtrl.getRange()
+      if (!range || !rowKey) return
+      const body = liveBodyRef.current
+      const cols = liveLeafRef.current
+      if (body.length === 0 || cols.length === 0) return
+      const h = range.end.row - range.start.row + 1
+      const w = range.end.col - range.start.col + 1
+      const dstRow = Math.min(Math.max(targetRow, 0), body.length - h)
+      const dstCol = Math.min(Math.max(targetCol, 0), cols.length - w)
+      if (dstRow === range.start.row && dstCol === range.start.col) return
+      const byKey = new Map<string | number, Record<string, unknown>>()
+      for (let r = 0; r < h; r += 1) {
+        const srcRow = body[range.start.row + r]
+        const dstRowObj = body[dstRow + r]
+        if (!srcRow || !dstRowObj) continue
+        const srcKey = rowKeyOf(srcRow)
+        const dstKey = rowKeyOf(dstRowObj)
+        if (srcKey == null || dstKey == null) continue // keyless rows skipped
+        for (let c = 0; c < w; c += 1) {
+          const srcCol = cols[range.start.col + c]
+          const dstColObj = cols[dstCol + c]
+          if (!srcCol || !dstColObj) continue
+          // Formula columns are display-only: never read, written or cleared.
+          if (srcCol.formula || dstColObj.formula) continue
+          const srcLocked = isCellLocked(srcRow, srcCol) || isCellReadonly(srcRow, srcCol)
+          // Phase 1: writable source → writable dest (locked/readonly survive).
+          if (
+            !srcLocked &&
+            !isCellLocked(dstRowObj, dstColObj) &&
+            !isCellReadonly(dstRowObj, dstColObj)
+          ) {
+            const value = getCellValue(srcRow, srcCol)
+            byKey.set(dstKey, { ...byKey.get(dstKey), [dstColObj.key]: value })
+          }
+          // Phase 2: clear the source cell unless the dest rect covers it
+          // (overlap-safe slide) — locked/readonly survive the clear too.
+          const srcRowIdx = range.start.row + r
+          const srcColIdx = range.start.col + c
+          const covered =
+            dstRow <= srcRowIdx &&
+            srcRowIdx <= dstRow + h - 1 &&
+            dstCol <= srcColIdx &&
+            srcColIdx <= dstCol + w - 1
+          if (!covered && !srcLocked) {
+            byKey.set(srcKey, { ...byKey.get(srcKey), [srcCol.key]: '' })
+          }
+        }
+      }
+      if (byKey.size === 0) return
+      const keyField = rowKey
+      const next = (externalDataRef.current ?? []).map((row) => {
+        const k = (row as Record<string, unknown>)[keyField]
+        const patch = k != null ? byKey.get(k as string | number) : undefined
+        return patch ? { ...row, ...patch } : row
+      })
+      commitRowList(next, 'edit')
+      // Excel parity: the selection follows the moved block.
+      cellRangeCtrl.startRange(dstRow, dstCol)
+      cellRangeCtrl.extendRange(dstRow + h - 1, dstCol + w - 1)
+      updateRangeToolbarAnchor()
+    },
+    [cellRangeCtrl, rowKey, commitRowList, updateRangeToolbarAnchor],
+  )
+
   const copyActiveRange = React.useCallback((): void => {
     const range = cellRangeCtrl.getRange()
     if (!range) return
@@ -6692,14 +6860,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // them; every pointerdown re-syncs the flag, so it is self-cleaning.
   const suppressRangeDismissRef = React.useRef(false)
   React.useEffect(() => {
-    if (!rangeFill) return
+    if (!rangeFill && !cellDrag) return
     const onWindowPointerDown = (e: PointerEvent): void => {
       const target = e.target as HTMLElement | null
-      suppressRangeDismissRef.current = !!target?.closest('[data-iris-range-fill]')
+      suppressRangeDismissRef.current = !!target?.closest(
+        '[data-iris-range-fill], [data-iris-range-move]',
+      )
     }
     window.addEventListener('pointerdown', onWindowPointerDown, true)
     return () => window.removeEventListener('pointerdown', onWindowPointerDown, true)
-  }, [rangeFill])
+  }, [rangeFill, cellDrag])
 
   // ── Find & replace (batch O: fnr) — Ctrl/Cmd+F opens the bar (when not
   // editing); matches highlight over bodyData in flat mode (case-insensitive
@@ -7458,6 +7628,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // (excluding the source range) highlight while dragging.
           const fillHandleCell = isRangeFillHandleCell(rangeFill, activeRange, idx, ci)
           const fillTargetCell = isRangeFillTarget(idx, ci)
+          // Batch CN cell drag-move: the 12×4 move grip lives on the range's
+          // top edge — its top-left cell (the bottom-right stays the fill
+          // handle + charCount badge territory).
+          const moveGripCell = isRangeMoveGripCell(cellDrag, activeRange, idx, ci)
           // Batch CE copy flash: SNAPSHOT semantics — the rect was captured
           // at copy time, so the highlight does not chase a changed selection
           // (spec “复制成功后…选中单元格短暂高亮”).
@@ -7572,6 +7746,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   striped && idx % 2 === 1,
                 ),
                 ...rangeFillCellStyle(fillHandleCell, fillTargetCell),
+                // Batch CN: the move-grip host anchors to a relative cell
+                // (spread AFTER rangeFillCellStyle — relative is idempotent,
+                // the zIndex 2 stays, same layering discipline).
+                ...rangeMoveCellStyle(moveGripCell),
                 // Batch CG: the charCount corner badge anchors to a relative
                 // cell (editing cell + selection badge host) — spread AFTER
                 // rangeFillCellStyle so the handle host keeps its zIndex 2
@@ -7775,6 +7953,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 applySearchHighlight(displayValue as React.ReactNode, searchHighlight)
               )}
               {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
+              {/* Batch CN (iris 独有): the cell-drag-move grip on the range's
+              top-left cell top edge — same pointerdown-stops-the-click
+              discipline as the fill handle. */}
+              {renderRangeMoveGrip(moveGripCell, idx, ci, handleCellDragPointerDown)}
               {/* Batch CG (iris 独有): the selection badge at the range's
               bottom-right cell — count (+ sum when numeric data exists),
               reusing the rangeStatsData memo the stats panel consumes. */}
@@ -9280,33 +9462,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : undefined
         }
         onPointerMove={
-          rowDrag || columnDrag || rangeFill || selectionDrag
+          rowDrag || columnDrag || rangeFill || cellDrag || selectionDrag
             ? (e) => {
                 handleRowDragPointerMove(e)
                 handleColDragPointerMove(e)
                 handleRangeFillPointerMove(e)
+                handleCellDragPointerMove(e)
                 handleSelectionDragPointerMove(e)
               }
             : undefined
         }
         onPointerUp={
-          rowDrag || columnDrag || rangeFill || selectionDrag
+          rowDrag || columnDrag || rangeFill || cellDrag || selectionDrag
             ? (e) => {
                 handleRowDragPointerUp()
                 resolveColDrag(e.clientX, e.clientY)
                 handleRangeFillPointerUp()
+                handleCellDragPointerUp()
                 handleSelectionDragPointerUp()
               }
             : undefined
         }
         onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
         onPointerCancel={
-          rangeFill || selectionDrag || rowDrag
+          rangeFill || cellDrag || selectionDrag || rowDrag
             ? () => {
                 // Aborted drag → drop the target highlight, nothing committed.
                 // Re-arm dismissal too (same stale-flag fix as pointerup).
                 suppressRangeDismissRef.current = false
                 setFillTarget(null)
+                // Batch CN: aborted move drag → drop the drag end, nothing
+                // committed (same zero-commit discipline as the fill cancel).
+                setCellDragTarget(null)
                 // Aborted selection drag: drop the pending press / active
                 // anchor (nothing committed) and clear the suppression arm —
                 // no trailing click follows a cancel, so an armed flag must

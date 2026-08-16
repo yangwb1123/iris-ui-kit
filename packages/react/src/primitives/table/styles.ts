@@ -127,6 +127,25 @@ export const RANGE_FILL_HANDLE_STYLE: React.CSSProperties = {
    source range) while the handle is being dragged — token-driven only. */
 export const RANGE_FILL_TARGET_BG = 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
 
+/* Batch CN cell drag-move (iris 独有 — vxe has no cell-move parity): the
+   12×4 primary pill on the range's TOP edge (data-iris-range-move), rendered
+   inside the range's top-left cell. cursor: move — the whole gesture is the
+   grip. Centered on the edge (left/right 0 + auto margins — direction-
+   neutral in RTL, unlike the fill handle's physical right corner) above the
+   host cell's zIndex 2, same layering as the fill handle (z 3). */
+export const RANGE_MOVE_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  top: 2,
+  left: 0,
+  right: 0,
+  margin: '0 auto',
+  width: 12,
+  height: 4,
+  background: 'var(--iris-primary)',
+  cursor: 'move',
+  zIndex: 3,
+}
+
 /* Batch CE copy flash (iris 独有 — vxe has no copy feedback): after a
    SUCCESSFUL range copy (Ctrl/Cmd+C or the range toolbar 复制) the copied
    cells flash briefly. color-mix over the background token — distinct from

@@ -1,0 +1,15 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-cn-baseline.md` (29 lines). Zero source files touched — `git status` shows only the new baseline plus the pre-existing prior-stage dirt (`DECISIONS.md`, `batch-cm-gate.md`), HEAD `b48e802c` unchanged.
+
+## Baseline summary — 批 CN：单元格拖拽移动（iris 独有）
+
+**Design** — `cellDrag?: boolean` (additive, fail-closed), mirroring the rangeFill (batch AQ) gesture mold end-to-end; zero core/types/i18n/events changes (core 1559 invariant intact):
+
+- **Prop** after `rangeFill` in `props.ts` (:556, range family) → manifest **173→174** (events 31 unchanged).
+- **Gesture surface**: when `cellDrag && activeRange`, the range's **top-left cell** renders a `data-iris-range-move` grip (12×4 primary pill on the top edge, `cursor: move`, z 3) — the fill handle + charCount badge own the bottom-right, the top edge is free. Grip pointerdown `preventDefault + stopPropagation` (fill precedent) so the cell's `startRange` click never fires.
+- **Drag flow**: `handleCellDragPointerDown/Move/Up` are line-for-line isomorphic to the fill handlers — `elementFromPoint` → `closest('[data-iris-cell-row][data-iris-cell-col]')` hit-testing, keep-last-resolved-outside-body, pointerup re-arms range dismissal (the fill AQ regression fix), pointercancel clears with zero commit. Root pointermove/up/cancel gates widen + the window-capture dismissal-suppress listener widens to `[data-iris-range-fill], [data-iris-range-move]`.
+- **Commit `moveRangeFromHandle`** (fillRangeFromHandle mirror, byKey-patch pattern): **越界 clamp** `dstRow = clamp(targetRow, 0, body.length − h)` / `dstCol = clamp(…, 0, cols.length − w)` — the whole block always fits (Excel parity); clamped-dst==source → zero-commit no-op. **Cut-move two phases** in ONE `commitRowList(next, 'edit')`: writes (writable source → writable dest) + clears of source cells _not covered by the dest rect_ — overlap-safe atomic slide; formula columns never read/written/cleared, locked/readonly survive both phases (batch BE), keyless rows skipped. `'edit'` commit type (clearActiveRange/Delete precedent — no `'move'` union addition, core untouched). **Selection follows the block** (`startRange`+`extendRange`+`updateRangeToolbarAnchor`, Excel parity).
+- **Three fiats**: no dest preview (spec silent), single top-edge grip not a 4-side border zone, selection follows the block.
+
+**File map**: `props.ts` · `styles.ts` (+`RANGE_MOVE_STYLE`, live — `RANGE_FILL_HANDLE_STYLE` precedent) · `Table.tsx` (import + 3 module helpers + destructure + `cellDragTarget` state + 3 handlers + `moveRangeFromHandle` + 3 root-gate touch points + dismiss-listener widen + grip injection at :7777) · NEW `cell-drag-move.test.tsx` · `pnpm gen:manifest` · comparison-doc row 86 at adapt.
+
+**Test plan** — 16 react tests (range-fill harness mirrored): 2 fail-closed, grip render/press-survival, **移动** (single cell, 2×2 block, overlap slide), **越界** (down clamp, up clamp, right clamp), pointercancel, press+release no-op, formula skip, locked survive, keyless no-op, undo. react 2519→**2535**, core 1559 unchanged.

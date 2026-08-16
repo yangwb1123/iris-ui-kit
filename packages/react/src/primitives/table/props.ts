@@ -554,6 +554,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * (the handle only grows the range). Additive — default off.
    */
   rangeFill?: boolean
+  /**
+   * Cell drag-move (batch CN, iris 独有 — vxe has no cell-move parity): when
+   * `cellRange` has a live selected range (≥1 cell), a move grip
+   * (`data-iris-range-move`, 12×4 primary pill on the range's top edge at its
+   * top-left cell) appears; dragging it to another cell CUT-MOVES the whole
+   * block there (剪切移动 — source cells not covered by the destination rect
+   * are cleared; locked/readonly and formula cells survive both phases) and
+   * the selection follows the moved block (Excel parity). The drag end clamps
+   * so the block always fits (down/up/right/left 越界). Zero-commit no-op
+   * when the drag stays on the source block. Inert without `cellRange`.
+   * Additive — default off.
+   */
+  cellDrag?: boolean
   /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off.
    * Batch BP (iris 独有 — vxe clipboard-config has no output-format switch): `copyFormat` selects the copy OUTPUT format for BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制 button) — `'tsv'` (default, byte-identical to batch O) / `'csv'` (RFC-4180, headerless range fiat like the 导出 CSV download) / `'html'` (a `<table>` fragment via core `toHtml`, with a header row of column titles — the toHtml contract — and the masked cell values, the batch-AY invariant across all three formats). Paste is unaffected — it always reads `\t`-delimited text. Invalid runtime values fail-closed to `'tsv'`. */
   clipConfig?: { copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html' }

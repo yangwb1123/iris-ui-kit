@@ -1777,3 +1777,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cd-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low / 3 info): Verdict written to `docs/vxe-grid/batch-cd-review.md`.; Verification (all green, on HEAD `9f14eb13`): | Check | Result |; Key inspection results: - **Spec correctness**: single pure `resolveRowDragDrop` (Table.tsx:171) shared by move + up handlers; side = pointer vs; Findings (no blockers): 1. **[low]** Table.tsx:8916-8918 — comment claims the line renders "below … pinned columns", but pinned cells are z1 whi
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-review.md
+
+## 2026-08-16 03:00:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-gate.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low + 3 info): All gate steps executed:; Commits: - `fca66df9` — `feat(table): grid 批 CD——行拖拽插入指示线（iris 独有）` (gate-stage docs delta; implementation was already at `9c1a1ed1`); Final test counts: - **core: 1533/1533** (99 files); react: 2419/2419 (214 files, incl. new row-drag-indicator.test.tsx 10/10)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-gate.md

@@ -190,6 +190,7 @@ export {
 } from './value-distribution'
 export { matchConditionalStyles, type ConditionalStyleRule } from './conditional-styles'
 export { maskValue, type MaskKind } from './mask'
+export { detectAutoLink } from './auto-link'
 export { summarizeColumn } from './summary'
 export { buildChartData, chartDomain, type ChartData } from './chart-data'
 export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'

@@ -13,6 +13,7 @@ import {
   createAuditLog,
   createPerfStats,
   createVersionHistory,
+  detectAutoLink,
   flattenLeafColumns,
   flattenTree,
   formatClock,
@@ -1385,6 +1386,47 @@ function contextCellText<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Batch CA (iris 独有 — vxe has no auto-link): the `autoLink` cell body —
+ * the same display chain as `contextCellText` (mask → formatter ?? raw) —
+ * renders an `<a data-iris-auto-link>` only when the final text is a string
+ * that core `detectAutoLink` matches (whole-text URL/email, _blank +
+ * noreferrer, click does not bubble into row/range handlers). Non-matching
+ * text falls through to the formatter/raw branches byte-identically (a
+ * non-string formatter result or non-string raw value returns it as-is, so
+ * this branch is a drop-in replacement for the plain path).
+ */
+function renderAutoLinkCell<Row extends Record<string, unknown>>(
+  row: Row,
+  col: IrisTableColumn<Row>,
+): React.ReactNode {
+  const displayValue = applyCellMask(getCellValue(row, col), col)
+  let detected: string | null = null
+  let text: string | null = null
+  if (col.formatter) {
+    const formatted = col.formatter(displayValue, row)
+    if (typeof formatted !== 'string') return formatted
+    text = formatted
+  } else if (typeof displayValue === 'string') {
+    text = displayValue
+  } else {
+    return displayValue as React.ReactNode
+  }
+  detected = detectAutoLink(text)
+  if (!detected) return text
+  return (
+    <a
+      data-iris-auto-link=""
+      href={detected}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {text}
+    </a>
+  )
+}
+
+/**
  * Write clipboard text — best-effort, ordered: registered host handler
  * (core `copyText`) → `navigator.clipboard.writeText` → hidden-textarea
  * `execCommand('copy')` fallback. In test environments without a clipboard
@@ -1902,6 +1944,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   perfStats,
   versionHistory,
   compareWith,
+  autoLink = false,
   formulaTables,
   printable = false,
   seq = false,
@@ -7040,6 +7083,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     </a>
                   )
                 })()
+              ) : autoLink ? (
+                // Batch CA (iris 独有): auto-detected whole-text URL/email
+                // links — evaluated AFTER `col.link` (an explicit link column
+                // still wins), BEFORE the formatter/raw branches (a
+                // non-matching text falls through byte-identically).
+                renderAutoLinkCell(row, col)
               ) : col.formatter ? (
                 // vxe formatter parity (batch I): display-only — sorting,
                 // filtering, editing and summary all read the raw value. The

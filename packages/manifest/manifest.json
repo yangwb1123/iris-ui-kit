@@ -36980,6 +36980,12 @@
           "description": "Compare view (batch AU, iris 独有 — vxe has no compare capability): a snapshot the live rows are diffed against by `rowKey`. Every live row absent from the snapshot renders `data-iris-row-removed`, every live row present in both with ≥1 differing cell renders `data-iris-row-changed` with `data-iris-cell-changed` on the changed cells and a title tooltip `旧值: X → 新值: Y` (old = live value, new = snapshot value) that overrides the tooltipConfig title (compare wins, documented); snapshot- only rows are `added` in the core diff but have no rendered slot — the compare view renders the live dataset (documented). Core `diffRows` is framework-free; the memo is null without `compareWith` or `rowKey` — additive, default off."
         },
         {
+          "name": "autoLink",
+          "type": "boolean",
+          "optional": true,
+          "description": "Cell auto-link (batch CA, iris 独有 — vxe has no URL/email auto- detection): when true, text cells run their display chain (mask → formatter ?? raw) through core `detectAutoLink`; a whole-text URL/email match renders an `<a data-iris-auto-link>` (_blank + noreferrer) instead of plain text. Non-matching text falls through to the formatter/raw branch unchanged; an explicit `col.link` column still wins (evaluated before autoLink). Additive — default off."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -37972,6 +37978,12 @@
               "type": "Row[]",
               "optional": true,
               "description": "Compare view (batch AU, iris 独有 — vxe has no compare capability): a snapshot the live rows are diffed against by `rowKey`. Every live row absent from the snapshot renders `data-iris-row-removed`, every live row present in both with ≥1 differing cell renders `data-iris-row-changed` with `data-iris-cell-changed` on the changed cells and a title tooltip `旧值: X → 新值: Y` (old = live value, new = snapshot value) that overrides the tooltipConfig title (compare wins, documented); snapshot- only rows are `added` in the core diff but have no rendered slot — the compare view renders the live dataset (documented). Core `diffRows` is framework-free; the memo is null without `compareWith` or `rowKey` — additive, default off."
+            },
+            {
+              "name": "autoLink",
+              "type": "boolean",
+              "optional": true,
+              "description": "Cell auto-link (batch CA, iris 独有 — vxe has no URL/email auto- detection): when true, text cells run their display chain (mask → formatter ?? raw) through core `detectAutoLink`; a whole-text URL/email match renders an `<a data-iris-auto-link>` (_blank + noreferrer) instead of plain text. Non-matching text falls through to the formatter/raw branch unchanged; an explicit `col.link` column still wins (evaluated before autoLink). Additive — default off."
             },
             {
               "name": "tableRef",
@@ -39170,7 +39182,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 165,
+        "propCount": 166,
         "eventCount": 31
       }
     },

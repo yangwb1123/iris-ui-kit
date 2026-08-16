@@ -775,6 +775,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    */
   compareWith?: Row[]
   /**
+   * Cell auto-link (batch CA, iris 独有 — vxe has no URL/email auto-
+   * detection): when true, text cells run their display chain
+   * (mask → formatter ?? raw) through core `detectAutoLink`; a whole-text
+   * URL/email match renders an `<a data-iris-auto-link>` (_blank +
+   * noreferrer) instead of plain text. Non-matching text falls through to
+   * the formatter/raw branch unchanged; an explicit `col.link` column still
+   * wins (evaluated before autoLink). Additive — default off.
+   */
+  autoLink?: boolean
+  /**
    * Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only
    * additions): row ops, proxy/view/selection methods, and (batch BZ) the
    * full view-state JSON export/import — `exportStateJson()` /

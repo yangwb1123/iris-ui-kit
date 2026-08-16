@@ -17,7 +17,7 @@ The single low finding was fixed as part of this gate (repo precedent: 批 BK/�
 
 ## Commit
 
-- **`<hash>`** — `feat(table): grid 批 CF——空态动作按钮（iris 独有）` (implementation + portal regression test + comparison doc + DECISIONS.md + stage reports; implementation was already at `92455ece`)
+- **``20457794` (`20457794d5c444de72a589e15fe34f782277b483`)`** — `feat(table): grid 批 CF——空态动作按钮（iris 独有）` (implementation + portal regression test + comparison doc + DECISIONS.md + stage reports; implementation was already at `92455ece`)
 
 Working tree clean, `.vinxi` excluded.
 

@@ -2152,3 +2152,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ct-adapt.md [ok]: Report — 批 CT：表格标签页（iris 独有）: Commit `feat(table): grid 批 CT——表格标签页（iris 独有）`; Files changed (4 source + 1 test + manifest + docs): types.ts IrisTableTab / props.ts tableTabs (propCount 179→180) / Table.tsx 4 touch points + print CSS / index.ts barrel / table-tabs.test.tsx 10 tests / manifest 180 props 31 events / comparison doc; Verification: core 1559/1559, react typecheck clean + 2604/2604, lint 0 errors (1 pre-existing warning), spec 0 violations (1416 files), check:manifest up to date
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-adapt.md
+
+## 2026-08-16 07:35:42 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ct-adapt.md [ok]: Report — 批 CT：表格标签页（iris 独有）: **Commit**: `4dbdb9bc feat(table): grid 批 CT——表格标签页（iris 独有）` (working tree clean except pre-existing `batch-cs-gate.md`; Files changed (4 source + 1 test + manifest + docs): | File | Change |; Implementation: Spec-literal: clicking a tab applies each name in `views` **in order** through the existing `selectView` path — unknown ; Tests added (10): render/position + nothing-active · fail-closed zero-DOM (bare + `[]`) + radius pin · single-view apply + select mirror ·; Verification (all ✅): - `@iris-ui-kit/core test`: **1559/1559** (untouched, framework-free)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-adapt.md
+
+## 2026-08-16 07:39:59 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ct-review.md [ok]: 审核摘要: **验证（全部在 HEAD `4dbdb9bc` 上复跑）**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-review.md

@@ -1135,8 +1135,9 @@ const EMPTY_ACTION_STYLE: React.CSSProperties = {
 }
 
 /** Discriminator guard: a plain object (not null, not an array, not a React
- * element) is the `IrisTableEmptyState` descriptor; every other ReactNode
- * (strings, elements, fragments, iterables) stays on the node path. */
+ * element, not a React-internal marker like portals) is the
+ * `IrisTableEmptyState` descriptor; every other ReactNode (strings, elements,
+ * fragments, portals, iterables) stays on the node path. */
 function isEmptyStateObject(
   state: React.ReactNode | IrisTableEmptyState,
 ): state is IrisTableEmptyState {
@@ -1144,7 +1145,10 @@ function isEmptyStateObject(
     typeof state === 'object' &&
     state !== null &&
     !Array.isArray(state) &&
-    !React.isValidElement(state)
+    !React.isValidElement(state) &&
+    // React portals carry `$$typeof: REACT_PORTAL_TYPE`, which isValidElement
+    // misses; any `$$typeof` marker is React-internal, never a descriptor.
+    !('$$typeof' in state)
   )
 }
 

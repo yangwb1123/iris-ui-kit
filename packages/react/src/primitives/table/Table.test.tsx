@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { createPortal } from 'react-dom'
 import { IrisTable } from './Table'
 import { exportCsv } from './exportCsv'
 import { exportExcel } from './exportExcel'
@@ -281,6 +282,18 @@ describe('@iris-ui-kit/react IrisTable', () => {
       />,
     )
     expect(document.querySelector('[data-testid=empty]')).not.toBeNull()
+  })
+
+  it('emptyState accepts a portal ($$typeof marker not misread as descriptor)', () => {
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={[]}
+        emptyState={createPortal(<div data-testid="empty-portal">Portal</div>, document.body)}
+      />,
+    )
+    // The portal content renders as-is (not the fallback text / descriptor path).
+    expect(document.querySelector('[data-testid=empty-portal]')?.textContent).toBe('Portal')
   })
 
   it('renders the localized loading state with aria-busy', () => {

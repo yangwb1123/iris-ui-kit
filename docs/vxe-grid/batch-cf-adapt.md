@@ -1,25 +1,24 @@
-Done. Batch CF (空态动作按钮) is complete and committed.
+Batch CF（空态动作按钮，iris 独有）complete and committed.
 
 ## Report
 
 **Commits**:
 
-- `(this commit)` — `feat(table): grid 批 CF——空态动作按钮（iris 独有）`
-- `(this commit)` — `docs(table): batch CF adapt report`
+- `92455ece` — `feat(table): grid 批 CF——空态动作按钮（iris 独有）`
+- `53eace91` — `docs(table): batch CF adapt report`
 
 **Files changed** (3 source + 1 test + 1 report; ≤4 + tests):
 
-- `packages/react/src/primitives/table/props.ts` — `emptyState?: ReactNode` widened to `ReactNode | IrisTableEmptyState`; new named exported interface `IrisTableEmptyState` (`text?: ReactNode`, `action?: { label: string; onClick: () => void }`). ReactNode form byte-identical; object form is the only new path. No new prop → manifest propCount stays 168 (type-string diff only). Object form (a non-element plain object) cannot collide with ReactNode (elements/strings/numbers/arrays are structurally distinct).
-- `packages/react/src/primitives/table/Table.tsx` — module-level helpers (`isEmptyStateObject` discriminator guard / `emptyTextOf` / `emptyActionOf` / `renderEmptyState`) + `EMPTY_ACTION_STYLE` const (token-for-token mirror of the error-row retry button — all `--iris-*` tokens, zero magic values) keep the body-render complexity flat (285→284). The single `data-iris-table-row="empty"` row now calls `renderEmptyState(emptyState, t('table.empty'))`; descriptor path renders 单行 inline flow — text span (12px `marginInlineEnd` only when an action follows, RTL-safe `margin-inline-end`) + `<button type="button" data-iris-empty-action>`. Discriminator guard: `typeof object && !Array && !isValidElement` — React elements/arrays/strings stay on the untouched node path (zero wrapper).
+- `packages/react/src/primitives/table/props.ts` — `emptyState?: ReactNode` widened to `ReactNode | IrisTableEmptyState`; new **named exported interface** `IrisTableEmptyState` (`text?: ReactNode`, `action?: { label: string; onClick: () => void }`). ReactNode form byte-identical; no new prop → propCount stays 168 (type-string diff only).
+- `packages/react/src/primitives/table/Table.tsx` — module-level `isEmptyStateObject` (guard: `typeof object && !Array && !isValidElement`) + `emptyTextOf`/`emptyActionOf`/`renderEmptyState` + `EMPTY_ACTION_STYLE` const (token-for-token mirror of the error-row retry button, all `--iris-*` tokens). The single `data-iris-table-row="empty"` row renders 单行 inline flow: text span (12px `marginInlineEnd` only when an action follows, RTL-safe) + `<button type="button" data-iris-empty-action>`. Component complexity 285→284 (flat budget).
 - `packages/react/src/primitives/table/index.ts` — re-exports `type IrisTableEmptyState` (manifest hygiene: export new types).
 - `packages/react/src/primitives/table/test/empty-action.test.tsx` — **NEW**, 9 tests / 161 lines (≤500).
-- `packages/manifest/{manifest.json,llms.txt}` — regenerated: `emptyState` type string `ReactNode → ReactNode | IrisTableEmptyState` (+ `IrisTableEmptyState` in IrisTable's types list), 155 components, propCount unchanged.
-- `docs/vxe-grid/batch-cf-adapt.md` — report.
+- `packages/manifest/{manifest.json,llms.txt}` — regenerated & committed (emptyState type string + `IrisTableEmptyState` in types list; 155 components; pre-existing warnings' first-line JSDoc convention unchanged).
 
-**Tests added** (9): spec's two mandatory blocks explicitly mapped — ① 渲染: descriptor renders text + `data-iris-empty-action` button on the same centered empty row (single-line inline flow), ② 点击: `fireEvent.click` fires `onClick` exactly once; plus text default (localized `table.empty`) / custom text wins, `action` omitted fail-closed (text renders, no button), ReactNode element regression (zero wrapper — element is the row's only child, no default text), element-discriminator guard (array of elements stays on the node path — guard excludes arrays), token style assertions (`--iris-border`/`--iris-surface`/`--iris-foreground`/`--iris-radius-sm`/`--iris-space-sm` + `margin-inline-end` gap), non-empty no-button (data present → no empty row, no action).
+**Tests added** (9): spec blocks mapped directly — ① 渲染 (text + button on same row), ② 点击 (click fires onClick once); plus text default/custom, `action` omitted fail-closed, ReactNode regression (zero wrapper), array/element discriminator guard, token style + `margin-inline-end` assertions, non-empty no-button.
 
-**Counts**: react 2430→**2439** · core 1533 unchanged · spec **0 violations** · manifest test 69 passed.
+**Counts**: react 2430→**2439** (matches baseline prediction exactly) · core 1533 unchanged · manifest 69 · spec **0 violations**.
 
-**Verification**: core test ✅ (1533) · react typecheck ✅ · react test 2439/2439 ✅ · react lint 0 errors (1 pre-existing IrisTable complexity warning, 285→284, not a regression) ✅ · `iris-ui-spec.py --mode all --json` 0 violations ✅ · `gen:manifest` regenerated, committed ✅.
+**Verification**: core test ✅ · react typecheck ✅ / test 2439/2439 ✅ (re-run post-prettier on committed state) · react lint 0 errors (1 pre-existing IrisTable complexity warning, not a regression) ✅ · `iris-ui-spec.py --mode all --json` 0 violations ✅ · `gen:manifest` regenerated + committed ✅.
 
-**What is left**: runner's review/gate stage. Remaining working-tree dirt (`DECISIONS.md`, `batch-ce-gate.md` mods, untracked `batch-cf-baseline.md`) is prior-stage leftovers — the baseline doc is included in this commit per the checked-in summary convention. `TableBody.tsx:119` parallel empty render stays unwired dead code (zero importers, verified) with its narrower prop type keeping the widening type-safe. No baseline open questions — the design was fully specified.
+**What is left**: runner's review/gate stage. Working-tree dirt (`DECISIONS.md`, `batch-ce-gate.md`) is prior-stage leftovers, untouched. `TableBody.tsx:119` parallel empty render stays unwired dead code (zero importers) — its narrower prop type keeps the widening type-safe. No baseline open questions — design fully specified.

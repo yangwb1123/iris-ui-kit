@@ -1802,3 +1802,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ce-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 0 low / 6 info): Verdict written to `docs/vxe-grid/batch-ce-review.md`. No files modified.; Verification results (HEAD `f57bff81`): | Check | Result |; Inspection highlights: - **Spec correctness** — spec was `clipConfig 复制成功后选中单元格短暂高亮（data-iris-copy-flash，600ms 后移除，token 色）；测试（高亮出现/消失）`. Imple
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-review.md
+
+## 2026-08-15 20:17:06 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ce-gate.md [ok]: Verdict: PASS (0 blocker / 0 major; 0 low / 6 info): | Step | Result |; Commit: - **`375462a9`** (`375462a9458d270ccbf1db4e5d085bfd48c51400`) — `feat(table): grid 批 CE——复制选中高亮（iris 独有）` (8 files: comp; Final test counts: - **core: 1533/1533** (99 files)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-gate.md
+
+## 2026-08-15 20:20:30 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-baseline.md [ok]: Baseline essence (batch CF：空态动作按钮 — iris 独有): **Design** — one prop-type widening + one render site, additive fail-closed:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-baseline.md
+
+## 2026-08-15 20:27:51 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-adapt.md [ok]: Report: **Commits**:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-adapt.md
+
+## 2026-08-15 20:40:58 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 1 low / 3 info): Written to `docs/vxe-grid/batch-cf-review.md`. No implementation files modified (temp test cleaned up, gitignored docs a; Verification results (HEAD `53eace91`): | Check | Result |; Key findings: 1. **(low, `Table.tsx:1141`)** — `isEmptyStateObject` misclassifies **React portals**: `React.isValidElement(portal)` is; Spec conformance: All baseline claims verified against actual runs: type widening at `props.ts:539` with named exported `IrisTableEmptySta
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-review.md
+
+## 2026-08-15 20:47:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-gate.md [ok]: Verdict: PASS (0 blocker / 0 major; 1 low / 3 info): low fixed with gate (portal misclassification in isEmptyStateObject — `'$$typeof' in state` excludes React portals from descriptor path, +1 regression test, react 2439→2440); full gate 180/180, audit 0 vulnerabilities, gen:manifest + check:manifest zero diff (155 comps, propCount 168), comparison doc updated (iris 独有 + 构建状态)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-gate.md

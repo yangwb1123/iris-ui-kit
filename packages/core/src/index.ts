@@ -191,6 +191,7 @@ export {
 export { matchConditionalStyles, type ConditionalStyleRule } from './conditional-styles'
 export { maskValue, type MaskKind } from './mask'
 export { detectAutoLink } from './auto-link'
+export { splitSearchHits } from './search-highlight'
 export {
   createRecentFilters,
   type RecentFilterEntry,

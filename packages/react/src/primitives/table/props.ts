@@ -539,6 +539,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   clipConfig?: { copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html' }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
   fnr?: boolean
+  /** Batch CK (iris 独有 — vxe has no inline search highlight): a
+   * case-insensitive literal-substring search over each text cell's display
+   * chain (mask → formatter ?? raw — the same text autoLink consumes); every
+   * occurrence renders as an inline `<mark data-iris-search-hit>` (the
+   * surface-selected token — the same search-highlight language fnr uses for
+   * matched cells). Display-only: no bar, no match state, no write-back —
+   * the distinction from fnr is the mechanism, not the query. `render`/
+   * `html`/`link`/`autoLink`/sparkline cells are untouched (documented
+   * fiats). Additive; default off (fail-closed).
+   */
+  searchHighlight?: string
   /** Built-in undo/redo (iris 独有 — vxe has no built-in undoRedoHistory): when enabled, every data mutation (row ops, paste, find&replace, range clear, cell/row edits, batch edit) records the POST-change row list; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — never while an inline editor is open. The toolbar renders ↶/↷ buttons after the title (disabled from canUndo/canRedo); restores prune selection keys that no longer exist. Additive — default off. */
   undo?: boolean
   /** Shift-click checkbox range selection (vxe checkboxConfig `isShiftKey`

@@ -36818,6 +36818,12 @@
           "description": "Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off."
         },
         {
+          "name": "searchHighlight",
+          "type": "string",
+          "optional": true,
+          "description": "case-insensitive literal-substring search over each text cell's display chain (mask → formatter ?? raw — the same text autoLink consumes); every occurrence renders as an inline `<mark data-iris-search-hit>` (the surface-selected token — the same search-highlight language fnr uses for matched cells). Display-only: no bar, no match state, no write-back — the distinction from fnr is the mechanism, not the query. `render`/ `html`/`link`/`autoLink`/sparkline cells are untouched (documented fiats). Additive; default off (fail-closed)."
+        },
+        {
           "name": "undo",
           "type": "boolean",
           "optional": true,
@@ -37840,6 +37846,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off."
+            },
+            {
+              "name": "searchHighlight",
+              "type": "string",
+              "optional": true,
+              "description": "case-insensitive literal-substring search over each text cell's display chain (mask → formatter ?? raw — the same text autoLink consumes); every occurrence renders as an inline `<mark data-iris-search-hit>` (the surface-selected token — the same search-highlight language fnr uses for matched cells). Display-only: no bar, no match state, no write-back — the distinction from fnr is the mechanism, not the query. `render`/ `html`/`link`/`autoLink`/sparkline cells are untouched (documented fiats). Additive; default off (fail-closed)."
             },
             {
               "name": "undo",
@@ -39231,7 +39243,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 170,
+        "propCount": 171,
         "eventCount": 31
       }
     },

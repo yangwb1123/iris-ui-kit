@@ -46,6 +46,7 @@ import {
   type RowDiff,
   type RowDiffCellChange,
   matchConditionalStyles,
+  splitSearchHits,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisInput } from '../input/Input'
@@ -102,6 +103,7 @@ import {
   PRESENCE_LABEL_STYLE,
   RANGE_FILL_HANDLE_STYLE,
   RANGE_FILL_TARGET_BG,
+  SEARCH_HIT_STYLE,
   WATERMARK_WRAPPER_STYLE,
   WATERMARK_OVERLAY_STYLE,
   WATERMARK_TILE_STYLE,
@@ -1778,6 +1780,32 @@ function renderAutoLinkCell<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Batch CK (iris 独有 — vxe has no inline search highlight): the
+ * `searchHighlight` cell body — the same display chain as the plain
+ * formatter/raw branches (mask → formatter ?? raw, exactly what autoLink
+ * consumes) — renders a `<mark data-iris-search-hit>` around every
+ * case-insensitive literal occurrence of the query (core `splitSearchHits`,
+ * odd segment indices are hits). Non-string nodes and null segments (empty
+ * query / empty text / no match) pass through untouched, so this branch is
+ * a drop-in replacement for the plain path — byte-identical without the
+ * prop (fail-closed).
+ */
+function applySearchHighlight(node: React.ReactNode, query: string | undefined): React.ReactNode {
+  if (!query || typeof node !== 'string') return node
+  const segments = splitSearchHits(node, query)
+  if (!segments) return node
+  return segments.map((seg, i) =>
+    i % 2 === 1 ? (
+      <mark key={i} data-iris-search-hit="" style={SEARCH_HIT_STYLE}>
+        {seg}
+      </mark>
+    ) : (
+      seg
+    ),
+  )
+}
+
+/**
  * Write clipboard text — best-effort, ordered: registered host handler
  * (core `copyText`) → `navigator.clipboard.writeText` → hidden-textarea
  * `execCommand('copy')` fallback. In test environments without a clipboard
@@ -2329,6 +2357,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   rangeFill = false,
   clipConfig,
   fnr = false,
+  searchHighlight,
   undo = false,
   checkboxRange = false,
   selectionDrag = false,
@@ -7694,9 +7723,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // vxe formatter parity (batch I): display-only — sorting,
                 // filtering, editing and summary all read the raw value. The
                 // formatter receives the MASKED value (batch AY: mask first).
-                col.formatter(displayValue, row)
+                // Batch CK: searchHighlight wraps the formatter output string.
+                applySearchHighlight(col.formatter(displayValue, row), searchHighlight)
               ) : (
-                (displayValue as React.ReactNode)
+                // Batch CK: searchHighlight wraps the raw string fallback.
+                applySearchHighlight(displayValue as React.ReactNode, searchHighlight)
               )}
               {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
               {/* Batch CG (iris 独有): the selection badge at the range's

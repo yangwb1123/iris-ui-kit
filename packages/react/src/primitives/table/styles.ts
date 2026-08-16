@@ -135,6 +135,21 @@ export const RANGE_FILL_TARGET_BG = 'var(--iris-surface-selected, rgba(99,102,24
    discipline): never clobbers background-image (locked stripes survive). */
 export const COPY_FLASH_BG = 'color-mix(in srgb, var(--iris-primary) 25%, var(--iris-background))'
 
+/* Batch CK search highlight (iris 独有 — vxe has no inline search
+   highlight): the `<mark data-iris-search-hit>` inline background — the SAME
+   surface-selected token `fnrCellStyle` uses for matched cells (one
+   search-highlight language across the table); the distinction from fnr is
+   the MECHANISM (fnr = whole-cell background + replace/navigation tool,
+   searchHighlight = pure inline mark, no bar/state/write-back). Token-only;
+   inline mark so it never clobbers the cell's own background-image (locked
+   stripes survive — batch BE discipline). */
+export const SEARCH_HIT_STYLE: React.CSSProperties = {
+  background: 'var(--iris-surface-selected, rgba(99,102,241,0.12))',
+  color: 'inherit',
+  borderRadius: 'var(--iris-radius-sm, 4px)',
+  padding: '0 var(--iris-space-xxs, 4px)',
+}
+
 /* Batch AZ cell annotations (iris 独有 — vxe has no cell-note concept): the
    6px corner badge rendered inside a noted body cell (data-iris-cell-note).
    Absolute top-right (logical inset-inline-end mirrors in RTL); the host

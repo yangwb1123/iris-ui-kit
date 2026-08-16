@@ -1637,3 +1637,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-by-baseline.md [ok]: 核验摘要 (batch BY：展开状态持久化): **设计** — `persistState include` 新增 `'expandedKeys'`，4 个源触点，镜像 pageSize 特例先例：
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-baseline.md
+
+## 2026-08-15 15:59:16 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-by-adapt.md [ok]: Batch BY — 展开状态持久化（`expandedKeys`）complete: **Commit `131ee713`** — `feat(table): grid 批 BY——展开状态持久化（iris 独有）`; Files changed (committed): | File | Change |; Tests added (9): 保存（caret 落盘）→ 恢复（种子 → `onExpandedRowsChange(['2'])` + DOM 实际展开 + 全量替换）→ skip-first 不粘滞 → 挂载提交保护（存储保持恢复值非空集）→ include 双向限; Verification (all ✅): - core test **1517/1517** · react typecheck **clean** · react test **2373/2373**（BY +9，前置工作树 2364 含 BX 修复 3 例）· react li; Deviations from baseline (documented): - Baseline 锚点 `:2723` 收集器直接引 `treeMode` —— `treeMode` 在组件体 ~4646 才声明，useMemo 回调同步执行会 TDZ ReferenceError；实现改为在 `hasDetail
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-adapt.md
+
+## 2026-08-15 16:04:16 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-by-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-by-review.md`; Verification run (all independently re-run): | Gate | Result |; Checklist vs baseline: All 5 source contacts match the spec: `types.ts` piece+field, `ALL_PIECES` +1 (three loops + skip-first auto-covered), c; Findings (non-blocking): 1. **LOW** — `Table.tsx:2877-2878` `applyViewSnapshot` expandedKeys branch untested (adapt report claims views coverage;
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-review.md

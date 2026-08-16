@@ -2067,3 +2067,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md [ok]: Gate complete — verdict **PASS** ✅; Gate results: Full repo gate **180/180 tasks successful** (6m22s, 54 cached) · audit **0 vulnerabilities** · gen:manifest + check:manifest up to date (IrisTable **176 props / 31 events**, zero diff) · comparison doc 批 CP rows already committed in `58555eb2`, verified consistent; Final test counts (independent rerun): **core 1559/1559** · **react 2556/2556** (2544 → +12 new density tests); Review findings (4 non-blocking: barrel re-export Low / dead TABLE_ROW_CSS Info / data-density nit / orphaned comment nit) accepted as documented
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md
+
+## 2026-08-16 01:56:47 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md [ok]: Report: **Verdict**: PASS (review of `58555eb2` + `546c70ff` against `batch-cp-baseline.md`, all green, 4 non-blocking findings)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md

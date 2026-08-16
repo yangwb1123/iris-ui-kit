@@ -1897,3 +1897,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ci-gate.md [ok]: 批 CI Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-ci-review.md`, 0 MAJOR / 0 MEDIUM; 2 LOW doc nits — both fixed in this gate: adapt line count 203→226, audit:tokens pre-existing note added). Gate results: full repo gate **180/180** (4m39s, 65 cached) · audit:security **0** · audit:tokens exit 1 only pre-existing warnings (0 new) · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount 169 / eventCount 31, zero diff) · comparison doc updated (iris 独有 行克隆 cloneRow row + 构建状态 批 CI entry) · framework-free invariant holds (core 0 framework imports). Final test counts: **react 2481/2481** (14 new clone-row tests) · **core 1542/1542** (9 new) · manifest propCount 169 / eventCount 31 · audit 0
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ci-gate.md
+
+## 2026-08-15 22:27:10 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ci-gate.md [ok]: ✅ Batch CI Gate — PASS: **Review verdict**: PASS (0 MAJOR / 0 MEDIUM; 2 LOW doc nits — **both fixed in this gate**: adapt report line count corr
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ci-gate.md
+
+## 2026-08-15 22:31:47 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cj-baseline.md [ok]: Baseline essence (batch CJ：表格快捷键提示 — iris 独有): **Design** — `shortcutHints?: boolean` (additive, fail-closed), one floating panel, two core pure formatters, 9 i18n key
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cj-baseline.md
+
+## 2026-08-15 22:40:11 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cj-adapt.md [ok]: Report — batch CJ：表格快捷键提示（iris 独有）; Files changed (9 in commit, 7 source + 2 tests): | File | Change |; Tests added / counts: - core `keymap.test.ts`: **+6** → core suite **1548 passed** (was 1542; baseline ~1547 ✓); Verification (all green): - `core test`: 1548 ✓ · `react typecheck`: clean ✓ · `react test`: 2492 ✓ · `react lint`: 0 errors (1 pre-existing `Iris; Scope notes: - **File count**: 7 source files (baseline plans exactly these: keymap.ts, i18n.ts, plugin-locale-zh, ShortcutHintsPanel
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cj-adapt.md
+
+## 2026-08-15 22:44:57 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cj-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-cj-review.md`; What I verified: **Spec correctness** — every baseline point lands exactly:; Findings: 1. **P3** — `props.ts:412-417`: JSDoc layout (content on the first line and on the `*/` line) makes the generated manife
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cj-review.md
+
+## 2026-08-15 22:53:14 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cj-gate.md [ok]: 批 CJ Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-cj-review.md`, 0 MAJOR / 0 MEDIUM; 1 P3 + 1 P4 info). **P3 fixed in this gate**: `props.ts` `shortcutHints` JSDoc `*/` moved to its own line per the `charCount` precedent — regenerated manifest description no longer truncates at `…Additive; default`, now carries the full fail-closed ending `Additive; default off (fail-closed).`. Gate results: full repo gate **180/180** (4m29s, 54 cached) · audit:security **0** · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount 170 / eventCount 31, only diff = P3-fixed description) · gen:docs-reference + check:docs-reference up to date · iris-ui-spec 0 violations (1416 files) · framework-free invariant holds (core 0 framework imports) · comparison doc updated (iris 独有 表格快捷键提示 shortcutHints row + 构建状态 批 CJ entry) · batch-ci-gate.md CI final polish folded in. Final test counts: **react 2492/2492** (11 new shortcut-hints) · **core 1548/1548** (6 new formatters) · manifest propCount 170 / eventCount 31 · audit 0
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cj-gate.md

@@ -36631,7 +36631,7 @@
           "name": "shortcutHints",
           "type": "boolean",
           "optional": true,
-          "description": "trigger that opens a floating panel listing every built-in keyboard shortcut with its EFFECTIVE key — the same normalized map every handler matches against, so `keymap` remaps reflect live and a listed key always actually works. Read-only reference (no rebind UI). Additive; default"
+          "description": "trigger that opens a floating panel listing every built-in keyboard shortcut with its EFFECTIVE key — the same normalized map every handler matches against, so `keymap` remaps reflect live and a listed key always actually works. Read-only reference (no rebind UI). Additive; default off (fail-closed)."
         },
         {
           "name": "onSelectAllChange",
@@ -37655,7 +37655,7 @@
               "name": "shortcutHints",
               "type": "boolean",
               "optional": true,
-              "description": "trigger that opens a floating panel listing every built-in keyboard shortcut with its EFFECTIVE key — the same normalized map every handler matches against, so `keymap` remaps reflect live and a listed key always actually works. Read-only reference (no rebind UI). Additive; default"
+              "description": "trigger that opens a floating panel listing every built-in keyboard shortcut with its EFFECTIVE key — the same normalized map every handler matches against, so `keymap` remaps reflect live and a listed key always actually works. Read-only reference (no rebind UI). Additive; default off (fail-closed)."
             },
             {
               "name": "onSelectAllChange",

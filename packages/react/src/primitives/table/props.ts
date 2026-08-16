@@ -414,7 +414,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * shortcut with its EFFECTIVE key — the same normalized map every handler
    * matches against, so `keymap` remaps reflect live and a listed key always
    * actually works. Read-only reference (no rebind UI). Additive; default
-   * off (fail-closed). */
+   * off (fail-closed).
+   */
   shortcutHints?: boolean
   /** Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys. */
   onSelectAllChange?: (state: boolean | 'indeterminate', selection: Array<string | number>) => void

@@ -105,6 +105,7 @@ import {
   CHAR_COUNT_HANDLE_SHIFT_STYLE,
   CHAR_COUNT_STYLE,
   COPY_FLASH_BG,
+  EDIT_PREVIEW_STYLE,
   PRESENCE_LABEL_STYLE,
   RANGE_FILL_HANDLE_STYLE,
   RANGE_FILL_TARGET_BG,
@@ -996,8 +997,43 @@ interface EditorSurfaceProps<Row extends Record<string, unknown>> {
    *  bottom-right corner — `String(draft).length`, recomputed per keystroke
    *  via the existing session-store subscription (zero new state). */
   charCount?: boolean
+  /** Batch CQ (iris 独有): show a live preview of the formatter-applied
+   *  draft below the editor — a muted small line (`data-iris-edit-preview`),
+   *  recomputed per keystroke via the session-store subscription (zero new
+   *  state). Only renders for columns with a `formatter`. */
+  editPreview?: boolean
+  /** The row being edited — the formatter's second argument, so a
+   *  row-aware formatter sees the same row the committed cell display feeds
+   *  it. */
+  row: Row
   /** i18n translator (the parent's useI18n instance — same `t` the table uses). */
   t: (key: string, params?: Record<string, string | number>) => string
+}
+
+/**
+ * Batch CQ (iris 独有): the draft the live preview formats — the same
+ * coercion the commit path applies (select editors resolve the option's TYPED
+ * value, number editors coerce to Number with the raw-value fallback, text /
+ * textarea pass through), so `formatter` receives exactly what the committed
+ * cell would feed it. A number stays a number — a formatter that calls
+ * `.toFixed` on the committed value never crashes on a string draft (and the
+ * preview is byte-faithful to the committed cell's display chain).
+ */
+function editPreviewDraft<Row extends Record<string, unknown>>(
+  col: IrisTableColumn<Row>,
+  row: Row,
+  draft: string,
+  selectOptions: ReadonlyArray<{ value: string | number; label: string }> | undefined,
+): unknown {
+  if (col.editor === 'select' && selectOptions) {
+    const opt = selectOptions.find((o) => String(o.value) === draft)
+    return opt ? opt.value : draft
+  }
+  if (col.editor === 'number') {
+    const n = Number(draft)
+    return draft === '' || Number.isNaN(n) ? getCellValue(row, col) : n
+  }
+  return draft
 }
 
 /**
@@ -1022,6 +1058,8 @@ function EditorSurface<Row extends Record<string, unknown>>({
   suggestOptions,
   editAutoHeight,
   charCount,
+  editPreview,
+  row,
   t,
 }: EditorSurfaceProps<Row>): React.ReactElement {
   const state = useStore(session.store)
@@ -1207,6 +1245,18 @@ function EditorSurface<Row extends Record<string, unknown>>({
             <option key={opt} value={opt} />
           ))}
         </datalist>
+      ) : null}
+      {/* Batch CQ (iris 独有 — vxe has no equivalent): live preview of the
+      formatter-applied draft — the draft coerced like the commit path, then
+      the same mask → formatter display chain as the committed cell (batch AY
+      contract), so the preview is byte-faithful to what the cell will show.
+      Recomputed per keystroke through the session-store subscription above
+      (zero new state); only columns with a formatter render it (fail-closed).
+      Rendered in-flow BEFORE the validation error (same slot family). */}
+      {editPreview && col.formatter ? (
+        <div data-iris-edit-preview="" style={EDIT_PREVIEW_STYLE}>
+          {col.formatter(applyCellMask(editPreviewDraft(col, row, draft, selectOptions), col), row)}
+        </div>
       ) : null}
       {/* validConfig.showMessage=false: validation still blocks the commit and
       aria-invalid stays — only the message element is skipped (vxe ValidConfig
@@ -2392,6 +2442,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onAutosave,
   editAutoHeight,
   charCount,
+  editPreview,
   shortcutHints,
   onSelectAllChange,
   onScroll,
@@ -7936,6 +7987,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         suggestOptions={suggestOptions}
                         editAutoHeight={editAutoHeight}
                         charCount={charCount}
+                        editPreview={editPreview}
+                        row={row}
                         t={t}
                       />
                     )
@@ -7955,6 +8008,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     suggestOptions={suggestOptions}
                     editAutoHeight={editAutoHeight}
                     charCount={charCount}
+                    editPreview={editPreview}
+                    row={row}
                     t={t}
                   />
                 )

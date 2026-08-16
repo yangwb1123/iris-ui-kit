@@ -1,0 +1,9 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-cq-baseline.md`. No source files touched — `git status` shows only the new baseline (plus the pre-existing prior-stage dirt in the worktree).
+
+**Key findings from the current IrisTable:**
+
+- **`EditorSurface` is the single render point for both edit modes** (cell mode :7944 + row mode :7925 share the same surface, batch-K), and it already subscribes to the session store (`useStore(session.store)` → `state.draft` re-renders per keystroke). That's the exact batch-CG precedent the live preview reuses: **zero new state**.
+- **Design**: `editPreview?: boolean` (props.ts after `charCount`:439, propCount 176→177), gated by `editPreview && col.formatter` (the "无 formatter 不显示" test is the second gate). Preview value mirrors the display chain — `col.formatter(applyCellMask(draft, col), row)` — so it's byte-faithful to the committed cell (batch AY mask→formatter contract; `applyCellMask` already imported). Renders in-flow after the editor, before the validation error (the proven error slot), as a muted small line: `EDIT_PREVIEW_STYLE` in styles.ts (`data-iris-edit-preview`, `--iris-font-size-xs` / `--iris-muted` / `--iris-space-xxs`). New `row` prop on `EditorSurfaceProps` — both call sites have `row` in scope.
+- **Zero periphery**: no i18n keys (pure formatter output), no core/types/events changes, other frameworks untouched — react-only bridge like every iris-独有 batch.
+- **File map**: props.ts · styles.ts · Table.tsx (4 touch points: interface + destructure + preview node + 2 call sites) · NEW `edit-preview.test.tsx` · comparison-doc row + manifest regen (176→177, adapt phase).
+- **Test plan**: react +12 (2556→2568) — preview renders, live per-keystroke update, no-formatter gate, fail-closed default, mask parity, row-aware formatter, row mode, select/textarea branches, commit/Escape teardown, muted-token style assertion, error coexistence.

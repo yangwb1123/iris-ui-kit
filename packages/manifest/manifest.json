@@ -36655,6 +36655,12 @@
           "description": "a live character count in the editing cell's bottom-right corner (cell AND row edit modes, recomputed per keystroke from the session draft) plus a cell-count/sum badge at the selected range's bottom-right cell when `cellRange` has a live selection (a pure reduction over the rangeStats material — count = Σ column non-null counts, sum = Σ numeric column sums, `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as the summary row). Additive; default off (fail-closed)."
         },
         {
+          "name": "editPreview",
+          "type": "boolean",
+          "optional": true,
+          "description": "formatter-applied result below the editing cell — recomputed per keystroke from the session draft through the SAME display chain as the committed cell (mask → formatter, with the commit path's draft coercion for number/select editors), rendered as a muted small line (`data-iris-edit-preview`). Only columns with a `formatter` render a preview. Additive; default off (fail-closed)."
+        },
+        {
           "name": "shortcutHints",
           "type": "boolean",
           "optional": true,
@@ -37722,6 +37728,12 @@
               "type": "boolean",
               "optional": true,
               "description": "a live character count in the editing cell's bottom-right corner (cell AND row edit modes, recomputed per keystroke from the session draft) plus a cell-count/sum badge at the selected range's bottom-right cell when `cellRange` has a live selection (a pure reduction over the rangeStats material — count = Σ column non-null counts, sum = Σ numeric column sums, `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as the summary row). Additive; default off (fail-closed)."
+            },
+            {
+              "name": "editPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "formatter-applied result below the editing cell — recomputed per keystroke from the session draft through the SAME display chain as the committed cell (mask → formatter, with the commit path's draft coercion for number/select editors), rendered as a muted small line (`data-iris-edit-preview`). Only columns with a `formatter` render a preview. Additive; default off (fail-closed)."
             },
             {
               "name": "shortcutHints",
@@ -39321,7 +39333,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 176,
+        "propCount": 177,
         "eventCount": 31
       }
     },

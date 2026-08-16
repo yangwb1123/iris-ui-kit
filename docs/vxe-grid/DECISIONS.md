@@ -2072,3 +2072,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md [ok]: Report: **Verdict**: PASS (review of `58555eb2` + `546c70ff` against `batch-cp-baseline.md`, all green, 4 non-blocking findings)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cp-gate.md
+
+## 2026-08-16 05:35:45 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cq-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cq-baseline.md

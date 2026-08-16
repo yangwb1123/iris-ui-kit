@@ -437,6 +437,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the summary row). Additive; default off (fail-closed).
    */
   charCount?: boolean
+  /** Batch CQ (iris 独有 — vxe has no equivalent): show a live preview of the
+   * formatter-applied result below the editing cell — recomputed per keystroke
+   * from the session draft through the SAME display chain as the committed cell
+   * (mask → formatter, with the commit path's draft coercion for number/select
+   * editors), rendered as a muted small line (`data-iris-edit-preview`). Only
+   * columns with a `formatter` render a preview. Additive; default off
+   * (fail-closed).
+   */
+  editPreview?: boolean
   /** Batch CJ (iris 独有 — vxe has no shortcut help): show a `?` toolbar
    * trigger that opens a floating panel listing every built-in keyboard
    * shortcut with its EFFECTIVE key — the same normalized map every handler

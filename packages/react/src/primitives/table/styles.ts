@@ -106,6 +106,25 @@ export const CHAR_COUNT_HANDLE_SHIFT_STYLE: React.CSSProperties = {
   bottom: 10,
 }
 
+/* Batch CQ editPreview (iris 独有 — vxe has no equivalent): the live
+   formatter-result preview line rendered in-flow below the editing cell's
+   editor (cell AND row edit modes, recomputed per keystroke from the session
+   draft). Muted small text — font-size-xs / muted / space-xxs top gap,
+   token-only; same slot as the validation error, so the line stacks under the
+   editor before the error. pointer-transparent: pure display, never
+   intercepts editor typing or cell clicks. */
+export const EDIT_PREVIEW_STYLE: React.CSSProperties = {
+  marginTop: 'var(--iris-space-xxs, 4px)',
+  fontSize: 'var(--iris-font-size-xs, 12px)',
+  lineHeight: 1.4,
+  color: 'var(--iris-muted)',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  minWidth: 0,
+  pointerEvents: 'none',
+}
+
 /* Batch AQ drag fill (iris 独有 — vxe has no fill parity): the 6px primary
    square rendered inside the range's bottom-right cell (data-iris-range-fill).
    Positioned right/bottom with a small offset per the batch AQ fiat; the host

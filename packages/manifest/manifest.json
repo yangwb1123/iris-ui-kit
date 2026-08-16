@@ -36198,6 +36198,23 @@
           ]
         },
         {
+          "name": "density",
+          "type": "IrisTableDensity",
+          "optional": true,
+          "description": "Row-density preset (iris 独有 — vxe has no density concept): three tiers of row/cell padding stacked on top of `size` (both write `--iris-cell-pad-y`; density wins on ties). Default comfortable.",
+          "enum": [
+            "comfortable",
+            "compact",
+            "cozy"
+          ]
+        },
+        {
+          "name": "densityToggle",
+          "type": "boolean",
+          "optional": true,
+          "description": "Toolbar density-toggle button (iris 独有 — vxe has no density toggle): cycles comfortable → compact → cozy → comfortable; while shown, the button state wins over the `density` prop."
+        },
+        {
           "name": "seqStartIndex",
           "type": "number",
           "optional": true,
@@ -37248,6 +37265,23 @@
                 "small",
                 "mini"
               ]
+            },
+            {
+              "name": "density",
+              "type": "IrisTableDensity",
+              "optional": true,
+              "description": "Row-density preset (iris 独有 — vxe has no density concept): three tiers of row/cell padding stacked on top of `size` (both write `--iris-cell-pad-y`; density wins on ties). Default comfortable.",
+              "enum": [
+                "comfortable",
+                "compact",
+                "cozy"
+              ]
+            },
+            {
+              "name": "densityToggle",
+              "type": "boolean",
+              "optional": true,
+              "description": "Toolbar density-toggle button (iris 独有 — vxe has no density toggle): cycles comfortable → compact → cozy → comfortable; while shown, the button state wins over the `density` prop."
             },
             {
               "name": "seqStartIndex",
@@ -39287,7 +39321,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 174,
+        "propCount": 176,
         "eventCount": 31
       }
     },

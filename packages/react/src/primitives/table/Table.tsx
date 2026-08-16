@@ -84,7 +84,12 @@ import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
-import type { IrisTableEmptyState, IrisTableProps, IrisTableProxyConfig } from './props'
+import type {
+  IrisTableDensity,
+  IrisTableEmptyState,
+  IrisTableProps,
+  IrisTableProxyConfig,
+} from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
 import { createPortal } from 'react-dom'
@@ -137,6 +142,12 @@ function expandAnimAttr(on: boolean): string | undefined {
 /** Batch CM summary-sticky attr value (undefined hides it — fail-closed). */
 function summaryStickyAttr(on: boolean): string | undefined {
   return on ? 'true' : undefined
+}
+
+/** Batch CP density-cycle helper (module scope): the toolbar toggle cycles
+ * comfortable → compact → cozy → comfortable (zoom toggle precedent). */
+function nextDensity(d: IrisTableDensity): IrisTableDensity {
+  return d === 'comfortable' ? 'compact' : d === 'compact' ? 'cozy' : 'comfortable'
 }
 
 /** Extra cell style for the fill-handle host (relative + above pinned) and
@@ -586,6 +597,17 @@ const TABLE_ROW_CSS = `
   z-index: var(--iris-z-popover, 1000);
   background: var(--iris-surface);
   overflow: auto;
+}
+/* Density presets (batch CP, iris 独有 — vxe has no density concept): a
+   SIBLING of the size presets — both write the same --iris-cell-pad-y, so a
+   density tier stacks ON TOP of the size tier (same specificity; where both
+   live in one sheet the density rules come later and win). comfortable is
+   the default and declares nothing (byte-identical to a bare table). */
+[data-iris-table][data-density="compact"] {
+  --iris-cell-pad-y: 6px;
+}
+[data-iris-table][data-density="cozy"] {
+  --iris-cell-pad-y: 4px;
 }
 `
 import { useTableSort } from './useTableSort'
@@ -2305,6 +2327,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onMultiSortChange,
   striped = false,
   size,
+  density,
+  densityToggle = false,
   seqStartIndex = 1,
   seqMethod,
   currentRowKey,
@@ -4082,6 +4106,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     window.addEventListener('keydown', onWindowKey)
     return () => window.removeEventListener('keydown', onWindowKey)
   }, [zoomed])
+  // Batch CP density (iris 独有 — vxe has no density concept): local cycling
+  // state while the toolbar toggle is shown (zoom precedent) — effective =
+  // toggle ? state : prop; invalid prop values fail closed to comfortable.
+  const [densityState, setDensityState] = React.useState<IrisTableDensity>('comfortable')
+  const densityProp: IrisTableDensity =
+    density === 'compact' || density === 'cozy' ? density : 'comfortable'
+  const effectiveDensity: IrisTableDensity = densityToggle ? densityState : densityProp
   // ── Batch AR mini chart preview (iris 独有) ─────────────────────
   // Toolbar trigger + anchor (the trigger button itself — a real DOM node);
   // the panel floats below it and remounts per open (state re-seeds).
@@ -8592,7 +8623,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         auditLog ||
         perfStats ||
         versionHistory ||
-        shortcutHints) &&
+        shortcutHints ||
+        densityToggle) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -9193,6 +9225,28 @@ export function IrisTable<Row extends Record<string, unknown>>({
               {zoomed ? '✕' : '⛶'}
             </button>
           ) : null}
+          {densityToggle ? (
+            <button
+              type="button"
+              data-iris-density-toggle=""
+              data-iris-density={effectiveDensity}
+              onClick={() => setDensityState(nextDensity)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--iris-space-xxs, 4px)',
+              }}
+              aria-label={`${t('table.density')}: ${t(`table.density.${effectiveDensity}`)}`}
+              title={`${t('table.density')}: ${t(`table.density.${effectiveDensity}`)}`}
+            >
+              {t(`table.density.${effectiveDensity}`)}
+            </button>
+          ) : null}
           {chartPreview ? (
             <button
               ref={chartAnchorRef}
@@ -9450,6 +9504,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
         data-iris-table=""
         data-size={size}
+        data-density={effectiveDensity}
         data-printable={printable ? 'true' : undefined}
         data-bordered={bordered ? 'true' : undefined}
         data-striped={striped ? 'true' : undefined}

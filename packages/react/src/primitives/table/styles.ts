@@ -304,6 +304,17 @@ export const TABLE_ROW_CSS = `
   --iris-cell-pad-y: 2px;
   font-size: var(--iris-font-size-xs, 12px);
 }
+/* Density presets (batch CP, iris 独有 — vxe has no density concept): a
+   SIBLING of the size presets — both write the same --iris-cell-pad-y, so a
+   density tier stacks ON TOP of the size tier (density wins on ties: same
+   specificity, later in the sheet). comfortable is the default and declares
+   nothing (byte-identical to a bare table). */
+[data-iris-table][data-density="compact"] {
+  --iris-cell-pad-y: 6px;
+}
+[data-iris-table][data-density="cozy"] {
+  --iris-cell-pad-y: 4px;
+}
 /* Dirty-cell dot (batch Q, vxe editDirtyConfig parity): a small primary dot
    at the cell's inline-end corner marks a committed cell whose value differs
    from its pre-edit original; the cell itself gets position: relative from

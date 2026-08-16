@@ -91,6 +91,12 @@ export interface IrisTablePagerConfig {
 }
 
 /** Public input surface for the React table adapter. */
+/** Row-density preset (iris 独有 — vxe has no density concept): the three
+ * tiers stack ON TOP of `size` — both write `--iris-cell-pad-y`, and the
+ * density rules come later in the stylesheet (same specificity, later
+ * wins). Default comfortable. */
+export type IrisTableDensity = 'comfortable' | 'compact' | 'cozy'
+
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
   columns: IrisTableColumn<Row>[]
   /** Table data. Optional when `proxyConfig` is set (server-side source). */
@@ -116,6 +122,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   striped?: boolean
   /** Size preset (vxe-grid size parity): medium / small / mini. */
   size?: 'medium' | 'small' | 'mini'
+  /**
+   * Row-density preset (iris 独有 — vxe has no density concept): three tiers
+   * of row/cell padding stacked on top of `size` (both write
+   * `--iris-cell-pad-y`; density wins on ties). Default comfortable.
+   */
+  density?: IrisTableDensity
+  /**
+   * Toolbar density-toggle button (iris 独有 — vxe has no density toggle):
+   * cycles comfortable → compact → cozy → comfortable; while shown, the
+   * button state wins over the `density` prop.
+   */
+  densityToggle?: boolean
   /** First sequence number (vxe seq-config.startIndex parity). Default 1. */
   seqStartIndex?: number
   /** Custom sequence renderer (vxe seq-config.seqMethod parity). */

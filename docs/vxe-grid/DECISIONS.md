@@ -2162,3 +2162,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ct-review.md [ok]: 审核摘要: **验证（全部在 HEAD `4dbdb9bc` 上复跑）**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-review.md
+
+## 2026-08-16 07:43:51 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ct-gate.md [ok]: Gate 完成 — PASS: **Verdict**: 审核 PASS（0 MAJOR / 0 MEDIUM，4 条 P4 不阻塞提示）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-gate.md
+
+## 2026-08-16 07:48:04 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cu-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-baseline.md
+
+## 2026-08-16 08:04:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cu-adapt.md [ok]: Report — 批 CU：带格式复制（iris 独有）: **Commit**: `745ed727 feat(table): grid 批 CU——带格式复制（iris 独有）`; Files changed (3 source + 1 test + manifest + docs): props.ts clipConfig +copyWithFormat (propCount 180/eventCount 31 不变, 嵌套字段 BP 先例) / Table.tsx buildRangeCopy 3rd param + 2 value branches + 2 call sites / types.ts formatter doc 1 sentence / copy-with-format.test.tsx 14 tests / manifest regenerated (clipConfig type 串 + 描述更新) / comparison doc 3 spots; Verification: core 1559/1559, react typecheck clean + 2618/2618 (2604+14), lint 0 errors (1 pre-existing warning), spec 0 violations (1416 files), check:manifest up to date
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cu-adapt.md

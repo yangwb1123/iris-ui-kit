@@ -342,7 +342,8 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   /** Format a cell's value for display (vxe formatter parity, batch I). Applied AFTER
    * `render`/`html` and BEFORE the raw value; sorting, filtering, editing and summary
    * keep reading the RAW value. The tooltip defaults to the formatted text when it is
-   * a string. */
+   * a string. With `clipConfig.copyWithFormat` (batch CU, iris 独有) the range copy
+   * (Ctrl/Cmd+C / toolbar 复制) carries this formatted text instead of the raw value. */
   formatter?: (value: unknown, row: Row) => import('react').ReactNode
   /** Mask this column's value for display (batch AY, iris 独有 — vxe has no
    * built-in masking): `'sensitive'` applies the core `maskValue` sensitive

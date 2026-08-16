@@ -6452,8 +6452,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // number masked into a string loses toHtml's numeric right-alignment
   // (fiat). Unset / invalid format fail-closed to the batch-O TSV
   // (byte-identical, existing copy tests stay green).
+  // Batch CU (iris 独有 — vxe clipboard-config always copies raw values, no
+  // format-preserving copy): `copyWithFormat` swaps formatter columns onto the
+  // `contextCellText` display chain (mask → formatter → String — the SAME chain
+  // as the context-menu 复制值), so the range copy carries the formatted text;
+  // non-formatter columns stay byte-identical on the batch-AY mask/exportRaw
+  // path. The formatted STRING still flows through the same serializers below
+  // (RFC-4180 quoting + OWASP neutralization apply to formatted text too).
   const buildRangeCopy = React.useCallback(
-    (range: CellRange, format: 'tsv' | 'csv' | 'html'): string => {
+    (range: CellRange, format: 'tsv' | 'csv' | 'html', copyWithFormat: boolean): string => {
       const body = liveBodyRef.current
       const cols = liveLeafRef.current
       if (format === 'html') {
@@ -6471,14 +6478,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
             const col = cols[c]
             if (!row || !col) continue
             // Batch AY: the copy HTML applies the column mask unless
-            // `exportRaw` opts out — all three copy formats agree.
+            // `exportRaw` opts out — all three copy formats agree. Batch CU:
+            // `copyWithFormat` supersedes `exportRaw`'s copy-path skip on
+            // formatter columns only (mask → formatter always — the
+            // formatter input contract, batch AY); non-formatter columns keep
+            // the byte-identical path.
             const value = getCellValue(row, col)
             // The row is keyed by the SAME effective read key toHtml uses
             // (string `dataIndex` else `key` — exportCsv shadow-row
             // convention verbatim; a numeric dataIndex falls back to `key`).
-            out[typeof col.dataIndex === 'string' ? col.dataIndex : col.key] = col.exportRaw
-              ? value
-              : applyCellMask(value, col)
+            out[typeof col.dataIndex === 'string' ? col.dataIndex : col.key] =
+              copyWithFormat && col.formatter
+                ? contextCellText(row, col)
+                : col.exportRaw
+                  ? value
+                  : applyCellMask(value, col)
           }
           rows.push(out)
         }
@@ -6495,10 +6509,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
             continue
           }
           // Batch AY: the copy TSV/CSV applies the column mask unless
-          // `exportRaw` opts out — clipboard and CSV export agree.
+          // `exportRaw` opts out — clipboard and CSV export agree. Batch CU:
+          // `copyWithFormat` swaps formatter columns to the display-text chain
+          // (`contextCellText`), then the formatted STRING still goes through
+          // the same serializers (RFC-4180 quoting + OWASP neutralization
+          // apply to formatted text too); non-formatter columns stay
+          // byte-identical (a raw negative number still bypasses
+          // neutralization — the formatter-gate blast radius).
           const value = getCellValue(row, col)
           const masked = col.exportRaw ? value : applyCellMask(value, col)
-          cells.push(format === 'csv' ? csvRangeCell(masked) : tsvCell(masked))
+          const cellText = copyWithFormat && col.formatter ? contextCellText(row, col) : masked
+          cells.push(format === 'csv' ? csvRangeCell(cellText) : tsvCell(cellText))
         }
         lines.push(cells.join(format === 'csv' ? ',' : '\t'))
       }
@@ -6664,11 +6685,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
         e.preventDefault()
         // Batch CE: the flash gates on actual copy SUCCESS (any of the three
         // writer channels) — spec “复制成功后”.
-        void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv')).then(
-          (ok) => {
-            if (ok) flashCopyFeedback(range)
-          },
-        )
+        void writeClipboardText(
+          buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv', !!clipConfig?.copyWithFormat),
+        ).then((ok) => {
+          if (ok) flashCopyFeedback(range)
+        })
       } else if (matchTableKey(e, keyBindings.paste)) {
         if (clipConfig.paste === false) return
         e.preventDefault()
@@ -6995,7 +7016,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!range) return
     // Batch CE: same success-gated flash as Ctrl/Cmd+C — the range toolbar
     // 复制 button is the second consumption point.
-    void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv')).then((ok) => {
+    void writeClipboardText(
+      buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv', !!clipConfig?.copyWithFormat),
+    ).then((ok) => {
       if (ok) flashCopyFeedback(range)
     })
   }, [cellRangeCtrl, buildRangeCopy, clipConfig, flashCopyFeedback])

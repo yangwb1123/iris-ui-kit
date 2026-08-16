@@ -1647,3 +1647,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-by-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-by-review.md`; Verification run (all independently re-run): | Gate | Result |; Checklist vs baseline: All 5 source contacts match the spec: `types.ts` piece+field, `ALL_PIECES` +1 (three loops + skip-first auto-covered), c; Findings (non-blocking): 1. **LOW** — `Table.tsx:2877-2878` `applyViewSnapshot` expandedKeys branch untested (adapt report claims views coverage;
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-review.md
+
+## 2026-08-15 16:08:13 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-by-gate.md [ok]: Summary: **Review verdict**: PASS (all 5 baseline source contacts verified; findings non-blocking)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-gate.md
+
+## 2026-08-15 16:12:35 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bz-baseline.md [ok]: 核验摘要 (batch BZ：表格状态导出导入，iris 独有): **Output**: `/home/u1/iris-ui/docs/vxe-grid/batch-bz-baseline.md`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-baseline.md
+
+## 2026-08-15 16:28:22 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bz-adapt.md [ok]: Files changed (2 commits): **`e6e01ae5`** — `feat(table): grid 批 BZ——表格状态导出导入（iris 独有）`; Tests added (12): Export structure (9 spec keys with owning callbacks / lazy gating / bare table `'{}'`) · import application (per-callbac; Verification (all ✅): - core test **1517/1517** · react typecheck **clean** · react test **2385/2385** (2373→2385) · react lint **0 errors** (; What is left: - Runner's review/gate stage; working-tree `DECISIONS.md`/`batch-by-gate.md` changes are BY-gate leftovers (untouched, f
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-adapt.md
+
+## 2026-08-15 16:33:32 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bz-review.md [ok]: Review summary: **Implementation inspected** (commit `e6e01ae5`): `IrisTableHandle` +2 handle-only methods — `exportStateJson()` (9 spec
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-review.md
+
+## 2026-08-16 00:37:57 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bz-gate.md [ok]: Gate complete — **PASS**: Review verdict PASS (all 9 spec blocks verified); Full repo gate 180/180 tasks successful (125 cached); Audit 0 vulnerabilities; check:manifest up-to-date (165/31 unchanged); comparison doc already current at adapt commit `e6e01ae5`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-gate.md

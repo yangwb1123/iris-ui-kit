@@ -149,6 +149,42 @@ function renderRangeFillHandle(
 }
 
 /**
+ * Batch CD row-drag insertion indicator (iris 独有 — vxe has no drop line):
+ * the ONE pure source of truth shared by the move handler (draws the 1px
+ * line between rows) and the up handler (commits the drop) so the row
+ * always lands exactly where the line was drawn. Side = the pointer vs. the
+ * over row's vertical midpoint (dnd-kit style): at/above the center the
+ * line sits ABOVE the over row, strictly below it sits BELOW. Returns null
+ * when there is nothing to draw (no target / the active row itself / a
+ * non-row target such as the header), and the insert index is expressed in
+ * the ORIGINAL array space (pre-removal), matching the commit's
+ * `splice(from,1); splice(to,0)` — so a net-zero move (`from ===
+ * insertIndex`) is detectable by the caller.
+ */
+interface RowDragDropResolve {
+  /** Which edge of the over row the insertion line sits on. */
+  side: 'above' | 'below'
+  /** Index in the ORIGINAL rows array the dragged row lands at. */
+  insertIndex: number
+}
+
+function resolveRowDragDrop<Row>(
+  pointerY: number,
+  activeId: string,
+  overId: string,
+  overRect: SortableRect,
+  rows: readonly Row[],
+  idOf: (row: Row, index: number) => string,
+): RowDragDropResolve | null {
+  if (activeId === overId) return null
+  const overIndex = rows.findIndex((row, index) => idOf(row, index) === overId)
+  if (overIndex < 0) return null
+  const side: RowDragDropResolve['side'] =
+    pointerY <= overRect.top + overRect.height / 2 ? 'above' : 'below'
+  return { side, insertIndex: overIndex + (side === 'below' ? 1 : 0) }
+}
+
+/**
  * Light audit diff (batch AT): compare the PREVIOUS row list against the
  * NEXT and resolve the FIRST changed row + FIRST changed cell, so each
  * mutation commit records exactly ONE audit entry (keeps the trail readable
@@ -3788,6 +3824,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   const rowDragActiveId = rowDragState.activeId
   const rowDragOverId = rowDragState.overId
+  // Batch CD row-drag insertion line (iris 独有): during an active drag a
+  // 1px primary line renders between rows. `rowDropRef` records the EXACT
+  // inputs that drew the line so pointerup re-resolves through the same
+  // pure function — the row always lands where the line was drawn. Cleared
+  // on up / leave / cancel (spec-required cleanup).
+  const [rowDropTarget, setRowDropTarget] = React.useState<{
+    rowId: string
+    side: 'above' | 'below'
+    top: number
+  } | null>(null)
+  const rowDropRef = React.useRef<{
+    pointerY: number
+    overId: string
+    overRect: SortableRect
+  } | null>(null)
 
   const handleRowDragPointerDown = (e: React.PointerEvent, rowId: string) => {
     if (!rowDrag || e.button !== 0) return
@@ -3809,25 +3860,89 @@ export function IrisTable<Row extends Record<string, unknown>>({
         rowRectsRef.current = rects
       }
     }
-    if (rowDragCtrl.getState().activeId !== null) {
-      rowDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, rowRectsRef.current)
+    const state = rowDragCtrl.getState()
+    if (state.activeId !== null) {
+      const overId = rowDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, rowRectsRef.current)
+      updateRowDropIndicator(e.clientY, state.activeId, overId)
     }
+  }
+
+  // Batch CD: draw (or clear) the between-rows insertion line for the
+  // current drop target. The line sits at the over row's top edge (above)
+  // or bottom edge (below) — computed from the same captured rect the
+  // pointer is over, translated into the root's coordinate space (the root
+  // is forced position: relative while rowDrag is on). No target / the
+  // active row itself / a non-row target (e.g. the header) → no line.
+  const updateRowDropIndicator = (
+    pointerY: number,
+    activeId: string,
+    overId: string | null,
+  ): void => {
+    if (overId === null || overId === activeId) {
+      rowDropRef.current = null
+      setRowDropTarget(null)
+      return
+    }
+    const overRect = rowRectsRef.current.find((r) => r.id === overId)
+    if (!overRect) {
+      rowDropRef.current = null
+      setRowDropTarget(null)
+      return
+    }
+    const resolved = resolveRowDragDrop(
+      pointerY,
+      activeId,
+      overId,
+      overRect,
+      bodyData,
+      (row, index) => String(rowKeyOf(row, index)),
+    )
+    if (!resolved) {
+      rowDropRef.current = null
+      setRowDropTarget(null)
+      return
+    }
+    const root = rootRef.current
+    const rootTop = root ? root.getBoundingClientRect().top + (root.clientTop || 0) : 0
+    const top = overRect.top - rootTop + (resolved.side === 'below' ? overRect.height : 0)
+    rowDropRef.current = { pointerY, overId, overRect }
+    setRowDropTarget((prev) =>
+      prev && prev.rowId === overId && prev.side === resolved.side && prev.top === top
+        ? prev
+        : { rowId: overId, side: resolved.side, top },
+    )
   }
 
   const handleRowDragPointerUp = () => {
     if (!rowDrag) return
     if (rowDragCtrl.isPending()) {
       rowDragCtrl.cancel()
+      // Batch CD cleanup: an aborted tap still clears the line + refs.
+      rowDropRef.current = null
+      setRowDropTarget(null)
       return
     }
     const { activeId, overId } = rowDragCtrl.end()
-    if (activeId !== null && overId !== null && activeId !== overId) {
+    const recorded = rowDropRef.current
+    rowDropRef.current = null
+    setRowDropTarget(null)
+    // Commit through the SAME resolve that drew the line (recorded pointerY
+    // + overRect) so the row lands exactly where the line was drawn; a
+    // net-zero move (from === insertIndex) skips onReorder.
+    if (activeId !== null && overId !== null && recorded && recorded.overId === overId) {
       const rows = [...bodyData] as Row[]
       const from = rows.findIndex((r, i) => String(rowKeyOf(r, i)) === activeId)
-      const to = rows.findIndex((r, i) => String(rowKeyOf(r, i)) === overId)
-      if (from >= 0 && to >= 0 && from !== to) {
+      const resolved = resolveRowDragDrop(
+        recorded.pointerY,
+        activeId,
+        overId,
+        recorded.overRect,
+        rows,
+        (row, index) => String(rowKeyOf(row, index)),
+      )
+      if (resolved && from >= 0 && from !== resolved.insertIndex) {
         const [moved] = rows.splice(from, 1)
-        rows.splice(to, 0, moved)
+        rows.splice(resolved.insertIndex, 0, moved)
         rowDrag.onReorder(rows)
       }
     }
@@ -3835,9 +3950,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   const handleRowDragPointerLeave = () => {
+    // Batch CD cleanup: leave aborts the drag AND clears the line + refs.
     if (rowDrag && rowDragCtrl.getState().activeId !== null) {
       rowDragCtrl.cancel()
     }
+    rowDropRef.current = null
+    setRowDropTarget(null)
   }
 
   // Row-selection drag range (batch BT, iris 独有 — vxe has no mouse-drag
@@ -8700,7 +8818,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
         onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
         onPointerCancel={
-          rangeFill || selectionDrag
+          rangeFill || selectionDrag || rowDrag
             ? () => {
                 // Aborted drag → drop the target highlight, nothing committed.
                 // Re-arm dismissal too (same stale-flag fix as pointerup).
@@ -8715,6 +8833,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 selectionDragAnchorRef.current = null
                 selectionDragSeenRef.current = null
                 selectionDragPressCellRef.current = null
+                // Batch CD: aborted row drag → drop the insertion line + its
+                // resolve ref and cancel the controller (previously a
+                // pointercancel could leave the row drag stuck in activeId).
+                if (rowDrag) {
+                  if (rowDragCtrl.getState().activeId !== null) rowDragCtrl.cancel()
+                  rowDropRef.current = null
+                  setRowDropTarget(null)
+                }
               }
             : undefined
         }
@@ -8762,6 +8888,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // layer (zoom's position: fixed below still wins when zoomed, so
           // the watermark rides the fixed overlay as intended).
           ...(watermark ? { position: 'relative' } : null),
+          // Batch CD: the row-drag insertion line is absolutely positioned
+          // in this root — same forced-anchor precedent as the BU watermark,
+          // also AFTER `...style` so a caller style cannot unanchor it.
+          ...(rowDrag ? { position: 'relative' } : null),
           // Batch U zoom (vxe toolbar zoom parity): the stylesheet pins the
           // root fixed (data-iris-table-zoomed); the inline height: 100%
           // keeps the fixed-height machinery engaged so the sticky header
@@ -8779,6 +8909,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
           content but below the sticky header (z 2), pinned columns (z 1) and
           the floating panels; presence-gated so no prop = zero nodes. */}
         {watermark ? renderTableWatermark(watermark) : null}
+
+        {/* Batch CD row-drag insertion indicator (iris 独有): the 1px primary
+          line between rows while a rowDrag is active. Absolute in the root
+          (rowDrag forces position: relative AFTER ...style, BU-watermark
+          precedent), full-width via logical inset props (RTL-safe), painted
+          above the static body but below the sticky header / pinned columns
+          (z 2). pointerEvents none so the drag never loses the pointer;
+          presence-gated → zero nodes when idle. */}
+        {rowDropTarget ? (
+          <div
+            data-iris-row-drag-indicator=""
+            data-iris-row-drag-side={rowDropTarget.side}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              insetInlineStart: 0,
+              insetInlineEnd: 0,
+              height: '1px',
+              background: 'var(--iris-primary)',
+              top: rowDropTarget.top,
+              pointerEvents: 'none',
+              zIndex: 2,
+            }}
+          />
+        ) : null}
 
         {/* Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;
           each cell placed by its leaf-column span (colStart/colSpan) and row span. */}

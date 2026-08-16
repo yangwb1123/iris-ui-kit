@@ -409,6 +409,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the summary row). Additive; default off (fail-closed).
    */
   charCount?: boolean
+  /** Batch CJ (iris 独有 — vxe has no shortcut help): show a `?` toolbar
+   * trigger that opens a floating panel listing every built-in keyboard
+   * shortcut with its EFFECTIVE key — the same normalized map every handler
+   * matches against, so `keymap` remaps reflect live and a listed key always
+   * actually works. Read-only reference (no rebind UI). Additive; default
+   * off (fail-closed). */
+  shortcutHints?: boolean
   /** Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys. */
   onSelectAllChange?: (state: boolean | 'indeterminate', selection: Array<string | number>) => void
   /** Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden). */

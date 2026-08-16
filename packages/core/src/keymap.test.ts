@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_TABLE_KEYMAP,
+  formatKeyBinding,
+  formatKeyBindings,
   matchTableKey,
   normalizeKeymap,
   parseTableKey,
@@ -117,6 +119,51 @@ describe('normalizeKeymap', () => {
     const mixed = normalizeKeymap({ edit: 'F3', clear: '' })
     expect(mixed.edit).toEqual([{ key: 'f3', ctrl: false, shift: false, alt: false }])
     expect(mixed.clear).toEqual(normalizeKeymap().clear)
+  })
+})
+
+describe('formatKeyBinding', () => {
+  it('renders plain keys display-cased (F2 / Delete / Space)', () => {
+    expect(formatKeyBinding(parseTableKey('F2')!)).toBe('F2')
+    expect(formatKeyBinding(parseTableKey('Delete')!)).toBe('Delete')
+    expect(formatKeyBinding(parseTableKey('Backspace')!)).toBe('Backspace')
+    expect(formatKeyBinding(parseTableKey('Space')!)).toBe('Space')
+  })
+
+  it('renders modifiers in Ctrl/Shift/Alt order with the key uppercased', () => {
+    expect(formatKeyBinding(parseTableKey('Ctrl+Shift+Z')!)).toBe('Ctrl+Shift+Z')
+    expect(formatKeyBinding(parseTableKey('Alt+d')!)).toBe('Alt+D')
+    expect(formatKeyBinding(parseTableKey('Shift+Ctrl+Y')!)).toBe('Ctrl+Shift+Y')
+    expect(formatKeyBinding(parseTableKey('Option+Alt+F2')!)).toBe('Alt+F2')
+  })
+
+  it('renders the shared ctrl-or-meta flag as Ctrl (Meta matches too)', () => {
+    expect(formatKeyBinding(parseTableKey('Cmd+C')!)).toBe('Ctrl+C')
+    expect(formatKeyBinding(parseTableKey('Meta+K')!)).toBe('Ctrl+K')
+  })
+})
+
+describe('formatKeyBindings', () => {
+  it('joins aliases with a spaced slash and formats the whole default map', () => {
+    const km = normalizeKeymap()
+    expect(formatKeyBindings(km.edit)).toBe('F2')
+    expect(formatKeyBindings(km.clear)).toBe('Delete / Backspace')
+    expect(formatKeyBindings(km.undo)).toBe('Ctrl+Z')
+    expect(formatKeyBindings(km.redo)).toBe('Ctrl+Y / Ctrl+Shift+Z')
+    expect(formatKeyBindings(km.copy)).toBe('Ctrl+C')
+    expect(formatKeyBindings(km.paste)).toBe('Ctrl+V')
+    expect(formatKeyBindings(km.fill)).toBe('Ctrl+D')
+    expect(formatKeyBindings(km.query)).toBe('Ctrl+K')
+  })
+
+  it('renders an empty list as an empty string', () => {
+    expect(formatKeyBindings([])).toBe('')
+  })
+
+  it('round-trips a rebind end-to-end (override → formatted display)', () => {
+    const km = normalizeKeymap({ edit: 'Space', query: 'Ctrl+J' })
+    expect(formatKeyBindings(km.edit)).toBe('Space')
+    expect(formatKeyBindings(km.query)).toBe('Ctrl+J')
   })
 })
 

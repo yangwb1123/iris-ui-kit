@@ -36628,6 +36628,12 @@
           "description": "a live character count in the editing cell's bottom-right corner (cell AND row edit modes, recomputed per keystroke from the session draft) plus a cell-count/sum badge at the selected range's bottom-right cell when `cellRange` has a live selection (a pure reduction over the rangeStats material — count = Σ column non-null counts, sum = Σ numeric column sums, `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as the summary row). Additive; default off (fail-closed)."
         },
         {
+          "name": "shortcutHints",
+          "type": "boolean",
+          "optional": true,
+          "description": "trigger that opens a floating panel listing every built-in keyboard shortcut with its EFFECTIVE key — the same normalized map every handler matches against, so `keymap` remaps reflect live and a listed key always actually works. Read-only reference (no rebind UI). Additive; default"
+        },
+        {
           "name": "onSelectAllChange",
           "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
           "optional": true,
@@ -37644,6 +37650,12 @@
               "type": "boolean",
               "optional": true,
               "description": "a live character count in the editing cell's bottom-right corner (cell AND row edit modes, recomputed per keystroke from the session draft) plus a cell-count/sum badge at the selected range's bottom-right cell when `cellRange` has a live selection (a pure reduction over the rangeStats material — count = Σ column non-null counts, sum = Σ numeric column sums, `null` = no numeric data — rounded via the same `aggregateAccuracy` gate as the summary row). Additive; default off (fail-closed)."
+            },
+            {
+              "name": "shortcutHints",
+              "type": "boolean",
+              "optional": true,
+              "description": "trigger that opens a floating panel listing every built-in keyboard shortcut with its EFFECTIVE key — the same normalized map every handler matches against, so `keymap` remaps reflect live and a listed key always actually works. Read-only reference (no rebind UI). Additive; default"
             },
             {
               "name": "onSelectAllChange",
@@ -39219,7 +39231,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 169,
+        "propCount": 170,
         "eventCount": 31
       }
     },

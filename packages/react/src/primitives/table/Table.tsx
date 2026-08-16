@@ -93,6 +93,7 @@ import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
 import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { TablePerfPanel } from './PerfPanel'
+import { TableShortcutHintsPanel } from './ShortcutHintsPanel'
 import {
   CELL_NOTE_STYLE,
   CHAR_COUNT_HANDLE_SHIFT_STYLE,
@@ -2258,6 +2259,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onAutosave,
   editAutoHeight,
   charCount,
+  shortcutHints,
   onSelectAllChange,
   onScroll,
   tableRef,
@@ -3980,6 +3982,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the audit/chart panels).
   const [perfOpen, setPerfOpen] = React.useState(false)
   const perfAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // Batch CJ: shortcut-hints panel open state + toolbar trigger anchor (the
+  // `?` button after the perf trigger; floating like the chart/audit panels).
+  const [hintsOpen, setHintsOpen] = React.useState(false)
+  const hintsAnchorRef = React.useRef<HTMLButtonElement | null>(null)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -8290,7 +8296,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         validationSummary ||
         auditLog ||
         perfStats ||
-        versionHistory) &&
+        versionHistory ||
+        shortcutHints) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -8965,6 +8972,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={t('table.perf')}
             >
               ⚡
+            </button>
+          ) : null}
+          {/* Batch CJ (iris 独有): shortcut-hints `?` trigger after the perf
+              trigger — opens the read-only keymap reference panel. */}
+          {shortcutHints ? (
+            <button
+              ref={hintsAnchorRef}
+              type="button"
+              data-iris-shortcut-hints-trigger=""
+              onClick={() => setHintsOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: hintsOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.shortcuts')}
+              title={t('table.shortcuts')}
+            >
+              ?
             </button>
           ) : null}
           {/* Batch BR (iris 独有): validationSummary — muted editRules
@@ -9982,6 +10010,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
             perf={perf}
             audit={auditLog ? audit : null}
             onClose={() => setPerfOpen(false)}
+            t={t}
+          />
+        ) : null}
+        {shortcutHints && hintsOpen ? (
+          <TableShortcutHintsPanel
+            open
+            anchorRef={hintsAnchorRef}
+            bindings={keyBindings}
+            onClose={() => setHintsOpen(false)}
             t={t}
           />
         ) : null}

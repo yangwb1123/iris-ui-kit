@@ -420,6 +420,8 @@ export {
   parseTableKey,
   normalizeKeymap,
   matchTableKey,
+  formatKeyBinding,
+  formatKeyBindings,
   TABLE_KEY_ACTIONS,
   DEFAULT_TABLE_KEYMAP,
   type IrisTableKeyAction,

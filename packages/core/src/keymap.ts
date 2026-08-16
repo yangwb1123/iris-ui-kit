@@ -127,6 +127,31 @@ export function normalizeKeymap(overrides?: IrisTableKeymap): NormalizedTableKey
   return out
 }
 
+/**
+ * Format ONE binding as a display string (batch CJ, iris 独有 — vxe has no
+ * shortcut help): modifier order `Ctrl`/`Shift`/`Alt`, the key part
+ * display-cased (`' '` → `Space`, single letters uppercased, other keys
+ * capitalized: `f2` → `F2`, `delete` → `Delete`). The single ctrl-or-meta
+ * flag always renders as `Ctrl` (byte-identical with `parseTableKey`'s
+ * shared-flag read). Round-trips every binding `normalizeKeymap` can emit.
+ */
+export function formatKeyBinding(binding: TableKeyBinding): string {
+  const parts: string[] = []
+  if (binding.ctrl) parts.push('Ctrl')
+  if (binding.shift) parts.push('Shift')
+  if (binding.alt) parts.push('Alt')
+  const key = binding.key
+  if (key === 'space') parts.push('Space')
+  else if (key.length === 1) parts.push(key.toUpperCase())
+  else parts.push(key.charAt(0).toUpperCase() + key.slice(1))
+  return parts.join('+')
+}
+
+/** Format a binding LIST as a display string: `' / '`-joined aliases, empty → `''`. */
+export function formatKeyBindings(bindings: readonly TableKeyBinding[]): string {
+  return bindings.map(formatKeyBinding).join(' / ')
+}
+
 /** Exact match: key (case-insensitive) + ALL modifier flags equal. */
 export function matchTableKey(event: TableKeyEvent, bindings: readonly TableKeyBinding[]): boolean {
   const key = event.key === ' ' ? 'space' : event.key.toLowerCase()

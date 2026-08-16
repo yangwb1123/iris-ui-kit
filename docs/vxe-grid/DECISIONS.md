@@ -1847,3 +1847,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cg-review.md [ok]: Verdict: **PASS**: Review written to `docs/vxe-grid/batch-cg-review.md`. No implementation files modified.; Verification results (HEAD `8d883dc2` = `777a8e4b` feat + docs): | Check | Result |; Spec conformance highlights: - `charCount?: boolean` after `editAutoHeight` (`props.ts:405`); additive-only (all hunks pure additions; types.ts / sol; Findings (1 low / 4 info, none blocking): 1. **low** `Table.tsx:237-244` — sum rounding lacks the `Number.isFinite(stats.sum)` guard the summary row/selection sum
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cg-review.md
+
+## 2026-08-15 21:35:17 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cg-gate.md [ok]: 批 CG Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-cg-review.md`, 0 blocker / 0 major; 1 low / 4 info — none blocking, no co; Gate results: | Step | Result |; Commits: - **`b73b7095f1746f4346aa69a643aa58d291082a6e`** — `feat(table): grid 批 CG——单元格字数统计（iris 独有）` (5 files: comparison doc ×; Final test counts: - **react: 2454/2454** (14 new char-count tests: 6 编辑计数 + 8 选区计数)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cg-gate.md
+
+## 2026-08-15 21:42:11 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ch-baseline.md [ok]: Baseline essence (batch CH：列宽双栏拖拽 — columnDrag 拖出固定, iris 独有): **Design** — zero new props, one shared resolution throat, window-level release:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ch-baseline.md
+
+## 2026-08-15 21:52:37 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ch-adapt.md [ok]: Report: **Commits**:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ch-adapt.md
+
+## 2026-08-15 21:59:17 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ch-review.md [ok]: Verdict: **PASS** — review written to `docs/vxe-grid/batch-ch-review.md`; Summary of the adversarial review: **Spec correctness — PASS.** The spec (`columnDrag 增强：拖拽列头到表格边缘外自动固定（drop 到左边缘 → pinned left）——与 columnPinMenu 组合；测试（拖出固
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ch-review.md
+
+## 2026-08-15 22:05:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ch-gate.md [ok]: 批 CH Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-ch-review.md`, 0 blocker / 0 major; 2 low / 1 info — none blocking, no code fixes needed). Gate results: full repo gate **180/180** (2m04s, 125 cached) · audit:security **0** · audit:tokens exit 1 only pre-existing warnings (0 new) · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount 169 / eventCount 31, zero diff) · comparison doc updated (iris 独有 columnDrag 拖出固定 row + 构建状态 批 CH entry) · framework-free invariant holds (core 0 framework imports). Final test counts: **react 2467/2467** (13 new column-pin-drag tests) · **core 1533/1533** · manifest propCount 169 / eventCount 31 · audit 0
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ch-gate.md

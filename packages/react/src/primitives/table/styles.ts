@@ -94,6 +94,14 @@ export const RANGE_FILL_HANDLE_STYLE: React.CSSProperties = {
    source range) while the handle is being dragged — token-driven only. */
 export const RANGE_FILL_TARGET_BG = 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
 
+/* Batch CE copy flash (iris 独有 — vxe has no copy feedback): after a
+   SUCCESSFUL range copy (Ctrl/Cmd+C or the range toolbar 复制) the copied
+   cells flash briefly. color-mix over the background token — distinct from
+   the persistent selection tint — same precedent as the compare-view
+   added/removed rows in TABLE_ROW_CSS. BACKGROUND-COLOR longhand (batch BE
+   discipline): never clobbers background-image (locked stripes survive). */
+export const COPY_FLASH_BG = 'color-mix(in srgb, var(--iris-primary) 25%, var(--iris-background))'
+
 /* Batch AZ cell annotations (iris 独有 — vxe has no cell-note concept): the
    6px corner badge rendered inside a noted body cell (data-iris-cell-note).
    Absolute top-right (logical inset-inline-end mirrors in RTL); the host

@@ -94,6 +94,7 @@ import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { TablePerfPanel } from './PerfPanel'
 import {
   CELL_NOTE_STYLE,
+  COPY_FLASH_BG,
   PRESENCE_LABEL_STYLE,
   RANGE_FILL_HANDLE_STYLE,
   RANGE_FILL_TARGET_BG,
@@ -128,6 +129,32 @@ function rangeFillCellStyle(handleCell: boolean, targetCell: boolean): React.CSS
     ...(handleCell ? { position: 'relative', zIndex: 2 } : null),
     ...(targetCell ? { background: RANGE_FILL_TARGET_BG } : null),
   }
+}
+
+/** Batch CE copy flash: is (row, col) inside the copied-range SNAPSHOT? Kept
+ * at module scope so the row-render arrow's eslint complexity budget stays
+ * untouched (same discipline as the fill helpers above). */
+function inCopyFlashRange(range: CellRange | null, row: number, col: number): boolean {
+  if (range === null) return false
+  return (
+    row >= range.start.row && row <= range.end.row && col >= range.start.col && col <= range.end.col
+  )
+}
+
+/** The data-iris-copy-flash attr value (undefined hides it). */
+function copyFlashCellAttr(range: CellRange | null, row: number, col: number): string | undefined {
+  return inCopyFlashRange(range, row, col) ? 'true' : undefined
+}
+
+/** The copy-flash background — empty object outside the flashed rect so the
+ * spread adds nothing (no operators in the hot arrow). */
+function copyFlashCellStyle(
+  range: CellRange | null,
+  row: number,
+  col: number,
+): React.CSSProperties {
+  if (!inCopyFlashRange(range, row, col)) return {}
+  return { backgroundColor: COPY_FLASH_BG }
 }
 
 /** The 6px fill handle (data-iris-range-fill), rendered only in the range's
@@ -1043,6 +1070,10 @@ const EXPAND_COL_WIDTH = 40
 const SEQ_COL_WIDTH = 60
 const DRAG_COL_WIDTH = 40
 const DEFAULT_PINNED_WIDTH = 140
+/* Batch CE copy feedback (iris 独有): how long the copied-range highlight
+   stays after a SUCCESSFUL range copy before it clears. Re-copy restarts
+   the clock; unmount cleanup below. */
+const COPY_FLASH_MS = 600
 /** Reserved context-menu key for the built-in value-distribution item (batch
  * AM): the table intercepts it at the onSelect wiring, so a user item with
  * the same key is deduped and the user callback never sees it. */
@@ -1545,15 +1576,17 @@ function renderAutoLinkCell<Row extends Record<string, unknown>>(
  * Write clipboard text — best-effort, ordered: registered host handler
  * (core `copyText`) → `navigator.clipboard.writeText` → hidden-textarea
  * `execCommand('copy')` fallback. In test environments without a clipboard
- * stub every step no-ops safely (never throws).
+ * stub every step no-ops safely (never throws). Returns `true` when at
+ * least one channel actually took the copy — the batch-CE copy-feedback
+ * highlight gates on this (spec: “复制成功后”).
  */
-async function writeClipboardText(text: string): Promise<void> {
-  if (await copyText(text)) return
+async function writeClipboardText(text: string): Promise<boolean> {
+  if (await copyText(text)) return true
   const nav = navigator as Navigator & { clipboard?: { writeText?: (t: string) => Promise<void> } }
   if (nav.clipboard?.writeText) {
     try {
       await nav.clipboard.writeText(text)
-      return
+      return true
     } catch {
       /* permission denied — fall through to the legacy path */
     }
@@ -1565,12 +1598,14 @@ async function writeClipboardText(text: string): Promise<void> {
   ta.style.opacity = '0'
   document.body.appendChild(ta)
   ta.select()
+  let copied = false
   try {
-    document.execCommand('copy')
+    copied = document.execCommand('copy')
   } catch {
     /* no-op */
   }
   ta.remove()
+  return copied
 }
 
 /** Case-insensitive replace of every occurrence (fnr replace / replace-all). */
@@ -5756,6 +5791,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const liveLeafRef = React.useRef(leafColumns)
   liveLeafRef.current = leafColumns
 
+  // Batch CE copy feedback (iris 独有 — vxe has no copy flash): after a
+  // SUCCESSFUL range copy (Ctrl/Cmd+C or the range toolbar 复制) the copied
+  // cells highlight briefly. `copyFlashRange` snapshots the NORMALIZED rect
+  // at copy time — the highlight does NOT chase a changed selection. The
+  // 600ms timer clears it; re-copy restarts the clock; unmount cleanup below.
+  const [copyFlashRange, setCopyFlashRange] = React.useState<CellRange | null>(null)
+  const copyFlashTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flashCopyFeedback = React.useCallback((range: CellRange): void => {
+    setCopyFlashRange(range)
+    if (copyFlashTimerRef.current !== null) clearTimeout(copyFlashTimerRef.current)
+    copyFlashTimerRef.current = setTimeout(() => {
+      copyFlashTimerRef.current = null
+      setCopyFlashRange(null)
+    }, COPY_FLASH_MS)
+  }, [])
+  React.useEffect(() => {
+    return () => {
+      if (copyFlashTimerRef.current !== null) {
+        clearTimeout(copyFlashTimerRef.current)
+        copyFlashTimerRef.current = null
+      }
+    }
+  }, [])
+
   // Batch BP (iris 独有): the copy OUTPUT format dispatcher — one throat for
   // BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制). Three
   // serializers, zero new ones: `'tsv'` → `tsvCell`, `'csv'` → `csvRangeCell`
@@ -5978,7 +6037,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (matchTableKey(e, keyBindings.copy)) {
         if (clipConfig.copy === false) return
         e.preventDefault()
-        void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv'))
+        // Batch CE: the flash gates on actual copy SUCCESS (any of the three
+        // writer channels) — spec “复制成功后”.
+        void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv')).then(
+          (ok) => {
+            if (ok) flashCopyFeedback(range)
+          },
+        )
       } else if (matchTableKey(e, keyBindings.paste)) {
         if (clipConfig.paste === false) return
         e.preventDefault()
@@ -5987,7 +6052,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clipConfig, cellRangeCtrl, buildRangeCopy, pasteIntoRange, keyBindings])
+  }, [clipConfig, cellRangeCtrl, buildRangeCopy, pasteIntoRange, keyBindings, flashCopyFeedback])
 
   // ── Range floating toolbar (batch AH, iris 独有) ───────────────────────
   // Visibility derives from the range store: `cellRange` + a live selection
@@ -6178,8 +6243,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const copyActiveRange = React.useCallback((): void => {
     const range = cellRangeCtrl.getRange()
     if (!range) return
-    void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv'))
-  }, [cellRangeCtrl, buildRangeCopy, clipConfig])
+    // Batch CE: same success-gated flash as Ctrl/Cmd+C — the range toolbar
+    // 复制 button is the second consumption point.
+    void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv')).then((ok) => {
+      if (ok) flashCopyFeedback(range)
+    })
+  }, [cellRangeCtrl, buildRangeCopy, clipConfig, flashCopyFeedback])
 
   const exportActiveRangeCsv = React.useCallback((): string => {
     const range = cellRangeCtrl.getRange()
@@ -7036,6 +7105,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // (excluding the source range) highlight while dragging.
           const fillHandleCell = isRangeFillHandleCell(rangeFill, activeRange, idx, ci)
           const fillTargetCell = isRangeFillTarget(idx, ci)
+          // Batch CE copy flash: SNAPSHOT semantics — the rect was captured
+          // at copy time, so the highlight does not chase a changed selection
+          // (spec “复制成功后…选中单元格短暂高亮”).
           return (
             <div
               key={col.key}
@@ -7074,6 +7146,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     'data-iris-cell-row': idx,
                     'data-iris-cell-col': ci,
                     'data-iris-cell-selected': isInRange(idx, ci) ? 'true' : undefined,
+                    'data-iris-copy-flash': copyFlashCellAttr(copyFlashRange, idx, ci),
                     'data-iris-range-fill-target': rangeFillTargetAttr(fillTargetCell),
                   }
                 : null)}
@@ -7146,6 +7219,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   striped && idx % 2 === 1,
                 ),
                 ...rangeFillCellStyle(fillHandleCell, fillTargetCell),
+                // Batch CE: the copy-flash background sits AFTER the
+                // fnr/range-fill backgrounds (flash wins while active) but
+                // BEFORE lockedRender.style (BE discipline: lock stripes /
+                // readonly dots re-assert last). Longhand only — never
+                // clobbers background-image.
+                ...copyFlashCellStyle(copyFlashRange, idx, ci),
                 borderBottom: borderStyle,
                 cursor: lockedRender.cursor,
                 ...(editing ? { padding: '4px 8px' } : null),

@@ -2127,3 +2127,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cs-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cs-baseline.md
+
+## 2026-08-16 07:09:25 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cs-adapt.md [ok]: Report — 批 CS：行展开滚动保持（iris 独有）: **Commit**: `f7d38344 feat(table): grid 批 CS——行展开滚动保持（iris 独有）` (working tree clean); Files changed (4 source/test + manifest + docs): | File | Change |; Implementation: Spec-literal: pixel scrollTop already survives the virtualizer rebuild (IrisVirtualScroll local state); the real gap is ; Tests added (12): fail-closed pin · tree expand above (+C×36) / below (zero) / collapse above (−C×36) · detail +36 · partial-anchor offset; Verification (all ✅): - `@iris-ui-kit/core test`: **1559/1559** (untouched; framework-free grep 0)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cs-adapt.md
+
+## 2026-08-16 07:16:55 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cs-review.md [ok]: Summary: **Spec correctness** — Implementation is spec-literal vs `batch-cs-baseline.md`: pixel scrollTop was correctly identifie
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cs-review.md

@@ -2022,3 +2022,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cn-review.md [ok]: Verdict: **PASS**: Review written to `/home/u1/iris-ui/docs/vxe-grid/batch-cn-review.md`. No implementation files modified.; Verification results: | Check | Result |; Spec verification highlights: - `cellDrag?: boolean` after `rangeFill` (`props.ts:557`), fail-closed default off, manifest desc regenerated in sync.; Findings (both informational, non-blocking): 1. **P4** — `Table.tsx:229` grip `<span>` has no role/aria/keyboard alternative (same as pre-existing fill handle).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cn-review.md
+
+## 2026-08-16 00:57:56 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cn-gate.md [ok]: Report: **Commit**: `6f30435a` — `feat(table): grid 批 CN——单元格拖拽移动（iris 独有）` (implementation itself landed earlier at `0b7b0bd4`;; Gate results: | Step | Result |; Final test counts: - **core: 1559/1559** (zero core changes — framework-free invariant intact)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cn-gate.md
+
+## 2026-08-16 01:01:14 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-co-baseline.md [ok]: Baseline summary — 批 CO：表格时间线导出（iris 独有）: **Design** — `IrisTableHandle.exportTimelineCsv(): string`（handle 方法，manifest 不可见——批 BF/BV 先例，零 prop/i18n/events/core 改动
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-co-baseline.md
+
+## 2026-08-16 01:12:13 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-co-adapt.md [ok]: Files changed (2 commits): **`ddb1cb97`** — `feat(table): grid 批 CO——表格时间线导出（iris 独有）`; Tests added (9, content-only): fail-closed `''` · single edit (time regex + exact rowKey/column/old/new) · newest-first ring order · insert structural ; Counts: react 2535 → **2544** (+9) · core 1559 unchanged · manifest 155 components / 174 props / 31 events **unchanged** (handle; Verification (all ✅): - core test **1559/1559** · react typecheck **clean** · react test **2544/2544** (two consecutive clean runs) · react li; What is left: - Runner's review/gate stage; working-tree `DECISIONS.md`/`batch-cn-gate.md` are BY-gate leftovers (untouched); `batch-c
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-co-adapt.md
+
+## 2026-08-16 01:17:38 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-co-review.md [ok]: Verification (all independently re-run): | Check | Result |; Spec correctness (spot-verified): - Header byte-exact `time,type,rowKey,column,old,new`; `time` = `formatClock(new Date(e.at))` — **byte-identical** to Au; Findings (none blocking): 1. **[Info]** per-field same-source test compares `String()` vs `csvField` semantics — equal for the test data; serializ
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-co-review.md

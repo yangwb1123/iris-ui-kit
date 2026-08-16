@@ -148,6 +148,15 @@ function copyFlashCellAttr(range: CellRange | null, row: number, col: number): s
   return inCopyFlashRange(range, row, col) ? 'true' : undefined
 }
 
+/** Batch CH (iris 独有 — vxe has no drag-out pin): a column-drag release
+ * outside the table's LEFT edge triggers the drag-out pin (with
+ * `columnPinMenu`); releases at/inside the left edge keep the plain reorder
+ * path. Pure + DOM-free, so the root pointerup handler and the window
+ * pointerup listener resolve through the SAME check. */
+function isColDragOutLeft(x: number, rootLeft: number): boolean {
+  return x < rootLeft
+}
+
 /** The copy-flash background — empty object outside the flashed rect so the
  * spread adds nothing (no operators in the hot arrow). */
 function copyFlashCellStyle(
@@ -3852,13 +3861,35 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }
 
-  const handleColDragPointerUp = () => {
+  // Batch CH (iris 独有 — vxe has no drag-out pin): resolve a column-drag
+  // release. Edge check FIRST — a release outside the root's LEFT edge pins
+  // the dragged column left (gated on `columnPinMenu`; the drag is a second
+  // gesture into the pin menu's state channel): already-left is a no-op, a
+  // right→left drag flips the side, the drop NEVER reorders, and both
+  // channels ride setColumnPinned (controlled mode never flips
+  // optimistically — the callback fires, the parent writes the map back).
+  // Otherwise the existing closestCenter reorder path runs byte-for-byte.
+  // `_y` keeps the signature symmetric with the pointer events feeding it;
+  // the window pointerup listener (release OUTSIDE the root) and the root
+  // onPointerUp both resolve here — `end()`'s capture-and-clear dedupes.
+  const resolveColDrag = (x: number, _y: number): void => {
     if (!columnDrag) return
     if (colDragCtrl.isPending()) {
       colDragCtrl.cancel()
       return
     }
     const { activeId, overId } = colDragCtrl.end()
+    if (
+      activeId !== null &&
+      columnPinMenu &&
+      rootRef.current !== null &&
+      isColDragOutLeft(x, rootRef.current.getBoundingClientRect().left)
+    ) {
+      const active = leafColumns.find((c) => c.key === activeId)
+      if (active && pinOf(active) !== 'left') setColumnPinned(activeId, 'left')
+      colRectsRef.current = []
+      return
+    }
     if (activeId !== null && overId !== null && activeId !== overId) {
       const next = [...leafColumns]
       const from = next.findIndex((c) => c.key === activeId)
@@ -3871,6 +3902,47 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     colRectsRef.current = []
   }
+
+  // Fresh-closure window bridge: the window listeners below resolve through
+  // this ref so a prop/state change mid-drag never resolves against a stale
+  // closure (same render-assigned-ref pattern as `viewColumnsRef`).
+  const resolveColDragRef = React.useRef<(x: number, y: number) => void>(() => {})
+  resolveColDragRef.current = resolveColDrag
+
+  // Batch CH: window-level release for the drag-out pin — a pointerup (or
+  // pointercancel) OUTSIDE the root must resolve the column drag (previously
+  // a release outside the root left the controller stuck in activeId). The
+  // effect lives ONLY while a drag is active in the gated config
+  // (`columnDrag && columnPinMenu`); plain `columnDrag` keeps vxe parity
+  // byte-identical with zero global hooks. The window pointermove keeps
+  // overId fresh outside the root (the root handler only sees moves inside);
+  // releases INSIDE the root bubble to the root handler first, so the window
+  // handler's `end()` dedupe is free (capture-and-clear).
+  React.useEffect(() => {
+    if (!columnDrag || !columnPinMenu || colDragActive === null) return
+    const onWindowMove = (e: PointerEvent): void => {
+      if (colDragCtrl.getState().activeId !== null) {
+        colDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, colRectsRef.current)
+      }
+    }
+    const onWindowUp = (e: PointerEvent): void => {
+      resolveColDragRef.current(e.clientX, e.clientY)
+    }
+    const onWindowCancel = (): void => {
+      if (colDragCtrl.isPending() || colDragCtrl.getState().activeId !== null) {
+        colDragCtrl.cancel()
+      }
+      colRectsRef.current = []
+    }
+    window.addEventListener('pointermove', onWindowMove)
+    window.addEventListener('pointerup', onWindowUp)
+    window.addEventListener('pointercancel', onWindowCancel)
+    return () => {
+      window.removeEventListener('pointermove', onWindowMove)
+      window.removeEventListener('pointerup', onWindowUp)
+      window.removeEventListener('pointercancel', onWindowCancel)
+    }
+  }, [columnDrag, columnPinMenu, colDragActive])
   const rowDragState = useStore(rowDragCtrl)
   const rowRectsRef = React.useRef<SortableRect[]>([])
   const spanOccupyRef = React.useRef<Set<string>>(new Set())
@@ -9104,9 +9176,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
         onPointerUp={
           rowDrag || columnDrag || rangeFill || selectionDrag
-            ? () => {
+            ? (e) => {
                 handleRowDragPointerUp()
-                handleColDragPointerUp()
+                resolveColDrag(e.clientX, e.clientY)
                 handleRangeFillPointerUp()
                 handleSelectionDragPointerUp()
               }

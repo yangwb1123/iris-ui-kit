@@ -305,6 +305,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /**
    * Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf
    * columns on drop; parent owns columns (pass the reordered array back).
+   * Batch CH (iris 独有 — vxe has no drag-out pin): when `columnPinMenu` is
+   * ALSO on, dragging a column header past the table's LEFT edge pins it
+   * left on release (drag-out pin) instead of reordering — a second gesture
+   * into the pin menu's state channel (same `onColumnPinnedChange` contract,
+   * both controlled/uncontrolled modes, never a reorder). Plain `columnDrag`
+   * without `columnPinMenu` keeps the vxe reorder-only behavior.
    */
   columnDrag?: {
     /** Called with the reordered column array after a drop. */

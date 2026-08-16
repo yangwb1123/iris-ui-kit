@@ -626,6 +626,8 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   exportVersionCsv: (index: number) => string
   /** Export the compare-view DIFF rows as CSV (batch BV, iris 独有): current-view rows marked `removed`/`changed` in VIEW order + `compareWith`-only `added` rows in SNAPSHOT order, each prefixed with a marker column (`__iris_diff`, header = i18n `table.compare.diff`); changed cells export a `maskedOld → maskedNew` composite (mask before composition; `exportRaw` keeps both sides bare; formula columns do not self-composite) — same serializer shape as `exportCurrentViewCsv` (formula materialized, masks applied, hidden columns excluded); no `compareWith`/`rowKey` → `''`, identical snapshots → header only. */
   exportComparisonCsv: () => string
+  /** Export the audit trail as CSV (batch CO, iris 独有): spec-literal 6 columns `time,type,rowKey,column,old,new` — `time` = `formatClock(new Date(at))` (HH:MM:SS local — byte-identical to the audit panel's time cell, display/export consistency), the rest verbatim (undefined → '', typed numbers bare, strings RFC-4180-quoted + OWASP formula-neutralized via core `toCsv` — audit content is untrusted data); newest-first (ring order — the same view as `getAuditLog`); `auditLog` off → `''`, on but empty ring → header only (two states, caller distinguishes via `getAuditLog()`). */
+  exportTimelineCsv: () => string
   /** Export the CURRENT view state as JSON (batch BZ, iris 独有): all 9 spec
    * blocks — sort / filters / filterValues / columnVisibility / columnOrder /
    * columnWidths / pageSize / expandedKeys / query — captured by the SAME

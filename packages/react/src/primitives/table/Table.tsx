@@ -5348,6 +5348,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
         t('table.compare.diff'),
       )
     },
+    // Batch CO (iris 独有): export the audit trail as CSV — spec-literal 6
+    // columns time,type,rowKey,column,old,new. time = formatClock(new
+    // Date(at)) (HH:MM:SS local, byte-identical to the audit panel's time
+    // cell — display/export consistency; the original `at` stays in
+    // getAuditLog); type/rowKey/column/old/new pass through verbatim
+    // (undefined → '' via core toCsv, typed numbers stay bare, strings get
+    // RFC-4180 quoting + OWASP formula neutralization — audit content is
+    // untrusted data). Order = ring order (newest-first — the same view as
+    // getAuditLog). Fail-closed family: auditLog off → '' (exportVersionCsv/
+    // exportComparisonCsv precedent); on but empty ring → header only
+    // (caller distinguishes the two via getAuditLog()).
+    exportTimelineCsv: () => {
+      if (!auditEnabledRef.current) return ''
+      return toCsv(
+        audit.list().map((e) => ({
+          time: formatClock(new Date(e.at)),
+          type: e.type,
+          rowKey: e.rowKey,
+          column: e.column,
+          old: e.oldValue,
+          new: e.newValue,
+        })),
+        [
+          { key: 'time', title: 'time' },
+          { key: 'type', title: 'type' },
+          { key: 'rowKey', title: 'rowKey' },
+          { key: 'column', title: 'column' },
+          { key: 'old', title: 'old' },
+          { key: 'new', title: 'new' },
+        ],
+      )
+    },
     // Batch BZ (iris 独有): export the FULL view state as JSON — the 9 spec
     // blocks (sort / filters / filterValues / columnVisibility / columnOrder /
     // columnWidths / pageSize / expandedKeys / query) captured by the SAME

@@ -2305,7 +2305,7 @@
 
 ## 2026-08-16 13:00:00 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md [ok]: 批 CZ：跳到行 `goToRow`（iris 独有）— **Complete ✅** Commit: **`<commit>`** `feat(table): grid 批 CZ——跳到行 goToRow（iris 独有）` — 8 files, +~~/−~~（含批 CY 遗留未提交 dirt 一并入库）; Files changed (3 impl + 1 test + manifest + docs):
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md [ok]: 批 CZ：跳到行 `goToRow`（iris 独有）— **Complete ✅** Commit: **`73a295b4`** `feat(table): grid 批 CZ——跳到行 goToRow（iris 独有）` — 8 files, +~~/−~~（含批 CY 遗留未提交 dirt 一并入库）; Files changed (3 impl + 1 test + manifest + docs):
   - `types.ts` +1：`IrisTableHandle.goToRow(key)` 单行成员（`scrollToRow` 后，manifest 零 diff——handle 方法不入计数）
   - `Table.tsx` 5 触点：模块级 `findTableRowEl`（从 scrollToRow 提取共享定位 helper，转义 + jsdom 回落）、`scrollToRow` 改用 helper（字节回归测试锁定）、新 handle `goToRow`（scrollIntoView nearest + `data-iris-row-target` + `ROW_TARGET_MS=2000` 定时器，copyFlash 模具；单目标：先标行立即清、重呼重启、卸载 effect 清理；未知键/虚拟窗未命中 no-op）、`ROW_TARGET_MS` 常量
   - `styles.ts` +1 规则：`[data-iris-row-target="true"]` 在 `[data-iris-row-current]` 之后——color-mix `--iris-primary` 18% over `--iris-background`，`--iris-cell-bg` + background 双设，纯 token；源序令瞬态赢 selection 后衰减回

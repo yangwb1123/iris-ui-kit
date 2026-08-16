@@ -1872,3 +1872,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ch-gate.md [ok]: 批 CH Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-ch-review.md`, 0 blocker / 0 major; 2 low / 1 info — none blocking, no code fixes needed). Gate results: full repo gate **180/180** (2m04s, 125 cached) · audit:security **0** · audit:tokens exit 1 only pre-existing warnings (0 new) · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount 169 / eventCount 31, zero diff) · comparison doc updated (iris 独有 columnDrag 拖出固定 row + 构建状态 批 CH entry) · framework-free invariant holds (core 0 framework imports). Final test counts: **react 2467/2467** (13 new column-pin-drag tests) · **core 1533/1533** · manifest propCount 169 / eventCount 31 · audit 0
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ch-gate.md
+
+## 2026-08-15 22:06:28 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ch-gate.md [ok]: Summary: **Review verdict: PASS** (`docs/vxe-grid/batch-ch-review.md` — 0 blocker / 0 major; 2 low / 1 info, none blocking, no co
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ch-gate.md
+
+## 2026-08-15 22:09:49 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ci-baseline.md [ok]: Baseline essence (batch CI：行克隆 cloneRow — iris 独有): **Spec**: `handle.cloneRow(key: string | number, index?: number): void` —— 复制指定行（含所有字段值）插入；测试（克隆内容/插入位置）。vxe-grid 无克隆行 A
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ci-baseline.md
+
+## 2026-08-15 22:15:56 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ci-adapt.md [ok]: Report: **Commit**: `c82e02c9 feat(table): grid 批 CI——行克隆 cloneRow（iris 独有）` (+ baseline/adapt docs)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ci-adapt.md
+
+## 2026-08-15 22:19:43 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ci-review.md [ok]: Verification summary: | Check | Result |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ci-review.md
+
+## 2026-08-15 22:26:09 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ci-gate.md [ok]: 批 CI Gate — PASS ✅: **Verdict**: Review PASS (`docs/vxe-grid/batch-ci-review.md`, 0 MAJOR / 0 MEDIUM; 2 LOW doc nits — both fixed in this gate: adapt line count 203→226, audit:tokens pre-existing note added). Gate results: full repo gate **180/180** (4m39s, 65 cached) · audit:security **0** · audit:tokens exit 1 only pre-existing warnings (0 new) · gen:manifest + check:manifest up to date (155×4, 86 tokens, propCount 169 / eventCount 31, zero diff) · comparison doc updated (iris 独有 行克隆 cloneRow row + 构建状态 批 CI entry) · framework-free invariant holds (core 0 framework imports). Final test counts: **react 2481/2481** (14 new clone-row tests) · **core 1542/1542** (9 new) · manifest propCount 169 / eventCount 31 · audit 0
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ci-gate.md

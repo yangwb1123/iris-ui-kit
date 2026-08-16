@@ -1,35 +1,26 @@
-# Batch CH gate report
+Gate stage complete. Working tree clean.
 
-## Verdict: PASS (0 blocker / 0 major; 2 low / 1 info)
+## Summary
 
-Review verdict was **PASS** (`docs/vxe-grid/batch-ch-review.md`). No implementation fixes required — all three findings are non-blocking:
+**Review verdict: PASS** (`docs/vxe-grid/batch-ch-review.md` — 0 blocker / 0 major; 2 low / 1 info, none blocking, no code fixes required).
 
-1. **LOW (perf, optional)** — `Table.tsx:3945`: effect deps include `columnDrag` object identity → listener churn if parent re-renders mid-drag with an inline object; could depend on `[colDragCtrl, colDragActive]` + ref. Logged as optional, consistent with existing patterns, no behavior impact.
-2. **LOW (informational)** — `Table.tsx:3922`: sub-threshold press + outside release leaves core `pending` until next press; identical to pre-CH vxe behavior, zero visible artifact, out of scope.
-3. **INFO** — `resolveColDrag(x, _y)` keeps unused `_y` deliberately (documented, lint-clean).
+**Gate results:**
 
-No code changes made during this gate (code + tests + manifest were already committed at `4f07fd8a` during adapt; review re-verified all 13 spec-mapped tests passing).
+| Step                                                                   | Result                                                                                                                                       |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full repo gate (`turbo run test typecheck lint build --concurrency=2`) | **180/180 tasks successful** (2m04s, 125 cached)                                                                                             |
+| `audit:security`                                                       | **0 vulnerabilities**                                                                                                                        |
+| `audit:tokens`                                                         | exit 1 with **only pre-existing warnings** — 0 new (batch CH added zero CSS/tokens)                                                          |
+| `gen:manifest` + `check:manifest`                                      | up to date, **zero diff** — 155 components × 4 frameworks, 86 tokens, **propCount 169 / eventCount 31** (columnDrag description text only)   |
+| Comparison doc                                                         | `docs/vxe-grid-comparison.md` updated — iris 独有 section (new `列宽双栏拖拽（columnDrag 拖出固定）` row) + 构建状态 paragraph (批 CH entry) |
+| Framework-free invariant                                               | core untouched (0 framework imports), verified by review                                                                                     |
 
-## Gate results
+**Final test counts:**
 
-| Step                                                                   | Result                                                                                                                                                                                        |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full repo gate (`turbo run test typecheck lint build --concurrency=2`) | **180/180 tasks successful** (2m04s; 125 cached)                                                                                                                                              |
-| audit:security                                                         | **0 vulnerabilities** (No known vulnerabilities found)                                                                                                                                        |
-| audit:tokens                                                           | exit 1 with **only pre-existing warnings** — 0 new from this batch (zero new CSS/tokens; pin styling reuses `pinnedStyle` with `var(--iris-background)`)                                      |
-| gen:manifest + check:manifest                                          | regenerated, **up to date** — zero diff from committed state (155 components × 4, 86 tokens, **propCount 169 / eventCount 31**; `columnDrag` description text only, both generator locations) |
-| comparison doc                                                         | `docs/vxe-grid-comparison.md` updated — iris 独有 section (columnDrag 拖出固定 row) + 构建状态 paragraph (批 CH entry)                                                                        |
-| framework-free invariant                                               | core untouched — `grep "from '(vue\|react\|solid\|svelte)'" packages/core/src` = 0 (review re-verified)                                                                                       |
+- **react: 2467/2467** (218 files; 13 new column-pin-drag tests, 2454→2467 — re-verified standalone)
+- **core: 1533/1533** (unchanged)
+- manifest propCount 169 / eventCount 31 · spec 0 violations · audit 0
 
-## Commit
+**Commit:** `57677bda1f128cb51e5ae6c57f6ccf912df7f974` — `feat(table): grid 批 CH——列宽双栏拖拽（iris 独有）` (6 files, +116/−31; docs only — implementation + tests + manifest were committed at `4f07fd8a` during adapt). Note: the lint-staged hook flags 6 files vs target 5 as a non-blocking budget warning (multi-doc fan-out).
 
-- **`feat(table): grid 批 CH——列宽双栏拖拽（iris 独有）`** — gate commit folding the accumulated docs: comparison doc (2 entries) + DECISIONS.md (gate stage log) + batch-cg-gate.md (gate-stage re-format) + batch-ch-adapt.md (gate-stage re-format) + batch-ch-review.md (verdict) + batch-ch-gate.md (this report)
-- Implementation (`Table.tsx` +78 / `props.ts` doc-only / `test/column-pin-drag.test.tsx` 13 tests / manifest description text) was committed earlier at **`4f07fd8a`** during adapt
-
-## Final test counts
-
-- **react: 2467/2467** (incl. 13 new column-pin-drag tests: 受控固定+回调不重排 / 非受控内部态 / 双 fail-closed / 已左 no-op / 右→左翻转 / 带内重排回归 / 同列 no-op / 窗口 pointerup stuck 修复 / tap 取消 / pointercancel / 受控无乐观翻转 / 分组头叶列)
-- **core: 1533/1533** (unchanged — core framework-free, zero-touch)
-- **manifest: 155 components × 4 frameworks, propCount 169 / eventCount 31**, check:manifest up to date
-- **spec: 0 violations** (per review re-verification)
-- audit: 0 vulnerabilities
+Implementation recap (from `4f07fd8a`): `columnDrag` 拖出固定 — drag a column header past the table's left edge and release → auto pin-left, combined with `columnPinMenu` (shared dual-channel throat, zero new props/core/i18n); `resolveColDrag` edge-check-first (never reorders, controlled no optimistic flip), window-level `pointerup`/`pointermove`/`pointercancel` listeners fix the previously-stuck `activeId` on outside-root release; plain `columnDrag` keeps vxe parity with zero global hooks.

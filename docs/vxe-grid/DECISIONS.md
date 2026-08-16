@@ -2312,3 +2312,13 @@
   - `test/go-to-row.test.tsx` **11 新测试**：spec ① 滚动 nearest ② 高亮 attr ③ 2s 移除；plus 重呼重启 / A→B 单目标 / 未知键 no-op / 引号键（jsdom 属性迭代路径）/ 卸载清理（detached 保留 attr 证明定时器已清）/ 无 handler 正交（不触发 onCurrentRowChange）/ scrollToRow 只滚动不高亮字节回归 / setCurrentRow 不设 target
   - 修复批 CY 遗留类型/lint 阻断（gate 必需）：缺失 `RESPONSIVE_NARROW_WIDTH` import + 死声明（responsiveWidth/responsiveLeadWidth/responsiveNarrowActive）移除 + 未用 `responsive` 析构移除——props.ts 声明与 core responsive 原样保留（CY retry 从本提交续接）
   - Verification (all green): core **1580/1580** · react **2671/2671** (+11) · typecheck clean · lint **0 errors**（1 既有 complexity warning）· iris-ui-spec **0 violations** · manifest 重新生成（185 props/32 events，goToRow 零 diff——185 含 CY `responsive` prop）
+
+## 2026-08-16 12:51:23 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-adapt.md [ok]: 批 CZ：跳到行 `goToRow`（iris 独有）— Done ✅: Commits (working tree clean):; Files changed (3 impl + 1 test + manifest + docs): | File | Change |; Verification (all green, post-commit): - core test **1580/1580** · react **2671/2671**（2660→+11）; What is left: 1. **Batch CY 的 React 桥未完成**（历史遗留）：core `computeResponsiveColumns` + `responsive` prop 声明 + en/zh `table.scrollHint` 键已入
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cz-adapt.md
+
+## 2026-08-16 12:58:54 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-review.md [ok]: 批 CZ Review — 跳到行 `goToRow` — **PASS** ✅: Review 已写入 `docs/vxe-grid/batch-cz-review.md`。全部检查独立复跑：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cz-review.md

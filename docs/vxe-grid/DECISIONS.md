@@ -1737,3 +1737,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cb-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 1 low + 3 info findings): **Verification run (all on HEAD `30ce5381`):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-review.md
+
+## 2026-08-15 18:29:18 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cb-gate.md [ok]: Report: **Review verdict**: PASS (0 blocker / 0 major; 1 low + 3 info findings; all 6 baseline items verified)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-gate.md
+
+## 2026-08-15 18:33:44 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cc-baseline.md [ok]: 核验摘要 (batch CC：编辑自动换行，iris 独有): **设计** — 表级 prop `IrisTableProps.editAutoHeight?: boolean`（默认 off，additive fail-closed，命名族同 `editAutosave`/`editDirtyCon
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-baseline.md
+
+## 2026-08-15 18:41:27 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cc-adapt.md [ok]: Report: **Commits** (2, per CB/CA convention):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-adapt.md
+
+## 2026-08-15 18:49:04 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cc-review.md [ok]: Verdict: **PASS** (0 blocker / 0 major; 2 low + 4 info): **Verification (all green, on HEAD `1ce53cbf`):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-review.md

@@ -36822,6 +36822,12 @@
           "description": "Fired when the active view changes (select / save / delete clears null)."
         },
         {
+          "name": "tableTabs",
+          "type": "import('./types').IrisTableTab[]",
+          "optional": true,
+          "description": "A `role=tablist` strip rendered ABOVE the toolbar: clicking a tab applies each name in `views` IN ORDER through the same selectView path the toolbar select uses (unknown names are skipped fail-inert; when several views touch the same piece the last applied view wins and the toolbar select mirrors that last view). Fail-closed: without the prop nothing renders, and no tab"
+        },
+        {
           "name": "query",
           "type": "string",
           "optional": true,
@@ -37909,6 +37915,12 @@
               "description": "Fired when the active view changes (select / save / delete clears null)."
             },
             {
+              "name": "tableTabs",
+              "type": "import('./types').IrisTableTab[]",
+              "optional": true,
+              "description": "A `role=tablist` strip rendered ABOVE the toolbar: clicking a tab applies each name in `views` IN ORDER through the same selectView path the toolbar select uses (unknown names are skipped fail-inert; when several views touch the same piece the last applied view wins and the toolbar select mirrors that last view). Fail-closed: without the prop nothing renders, and no tab"
+            },
+            {
               "name": "query",
               "type": "string",
               "optional": true,
@@ -38351,6 +38363,7 @@
             "IrisTableSortDirection",
             "IrisTableSortState",
             "IrisTableSpan",
+            "IrisTableTab",
             "IrisTableTooltipConfig",
             "IrisTableValidConfig",
             "IrisTableViewConfig",
@@ -39357,7 +39370,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 179,
+        "propCount": 180,
         "eventCount": 31
       }
     },

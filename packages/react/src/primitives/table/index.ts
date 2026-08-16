@@ -42,6 +42,7 @@ export {
   type IrisTablePersistedState,
   type IrisTableViewConfig,
   type IrisTableNamedView,
+  type IrisTableTab,
   type IrisTableScrollbarConfig,
   type IrisTableEditDirtyConfig,
   type IrisTableAuditEntry,

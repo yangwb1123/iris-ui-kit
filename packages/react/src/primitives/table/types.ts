@@ -104,6 +104,24 @@ export interface IrisTablePersistConfig {
 
 export type { IrisTableNamedView, IrisTableViewConfig } from './useTableViews'
 
+/**
+ * One table tab (batch CT, iris 独有 — vxe has no parity): a named tab in
+ * the `tableTabs` strip rendered ABOVE the toolbar. Clicking the tab applies
+ * each view name in `views` IN ORDER through the SAME `selectView` path the
+ * toolbar select uses — unknown names are skipped fail-inert, and when
+ * several views touch the same state piece the LAST applied view wins (the
+ * toolbar select then mirrors that last view). An empty `views` array
+ * renders an inert tab; without the `views` config the whole strip is inert.
+ */
+export interface IrisTableTab {
+  /** Tab key (identity — the first occurrence wins on duplicates). */
+  key: string
+  /** Tab label. */
+  label: string
+  /** Named views applied in order on click; omitted → inert tab. */
+  views?: string[]
+}
+
 export interface IrisTableSortState {
   key: string
   direction: IrisTableSortDirection

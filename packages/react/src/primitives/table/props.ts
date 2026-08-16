@@ -568,6 +568,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   views?: import('./types').IrisTableViewConfig
   /** Fired when the active view changes (select / save / delete clears null). */
   onActiveViewChange?: (key: string | null) => void
+  /** Batch CT — iris 独有 (vxe has no parity).
+   * A `role=tablist` strip rendered ABOVE the toolbar: clicking a tab applies
+   * each name in `views` IN ORDER through the same selectView path the toolbar
+   * select uses (unknown names are skipped fail-inert; when several views touch
+   * the same piece the last applied view wins and the toolbar select mirrors
+   * that last view). Fail-closed: without the prop nothing renders, and no tab
+   * is active until the first click. */
+  tableTabs?: import('./types').IrisTableTab[]
   /** Natural-language query (iris 独有): controlled string parsed by core
    * `parseTableQuery` (`age > 25 and role in (Test, PM) sort by name asc`);
    * the toolbar query input shows while present, parsed filters AND-merge

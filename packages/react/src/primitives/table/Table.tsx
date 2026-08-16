@@ -556,6 +556,9 @@ const TABLE_ROW_CSS = `
   }
 }
 @media print {
+  [data-iris-table-tabs] {
+    display: none !important;
+  }
   [data-iris-table-toolbar] {
     display: none !important;
   }
@@ -2576,6 +2579,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   persistState,
   views,
   onActiveViewChange,
+  tableTabs,
   query,
   onQueryChange,
   columnVirtualization = false,
@@ -3618,6 +3622,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
     activeKey: views?.activeKey,
     onActiveViewChange,
   })
+
+  // ── Table tabs (batch CT, iris 独有 — vxe has no parity) ──────────
+  // A role=tablist strip rendered ABOVE the toolbar: clicking a tab applies
+  // each view name in `views` IN ORDER through the SAME selectView path the
+  // toolbar select uses (unknown names are skipped fail-inert; overlapping
+  // pieces resolve in order — later views win, and the toolbar select always
+  // mirrors the last applied view). Active tab is internal state — nothing is
+  // active until the first click; without the prop the strip never renders
+  // and this state never moves (fail-closed). Duplicate keys keep the first
+  // occurrence (React key identity and the apply path both read the deduped
+  // list).
+  const tabs = React.useMemo(
+    () => (tableTabs ?? []).filter((tab, i, arr) => arr.findIndex((t) => t.key === tab.key) === i),
+    [tableTabs],
+  )
+  const [activeTabKey, setActiveTabKey] = React.useState<string | null>(null)
+  const applyTab = React.useCallback(
+    (key: string): void => {
+      setActiveTabKey(key)
+      const tab = tabs.find((t) => t.key === key)
+      for (const name of tab?.views ?? []) tableViews.selectView(name)
+    },
+    [tabs, tableViews.selectView],
+  )
 
   // Inline editing: one cell at a time, keyed by `${rowKey}::${colKey}`. The
   // whole draft/validate/coerce session lives in the framework-agnostic
@@ -8822,6 +8850,49 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
+      {tabs.length > 0 ? (
+        <div
+          data-iris-table-tabs=""
+          role="tablist"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--iris-space-xs, 8px)',
+            padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            borderBottom: 'none',
+            borderTopLeftRadius: 'var(--iris-radius-md, 6px)',
+            borderTopRightRadius: 'var(--iris-radius-md, 6px)',
+            background: 'var(--iris-surface)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTabKey === tab.key}
+              data-iris-table-tab={tab.key}
+              data-active={activeTabKey === tab.key ? '' : undefined}
+              onClick={() => applyTab(tab.key)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                font: 'inherit',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                color: activeTabKey === tab.key ? 'var(--iris-primary)' : 'var(--iris-muted)',
+                fontWeight: activeTabKey === tab.key ? 600 : 400,
+                boxShadow: activeTabKey === tab.key ? 'inset 0 -2px 0 var(--iris-primary)' : 'none',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {(toolbar ||
         views ||
         query !== undefined ||
@@ -8844,8 +8915,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
             padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
             border: '1px solid var(--iris-border)',
             borderBottom: 'none',
-            borderTopLeftRadius: 'var(--iris-radius-md, 6px)',
-            borderTopRightRadius: 'var(--iris-radius-md, 6px)',
+            // Batch CT: the tabs strip (rendered above) owns the top card
+            // radius when present — fail-closed, the no-tabs path keeps the
+            // toolbar radius exactly as before.
+            ...(tabs.length > 0
+              ? {}
+              : {
+                  borderTopLeftRadius: 'var(--iris-radius-md, 6px)',
+                  borderTopRightRadius: 'var(--iris-radius-md, 6px)',
+                }),
             background: 'var(--iris-surface)',
             fontSize: 'var(--iris-font-size-sm, 13px)',
             position: 'relative',

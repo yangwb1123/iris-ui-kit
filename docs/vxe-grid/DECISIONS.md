@@ -2137,3 +2137,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cs-review.md [ok]: Summary: **Spec correctness** — Implementation is spec-literal vs `batch-cs-baseline.md`: pixel scrollTop was correctly identifie
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cs-review.md
+
+## 2026-08-16 07:20:46 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cs-gate.md [ok]: Verdict: `batch-cs-review.md`: **PASS** — 0 MAJOR/MEDIUM, 4 P4 informational notes (none blocking; render-phase ref write, JSDoc ; Gate results: | Step | Result |; Final test counts (independent rerun): - **core: 1559/1559** (100 files; framework-free invariant intact — zero core changes); Commits: - `f7d38344` — feature (source + tests + manifest + comparison doc, adapt stage)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cs-gate.md
+
+## 2026-08-16 07:24:44 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ct-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-baseline.md
+
+## 2026-08-16 07:36:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ct-adapt.md [ok]: Report — 批 CT：表格标签页（iris 独有）: Commit `feat(table): grid 批 CT——表格标签页（iris 独有）`; Files changed (4 source + 1 test + manifest + docs): types.ts IrisTableTab / props.ts tableTabs (propCount 179→180) / Table.tsx 4 touch points + print CSS / index.ts barrel / table-tabs.test.tsx 10 tests / manifest 180 props 31 events / comparison doc; Verification: core 1559/1559, react typecheck clean + 2604/2604, lint 0 errors (1 pre-existing warning), spec 0 violations (1416 files), check:manifest up to date
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ct-adapt.md

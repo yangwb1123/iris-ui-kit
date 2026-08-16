@@ -774,7 +774,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * additive, default off.
    */
   compareWith?: Row[]
-  /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
+  /**
+   * Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only
+   * additions): row ops, proxy/view/selection methods, and (batch BZ) the
+   * full view-state JSON export/import — `exportStateJson()` /
+   * `importStateJson(json)` (sort / filters / filterValues /
+   * columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys /
+   * query — the same collector as `persistState`).
+   */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */
   onDataChange?: (rows: Row[]) => void

@@ -624,6 +624,25 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   exportVersionCsv: (index: number) => string
   /** Export the compare-view DIFF rows as CSV (batch BV, iris 独有): current-view rows marked `removed`/`changed` in VIEW order + `compareWith`-only `added` rows in SNAPSHOT order, each prefixed with a marker column (`__iris_diff`, header = i18n `table.compare.diff`); changed cells export a `maskedOld → maskedNew` composite (mask before composition; `exportRaw` keeps both sides bare; formula columns do not self-composite) — same serializer shape as `exportCurrentViewCsv` (formula materialized, masks applied, hidden columns excluded); no `compareWith`/`rowKey` → `''`, identical snapshots → header only. */
   exportComparisonCsv: () => string
+  /** Export the CURRENT view state as JSON (batch BZ, iris 独有): all 9 spec
+   * blocks — sort / filters / filterValues / columnVisibility / columnOrder /
+   * columnWidths / pageSize / expandedKeys / query — captured by the SAME
+   * collector as `persistState` (multiSortState deliberately excluded — not
+   * in the spec; `importStateJson` accepts supersets). A piece appears only
+   * when restorable (owning callback present; `pageSize` only with a proxy;
+   * `expandedKeys` only when expandable AND restorable; `query` only when
+   * set) — a bare table exports `'{}'`. Round-trips byte-identically through
+   * `importStateJson`. */
+  exportStateJson: () => string
+  /** Apply a previously exported state JSON (batch BZ, iris 独有): parses and
+   * replays every present piece through the owning change callbacks (the same
+   * per-piece gating as a view apply — `query` restores FIRST via
+   * `onQueryChange`, `pageSize` reproduces `onPageChange(1, size)` + exactly
+   * one request, `expandedKeys` replaces the whole set via the expansion
+   * model). Invalid JSON or a non-object value → `false` with NOTHING applied;
+   * valid JSON applies piece-by-piece lazily and returns `true` (ineligible
+   * pieces — missing callback / wrong type — are skipped). */
+  importStateJson: (json: string) => boolean
 }
 
 /**

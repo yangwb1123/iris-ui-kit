@@ -36983,7 +36983,7 @@
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
-          "description": "Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity)."
+          "description": "Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only additions): row ops, proxy/view/selection methods, and (batch BZ) the full view-state JSON export/import — `exportStateJson()` / `importStateJson(json)` (sort / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys / query — the same collector as `persistState`)."
         },
         {
           "name": "onDataChange",
@@ -37977,7 +37977,7 @@
               "name": "tableRef",
               "type": "MutableRefObject<IrisTableHandle<Row> | null>",
               "optional": true,
-              "description": "Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity)."
+              "description": "Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only additions): row ops, proxy/view/selection methods, and (batch BZ) the full view-state JSON export/import — `exportStateJson()` / `importStateJson(json)` (sort / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys / query — the same collector as `persistState`)."
             },
             {
               "name": "onDataChange",

@@ -2725,8 +2725,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // first query; without a proxy it is skipped entirely. Batch AH: the SAME
   // collector feeds the named-views hook (views save the current pieces under
   // a typed name) — one collector, two consumers.
-  const persistSnapshot = React.useMemo<IrisTablePersistedState | null>(() => {
-    if (!persistState && !views) return null
+  // Batch BZ: the `persistState || views` gate is gone — the collector is
+  // UNCONDITIONAL so even a bare table can export via handle.exportStateJson()
+  // (usePersistState's hasConfig gate / useTableViews' config gate double-
+  // guard the no-config consumers; a bare table simply has no owning
+  // callbacks, so every piece is gated out and the export is '{}').
+  const persistSnapshot = React.useMemo<IrisTablePersistedState>(() => {
     const s: IrisTablePersistedState = {}
     if (onSortChange) s.sort = sort
     if (onMultiSortChange && multiSort) s.multiSortState = multiSortState
@@ -2741,13 +2745,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // WITH the callback (the restore gate below). pageSize's no-proxy skip
     // is the same precedent: what can't be restored is never saved.
     if (onExpandedRowsChange && expandableMode) s.expandedKeys = expandedKeys
-    // Batch AJ: the query string joins the snapshot ONLY for the named-views
-    // collector (gated on `views`) — persistState's save loop iterates
-    // IrisTablePersistPiece and never sees it, so the batch-AG path stays
-    // byte-identical. The query is a controlled prop, captured like any other
-    // parent-owned piece and restored FIRST on view apply (see below). An
-    // empty `''` query is inactive (batch-AI convention) and is NOT captured.
-    if (views && query !== undefined && query !== '') s.query = query
+    // Batch AJ: the query string joins the snapshot when set — persistState's
+    // save loop iterates IrisTablePersistPiece and never sees it, so the
+    // batch-AG path stays byte-identical; only the views (and batch BZ
+    // export) consumers read it back. The query is a controlled prop,
+    // captured like any other parent-owned piece and restored FIRST on apply
+    // (see below). An empty `''` query is inactive (batch-AI convention) and
+    // is NOT captured.
+    if (query !== undefined && query !== '') s.query = query
     return s
   }, [
     persistState,
@@ -2774,6 +2779,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     expandableMode,
     expandedKeys,
   ])
+  // Batch BZ (iris 独有): ref mirror of the LATEST collector snapshot — the
+  // handle object is re-created every render but `tableRef` captures it ONCE
+  // on mount, so handle methods must read the current snapshot through refs
+  // (getFilteredData → filteredDataRef precedent). A bare table's snapshot is
+  // an empty object → exportStateJson returns '{}'.
+  const persistSnapshotRef = React.useRef<IrisTablePersistedState>({})
+  persistSnapshotRef.current = persistSnapshot
   const restorePersistPiece = React.useCallback(
     (piece: IrisTablePersistPiece, value: unknown): boolean => {
       switch (piece) {
@@ -2889,6 +2901,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     },
     [restorePersistPiece, proxyConfig, onQueryChange],
   )
+  // Batch BZ (iris 独有): ref mirror of the latest apply callback for the
+  // handle's importStateJson (same mount-closure rationale as
+  // persistSnapshotRef above).
+  const applyViewSnapshotRef = React.useRef<typeof applyViewSnapshot>(applyViewSnapshot)
+  applyViewSnapshotRef.current = applyViewSnapshot
   // Parse runs during the first render (guarded, idempotent); mirror the
   // parsed snapshot into the ref the proxy-creation effect reads above.
   const persistParsed = usePersistState({
@@ -4625,6 +4642,40 @@ export function IrisTable<Row extends Record<string, unknown>>({
         formulaTablesRef.current,
         t('table.compare.diff'),
       )
+    },
+    // Batch BZ (iris 独有): export the FULL view state as JSON — the 9 spec
+    // blocks (sort / filters / filterValues / columnVisibility / columnOrder /
+    // columnWidths / pageSize / expandedKeys / query) captured by the SAME
+    // collector memo as persistState/views. multiSortState is deliberately
+    // stripped here (spec has no such block; it stays in the collector for
+    // persistState/views — import accepts supersets, so round-trips still
+    // work). A piece appears only when restorable (owning callback present;
+    // pageSize only with a proxy; expandedKeys only when expandable AND
+    // restorable; query only when set) — a bare table exports '{}'.
+    // Round-trips byte-identically through importStateJson.
+    exportStateJson: () => {
+      const s = { ...persistSnapshotRef.current }
+      delete (s as { multiSortState?: unknown }).multiSortState
+      return JSON.stringify(s)
+    },
+    // Batch BZ: apply an exported state JSON — parse + replay every present
+    // piece through the owning callbacks (the SAME applyViewSnapshot path a
+    // named view uses: query restores FIRST via onQueryChange, pageSize
+    // reproduces onPageChange(1, size) + exactly one request, expandedKeys
+    // replaces the whole set). Invalid JSON or a non-object value → false
+    // with NOTHING applied; valid JSON applies piece-by-piece lazily and
+    // returns true (ineligible pieces — missing callback / wrong type — are
+    // skipped).
+    importStateJson: (json) => {
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(json)
+      } catch {
+        return false
+      }
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false
+      applyViewSnapshotRef.current(parsed as IrisTablePersistedState)
+      return true
     },
   }
   React.useEffect(() => {

@@ -148,8 +148,11 @@ export function usePersistState(options: UsePersistStateOptions): {
   // change. A skip-first channel (just restored) keeps its RESTORED value
   // instead of the pre-restore props value — the mount commit never
   // overwrites storage; the whole-object write stays atomic and lossless.
-  // Batch AH: the snapshot memo now also feeds the named-views hook (same
-  // collector) — a views-only table must never serialize into the persist key.
+  // Batch BZ (勘误): the collector memo is now UNCONDITIONAL (even a bare
+  // table builds a snapshot for handle.exportStateJson) — the `hasConfig`
+  // gate below is what keeps persist writes off when `persistState` is
+  // absent: a views-only or bare table must never serialize into the
+  // persist key.
   const hasConfig = config !== undefined
   const { storage, key, include } = config ?? {}
   React.useEffect(() => {

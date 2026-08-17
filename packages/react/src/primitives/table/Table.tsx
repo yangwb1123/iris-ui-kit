@@ -99,6 +99,7 @@ import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
+import { TableEditHistoryPanel } from './EditHistoryPanel'
 import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { TablePerfPanel } from './PerfPanel'
 import { TableShortcutHintsPanel } from './ShortcutHintsPanel'
@@ -2708,6 +2709,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   auditLog,
   perfStats,
   versionHistory,
+  editSidebar,
   compareWith,
   autoLink = false,
   recentFilters = false,
@@ -4573,6 +4575,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Batch BA: version-history panel open state + toolbar trigger anchor.
   const [historyOpen, setHistoryOpen] = React.useState(false)
   const historyAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // Batch DB: edit-history sidebar open state (the ⏳ trigger toggles a
+  // fixed right-side panel — no anchor: it pins to the viewport edge).
+  const [editSidebarOpen, setEditSidebarOpen] = React.useState(false)
   // Batch BL: perf panel open state + toolbar trigger anchor (floating like
   // the audit/chart panels).
   const [perfOpen, setPerfOpen] = React.useState(false)
@@ -9286,6 +9291,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         auditLog ||
         perfStats ||
         versionHistory ||
+        editSidebar ||
         shortcutHints ||
         densityToggle) &&
       layouts?.toolbar !== 'hidden' ? (
@@ -10125,6 +10131,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={t('table.history')}
             >
               ⏱
+            </button>
+          ) : null}
+          {editSidebar ? (
+            <button
+              type="button"
+              data-iris-edit-sidebar-trigger=""
+              onClick={() => setEditSidebarOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: editSidebarOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.editSidebar')}
+              title={t('table.editSidebar')}
+            >
+              ⏳
             </button>
           ) : null}
           {perfStats ? (
@@ -11213,6 +11237,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
               setHistoryOpen(false)
             }}
             onClose={() => setHistoryOpen(false)}
+            t={t}
+          />
+        ) : null}
+        {editSidebar && editSidebarOpen ? (
+          <TableEditHistoryPanel
+            open
+            history={versionHistory ? history : null}
+            audit={auditLog ? audit : null}
+            onRestore={(index) => {
+              restoreVersion(index)
+              setEditSidebarOpen(false)
+            }}
+            onClose={() => setEditSidebarOpen(false)}
             t={t}
           />
         ) : null}

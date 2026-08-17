@@ -984,6 +984,29 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    */
   recentFilters?: boolean
   /**
+   * Edit-history sidebar (batch DB, iris 独有 — vxe has no edit history): a
+   * right-side drawer panel (portal, `position: fixed`, 360px, NO backdrop —
+   * non-modal) opened from the toolbar trigger (`data-iris-edit-sidebar-trigger`,
+   * ⏳ right after the version-history trigger). It merges the batch-AT audit
+   * ring and the batch-BA version ring into ONE timeline view, newest-first
+   * (`at` desc; a same-ms tie lists the audit entry ABOVE its version — the
+   * deterministic record-order arbitration). Version entries are clickable:
+   * pressing one restores those rows through the normal write-back channel
+   * (`commitRowList(rows, 'undo')` — auditable and undoable) WITHOUT pushing a
+   * new version, exactly like the version-history panel, and closes. Audit
+   * entries render seq + `formatClock` time + type + rowKey + column + muted
+   * old→new. Fail-closed matrix: a recording layer whose prop is OFF
+   * contributes NOTHING — the record layers are never implicitly enabled, so
+   * with only `versionHistory` the panel lists versions alone, with only
+   * `auditLog` audit entries alone, and with neither the empty state. The
+   * panel subscribes to BOTH controllers (`useSyncExternalStore` each) so a
+   * commit while it is open refreshes the timeline in place. Closes on Esc /
+   * outside pointer-down / any scroll; the trigger is exempt (a press on it
+   * toggles instead of close-then-reopen). Requires a toolbar render (the
+   * gate admits `editSidebar` like `versionHistory`). Additive — default off.
+   */
+  editSidebar?: boolean
+  /**
    * Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only
    * additions): row ops, proxy/view/selection methods, and (batch BZ) the
    * full view-state JSON export/import — `exportStateJson()` /

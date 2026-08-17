@@ -158,6 +158,8 @@ export const defaultMessages: I18nMessages = {
   'table.audit.clear': 'Clear',
   'table.history': 'Version history',
   'table.history.empty': 'No versions yet',
+  'table.editSidebar': 'Edit history',
+  'table.editSidebar.empty': 'No edits yet',
   'table.perf': 'Performance',
   'table.perf.duration': 'Render duration',
   'table.perf.rows': 'Rows',

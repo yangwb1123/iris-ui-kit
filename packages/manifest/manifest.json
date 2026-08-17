@@ -37104,6 +37104,12 @@
           "description": "Recent filters (batch CB, iris 独有 — vxe has no \"recent filters\" concept): when true, every filter-panel confirm (non-empty checked set) records `{ key, values, ts }` into a core `createRecentFilters` ring (newest-first, 10 entries, MRU — re-confirming the same set bumps it to the top). The filter panel shows the recent entries above the options; clicking one applies it immediately (across columns) and closes. Additive — default off."
         },
         {
+          "name": "editSidebar",
+          "type": "boolean",
+          "optional": true,
+          "description": "Edit-history sidebar (batch DB, iris 独有 — vxe has no edit history): a right-side drawer panel (portal, `position: fixed`, 360px, NO backdrop — non-modal) opened from the toolbar trigger (`data-iris-edit-sidebar-trigger`, ⏳ right after the version-history trigger). It merges the batch-AT audit ring and the batch-BA version ring into ONE timeline view, newest-first (`at` desc; a same-ms tie lists the audit entry ABOVE its version — the deterministic record-order arbitration). Version entries are clickable: pressing one restores those rows through the normal write-back channel (`commitRowList(rows, 'undo')` — auditable and undoable) WITHOUT pushing a new version, exactly like the version-history panel, and closes. Audit entries render seq + `formatClock` time + type + rowKey + column + muted old→new. Fail-closed matrix: a recording layer whose prop is OFF contributes NOTHING — the record layers are never implicitly enabled, so with only `versionHistory` the panel lists versions alone, with only `auditLog` audit entries alone, and with neither the empty state. The panel subscribes to BOTH controllers (`useSyncExternalStore` each) so a commit while it is open refreshes the timeline in place. Closes on Esc / outside pointer-down / any scroll; the trigger is exempt (a press on it toggles instead of close-then-reopen). Requires a toolbar render (the gate admits `editSidebar` like `versionHistory`). Additive — default off."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -38226,6 +38232,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Recent filters (batch CB, iris 独有 — vxe has no \"recent filters\" concept): when true, every filter-panel confirm (non-empty checked set) records `{ key, values, ts }` into a core `createRecentFilters` ring (newest-first, 10 entries, MRU — re-confirming the same set bumps it to the top). The filter panel shows the recent entries above the options; clicking one applies it immediately (across columns) and closes. Additive — default off."
+            },
+            {
+              "name": "editSidebar",
+              "type": "boolean",
+              "optional": true,
+              "description": "Edit-history sidebar (batch DB, iris 独有 — vxe has no edit history): a right-side drawer panel (portal, `position: fixed`, 360px, NO backdrop — non-modal) opened from the toolbar trigger (`data-iris-edit-sidebar-trigger`, ⏳ right after the version-history trigger). It merges the batch-AT audit ring and the batch-BA version ring into ONE timeline view, newest-first (`at` desc; a same-ms tie lists the audit entry ABOVE its version — the deterministic record-order arbitration). Version entries are clickable: pressing one restores those rows through the normal write-back channel (`commitRowList(rows, 'undo')` — auditable and undoable) WITHOUT pushing a new version, exactly like the version-history panel, and closes. Audit entries render seq + `formatClock` time + type + rowKey + column + muted old→new. Fail-closed matrix: a recording layer whose prop is OFF contributes NOTHING — the record layers are never implicitly enabled, so with only `versionHistory` the panel lists versions alone, with only `auditLog` audit entries alone, and with neither the empty state. The panel subscribes to BOTH controllers (`useSyncExternalStore` each) so a commit while it is open refreshes the timeline in place. Closes on Esc / outside pointer-down / any scroll; the trigger is exempt (a press on it toggles instead of close-then-reopen). Requires a toolbar render (the gate admits `editSidebar` like `versionHistory`). Additive — default off."
             },
             {
               "name": "tableRef",
@@ -39434,7 +39446,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 185,
+        "propCount": 186,
         "eventCount": 32
       }
     },

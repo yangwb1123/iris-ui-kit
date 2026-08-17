@@ -94,6 +94,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.audit.clear': '清空',
   'table.history': '版本历史',
   'table.history.empty': '暂无版本',
+  'table.editSidebar': '编辑历史',
+  'table.editSidebar.empty': '暂无编辑',
   'table.perf': '性能',
   'table.perf.duration': '渲染耗时',
   'table.perf.rows': '行数',

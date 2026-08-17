@@ -1620,6 +1620,25 @@ const noopProxySubscribe = (): (() => void) => () => {}
  * `useDrag`) or Arrow-Left/Right adjusts the column's pixel width. `role=
  * "separator"` + `aria-orientation` follow the WAI-ARIA window-splitter pattern.
  */
+/** Auto-fit measurement (batch DG, iris 独有): the widest rendered content
+ * width for a column — header + body cells' `scrollWidth`. Cells are
+ * `nowrap + overflow:hidden` with symmetric padding, so `scrollWidth` already
+ * includes both-side padding — "max content width + padding" needs no extra
+ * term. Virtual scrolling measures only the rendered window (vxe autoResize
+ * behavior); group headers share the same flat leaf query. Empty / detached
+ * cells (scrollWidth 0) are ignored; caller clamps + rounds before writing. */
+function measureColumnContentWidth(container: ParentNode | null, colKey: string): number {
+  if (!container) return 0
+  let max = 0
+  container
+    .querySelectorAll(`[data-iris-table-cell="${colKey}"],[data-iris-table-header="${colKey}"]`)
+    .forEach((el) => {
+      const w = (el as HTMLElement).scrollWidth
+      if (w > max) max = w
+    })
+  return max
+}
+
 function ColumnResizeHandle({
   colKey,
   label,
@@ -1627,6 +1646,7 @@ function ColumnResizeHandle({
   minWidth,
   maxWidth,
   onResize,
+  onAutoFit,
 }: {
   colKey: string
   label: string
@@ -1634,6 +1654,7 @@ function ColumnResizeHandle({
   minWidth: number
   maxWidth: number
   onResize: (key: string, width: number) => void
+  onAutoFit?: (key: string) => void
 }): React.ReactElement {
   const ref = React.useRef<HTMLSpanElement | null>(null)
   const startRef = React.useRef(0)
@@ -1660,6 +1681,10 @@ function ColumnResizeHandle({
       data-iris-table-resize-handle=""
       data-column-key={colKey}
       onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        if (onAutoFit) onAutoFit(colKey)
+      }}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft') {
           e.preventDefault()
@@ -2677,6 +2702,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   round = false,
   padding,
   resizableColumns = false,
+  autoResizeColumns = false,
   columnWidths: columnWidthsProp,
   defaultColumnWidths,
   onColumnWidthsChange,
@@ -11079,6 +11105,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       minWidth={col.minWidth ?? 60}
                       maxWidth={col.maxWidth ?? Infinity}
                       onResize={setColumnWidth}
+                      onAutoFit={
+                        autoResizeColumns
+                          ? (key) => {
+                              const measured = measureColumnContentWidth(rootRef.current, key)
+                              if (measured <= 0) return
+                              setColumnWidth(
+                                key,
+                                Math.max(
+                                  col.minWidth ?? 60,
+                                  Math.min(col.maxWidth ?? Infinity, Math.round(measured)),
+                                ),
+                              )
+                            }
+                          : undefined
+                      }
                     />
                   ) : null}
                 </div>

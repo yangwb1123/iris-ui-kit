@@ -2551,3 +2551,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-df-review.md [ok]: Verdict: PASS (1 minor P2 finding): **Reviewed** commit `90f082c4` against the baseline, inspected the full impl, and ran all requested verification gates.; Verification results (all green): | Check | Result |; Axis findings: - **Spec correctness**: single-cell overflow insert via `overflowStart`/`newRows`, auto-id `max+1` via core `insertRowIn
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-review.md
+
+## 2026-08-17 07:50:31 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-df-gate.md [ok]: 批 DF Gate — PASS with P2 fix applied: **Review verdict:** PASS (1 minor P2 finding — `pasteOptions` JSDoc final prose sat on the `*/` line, causing the manife; Videos: - **P2 fix:** moved the `pasteOptions` JSDoc closing prose to its own line in `packages/react/src/primitives/table/props; Full repo gate: `pnpm turbo run test typecheck lint build --concurrency=2`→ **180/180 tasks successful** (125 cached); Audit: -`iris-ui-spec.py --mode all`→ **0 violations**; Commit: - **Hash:**`45979010`—`feat(table): grid 批 DF——批量粘贴增强（iris 独有）` (7 files: comparison doc, DECISIONS, gate/adapt/revie
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-gate.md
+
+## 2026-08-17 07:54:23 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md [ok]: 批 DG：列宽自适应增强 — 基线摘要: **规格**：`autoResizeColumns?: boolean` — 双击列边界按内容自动适配列宽（测量最大内容宽度 + padding，clamp min/max），经 `onColumnWidthsChange` 写回；测试（双
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md

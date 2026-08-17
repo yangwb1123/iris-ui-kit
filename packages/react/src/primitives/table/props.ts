@@ -244,6 +244,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   padding?: string
   /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
   resizableColumns?: boolean
+  /**
+   * Auto-fit column widths on double-click (iris 独有, batch DG — vxe has no
+   * auto-resize): when true (WITH `resizableColumns`, so the handle exists),
+   * double-clicking a column boundary measures the widest rendered content
+   * (header + body cells, `scrollWidth` already includes both-side padding)
+   * and writes the clamped width via `onColumnWidthsChange` (the same duck
+   * channel as drag/keyboard). Falls back fail-closed: no handle without
+   * `resizableColumns`; virtual scrolling measures only the rendered window
+   * (vxe autoResize behavior). Additive — default off.
+   */
+  autoResizeColumns?: boolean
   /** Controlled per-column pixel widths, keyed by column `key`. */
   columnWidths?: IrisTableColumnWidths
   defaultColumnWidths?: IrisTableColumnWidths

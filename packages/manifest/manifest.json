@@ -36430,6 +36430,12 @@
           "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys)."
         },
         {
+          "name": "autoResizeColumns",
+          "type": "boolean",
+          "optional": true,
+          "description": "Auto-fit column widths on double-click (iris 独有, batch DG — vxe has no auto-resize): when true (WITH `resizableColumns`, so the handle exists), double-clicking a column boundary measures the widest rendered content (header + body cells, `scrollWidth` already includes both-side padding) and writes the clamped width via `onColumnWidthsChange` (the same duck channel as drag/keyboard). Falls back fail-closed: no handle without `resizableColumns`; virtual scrolling measures only the rendered window (vxe autoResize behavior). Additive — default off."
+        },
+        {
           "name": "columnWidths",
           "type": "IrisTableColumnWidths",
           "optional": true,
@@ -37564,6 +37570,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys)."
+            },
+            {
+              "name": "autoResizeColumns",
+              "type": "boolean",
+              "optional": true,
+              "description": "Auto-fit column widths on double-click (iris 独有, batch DG — vxe has no auto-resize): when true (WITH `resizableColumns`, so the handle exists), double-clicking a column boundary measures the widest rendered content (header + body cells, `scrollWidth` already includes both-side padding) and writes the clamped width via `onColumnWidthsChange` (the same duck channel as drag/keyboard). Falls back fail-closed: no handle without `resizableColumns`; virtual scrolling measures only the rendered window (vxe autoResize behavior). Additive — default off."
             },
             {
               "name": "columnWidths",
@@ -39458,7 +39470,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 187,
+        "propCount": 188,
         "eventCount": 32
       }
     },

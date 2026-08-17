@@ -676,6 +676,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   // NOTE: keep the inline object single-line — the manifest scanner reads member types line-wise (multi-line object props degrade to a bare object type, rowDrag precedent).
   // prettier-ignore
   clipConfig?: { copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html'; copyWithFormat?: boolean }
+  /** Paste options (iris 独有 — vxe-grid clipboard-config has no overflow-insert switch):
+   * `insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past
+   * the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells
+   * dropped, locked/readonly columns skipped) — one batched commit. Multi-cell
+   * rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O
+   * overflow-drop behavior byte-identical. Additive — default off. */
+  pasteOptions?: { insertIfOverflow?: boolean }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
   fnr?: boolean
   /** Batch CK (iris 独有 — vxe has no inline search highlight): a

@@ -2771,6 +2771,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   rangeFill = false,
   cellDrag = false,
   clipConfig,
+  pasteOptions,
   fnr = false,
   searchHighlight,
   undo = false,
@@ -6953,6 +6954,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (body.length === 0 || cols.length === 0) return
       const lines = text.split(/\r?\n/)
       const byKey = new Map<string | number, Record<string, string>>()
+      const newRows: Record<string, unknown>[] = []
       // Batch AK (iris 独有): a multi-cell selection fills EXACTLY its
       // rectangle from the top-left — clipboard smaller → top-left fill, the
       // rest of the rectangle unchanged; larger → clipped to the rectangle
@@ -6985,10 +6987,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
       } else {
         // Line i / cell j of the clipboard lands at (anchor.row + i, anchor.col + j);
-        // cells beyond the last row/col are ignored.
+        // cells beyond the last row/col are ignored. With `pasteOptions
+        // .insertIfOverflow` (iris 独有 batch DF) lines past the last table row are
+        // APPENDED as brand-new rows (auto-id keys via insertRowInList); otherwise
+        // overflow is dropped (batch-O default).
+        let overflowStart = -1
         for (let i = 0; i < lines.length; i += 1) {
           const rowIdx = range.start.row + i
-          if (rowIdx >= body.length) break
+          if (rowIdx >= body.length) {
+            overflowStart = i
+            break
+          }
           const row = body[rowIdx]!
           const cells = lines[i]!.split('\t')
           for (let j = 0; j < cells.length; j += 1) {
@@ -7003,17 +7012,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
             byKey.set(k, { ...prev, [col.key]: cells[j]! })
           }
         }
+        // Batch DF: append overflow clipboard lines as new rows when enabled.
+        if (pasteOptions?.insertIfOverflow && overflowStart >= 0) {
+          for (let i = overflowStart; i < lines.length; i += 1) {
+            const cells = lines[i]!.split('\t')
+            const nr: Record<string, unknown> = {}
+            for (let j = 0; j < cells.length; j += 1) {
+              const colIdx = range.start.col + j
+              if (colIdx >= cols.length) break
+              const col = cols[colIdx]!
+              // Batch BE: locked cells stay read-only under an overflow-inserted row.
+              if (isCellLocked(nr as Row, col) || isCellReadonly(nr as Row, col)) continue
+              nr[col.key] = cells[j]!
+            }
+            newRows.push(nr)
+          }
+        }
       }
-      if (byKey.size === 0) return
+      if (byKey.size === 0 && newRows.length === 0) return
       const keyField = rowKey
-      const next = (externalDataRef.current ?? []).map((r) => {
+      let next = (externalDataRef.current ?? []).map((r) => {
         const k = (r as Record<string, unknown>)[keyField]
         const patch = k != null ? byKey.get(k as string | number) : undefined
         return patch ? { ...r, ...patch } : r
       })
+      for (const nr of newRows) next = insertRowInList(next, rowKey, nr as Row)
       commitRowList(next, 'paste')
     },
-    [rowKey, commitRowList],
+    [rowKey, commitRowList, pasteOptions],
   )
 
   // ── Batch BG keymap (iris 独有): the EFFECTIVE shortcut bindings = the

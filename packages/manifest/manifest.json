@@ -36900,6 +36900,12 @@
           "description": "Batch BP (iris 独有 — vxe clipboard-config has no output-format switch): `copyFormat` selects the copy OUTPUT format for BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制 button) — `'tsv'` (default, byte-identical to batch O) / `'csv'` (RFC-4180, headerless range fiat like the 导出 CSV download) / `'html'` (a `<table>` fragment via core `toHtml`, with a header row of column titles — the toHtml contract — and the masked cell values, the batch-AY invariant across all three formats). Paste is unaffected — it always reads `\\t`-delimited text. Invalid runtime values fail-closed to `'tsv'`. Batch CU (iris 独有 — vxe clipboard-config always copies raw values, no format-preserving copy): `copyWithFormat` copies the FORMATTED text of formatter columns (the `contextCellText` display chain — mask → formatter → String, the same chain as the context-menu 复制值) instead of the raw/masked value, across ALL THREE `copyFormat` serializers. Only `col.formatter` columns switch chains — non-formatter columns stay byte-identical — and the formatted STRING still flows through the same serializers (RFC-4180 quoting + OWASP neutralization still apply). `exportRaw`'s copy-path skip is superseded on formatter columns (mask → formatter always); exports are untouched."
         },
         {
+          "name": "pasteOptions",
+          "type": "{ insertIfOverflow?: boolean }",
+          "optional": true,
+          "description": "`insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells dropped, locked/readonly columns skipped) — one batched commit. Multi-cell rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O"
+        },
+        {
           "name": "fnr",
           "type": "boolean",
           "optional": true,
@@ -38028,6 +38034,12 @@
               "type": "{ copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html'; copyWithFormat?: boolean }",
               "optional": true,
               "description": "Batch BP (iris 独有 — vxe clipboard-config has no output-format switch): `copyFormat` selects the copy OUTPUT format for BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制 button) — `'tsv'` (default, byte-identical to batch O) / `'csv'` (RFC-4180, headerless range fiat like the 导出 CSV download) / `'html'` (a `<table>` fragment via core `toHtml`, with a header row of column titles — the toHtml contract — and the masked cell values, the batch-AY invariant across all three formats). Paste is unaffected — it always reads `\\t`-delimited text. Invalid runtime values fail-closed to `'tsv'`. Batch CU (iris 独有 — vxe clipboard-config always copies raw values, no format-preserving copy): `copyWithFormat` copies the FORMATTED text of formatter columns (the `contextCellText` display chain — mask → formatter → String, the same chain as the context-menu 复制值) instead of the raw/masked value, across ALL THREE `copyFormat` serializers. Only `col.formatter` columns switch chains — non-formatter columns stay byte-identical — and the formatted STRING still flows through the same serializers (RFC-4180 quoting + OWASP neutralization still apply). `exportRaw`'s copy-path skip is superseded on formatter columns (mask → formatter always); exports are untouched."
+            },
+            {
+              "name": "pasteOptions",
+              "type": "{ insertIfOverflow?: boolean }",
+              "optional": true,
+              "description": "`insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells dropped, locked/readonly columns skipped) — one batched commit. Multi-cell rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O"
             },
             {
               "name": "fnr",
@@ -39446,7 +39458,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 186,
+        "propCount": 187,
         "eventCount": 32
       }
     },

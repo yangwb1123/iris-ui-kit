@@ -297,6 +297,114 @@ describe('IrisTable clipConfig rectangle paste', () => {
   })
 })
 
+// ── pasteOptions.insertIfOverflow: overflow inserts new rows (batch DF, iris 独有) ─
+describe('IrisTable pasteOptions overflow insert', () => {
+  function pasteOpts(
+    onDataChange: ReturnType<typeof vi.fn>,
+    anchor: [number, number],
+    text: string,
+    opts?: { pasteOn?: boolean; end?: [number, number]; colsOverride?: IrisTableColumn<Row>[] },
+  ): void {
+    stubClipboard()
+    clipboardRead.mockResolvedValue(text)
+    render(
+      <IrisTable
+        columns={opts?.colsOverride ?? cols}
+        data={rows}
+        rowKey="id"
+        cellRange
+        clipConfig={{}}
+        pasteOptions={opts?.pasteOn === false ? undefined : { insertIfOverflow: true }}
+        onDataChange={onDataChange}
+      />,
+    )
+    fireEvent.click(cell(anchor[0], anchor[1]))
+    if (opts?.end) fireEvent.click(cell(opts.end[0], opts.end[1]), { shiftKey: true })
+    fireEvent.keyDown(root(), { key: 'v', ctrlKey: true })
+  }
+
+  it('appends overflow clipboard lines as new auto-id rows', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [1, 0], 'P\tQ\nR\tS\nT\tU')
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    // Anchor row 1: lines land on rows 1–2 (existing), line 3 overflows → new row id 4.
+    expect(next[1]).toMatchObject({ id: 2, name: 'P', age: 'Q' })
+    expect(next[2]).toMatchObject({ id: 3, name: 'R', age: 'S' })
+    expect(next).toHaveLength(4)
+    expect(next[3]).toMatchObject({ id: 4, name: 'T', age: 'U' })
+  })
+
+  it('multi-line spill appends every overflow line in order', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [0, 0], 'A\nB\nC\nD')
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next[0]).toMatchObject({ id: 1, name: 'A' })
+    expect(next[1]).toMatchObject({ id: 2, name: 'B' })
+    expect(next[2]).toMatchObject({ id: 3, name: 'C' })
+    expect(next).toHaveLength(4)
+    expect(next[3]).toMatchObject({ id: 4, name: 'D' })
+  })
+
+  it('exact-fit clipboard inserts nothing', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [0, 0], 'X\nY')
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next).toHaveLength(3)
+  })
+
+  it('default-off (no pasteOptions) keeps batch-O overflow drop', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [1, 0], 'P\tQ\nR\tS\nT\tU', { pasteOn: false })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    expect(onDataChange.mock.calls[0]![0] as Row[]).toHaveLength(3)
+  })
+
+  it('multi-cell rectangle stays clipped even with insertIfOverflow (fiat)', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [1, 0], 'P\tQ\nR\tS\nT\tU', { end: [2, 1] })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    expect(onDataChange.mock.calls[0]![0] as Row[]).toHaveLength(3)
+  })
+
+  it('surplus cells past the last column are dropped on inserted rows', async () => {
+    const onDataChange = vi.fn()
+    // 3-cell lines from the last-row anchor: only line 2 overflows, its 3rd cell drops.
+    pasteOpts(onDataChange, [2, 0], 'P\tQ\tX\nA\tB\tY')
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next[3]).toMatchObject({ id: 4, name: 'A', age: 'B' })
+    expect(next[3]).not.toHaveProperty('x')
+  })
+
+  it('collision-safe: new rows get max+1 auto ids after existing rows are patched', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [2, 0], 'A\tB\nC\tD\nE\tF')
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next).toHaveLength(5)
+    expect(next[3]).toMatchObject({ id: 4, name: 'C', age: 'D' })
+    expect(next[4]).toMatchObject({ id: 5, name: 'E', age: 'F' })
+  })
+
+  it('skips locked columns on inserted rows', async () => {
+    const onDataChange = vi.fn()
+    pasteOpts(onDataChange, [0, 0], 'P\tQ\nR\tS\nT\tU\nV\tW', {
+      colsOverride: [
+        { key: 'name', title: 'Name' },
+        { key: 'age', title: 'Age', locked: true },
+      ],
+    })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next).toHaveLength(4)
+    expect(next[3]).toMatchObject({ id: 4, name: 'V' })
+    expect(next[3]).not.toHaveProperty('age')
+  })
+})
+
 // ── fnr: find & replace bar ────────────────────────────────────────────────
 describe('IrisTable fnr bar', () => {
   it('Ctrl+F opens the bar; typing highlights matching cells; Enter steps', () => {

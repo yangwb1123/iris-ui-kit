@@ -2486,3 +2486,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dc-gate.md [ok]: Summary: **Review verdict**: PASS (batch-dc-review.md) — 3 doc-level findings fixed (185→186 propCount in adapt doc + comparison DC row + DECISIONS ledger; 384→402 test-file lines in comparison DC row; Table.tsx:240 comment no longer claims direct-test calls).; Gate results (all green): turbo **180/180 tasks successful** (135 cached, 45 fresh) — test/typecheck/lint/build across all 4 frameworks + plugins + apps.; audit **0 vulnerabilities**; gen:manifest → 155 components ×4, 86 tokens; check:manifest **up to date, zero diff**; comparison.md 构建状态 append 批 DC row.; Final test counts: core **1580/1580** (102 files) · react **2697/2697** (238 files, +15 pinned-reorder).; Commit: gate commit carries review fixes + docs.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-gate.md
+
+## 2026-08-17 07:03:13 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-gate.md [ok]: 批 DC 门禁完成 — PASS: **Review verdict**: PASS (`batch-dc-review.md`) — 3 doc-level findings, all fixed in this commit:; Full gate results: | Gate | Result |; Final test counts (force-run): - **core: 1580 / 1580** (102 files); Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-gate.md
+
+## 2026-08-17 07:05:26 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dd-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-baseline.md
+
+## 2026-08-17 07:07:12 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dd-adapt.md [ok]: Summary: **Task:** implement iris-ui grid batch DD — 单元格数据验证增强 (editRules `regexp` 快捷), per `docs/vxe-grid/batch-dd-baseline.md`.; Files changed (2 source/test + baseline doc): - `packages/core/src/edit-rules.ts` — added `regexp?: string | RegExp` to `EditRule` (JSDoc'd as built-in `pattern` shor; Tests added (edit-rules.test.ts): 1. `regexp: RegExp match/reject (pattern shorthand)`; Verification results: - **core test:** 102 files / 1584 tests passed (regexp suite 19/19); What is left: Nothing for this batch. The remaining `docs/vxe-grid/DECISIONS.md` / `batch-dc-gate.md` modifications are pre-existing d
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-adapt.md
+
+## 2026-08-17 07:08:28 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dd-review.md [ok]: Verdict: **PASS**: Review written to `/home/u1/iris-ui/docs/vxe-grid/batch-dd-review.md`.; Summary: The implementation in commit `9fd3b0ea` exactly matches the batch DD baseline — a pure additive `regexp?: string | RegEx
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-review.md

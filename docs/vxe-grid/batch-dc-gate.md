@@ -1,24 +1,32 @@
-Done. Full gate closed for grid 批 DC 列冻结复用（冻结区内 reorder，iris 独有）.
+Gate complete. Working tree clean.
 
-## Summary
+## 批 DC 门禁完成 — PASS
 
-**Review verdict**: PASS (batch-dc-review.md) — 3 doc-level findings, all fixed in this commit:
+**Review verdict**: PASS (`batch-dc-review.md`) — 3 doc-level findings, all fixed in this commit:
 
-1. propCount 185 → **186** (`batch-dc-adapt.md:19`, `vxe-grid-comparison.md:74` DC row, `DECISIONS.md` ledger — actual manifest 186 props/32 events, verified against `manifest.json`)
-2. test file "384 行" → **402 行** (`vxe-grid-comparison.md:74` DC row — `pinned-reorder.test.tsx` is 402 lines, verified with `wc -l`)
-3. `Table.tsx:240` comment claimed "tests call it directly"; no test imports `clampReorderZone` (all 15 go through the full drag pipeline) — comment rewritten to say tests exercise it through the drag pipeline.
+1. **propCount 185 → 186** — fixed in `batch-dc-adapt.md:19`, `vxe-grid-comparison.md` DC row, and the `DECISIONS.md` ledger. Verified against `manifest.json`: **186 props / 32 events**.
+2. **test file "384 行" → "402 行"** — `pinned-reorder.test.tsx` verified at 402 lines via `wc -l`.
+3. **`Table.tsx:240` comment** — no test imports `clampReorderZone` (all 15 go through the drag pipeline), so the comment now says tests exercise it through the full drag pipeline.
 
-**Full gate**: `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful** (135 cached, 45 fresh)
+### Full gate results
 
-- `pnpm audit` → **0 vulnerabilities**
-- `gen:manifest` → regenerated 155 components ×4, 86 tokens; `check:manifest` → **up to date, zero diff**
-- `docs/vxe-grid-comparison.md` updated: DC row (in iris 独有 table, from adapt) + 构建状态 paragraph append
+| Gate                                                  | Result                                              |
+| ----------------------------------------------------- | --------------------------------------------------- |
+| `turbo run test typecheck lint build --concurrency=2` | **180/180 tasks successful** (135 cached, 45 fresh) |
+| `pnpm audit`                                          | **0 vulnerabilities**                               |
+| `gen:manifest`                                        | 155 components ×4, 86 tokens (zero diff)            |
+| `check:manifest`                                      | **up to date, zero diff**                           |
+| prettier (affected files)                             | clean                                               |
 
-**Final test counts** (re-verified with `--force`-style run):
+### Final test counts (force-run)
 
-- core: **1580 / 1580** (102 files)
-- react: **2697 / 2697** (238 files, +15 from the new `pinned-reorder.test.tsx` 402-line suite)
+- **core: 1580 / 1580** (102 files)
+- **react: 2697 / 2697** (238 files, +15 from the new `pinned-reorder.test.tsx` 402-line suite)
 
-**Commit**: gate commit carries the 3 review fixes + ledger/gate docs (implementation `2c0cfcb6` + docs sweep `24ff1b0c` already in tree).
+### Commit
 
-Working tree clean (`.vinxi` excluded).
+```
+7657759f9fbd71ec25966ec04f9581945ccefc65  feat(table): grid 批 DC——列冻结复用（iris 独有）
+```
+
+6 files changed (+81/−30): Table.tsx comment fix, comparison doc (DC row + 构建状态 append), DECISIONS ledger, adapt/review/gate reports. Working tree clean (`.vinxi` excluded).

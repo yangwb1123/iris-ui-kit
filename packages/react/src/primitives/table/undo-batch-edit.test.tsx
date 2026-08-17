@@ -354,8 +354,10 @@ describe('IrisTable toolbar.batch.edit panel', () => {
 
   it('Escape and outside pointer-down close the panel without applying', () => {
     renderBatchEdit()
-    openPanel()
-    fireEvent.keyDown(document, { key: 'Escape' })
+    const panel = openPanel()
+    // Escape fires from the panel's own input (batch DJ: the shortcut scope
+    // only closes while focus is on the table or its panel surface).
+    fireEvent.keyDown(panel.querySelector('[data-iris-batch-edit-value]')!, { key: 'Escape' })
     expect(document.querySelector('[data-iris-batch-edit-panel]')).toBeNull()
     expect(cellValue(2, 'name')).toContain('Alice')
 

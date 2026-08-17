@@ -2842,6 +2842,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   keyboardNavigation = false,
   tableShortcuts = false,
   keymap,
+  hotkeyScope = true,
+  outerScope = false,
   groupBy,
   groupCollapsed,
   defaultGroupCollapsed,
@@ -7181,6 +7183,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   const queryInputRef = React.useRef<HTMLInputElement | null>(null)
 
+  // ── Batch DJ shortcut scope (iris 独有): the unified gate for the table's
+  // WINDOW keydown listeners. `outerScope` → global (fire from anywhere);
+  // `hotkeyScope: false` → permissive (no containment check — the legacy
+  // anywhere behavior); default → only when the focus is INSIDE the table. The
+  // table's own floating surfaces (fnr bar, batch-edit panel and friends, all
+  // rendered outside `rootRef` and marked `data-iris-table-surface`) count as
+  // in-scope so Esc/closing keeps working from within them. Focus is read live
+  // from the keydown `e.target` — no extra focus/blur state.
+  const inShortcutScope = React.useCallback(
+    (target: EventTarget | null): boolean => {
+      if (outerScope) return true
+      const el = target as HTMLElement | null
+      if (hotkeyScope === false) return true
+      if (!el) return true
+      return (
+        rootRef.current?.contains(el) === true || el.closest('[data-iris-table-surface]') !== null
+      )
+    },
+    [hotkeyScope, outerScope],
+  )
+
   // ── Built-in undo/redo keyboard (iris 独有, batch AL) ────────────────
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — a window
   // listener gated on `undo`, accepting only targets inside the table and
@@ -7195,7 +7218,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // the key already preventDefault'd it.
       if (e.defaultPrevented) return
       const target = e.target as HTMLElement | null
-      if (target && !rootRef.current?.contains(target)) return
+      if (!inShortcutScope(target)) return
       if (
         target &&
         (target.tagName === 'INPUT' ||
@@ -7223,7 +7246,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, editingTarget, rowEditing, undoStack, applyUndoSnapshot, bumpUndoTick, keyBindings])
+  }, [
+    undo,
+    editingTarget,
+    rowEditing,
+    undoStack,
+    applyUndoSnapshot,
+    bumpUndoTick,
+    keyBindings,
+    inShortcutScope,
+  ])
 
   React.useEffect(() => {
     if (!clipConfig) return
@@ -7232,7 +7264,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // Never hijack keys outside the table or on text inputs (editors, the
       // fnr bar, external fields) or select editors.
       const target = e.target as HTMLElement | null
-      if (target && !rootRef.current?.contains(target)) return
+      if (!inShortcutScope(target)) return
       if (
         target &&
         (target.tagName === 'INPUT' ||
@@ -7260,7 +7292,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clipConfig, cellRangeCtrl, buildRangeCopy, pasteIntoRange, keyBindings, flashCopyFeedback])
+  }, [
+    clipConfig,
+    cellRangeCtrl,
+    buildRangeCopy,
+    pasteIntoRange,
+    keyBindings,
+    flashCopyFeedback,
+    inShortcutScope,
+  ])
 
   // ── Range floating toolbar (batch AH, iris 独有) ───────────────────────
   // Visibility derives from the range store: `cellRange` + a live selection
@@ -7736,11 +7776,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     el?.scrollIntoView?.({ block: 'nearest' })
   }, [fnrOpen, fnrActiveKey])
 
-  // Ctrl/Cmd+F opens the bar; Escape closes it. Both work from any focus
-  // inside the table (window capture); editors keep their own shortcuts.
+  // Ctrl/Cmd+F opens the bar; Escape closes it. Both fire only while focus
+  // is inside the table (window capture, batch DJ scope gate); editors keep
+  // their own shortcuts.
   React.useEffect(() => {
     if (!fnr) return
     const onKey = (e: KeyboardEvent): void => {
+      if (!inShortcutScope(e.target)) return
       if (e.key === 'Escape') {
         setFnrOpen(false)
         return
@@ -7757,7 +7799,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [fnr])
+  }, [fnr, inShortcutScope])
 
   // Step the active match by ±1 (wraps). Empty match list is a no-op.
   const stepFnrMatch = (delta: number): void => {
@@ -9148,6 +9190,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       setBatchEditOpen(false)
     }
     const onKey = (e: KeyboardEvent): void => {
+      if (!inShortcutScope(e.target)) return
       if (e.key === 'Escape') setBatchEditOpen(false)
     }
     window.addEventListener('pointerdown', onDown)
@@ -9156,7 +9199,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [batchEditOpen])
+  }, [batchEditOpen, inShortcutScope])
   // Fixed height (batch N): any of height/min/max makes the root a vertical
   // scroll container; the injected stylesheet pins the header row. Batch Q:
   // `autoResize` with a positive measure engages the same machinery so the
@@ -9989,6 +10032,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           {batchEditOpen ? (
             <div
               data-iris-batch-edit-panel=""
+              data-iris-table-surface=""
               style={{
                 position: 'absolute',
                 right: 0,
@@ -10489,6 +10533,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       {fnr && fnrOpen ? (
         <div
           data-iris-fnr-bar=""
+          data-iris-table-surface=""
           onKeyDown={(e) => {
             // Only the find input steps matches; Enter in the replace input
             // keeps its default (insert line break) and buttons stay clickable.

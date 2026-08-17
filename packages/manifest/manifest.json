@@ -36811,6 +36811,17 @@
           "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
         },
         {
+          "name": "hotkeyScope",
+          "type": "boolean",
+          "optional": true,
+          "description": "scope for the table's WINDOW keydown listeners (undo/redo, clip copy/paste, fnr Ctrl+F + Escape, batch-edit Escape). `hotkeyScope` (default `true`) gates the shortcuts to fire only while the focus is INSIDE the table (`rootRef.contains(e.target)` — the focused element, read live from the keydown target, no extra focus/blur state). Set it to `false` for the permissive compatibility mode where the same bindings fire regardless of where the focus is. `outerScope` (default `false`) forces the GLOBAL scope (fire from anywhere) and wins over `hotkeyScope`. Fail-closed by default: fnr/batch-edit tighten from"
+        },
+        {
+          "name": "outerScope",
+          "type": "boolean",
+          "optional": true
+        },
+        {
           "name": "groupBy",
           "type": "string[]",
           "optional": true,
@@ -37963,6 +37974,17 @@
               "type": "Partial<Record<IrisTableKeyAction, string>>",
               "optional": true,
               "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
+            },
+            {
+              "name": "hotkeyScope",
+              "type": "boolean",
+              "optional": true,
+              "description": "scope for the table's WINDOW keydown listeners (undo/redo, clip copy/paste, fnr Ctrl+F + Escape, batch-edit Escape). `hotkeyScope` (default `true`) gates the shortcuts to fire only while the focus is INSIDE the table (`rootRef.contains(e.target)` — the focused element, read live from the keydown target, no extra focus/blur state). Set it to `false` for the permissive compatibility mode where the same bindings fire regardless of where the focus is. `outerScope` (default `false`) forces the GLOBAL scope (fire from anywhere) and wins over `hotkeyScope`. Fail-closed by default: fnr/batch-edit tighten from"
+            },
+            {
+              "name": "outerScope",
+              "type": "boolean",
+              "optional": true
             },
             {
               "name": "groupBy",
@@ -39494,7 +39516,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 190,
+        "propCount": 192,
         "eventCount": 32
       }
     },

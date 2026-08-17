@@ -615,6 +615,21 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`
    * redoes, `Alt+Ctrl+Z` is inert. Additive — default off (defaults unchanged). */
   keymap?: Partial<Record<IrisTableKeyAction, string>>
+  /** Batch DJ (iris 独有 — vxe keyboardConfig has no focus gate): shortcut
+   * scope for the table's WINDOW keydown listeners (undo/redo, clip
+   * copy/paste, fnr Ctrl+F + Escape, batch-edit Escape). `hotkeyScope`
+   * (default `true`) gates the shortcuts to fire only while the focus is
+   * INSIDE the table (`rootRef.contains(e.target)` — the focused element,
+   * read live from the keydown target, no extra focus/blur state). Set it to
+   * `false` for the permissive compatibility mode where the same bindings
+   * fire regardless of where the focus is. `outerScope` (default `false`)
+   * forces the GLOBAL scope (fire from anywhere) and wins over
+   * `hotkeyScope`. Fail-closed by default: fnr/batch-edit tighten from
+   * anywhere → in-table; undo/clip keep their existing in-table behavior. */
+  hotkeyScope?: boolean
+  /** Force GLOBAL shortcut scope (fire from anywhere, ignoring
+   * `hotkeyScope`). Default `false`. */
+  outerScope?: boolean
   /** Batch BS (iris 独有 — vxe group-config has no multi-column grouping): table-level NESTED multi-column grouping. Array elements are leaf column `key`s; their order defines the nesting levels (`['dept','status']` → `dept` level 0 → `status` level 1). Every level renders its own collapsible group header (indented by depth, `data-iris-group-depth`); a parent group's count is the subtree row total; the per-group summary row (`summary` ops) appears only on the innermost level. Composite group keys join the level values with `::` (`data-iris-group-key`), so `groupCollapsed`/`defaultGroupCollapsed` address nested groups directly (`'Engineering::Active'`) and a collapsed parent hides its whole subtree. When set, the array WINS over any column-level `groupBy: true` flag; absent/empty/unknown-only → the single-column batch M/BH path runs byte-identical (the array's level-0 fallback). Unknown keys are dropped, duplicates keep the first occurrence. Inert in tree mode (fail-closed, like column grouping). */
   groupBy?: string[]
   /** Batch BH (iris 独有 — vxe group-config has no collapse): controlled set of

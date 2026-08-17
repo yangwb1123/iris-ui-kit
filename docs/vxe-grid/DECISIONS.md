@@ -2616,3 +2616,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-di-review.md [ok]: Summary: I inspected the implementation of grid 批 DI (`exportMultiCsv`, commit `e5afc188`) against the baseline and ran all reque
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-review.md
+
+## 2026-08-17 09:24:12 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-di-gate.md [ok]: Report: **Review verdict:** PASS with one MEDIUM finding (F1) — applied before gating. The `exportNames` prop's multi-line JSDoc
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-gate.md
+
+## 2026-08-17 09:27:44 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dj-baseline.md [ok]: 批 DJ：表格快捷键监听增强（iris 独有）— 基线要点: **规格**：`hotkeyScope?: boolean`（快捷键仅在表格聚焦时生效，默认）+ 可选全局 `outerScope?: boolean`；测试聚焦/失焦。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-baseline.md
+
+## 2026-08-17 09:37:37 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dj-adapt.md [ok]: Summary — Batch DJ: 表格快捷键监听增强 (hotkeyScope): | File | Change |; Files changed (4 source/test + manifest regeneration): | File | Change |; Design: - `inShortcutScope(e.target)`: `outerScope` → global; `hotkeyScope:false` → permissive (legacy anywhere); default → in-t; Tests added (12): In-focus fnr open / defocused blocked / focus-return recovery / undo in-table vs defocused / clip copy in-table vs defoc; Gates: - ✅ core test: 1584 passed
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-adapt.md
+
+## 2026-08-17 09:48:35 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dj-review.md [ok]: Verdict: **PASS** (1 low-severity formatting finding): - **Spec correctness** — `inShortcutScope` gate (Table.tsx:7186-7206) implements exactly the baseline design: `outerScop; What I verified: - **Spec correctness** — `inShortcutScope`gate (Table.tsx:7186-7206) implements exactly the baseline design:`outerScop; Gates (all green): core test 1584 ✅ · react test 2770 ✅ · typecheck ✅ · lint 0 errors ✅ · audit 0 vulns ✅ · check:manifest ✅; Finding (LOW): - **Table.tsx:7249 / :7286** and **hotkey-scope.test.tsx:159-161/:169-176** introduce Prettier `format:check` violations
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-review.md

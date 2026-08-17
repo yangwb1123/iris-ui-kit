@@ -2469,5 +2469,20 @@
 
 ## 2026-08-17 06:52:00 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md [ok]: 批 DC：冻结区列拖拽排序钳制 `clampReorderZone`（iris 独有）— Done ✅: 零新 prop、零 core（复用既有 `columnDrag`）——落点钳进拖拽列自己的固定区（`zone = pinOf ?? 'free'` 同咽喉；同区原样 / 跨区钳区首区尾 / net-zero 守卫跳 onReorder；`[left][free][right]` 分区恒定，零固定表字节不变）；Table.tsx +1 helper + reorder 块接线，`pinned-reorder.test.tsx` 15 测试（react 2682→2697）；manifest 零 diff（185 props/32 events）；core 1580、spec 0 violations、typecheck/lint clean；comparison doc 2 处（批 DC 行 + columnDrag 行追加）
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md [ok]: 批 DC：冻结区列拖拽排序钳制 `clampReorderZone`（iris 独有）— Done ✅: 零新 prop、零 core（复用既有 `columnDrag`）——落点钳进拖拽列自己的固定区（`zone = pinOf ?? 'free'` 同咽喉；同区原样 / 跨区钳区首区尾 / net-zero 守卫跳 onReorder；`[left][free][right]` 分区恒定，零固定表字节不变）；Table.tsx +1 helper + reorder 块接线，`pinned-reorder.test.tsx` 15 测试（react 2682→2697）；manifest 零 diff（186 props/32 events）；core 1580、spec 0 violations、typecheck/lint clean；comparison doc 2 处（批 DC 行 + columnDrag 行追加）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md
+
+## 2026-08-17 06:51:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md [ok]: 批 DC：冻结列多列拖拽排序（冻结区内 reorder，iris 独有）— Done ✅; Files changed (committed `2c0cfcb6` + docs sweep `24ff1b0c`, tree clean): | File | Change |; What was built (per baseline, zero drift): - **Spec**: 冻结区多列拖拽排序——same-zone drops pass through index as-is (**zero-pin tables byte-identical** — vxe parity locked); Tests added (15, mapping spec 冻结区排序): T1/T4 frozen-zone intra-reorder · T2/T3/T5/T15 cross-zone clamp (incl. lone-pin net-zero, both directions) · T6 no-pin r; Counts: - core test **1580/1580** ✓ (framework-free unchanged) · react test **2697/2697** (238 files, 2682 → +15) ✓ · react type
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md
+
+## 2026-08-17 06:56:05 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-review.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-review.md
+
+## 2026-08-17 07:02:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-gate.md [ok]: Summary: **Review verdict**: PASS (batch-dc-review.md) — 3 doc-level findings fixed (185→186 propCount in adapt doc + comparison DC row + DECISIONS ledger; 384→402 test-file lines in comparison DC row; Table.tsx:240 comment no longer claims direct-test calls).; Gate results (all green): turbo **180/180 tasks successful** (135 cached, 45 fresh) — test/typecheck/lint/build across all 4 frameworks + plugins + apps.; audit **0 vulnerabilities**; gen:manifest → 155 components ×4, 86 tokens; check:manifest **up to date, zero diff**; comparison.md 构建状态 append 批 DC row.; Final test counts: core **1580/1580** (102 files) · react **2697/2697** (238 files, +15 pinned-reorder).; Commit: gate commit carries review fixes + docs.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-gate.md

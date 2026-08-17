@@ -237,7 +237,8 @@ function isColDragOutLeft(x: number, rootLeft: number): boolean {
  * to its start, drops over-after to its end. Invariant: a column drag never
  * changes a column's pin zone — the `[left][free][right]` partition holds
  * (gapped states included, per batch CV's documented gap handling). Pure +
- * DOM-free, so resolveColDrag wires it and tests call it directly. */
+ * DOM-free; resolveColDrag wires it (the pinned-reorder tests exercise it
+ * through the full drag pipeline). */
 function clampReorderZone<Row extends Record<string, unknown>>(
   cols: readonly IrisTableColumn<Row>[],
   from: number,

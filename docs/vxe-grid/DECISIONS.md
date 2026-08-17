@@ -2406,3 +2406,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md [ok]: 核心发现（逐行复核，非引用旧文）: 批 DB（`editSidebar?: boolean`）是**纯视图层集成**——底层全部就位：批 AT 的 `createAuditLog`（ring 200，seq 永不重置）、批 BA 的 `createVersionHistory; Baseline 内容: - **Exact design**：prop 契约（props.ts :951 后）+ 工具栏触发器（⏳，接 history 之后）+ 右侧边面板（portal、fixed 360px、无 backdrop 非模态，fiat）+ **合并
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md
+
+## 2026-08-16 17:33:48 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-db-adapt.md [ok]: 批 DB：编辑历史侧边 `editSidebar`（iris 独有）— Done ✅: - `4d802ba9` — `feat(table): grid 批 DB——编辑历史侧边 editSidebar（iris 独有）`（10 files, +814/−3）; Commits: - `4d802ba9` — `feat(table): grid 批 DB——编辑历史侧边 editSidebar（iris 独有）`（10 files, +814/−3）; Files changed (5 impl + 1 test + manifest): | File | Change |; Verification (all green): - **core test 1580/1580** ✓（框架无关零改动）; What is left: 1. **review 阶段**（`batch-db-review.md` 对抗审查）+ **全仓 gate**（turbo 四框架 build/audit/E2E/视觉回归——本任务只执行 VERIFY 列出的命令）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-adapt.md
+
+## 2026-08-16 17:44:55 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-db-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-db-review.md`; Checks performed: **Spec correctness** — every baseline item anchored to code:; Findings: 1. **[Minor]** EditHistoryPanel.tsx:140-143/198 — document scroll-capture closes the panel on its own list's scrolls; li
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-review.md

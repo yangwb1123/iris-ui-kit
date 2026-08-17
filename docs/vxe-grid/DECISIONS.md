@@ -2596,3 +2596,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dh-review.md [ok]: Summary: I reviewed batch DH (`pattern`, iris 独有 cell-pattern-fill) at commit `2da7b046` and ran all requested verification:
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-review.md
+
+## 2026-08-17 08:30:30 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dh-gate.md [ok]: Report: **Review verdict:** PASS (commit `2da7b046`, no blocking findings; two non-blocking token-hygiene notes left untouched p
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-gate.md
+
+## 2026-08-17 08:33:01 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-di-baseline.md [ok]: 批 DI：导出多表（iris 独有）— 基线摘要: **规格**：`exportNames?: Array<{ key: string; ref: () => Row[] }>` —— `handle.exportMultiCsv()` 一个文件导出当前表 + 引用表（多段 CSV）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-baseline.md
+
+## 2026-08-17 09:06:46 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-di-adapt.md [ok]: 批 DI：导出多表（iris 独有）— 完成: - `packages/react/src/primitives/table/props.ts` — new `exportNames?: Array<{ key; ref }>` prop (next to `formulaTables`; Files changed (commit `e5afc188`): - `packages/react/src/primitives/table/props.ts` — new `exportNames?: Array<{ key; ref }>` prop (next to `formulaTables`; Tests added: 14: - Gating ×2 (absent/empty → byte-identical to `exportCurrentViewCsv`); Counts / verify: - core test: 102 files · **1584** tests ✅; Notable fix: The previous (timed-out) attempt had accidentally **replaced `getSelection` with `exportMultiCsv`**, breaking `group-bat
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-adapt.md
+
+## 2026-08-17 09:19:29 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-di-review.md [ok]: Summary: I inspected the implementation of grid 批 DI (`exportMultiCsv`, commit `e5afc188`) against the baseline and ran all reque
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-review.md

@@ -1,46 +1,38 @@
-# 批 DI：导出多表（iris 独有）— 适配报告
+All work is complete and verified. Here's the report.
 
-**规格**：`exportNames?: Array<{ key: string; ref: () => Row[] }>` —— `handle.exportMultiCsv()` 一个文件导出当前表 + 引用表（多段 CSV）。
+## 批 DI：导出多表（iris 独有）— 完成
 
-## 变更文件（仅 react / additive / core 无关）
+### Files changed (commit `e5afc188`)
 
-1. `packages/react/src/primitives/table/props.ts` — 新增 prop `exportNames`（紧邻 `formulaTables`）。
-2. `packages/react/src/primitives/table/types.ts` — `IrisTableHandle` 新增 `exportMultiCsv: () => string` 签名 + 文档注释。
-3. `packages/react/src/primitives/table/Table.tsx` — 新增：
-   - `serializeRefRows(rows)` 纯助手：按引用行集自身可枚举键导出（首行键为表头），core `toCsv` 中和贯穿；空行集 → `''`。
-   - 渲染期 `exportNamesRef` 镜像（per-render ref-mirror 纪律，`formulaTablesRef` 同款），handle 按需读取最新值。
-   - `handle.exportMultiCsv()`：多段拼装（`# current` + 当前表块，段 2..N 按数组顺序 `# <key>` + 引用块，段间 `\n\n`、文件尾无多余换行）；空/缺省 → 裸当前表 CSV（byte-identical 回退）；`''` 段名整段跳过；空引用行 → 仅段头。
-4. `packages/react/src/primitives/table/multi-export-csv.test.tsx` — 新增 14 用例。
+- `packages/react/src/primitives/table/props.ts` — new `exportNames?: Array<{ key; ref }>` prop (next to `formulaTables`)
+- `packages/react/src/primitives/table/types.ts` — new `IrisTableHandle.exportMultiCsv: () => string` signature + docs
+- `packages/react/src/primitives/table/Table.tsx` — `serializeRefRows()` helper, `exportNamesRef` per-render mirror, `handle.exportMultiCsv()` multi-segment assembly
+- `packages/react/src/primitives/table/multi-export-csv.test.tsx` — new (294 lines, ≤500)
+- `packages/manifest/manifest.json` + `llms.txt` — regenerated (required)
+- `docs/vxe-grid/batch-di-adapt.md` — report
 
-> 修复上一轮超时遗留 bug：旧 diff 曾把 `getSelection` 误替换为 `exportMultiCsv`，已恢复 `getSelection`（`batch-autowidth` 回归测试得以通过）。
+### Tests added: 14
 
-## Manifest（必需再生成）
+- Gating ×2 (absent/empty → byte-identical to `exportCurrentViewCsv`)
+- Multi-segment happy path; multiple-ref order
+- Current-segment 3-contract inheritance: formula-materialization / mask / hidden-column exclusion
+- Ref block serializes by its **own** keys; field order = first-row key order
+- Empty ref rows → header only; `''` key skipped
+- Stale-closure guard (rerender → latest ref)
+- Ref OWASP neutralization (`=`/`+`), downloadCsv smoke
 
-`pnpm gen:manifest` 已再生成并纳入：`packages/manifest/manifest.json` + `llms.txt`（react `exportNames` 单行函数 prop、propCount 189→190）。
+### Counts / verify
 
-## 测试（14，渲染 + handle ref，精确字符串断言）
+- core test: 102 files · **1584** tests ✅
+- react test: 242 files · **2758** tests (incl. 14 new) ✅
+- react typecheck ✅ · lint **0 errors** (2 pre-existing warnings) ✅
+- `iris-ui-spec.py --mode all`: **0 violations** ✅
+- `gen:manifest`: regenerated + committed ✅ (prop 189→190)
 
-- gating ×2：缺省 / 空数组 → 与 `exportCurrentViewCsv()` byte-identical。
-- 多段 happy path；多引用顺序。
-- 当前表段三契约继承：公式物化 / 掩码 / 隐藏列剔除。
-- 引用段按自身键序列化；字段顺序 = 首行键序。
-- 空引用行 → 仅段头；`''` 段名跳过。
-- prop 更新取最新 ref（stale 闭包护航）。
-- 引用段 OWASP 中和（`=`/`+` 前缀）。
-- multisegment CSV 可直投 `downloadCsv`（download 冒烟）。
+### Notable fix
 
-## 验证结果
+The previous (timed-out) attempt had accidentally **replaced `getSelection` with `exportMultiCsv`**, breaking `group-batch-autowidth.test.tsx`. I restored `getSelection` while keeping `exportMultiCsv` — the batch-autowidth regression test now passes.
 
-| 门禁                         | 结果                                   |
-| ---------------------------- | -------------------------------------- |
-| core test                    | ✅ 102 files / 1584 tests              |
-| react test                   | ✅ 242 files / 2758 tests（含本批 14） |
-| react typecheck              | ✅                                     |
-| react lint                   | ✅ 0 errors（2 既有 warning）          |
-| `iris-ui-spec.py --mode all` | ✅ 0 violations                        |
-| `pnpm gen:manifest`          | ✅ 已再生成 + 纳入                     |
+### What's left
 
-## 收尾
-
-- Fiat：引用表按自身键导出（裸行集，无列定义）；`# <name>` 段头 + 空行切分；无工具栏/默认名集成；对既有 export* handle 零改动。
-- 未动：core / exportCsv.ts / styles / 其它三框架。
+None within this batch scope. Nothing touched in core / `exportCsv.ts` / styles / other three frameworks. Remaining dirty files (`DECISIONS.md`, `batch-dh-gate.md`, `batch-di-baseline.md`) are prior batch-runner records, intentionally left uncommitted.

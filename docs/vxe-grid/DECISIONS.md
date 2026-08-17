@@ -1,3 +1,7 @@
+## 2026-08-16 16:xx:xx — stage 'adapt' — PASS (batch DA)
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-da-adapt.md [ok]: Verify-style adapt — **DA spec already fully implemented by committed batch CU** (`5b5c85e9` + `09393338` + `15bbc1d4` in HEAD `8964a7b6`). Re-verified against code this session: range copy carries per-column formatter via `buildRangeCopy(range, format, copyWithFormat)` + `contextCellText` (mask → formatter → String, 掩码优先); both copy throats (Ctrl/Cmd+C + toolbar 复制) pass the flag; all three serializers carry the formatted string (RFC-4180 + OWASP still apply); non-formatter columns byte-identical; paste asymmetric; react-only. 14/14 tests (432 lines) map 1:1 to the spec — no new feature code written (additive-only). Gate counts: core 1580/1580 · react 2671/2671 (236 files) · typecheck clean · lint 0 errors (1 pre-existing complexity warning) · spec 0 violations (1416 files) · gen:manifest zero diff (155×4, 86 tokens).
+
 ## 2026-08-11 20:10:00 — stage 'gate' — PASS (batch S)
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-s-gate.md [ok]: Review fixes (3 × LOW applied): 1. **A11y** — panel checkbox rows wrapped in `<label>` (title click toggles, accessible name restored). 2. **Reset snapshot per open** — `visibilitySnapshotRef` is re-snapshotted on EVERY open (was first-open-only); reset restores the state as of the last open, matching the baseline's `onColumnVisibilityChange({})` semantics without clobbering parent-side visibility changes; +1 regression test. 3. **Stuck drag** — window-level `pointerup`/`pointercancel` listeners while the panel is open end/cancel the custom drag even when released outside the ~200px panel; +2 regression tests.
@@ -2322,3 +2326,63 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cz-review.md [ok]: 批 CZ Review — 跳到行 `goToRow` — **PASS** ✅: Review 已写入 `docs/vxe-grid/batch-cz-review.md`。全部检查独立复跑：
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cz-review.md
+
+## 2026-08-16 13:12:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-gate.md [ok]: ✅ Gate PASS — 批 CZ「跳到行」(iris 独有): **Review verdict**: **PASS** (0 blockers, 5 LOW/INFO) — no code fixes required.; Full repo gate — 180/180 successful: ``; Verification: - **`pnpm audit` → 0 vulnerabilities** (`No known vulnerabilities found`); Comparison doc (iris 独有 section): Batch CZ row was already committed with the implementation (73a295b4) — `goToRow(key)` handle, `findTableRowEl` shared l; Commit: ``
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cz-gate.md
+
+## 2026-08-16 13:23:00 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-da-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-baseline.md
+
+## 2026-08-16 13:24:35 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md
+
+## 2026-08-16 13:26:15 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-baseline.md
+
+## 2026-08-16 13:27:42 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dd-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-baseline.md
+
+## 2026-08-16 13:29:07 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-baseline.md
+
+## 2026-08-16 13:30:44 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-df-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-baseline.md
+
+## 2026-08-16 13:32:10 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md
+
+## 2026-08-16 13:33:24 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dh-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-baseline.md
+
+## 2026-08-16 13:35:11 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-di-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-baseline.md
+
+## 2026-08-16 13:36:45 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dj-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-baseline.md
+
+## 2026-08-16 16:03:30 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-da-baseline.md [ok]: 核心发现（逐行复核，非引用旧文）: **批 DA 的 spec 已被已提交的批 CU 完整实现**：`5b5c85e9` + `09393338` + `15bbc1d4` 已在 HEAD `8964a7b6` 之前落地，14/14 测试存在且与 spec 逐条对应。DA 正; 验证证据: | 检查 | 结果 |; 交付内容: - **Exact design**：现状契约（prop/单链/单喉/两分支/掩码优先不变量/fiat 清单）+ Anchor 行号
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-baseline.md

@@ -2636,3 +2636,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dj-review.md [ok]: Verdict: **PASS** (1 low-severity formatting finding): - **Spec correctness** — `inShortcutScope` gate (Table.tsx:7186-7206) implements exactly the baseline design: `outerScop; What I verified: - **Spec correctness** — `inShortcutScope`gate (Table.tsx:7186-7206) implements exactly the baseline design:`outerScop; Gates (all green): core test 1584 ✅ · react test 2770 ✅ · typecheck ✅ · lint 0 errors ✅ · audit 0 vulns ✅ · check:manifest ✅; Finding (LOW): - **Table.tsx:7249 / :7286** and **hotkey-scope.test.tsx:159-161/:169-176** introduce Prettier `format:check` violations
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-review.md
+
+## 2026-08-17 09:55:51 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dj-gate.md [ok]: 批 DJ Gate — PASS: **Review verdict:** PASS (1 low-severity Prettier `format:check` finding) — applied the trivial `prettier --write` fix t; Full repo gate: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2`; Audit & manifest: - `pnpm audit` → **0 known vulnerabilities** ✅; Documentation: Updated `docs/vxe-grid-comparison.md`:; Commit: - **Hash:** `5b993ab2`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-gate.md
+
+## 2026-08-17 09:58:51 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dk-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dk-baseline.md

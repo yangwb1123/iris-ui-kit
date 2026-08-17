@@ -395,6 +395,11 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * into the pin menu's state channel (same `onColumnPinnedChange` contract,
    * both controlled/uncontrolled modes, never a reorder). Plain `columnDrag`
    * without `columnPinMenu` keeps the vxe reorder-only behavior.
+   * Batch DK (iris 独有): a pinned intra-zone reorder ALSO fires
+   * `onColumnOrderChange` with the new top-level key list (flat leaf tables
+   * only; grouped leaves stay `onReorder`-only) so a header frozen-zone
+   * reorder is durable for controlled parents through the same channel the
+   * settings panel uses.
    */
   columnDrag?: {
     /** Called with the reordered column array after a drop. */

@@ -4624,6 +4624,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
           const [moved] = next.splice(from, 1)
           next.splice(clampedTo, 0, moved)
           columnDrag.onReorder(next as IrisTableColumn<Row>[])
+          // Batch DK (iris 独有 — vxe has no frozen-zone reorder): emit the
+          // new top-level key list through `onColumnOrderChange` TOO — the
+          // same durable channel the settings panel uses — so a header
+          // frozen-zone reorder is persistable for controlled parents on top
+          // of the drag's `onReorder`. Gated to FLAT leaf tables (`columnOrder`
+          // is top-level-scoped, so grouped leaf swaps keep `onReorder` only)
+          // and to a PINNED mover: the clamp above guarantees a pinned column
+          // stays within its own frozen zone (spec's "target also pinned" is
+          // the natural subset), while free-zone reorders stay onReorder-only
+          // (byte-identical preservation). Full new key list — never undefined.
+          if (!grouped && pinOf(moved) !== null && onColumnOrderChange) {
+            onColumnOrderChange(next.map((c) => c.key))
+          }
         }
       }
     }

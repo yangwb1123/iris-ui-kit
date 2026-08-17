@@ -400,3 +400,100 @@ describe('IrisTable columnDrag frozen-zone clamp (batch DC, iris 独有 — vxe 
     ])
   })
 })
+
+const orderOf = (fn: ReturnType<typeof vi.fn>): string[] => fn.mock.calls[0][0] as string[]
+
+// Batch DK (iris 独有 — vxe has no frozen-zone reorder): a pinned intra-zone
+// header drag ALSO emits `onColumnOrderChange` — flat only, pinned mover only.
+/** Render with columnDrag + optional onColumnOrderChange and stub rects. */
+const dragger = (
+  cols: IrisTableColumn<Row>[],
+  onReorder: ReturnType<typeof vi.fn>,
+  onOrder: ReturnType<typeof vi.fn> | undefined,
+): HTMLElement => {
+  const { container } = render(
+    <IrisTable
+      columns={cols}
+      data={rows}
+      rowKey="id"
+      columnDrag={{ onReorder }}
+      onColumnOrderChange={onOrder}
+    />,
+  )
+  stubHeaderRects(container)
+  return container
+}
+
+describe('IrisTable header pinned-zone reorder → onColumnOrderChange (batch DK, iris 独有)', () => {
+  it('DK1 left/right intra-reorder fires BOTH channels, zones preserved', () => {
+    const onReorder = vi.fn(),
+      onOrder = vi.fn()
+    let table = startDrag(dragger(left2(), onReorder, onOrder), 'a', centerOf('b'))
+    releaseInside(table, centerOf('b'))
+    expect(payloadKeys(onReorder)).toEqual(['b', 'a', 'c'])
+    expect(onOrder).toHaveBeenCalledTimes(1)
+    expect(orderOf(onOrder)).toEqual(['b', 'a', 'c'])
+    cleanup()
+    const onReorder2 = vi.fn(),
+      onOrder2 = vi.fn()
+    table = startDrag(dragger(right2(), onReorder2, onOrder2), 'c', centerOf('d'))
+    releaseInside(table, centerOf('d'))
+    expect(payloadKeys(onReorder2)).toEqual(['a', 'b', 'd', 'c'])
+    expect(orderOf(onOrder2)).toEqual(['a', 'b', 'd', 'c'])
+    expect(zonesOf(onReorder2.mock.calls[0][0] as IrisTableColumn<Row>[])).toEqual([
+      null,
+      null,
+      'right',
+      'right',
+    ])
+  })
+  it('DK2 cross-zone FREE mover fires onReorder only', () => {
+    const onReorder = vi.fn(),
+      onOrder = vi.fn()
+    const table = startDrag(dragger(sandwich(), onReorder, onOrder), 'c', centerOf('a'))
+    releaseInside(table, centerOf('a'))
+    expect(onReorder).toHaveBeenCalledTimes(1)
+    expect(onOrder).not.toHaveBeenCalled()
+  })
+  it('DK3 free-zone intra-reorder stays onReorder-only', () => {
+    const onReorder = vi.fn(),
+      onOrder = vi.fn()
+    const table = startDrag(dragger(sandwich(), onReorder, onOrder), 'b', centerOf('c'))
+    releaseInside(table, centerOf('c'))
+    expect(onReorder).toHaveBeenCalledTimes(1)
+    expect(onOrder).not.toHaveBeenCalled()
+  })
+  it('DK4 no onColumnOrderChange callback is a no-op', () => {
+    const onReorder = vi.fn()
+    const table = startDrag(dragger(left2(), onReorder, undefined), 'a', centerOf('b'))
+    releaseInside(table, centerOf('b'))
+    expect(payloadKeys(onReorder)).toEqual(['b', 'a', 'c'])
+  })
+  it('DK5 grouped leaves: pinned intra-reorder emits onReorder only', () => {
+    const onReorder = vi.fn(),
+      onOrder = vi.fn()
+    const grouped: IrisTableColumn<Row>[] = [
+      {
+        key: 'person',
+        title: 'Person',
+        children: [
+          { key: 'a', title: 'A', pinned: 'left' },
+          { key: 'b', title: 'B', pinned: 'left' },
+        ],
+      },
+      { key: 'c', title: 'C' },
+    ]
+    const table = startDrag(dragger(grouped, onReorder, onOrder), 'a', centerOf('b'))
+    releaseInside(table, centerOf('b'))
+    expect(payloadKeys(onReorder)).toEqual(['b', 'a', 'c'])
+    expect(onOrder).not.toHaveBeenCalled()
+  })
+  it('DK6 net-zero clamp fires neither channel', () => {
+    const onReorder = vi.fn(),
+      onOrder = vi.fn()
+    const table = startDrag(dragger(loneLeft(), onReorder, onOrder), 'a', centerOf('b'))
+    releaseInside(table, centerOf('b'))
+    expect(onReorder).not.toHaveBeenCalled()
+    expect(onOrder).not.toHaveBeenCalled()
+  })
+})

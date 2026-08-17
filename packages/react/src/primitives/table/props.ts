@@ -500,6 +500,20 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * (fail-closed).
    */
   editPreview?: boolean
+  /** Batch DH (iris 独有 — vxe has no equivalent; data-consistency assist):
+   * while an inline (cell-mode) editor is open, every other cell in the SAME
+   * column whose committed value exactly matches the current draft renders a
+   * light highlight (`data-iris-input-hint` + a `--iris-input-hint` token
+   * background) — a glanceable "these rows already share this value" cue
+   * while typing. Matching is RAW (`String(raw) === String(draft)`, same
+   * draft caliber as the editor/commit path — not the masked/formatted
+   * display). The editing cell itself is exempt. An empty draft is
+   * fail-closed (never floods the whole column). Computed live per keystroke
+   * via the existing cell-edit store — zero new state. Row-edit mode is a
+   * documented fiat: each column's draft lives in its own session, so row
+   * mode does not participate. Additive; default off (fail-closed).
+   */
+  pattern?: boolean
   /** Batch CR (iris 独有 — vxe has no equivalent; Excel status-bar parity):
    * show a full-width horizontal strip directly below the toolbar
    * (`data-iris-column-totals`) with the column totals for every

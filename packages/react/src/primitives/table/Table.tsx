@@ -2322,6 +2322,43 @@ function conditionalCellStyle<Row extends Record<string, unknown>>(
   return Object.keys(merged).length > 0 ? merged : null
 }
 
+/**
+ * Batch DH (iris 独有): the active pattern-edit hint — the column being edited
+ * plus its live draft (resolved from the cell-edit store). While a session is
+ * open, cells in the SAME column whose committed RAW value equals the draft
+ * highlight, so other rows sharing the value stay visible as a data-
+ * consistency cue. The editing cell itself is exempt; an empty draft is
+ * fail-closed (never floods a whole empty column). Row-edit mode never
+ * resolves here (each column's draft lives in its own session — documented
+ * fiat, inline cell mode is fully realtime via the shared store).
+ */
+export interface PatternEditActive {
+  columnKey: string
+  draft: unknown
+}
+
+/** Shared background for pattern-edit hints (token with a default fallback). */
+const PATTERN_HINT_BG =
+  'linear-gradient(var(--iris-input-hint, rgba(251, 191, 36, 0.16)), var(--iris-input-hint, rgba(251, 191, 36, 0.16)))'
+
+/**
+ * Per-cell pattern hint resolution: whether this cell highlights + its style.
+ * Longhand background-image only (BE discipline) — never clobbers
+ * background-image, spread AFTER conditional styles / BEFORE lockedRender.
+ */
+export function patternHintStyle(
+  active: PatternEditActive | null,
+  colKey: string,
+  isEditing: boolean,
+  raw: unknown,
+): { hint: boolean; style?: React.CSSProperties } {
+  if (!active || active.columnKey !== colKey || isEditing) return { hint: false }
+  const draftStr = String(active.draft)
+  if (draftStr === '') return { hint: false }
+  if (String(raw) !== draftStr) return { hint: false }
+  return { hint: true, style: { backgroundImage: PATTERN_HINT_BG } }
+}
+
 /** Shared inline style for the fnr bar buttons (token-driven only). */
 const FNR_BUTTON_STYLE: React.CSSProperties = {
   border: '1px solid var(--iris-border)',
@@ -2722,6 +2759,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   editAutoHeight,
   charCount,
   editPreview,
+  pattern = false,
   columnTotals,
   expandScrollPreserve = false,
   shortcutHints,
@@ -4271,6 +4309,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   const editTarget = useStore(cellEdit.store)
   const editingTarget = editTarget.editing
+  // Batch DH: pattern-edit hint (iris 独有) — resolve the active column + live
+  // draft from the shared cell-edit store once per render, so every matching
+  // cell in that column highlights AND updates live per keystroke (zero new
+  // state). Row-edit mode drafts live in per-column sessions, so row mode is
+  // intentionally excluded (documented fiat).
+  const patternEdit: PatternEditActive | null =
+    pattern && editingTarget !== null
+      ? { columnKey: editingTarget.columnKey, draft: editTarget.draft }
+      : null
   // Row edit mode (vxe editConfig.mode parity, batch K): `'row'` opens one
   // session per editable column of the clicked row (see beginRowEdit); the
   // default `'cell'` keeps the singleton one-cell-at-a-time behavior.
@@ -8320,6 +8367,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
           const editing = rowMode
             ? rowSessions.has(cellId(k, col.key))
             : cellEdit.isEditing(cellId(k, col.key), col.key)
+          // Batch DH (iris 独有): pattern-edit hint for THIS cell — matching
+          // RAW value in the edited column (excluding the editing cell itself),
+          // resolved live from the shared store (real-time per keystroke).
+          const patternHint = patternHintStyle(patternEdit, col.key, editing, raw)
           // Batch Q (vxe editDirtyConfig parity): dirty flag + rendered
           // marker for this cell (attr, class, relative positioning).
           const dirtyInfo = dirtyCellState(editDirtyConfig, dirtyCellsRef.current, k, col.key)
@@ -8368,6 +8419,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-cell-note={noteInfo.attr}
               data-iris-cell-locked={lockedRender.lockedAttr}
               data-iris-cell-readonly={lockedRender.readonlyAttr}
+              data-iris-input-hint={patternHint.hint ? 'true' : undefined}
               data-iris-presence={presenceInfo ? 'true' : undefined}
               title={cellTitle(editing, noteInfo.note, compareChange, row, col, notePopover)}
               className={
@@ -8491,6 +8543,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...pinnedStyle(col.key),
                 ...(cellStyle?.(row, col, idx) ?? null),
                 ...conditionalCellStyle(conditionalStyles, row, col.key, raw),
+                // Batch DH: pattern-edit hint — longhand background-image only
+                // (never clobbers background), spread AFTER conditional styles
+                // (it wins) but BEFORE lockedRender.style (lock stripes /
+                // readonly dots re-assert last — BE discipline).
+                ...(patternHint.style ?? null),
                 // Batch BE+BJ: re-assert the lock stripes / readonly dots AFTER
                 // every background shorthand above (range-fill/conditional/
                 // user) — an inline `background` shorthand resets

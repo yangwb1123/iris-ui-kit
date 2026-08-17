@@ -2396,3 +2396,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-da-review.md [ok]: Verdict: **PASS**: 批 DA spec（格式化复制补充：选区按列 formatter 输出 + 掩码优先 + 测试）经逐行核对，已被已提交的批 CU（`5b5c85e9`/`09393338`/`15bbc1d4`）完整覆盖——本次 adapt 是纯验证式交付
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-review.md
+
+## 2026-08-16 16:35:49 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-da-gate.md [ok]: Gate report — 批 DA「单元格格式化复制增强」: **Review verdict: PASS**（0 blockers，3 findings 全 Info，无源码修复）。; 全仓 gate — 180/180: ``; 验证: - **audit → 0**（`No known vulnerabilities found`）; Comparison doc（iris 独有 section）: 批 DA 是验证式 adapt（spec 已由批 CU `copyWithFormat` 完整交付），补两条：; Commit: ``
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-gate.md
+
+## 2026-08-16 16:48:43 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md [ok]: 核心发现（逐行复核，非引用旧文）: 批 DB（`editSidebar?: boolean`）是**纯视图层集成**——底层全部就位：批 AT 的 `createAuditLog`（ring 200，seq 永不重置）、批 BA 的 `createVersionHistory; Baseline 内容: - **Exact design**：prop 契约（props.ts :951 后）+ 工具栏触发器（⏳，接 history 之后）+ 右侧边面板（portal、fixed 360px、无 backdrop 非模态，fiat）+ **合并
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md

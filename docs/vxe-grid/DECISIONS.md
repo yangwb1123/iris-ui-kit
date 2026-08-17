@@ -2561,3 +2561,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md [ok]: 批 DG：列宽自适应增强 — 基线摘要: **规格**：`autoResizeColumns?: boolean` — 双击列边界按内容自动适配列宽（测量最大内容宽度 + padding，clamp min/max），经 `onColumnWidthsChange` 写回；测试（双
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md
+
+## 2026-08-17 07:59:07 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-adapt.md [ok]: Report: **Batch DG: 列宽自适应增强 (autoResizeColumns)** — Complete.; Files changed (4 + regenerated manifest/docs): - `packages/react/src/primitives/table/props.ts` — added `autoResizeColumns?: boolean` (single-line, on named exported `; Tests added (13): gating ×2, happy-path write-back + grid update, cross-cell max, padding-included (`scrollWidth` no extra term), min clam; Verification (all green): - core test: **1584 passed**; Constraints honored: Core untouched (framework-free, react-only); additive-only; no dist/tgz/node_modules; manifest scanner hygiene (bool pro
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-adapt.md
+
+## 2026-08-17 08:01:27 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-review.md [ok]: Verification results (all green): | Check | Result |; Axis findings: - **Spec correctness** — `autoResizeColumns?: boolean`; double-click measures widest header+body `scrollWidth`, clamps w; Findings: No blocking items. Two informational P2s recorded for the future (neither new): (1) selector interpolates `colKey` into
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-review.md
+
+## 2026-08-17 08:08:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md [ok]: 批 DG Gate — PASS: Review verdict PASS (no blocking / no new P2; two informational P2s from review not requiring gate fix). Full repo gate `pnpm turbo run test typecheck lint build --concurrency=2`→ **180/180 tasks successful** (125 cached); core test **1584/1584** (102 files) · react test **2732/2732** (240 files, incl. 13 new DG); typecheck pass / lint 0 errors / build clean. Audit: `iris-ui-spec.py --mode all`→ **0 violations**; `pnpm audit`→ **0 vulnerabilities**. Manifest: `gen:manifest` regenerated (155×4 = 620 contracts, 86 tokens) + `check:manifest`→ **up to date** (propCount 187→188 `autoResizeColumns` react-only). Docs: comparison iris 独有 section updated (批 DG row + 构建状态 entry); DECISIONS gate record; this report. Commit: `feat(table): grid 批 DG——列宽自适应增强（iris 独有）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md

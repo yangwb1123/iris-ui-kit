@@ -2416,3 +2416,58 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-db-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-db-review.md`; Checks performed: **Spec correctness** — every baseline item anchored to code:; Findings: 1. **[Minor]** EditHistoryPanel.tsx:140-143/198 — document scroll-capture closes the panel on its own list's scrolls; li
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-review.md
+
+## 2026-08-16 17:54:58 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-db-gate.md [ok]: Summary: **Review verdict**: PASS (batch-db-review.md) — 3 minor/low/info findings only (scroll-capture on panel's own list, same
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-gate.md
+
+## 2026-08-16 18:02:13 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-baseline.md
+
+## 2026-08-16 18:04:42 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dd-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-baseline.md
+
+## 2026-08-16 18:07:15 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-baseline.md
+
+## 2026-08-16 18:09:28 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-df-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-baseline.md
+
+## 2026-08-16 18:12:13 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-baseline.md
+
+## 2026-08-16 18:14:39 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dh-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-baseline.md
+
+## 2026-08-16 18:17:06 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-di-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-di-baseline.md
+
+## 2026-08-16 18:22:47 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dj-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dj-baseline.md
+
+## 2026-08-17 06:40:20 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-baseline.md [ok]: What the baseline establishes: **Spec**: `pinned 多列拖拽排序（冻结列可互相拖拽调整顺序——冻结区内 reorder）；测试（冻结区排序）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-baseline.md
+
+## 2026-08-17 06:52:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md [ok]: 批 DC：冻结区列拖拽排序钳制 `clampReorderZone`（iris 独有）— Done ✅: 零新 prop、零 core（复用既有 `columnDrag`）——落点钳进拖拽列自己的固定区（`zone = pinOf ?? 'free'` 同咽喉；同区原样 / 跨区钳区首区尾 / net-zero 守卫跳 onReorder；`[left][free][right]` 分区恒定，零固定表字节不变）；Table.tsx +1 helper + reorder 块接线，`pinned-reorder.test.tsx` 15 测试（react 2682→2697）；manifest 零 diff（185 props/32 events）；core 1580、spec 0 violations、typecheck/lint clean；comparison doc 2 处（批 DC 行 + columnDrag 行追加）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dc-adapt.md

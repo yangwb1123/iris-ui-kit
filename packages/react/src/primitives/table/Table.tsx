@@ -228,6 +228,36 @@ function isColDragOutLeft(x: number, rootLeft: number): boolean {
   return x < rootLeft
 }
 
+/** Batch DC (iris 独有 — vxe has no frozen-zone-aware reorder): clamp a
+ * column drag's drop index into the dragged column's OWN pin zone — the
+ * zone span currently held by same-zone columns (`zoneOf` returns the same
+ * `pinOf` throat as pinnedOffsets; a pinned column's zone is 'left'/'right',
+ * an unpinned column's 'free'). Same-zone drops pass through index as-is
+ * (zero-pin tables stay byte-identical); drops over-before the zone clamp
+ * to its start, drops over-after to its end. Invariant: a column drag never
+ * changes a column's pin zone — the `[left][free][right]` partition holds
+ * (gapped states included, per batch CV's documented gap handling). Pure +
+ * DOM-free, so resolveColDrag wires it and tests call it directly. */
+function clampReorderZone<Row extends Record<string, unknown>>(
+  cols: readonly IrisTableColumn<Row>[],
+  from: number,
+  to: number,
+  zoneOf: (col: IrisTableColumn<Row>) => 'left' | 'right' | 'free',
+): number {
+  const zone = zoneOf(cols[from]!)
+  let start = from
+  let end = from
+  for (let i = 0; i < cols.length; i++) {
+    if (i !== from && zoneOf(cols[i]!) === zone) {
+      if (i < start) start = i
+      if (i > end) end = i
+    }
+  }
+  if (to < start) return start
+  if (to > end) return end
+  return to
+}
+
 /** Batch CW import preview (iris 独有): the preview table's column headers
  * come from the FIRST parsed row's keys — every row is built by the same
  * `Object.fromEntries(header.map(...))`, so key order is stable across rows.
@@ -4488,9 +4518,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const from = next.findIndex((c) => c.key === activeId)
       const to = next.findIndex((c) => c.key === overId)
       if (from >= 0 && to >= 0 && from !== to) {
-        const [moved] = next.splice(from, 1)
-        next.splice(to, 0, moved)
-        columnDrag.onReorder(next as IrisTableColumn<Row>[])
+        // Batch DC (iris 独有 — vxe has no frozen-zone-aware reorder): clamp
+        // the drop into the dragged column's OWN pin zone through the SAME
+        // `pinOf` throat as pinnedOffsets — a pinned column can reorder
+        // among its frozen siblings but a cross-zone drop clamps to the
+        // zone edge instead of corrupting the sticky offsets. A clamp that
+        // lands back on the source index is a net-zero move (only reachable
+        // via clamping — a lone-zone drag) and skips onReorder, same
+        // precedent as the row drag's net-zero skip.
+        const clampedTo = clampReorderZone(next, from, to, (c) => pinOf(c) ?? 'free')
+        if (clampedTo !== from) {
+          const [moved] = next.splice(from, 1)
+          next.splice(clampedTo, 0, moved)
+          columnDrag.onReorder(next as IrisTableColumn<Row>[])
+        }
       }
     }
     colRectsRef.current = []

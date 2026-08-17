@@ -34,6 +34,45 @@ describe('validateEditRules (vxe editRules parity)', () => {
     expect(validateEditRules([{ pattern: /^\d+$/ }], '123', {}).valid).toBe(true)
   })
 
+  it('regexp: RegExp match/reject (pattern shorthand)', () => {
+    expect(validateEditRules([{ regexp: /^[a-z]+$/ }], 'abc', {}).valid).toBe(true)
+    expect(validateEditRules([{ regexp: /^[a-z]+$/ }], 'ABC1', {}).valid).toBe(false)
+    expect(validateEditRules([{ regexp: /^\d+$/ }], '123', {}).messages).toEqual([])
+    expect(validateEditRules([{ regexp: /^\d+$/ }], '12a3', {}).valid).toBe(false)
+  })
+
+  it('regexp: string source compiles + message override + empty exempt', () => {
+    expect(validateEditRules([{ regexp: '^\\d{4}$', message: '格式错' }], '1234', {}).valid).toBe(
+      true,
+    )
+    expect(
+      validateEditRules([{ regexp: '^\\d{4}$', message: '格式错' }], '12', {}).messages,
+    ).toEqual(['格式错'])
+    // Empty values stay exempt, matching pattern semantics.
+    expect(validateEditRules([{ regexp: '^\\d{4}$' }], '', {}).valid).toBe(true)
+  })
+
+  it('regexp: pattern takes precedence when both set (pattern wins)', () => {
+    const r = validateEditRules(
+      [{ pattern: /^[a-z]+$/, regexp: /^\d+$/, message: '格式' }],
+      '123',
+      {},
+    )
+    expect(r.valid).toBe(false)
+    expect(r.messages).toEqual(['格式'])
+    expect(validateEditRules([{ pattern: /^[a-z]+$/, regexp: /^\d+$/ }], 'abc', {}).valid).toBe(
+      true,
+    )
+  })
+
+  it('regexp: flows through the async API (real table commit route)', async () => {
+    const r = await validateEditRulesAsync([{ regexp: /^\d+$/ }], '12a', {})
+    expect(r).toMatchObject({ valid: false, messages: ['Value format is invalid'] })
+    expect(await validateEditRulesAsync([{ regexp: /^\d+$/ }], '123', {})).toMatchObject({
+      valid: true,
+    })
+  })
+
   it('validator: sync string return rejects; null accepts', () => {
     const rules: EditRule[] = [{ validator: (v) => (v === 'no' ? '不能是 no' : null) }]
     expect(validateEditRules(rules, 'no', {}).messages).toEqual(['不能是 no'])

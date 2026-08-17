@@ -22,6 +22,11 @@ export interface EditRule<Row = unknown> {
   /** Regex the string value must match (for non-string values, String(v) is tested). */
   pattern?: string | RegExp
   /**
+   * Built-in `pattern` shorthand: same semantics, `regexp` is the fallback
+   * and `pattern` wins if both are set.
+   */
+  regexp?: string | RegExp
+  /**
    * Field must be unique among the context rows' same-column non-empty values
    * (batch AK, iris 独有). Needs `validateEditRules`' optional `context`
    * argument — without it (or with no rows / no columnKey) the rule is a no-op
@@ -106,8 +111,9 @@ function validateRule<Row>(
       const n = typeof value === 'number' ? value : len
       if (n === undefined || n > rule.max) return rule.message ?? DEFAULT_MESSAGES.max
     }
-    if (rule.pattern !== undefined) {
-      const re = rule.pattern instanceof RegExp ? rule.pattern : new RegExp(rule.pattern)
+    const pattern = rule.pattern ?? rule.regexp
+    if (pattern !== undefined) {
+      const re = pattern instanceof RegExp ? pattern : new RegExp(pattern)
       if (!re.test(String(value))) return rule.message ?? DEFAULT_MESSAGES.pattern
     }
     // Unique (batch AK): String comparison against the context rows' same

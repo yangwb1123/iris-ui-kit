@@ -2576,3 +2576,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md [ok]: 批 DG Gate — PASS: Review verdict PASS (no blocking / no new P2; two informational P2s from review not requiring gate fix). Full repo gate `pnpm turbo run test typecheck lint build --concurrency=2`→ **180/180 tasks successful** (125 cached); core test **1584/1584** (102 files) · react test **2732/2732** (240 files, incl. 13 new DG); typecheck pass / lint 0 errors / build clean. Audit: `iris-ui-spec.py --mode all`→ **0 violations**; `pnpm audit`→ **0 vulnerabilities**. Manifest: `gen:manifest` regenerated (155×4 = 620 contracts, 86 tokens) + `check:manifest`→ **up to date** (propCount 187→188 `autoResizeColumns` react-only). Docs: comparison iris 独有 section updated (批 DG row + 构建状态 entry); DECISIONS gate record; this report. Commit: `feat(table): grid 批 DG——列宽自适应增强（iris 独有）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md
+
+## 2026-08-17 08:08:47 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md [ok]: Refst Report — 批 DG Gate: PASS: **Review verdict:** PASS (no blocking, no new P2; two informational P2s from review require no gate fix); Full repo gate: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2` → **180/180 tasks; Audit: - **0 vulnerabilities** (`pnpm audit`); Manifest: - `gen:manifest` regenerated (155 × 4 = 620 contracts, 86 tokens); Docs: Updated `docs/vxe-grid-comparison.md` iris 独有 section (new 批 DG table row + 构建状态 entry); appended gate record to `docs/v
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md
+
+## 2026-08-17 08:14:27 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dh-baseline.md [ok]: Summary for 批 DH：单元格图案填充（iris 独有）: **Spec**：`pattern?: boolean` — 编辑 draft 时整列匹配值轻微高亮（`data-iris-input-hint`，与其他匹配行对照提示——数据一致性辅助）；测试（高亮匹配行）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-baseline.md
+
+## 2026-08-17 08:19:23 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dh-adapt.md [ok]: Files changed (3 source + 2 generated + 1 baseline doc): - `packages/react/src/primitives/table/props.ts` — added `pattern?: boolean` (Data-consistency assist, default off/fail-; Tests added — 12 (≤500 lines, file is ~300): gating off / gating idle · happy path · per-keystroke realtime (no commit) · raw-value matching (number editor) · empty-; Counts: - Change budget: 4 files (target ≤5), core logic +71 lines (target ≤300) — passed; How it works (additive, core-touched-free): Edits draw their live draft from the existing framework-agnostic `cellEdit.store` (already component-subscribed at `edit; What's left / fixtures: - **Documented fiat**: row-edit mode doesn't participate — each column's draft lives in its own per-column session, not
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-adapt.md
+
+## 2026-08-17 08:24:51 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dh-review.md [ok]: Summary: I reviewed batch DH (`pattern`, iris 独有 cell-pattern-fill) at commit `2da7b046` and ran all requested verification:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dh-review.md

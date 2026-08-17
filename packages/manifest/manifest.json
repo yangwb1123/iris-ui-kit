@@ -36903,7 +36903,7 @@
           "name": "pasteOptions",
           "type": "{ insertIfOverflow?: boolean }",
           "optional": true,
-          "description": "`insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells dropped, locked/readonly columns skipped) — one batched commit. Multi-cell rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O"
+          "description": "`insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells dropped, locked/readonly columns skipped) — one batched commit. Multi-cell rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O overflow-drop behavior byte-identical. Additive — default off."
         },
         {
           "name": "fnr",
@@ -38039,7 +38039,7 @@
               "name": "pasteOptions",
               "type": "{ insertIfOverflow?: boolean }",
               "optional": true,
-              "description": "`insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells dropped, locked/readonly columns skipped) — one batched commit. Multi-cell rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O"
+              "description": "`insertIfOverflow` makes a SINGLE-CELL paste append clipboard lines that run past the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells dropped, locked/readonly columns skipped) — one batched commit. Multi-cell rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O overflow-drop behavior byte-identical. Additive — default off."
             },
             {
               "name": "fnr",

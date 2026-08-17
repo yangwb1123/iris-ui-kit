@@ -681,7 +681,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the last row as brand-new rows (auto-id keys via `insertRowInList`, surplus cells
    * dropped, locked/readonly columns skipped) — one batched commit. Multi-cell
    * rectangle pastes stay clipped (fiat) and the default (absent) keeps batch-O
-   * overflow-drop behavior byte-identical. Additive — default off. */
+   * overflow-drop behavior byte-identical. Additive — default off.
+   */
   pasteOptions?: { insertIfOverflow?: boolean }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
   fnr?: boolean

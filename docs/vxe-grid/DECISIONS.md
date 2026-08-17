@@ -2531,3 +2531,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md [ok]: Verdict: `docs/vxe-grid/batch-de-review.md` → **PASS**.; Full repo gate: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2` → 180/180 tasks successful; audit:security 0 vulnerabilities; gen:manifest 155×4/86 tokens + check:manifest up to date (zero diff).; Final test counts: core 102 files/1584 tests · react 239 files/2711 tests.; Comparison doc: Updated `docs/vxe-grid-comparison.md` (iris 独有 section) — new 批 DE table row (`handle.compareStates`) + appended 批 DE to 构建状态 batch ledger.; Commit: `git add -A -- . ':!apps/ssr-solidstart/.vinxi'` + conventional commit.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md
+
+## 2026-08-17 07:30:59 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md [ok]: Verdict: `docs/vxe-grid/batch-de-review.md` → **PASS** (no blocking findings).; Full repo gate: ```; Final test counts: | Suite | Result |; Comparison doc: Updated `docs/vxe-grid-comparison.md` (iris 独有 section):; Commit: `git add -A -- . ':!apps/ssr-solidstart/.vinxi'` committed successfully:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md
+
+## 2026-08-17 07:33:41 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-df-baseline.md [ok]: 批 DF：批量粘贴增强（iris 独有）— baseline summary: **Output**: `docs/vxe-grid/batch-df-baseline.md`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-baseline.md
+
+## 2026-08-17 07:40:10 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-df-adapt.md [ok]: Summary — 批 DF：批量粘贴增强 / `pasteOptions.insertIfOverflow`（iris 独有）: **Feature**：`pasteOptions?: { insertIfOverflow?: boolean }` — 单单元格流式粘贴超出表格末尾的剪贴板行，自动追加为新行（`insertRowInList` 组合，auto-id `; Files changed (5, committed `90f082c4`): | File | Change |; Tests added (8): 溢出插行 · 多行 spill 顺序 · exact-fit no-op · 默认关回归（批 O 字节一致）· 多单元格矩形 fiat 剪裁 · surplus 列丢弃 · key 冲突安全（max+1）· locked 列跳过。`clip; Verification (all green): - ✅ `--filter @iris-ui-kit/core test` — 102 files / 1584 tests; What is left: Nothing for this batch. 工作树既有 dirt（`docs/vxe-grid/DECISIONS.md`、`batch-de-gate.md`）与本任务无关，按既往约定保留未提交。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-adapt.md
+
+## 2026-08-17 07:44:41 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-df-review.md [ok]: Verdict: PASS (1 minor P2 finding): **Reviewed** commit `90f082c4` against the baseline, inspected the full impl, and ran all requested verification gates.; Verification results (all green): | Check | Result |; Axis findings: - **Spec correctness**: single-cell overflow insert via `overflowStart`/`newRows`, auto-id `max+1` via core `insertRowIn
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-df-review.md

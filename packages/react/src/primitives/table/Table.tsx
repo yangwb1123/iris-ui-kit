@@ -1995,6 +1995,20 @@ function sameRowList<Row extends Record<string, unknown>>(a: Row[], b: Row[]): b
   return true
 }
 
+/** Batch DI (iris 独有): serialize a BARE referenced row set (no column
+ * configs — the caller only hands over `Row[]`) by its OWN enumerable keys:
+ * the first row's keys (insertion order) become the header, each value read
+ * by that key. Same core `toCsv` neutralization/quoting throughout. Empty
+ * row set → '' (the multi-export emits only the segment header). */
+function serializeRefRows(rows: readonly Record<string, unknown>[]): string {
+  if (rows.length === 0) return ''
+  const keys = Object.keys(rows[0])
+  return toCsv(
+    rows as readonly Record<string, unknown>[],
+    keys.map((key) => ({ key, title: key })),
+  )
+}
+
 // ── Clipboard batch O (clipConfig): TSV serialization + safe clipboard ──
 // Cell text for the copy TSV: null → '', numbers verbatim (a typed number
 // cannot carry a formula payload), everything else gets the same OWASP
@@ -2810,6 +2824,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   autoLink = false,
   recentFilters = false,
   formulaTables,
+  exportNames,
   printable = false,
   seq = false,
   spanMethod,
@@ -5851,6 +5866,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
       )
     },
     getSelection: () => [...displaySelectionRef.current],
+    // Batch DI (iris 独有): multi-segment CSV — the current table block + one
+    // ref block per exportNames entry, joined by a blank line. Reads the
+    // on-demand ref mirrors (exportNamesRef / filteredDataRef / viewColumnsRef /
+    // formulaTablesRef) so a mount-time handle sees post-rerender state.
+    // empty/absent exportNames → bare current-table CSV (byte-identical to
+    // exportCurrentViewCsv, zero regression).
+    exportMultiCsv: () => {
+      const names = exportNamesRef.current
+      const current = exportCsv(
+        withComputedFormulaCells(
+          [...filteredDataRef.current],
+          viewColumnsRef.current,
+          formulaTablesRef.current,
+        ),
+        viewColumnsRef.current,
+      )
+      if (!names || names.length === 0) return current
+      const segments: string[] = [`# current${current ? `\n${current}` : ''}`]
+      for (const entry of names) {
+        if (!entry.key) continue // '' segment name → skipped entirely
+        const refCsv = serializeRefRows(entry.ref())
+        segments.push(`# ${entry.key}${refCsv ? `\n${refCsv}` : ''}`)
+      }
+      return segments.join('\n\n')
+    },
     // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
     // toggleCheckboxRow parity, batch F) ───────────────────────────────────
     clearSelection: () => {
@@ -6292,6 +6332,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // pages; the handles pass this ref's value explicitly).
   const formulaTablesRef = React.useRef<FormulaTables | undefined>(formulaTables)
   formulaTablesRef.current = formulaTables
+  // Batch DI: mirror the latest exportNames for the mount-time handle
+  // (exportMultiCsv runs on demand, NOT during render — the same per-render
+  // ref-mirror discipline as formulaTablesRef; the caller must pass a NEW
+  // array when the set changes so the ref sees it).
+  const exportNamesRef = React.useRef<Array<{ key: string; ref: () => Row[] }> | undefined>(
+    exportNames,
+  )
+  exportNamesRef.current = exportNames
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
   // Batch AR mini chart preview (iris 独有): numeric leaf columns for the
   // chart panel — the two existing signals — a row whose `getCellValue` is a

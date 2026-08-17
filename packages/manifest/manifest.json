@@ -36383,6 +36383,12 @@
           "description": "External table data for cross-table formula refs (batch BC, iris 独有): `=other!col` reads `formulaTables['other'][0]['col']` (the FIRST row of the named table). Missing tables arg / unknown table / EMPTY table / unknown field → the whole formula null (fail-closed); a known nullish field coerces (Excel parity). Immutable contract: pass a NEW object when referenced tables change."
         },
         {
+          "name": "exportNames",
+          "type": "Array<{ key: string; ref: () => Row[] }>",
+          "optional": true,
+          "description": "vxe has no multi-file export): each entry names a referenced table whose BARE rows (`Row[]`, no column definitions — they're not IrisTable column configs) are serialized by their OWN enumerable keys (first row's keys are the header), NOT by this table's columns. `key` is both the `# <key>` segment header and (documented) the section name; `ref` is called lazily at export time (handle call, not render) so it can read the live source rows of that table. Empty/absent `exportNames` → `exportMultiCsv()` falls back to the bare current-table CSV, byte-identical to `exportCurrentViewCsv()`. An entry with an empty `key` is skipped entirely; an empty ref row set emits just the segment header."
+        },
+        {
           "name": "headerCellStyle",
           "type": "(column: IrisTableColumn<Row>) => CSSProperties",
           "optional": true,
@@ -37529,6 +37535,12 @@
               "type": "Record<string, Row[]>",
               "optional": true,
               "description": "External table data for cross-table formula refs (batch BC, iris 独有): `=other!col` reads `formulaTables['other'][0]['col']` (the FIRST row of the named table). Missing tables arg / unknown table / EMPTY table / unknown field → the whole formula null (fail-closed); a known nullish field coerces (Excel parity). Immutable contract: pass a NEW object when referenced tables change."
+            },
+            {
+              "name": "exportNames",
+              "type": "Array<{ key: string; ref: () => Row[] }>",
+              "optional": true,
+              "description": "vxe has no multi-file export): each entry names a referenced table whose BARE rows (`Row[]`, no column definitions — they're not IrisTable column configs) are serialized by their OWN enumerable keys (first row's keys are the header), NOT by this table's columns. `key` is both the `# <key>` segment header and (documented) the section name; `ref` is called lazily at export time (handle call, not render) so it can read the live source rows of that table. Empty/absent `exportNames` → `exportMultiCsv()` falls back to the bare current-table CSV, byte-identical to `exportCurrentViewCsv()`. An entry with an empty `key` is skipped entirely; an empty ref row set emits just the segment header."
             },
             {
               "name": "headerCellStyle",
@@ -39482,7 +39494,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 189,
+        "propCount": 190,
         "eventCount": 32
       }
     },

@@ -611,6 +611,16 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
    * on shadow rows, hidden columns excluded); empty selection → `''` (caller
    * detects via `getSelection()`). */
   exportSelectionCsv: () => string
+  /** Multi-segment CSV export (batch DI, iris 独有): ONE file — the current
+   * table block (`# current` + `exportCurrentViewCsv()` byte-for-byte) followed
+   * by one `# <key>` + ref block per `exportNames` entry IN ORDER; segments
+   * joined by a blank line (`\n\n`), no trailing newline. Each ref block is
+   * serialized by its OWN keys (first row's keys as header) — NOT this table's
+   * columns; empty ref rows → just the segment header; a `''` key skips that
+   * segment (even its header). Empty/absent `exportNames` → the bare
+   * current-table CSV (byte-identical to `exportCurrentViewCsv()`, zero
+   * regression). Caller downloads via `downloadCsv`. */
+  exportMultiCsv: () => string
   /** Current selection keys (vxe getCheckboxRecords parity). */
   getSelection: () => Array<string | number>
   /** Clear every selected row (vxe clearCheckboxRow parity). */

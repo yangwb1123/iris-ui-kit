@@ -220,6 +220,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   conditionalStyles?: IrisTableConditionalStyle<Row>[]
   /** External table data for cross-table formula refs (batch BC, iris 独有): `=other!col` reads `formulaTables['other'][0]['col']` (the FIRST row of the named table). Missing tables arg / unknown table / EMPTY table / unknown field → the whole formula null (fail-closed); a known nullish field coerces (Excel parity). Immutable contract: pass a NEW object when referenced tables change. */
   formulaTables?: Record<string, Row[]>
+  /** Extra row sets appended to `handle.exportMultiCsv()` (batch DI, iris 独有 —
+   * vxe has no multi-file export): each entry names a referenced table whose
+   * BARE rows (`Row[]`, no column definitions — they're not IrisTable column
+   * configs) are serialized by their OWN enumerable keys (first row's keys are
+   * the header), NOT by this table's columns. `key` is both the `# <key>`
+   * segment header and (documented) the section name; `ref` is called lazily
+   * at export time (handle call, not render) so it can read the live source
+   * rows of that table. Empty/absent `exportNames` → `exportMultiCsv()` falls
+   * back to the bare current-table CSV, byte-identical to
+   * `exportCurrentViewCsv()`. An entry with an empty `key` is skipped
+   * entirely; an empty ref row set emits just the segment header.
+   * Immutable contract: pass a NEW array when the set changes. */
+  exportNames?: Array<{ key: string; ref: () => Row[] }>
   /** Per-header-cell inline style hook (vxe header-cell-style parity). */
   headerCellStyle?: (column: IrisTableColumn<Row>) => CSSProperties
   /** Per-footer-cell inline style hook (vxe footer-cell-style parity). */

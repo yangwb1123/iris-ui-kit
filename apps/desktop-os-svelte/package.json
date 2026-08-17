@@ -13,17 +13,17 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.105.0",
+    "@anthropic-ai/sdk": "^0.117.1",
     "@iris-ui-kit/core": "workspace:*",
     "@iris-ui-kit/svelte": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
-    "svelte": "^5.16.0"
+    "svelte": "^5.56.9"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "jsdom": "^25.0.1",
     "svelte-check": "^4.1.1",
-    "vite": "^6.4.3",
+    "vite": "^8.2.1",
     "vitest": "3.2.6"
   }
 }

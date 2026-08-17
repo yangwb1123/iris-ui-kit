@@ -668,6 +668,8 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
    * valid JSON applies piece-by-piece lazily and returns `true` (ineligible
    * pieces — missing callback / wrong type — are skipped). */
   importStateJson: (json: string) => boolean
+  /** Compare two exported-state JSONs (batch DE, iris 独有): field-level diff text (`+` added / `-` removed / `~ changed old → new`), deterministic by sorted keys + structural deep-equal (order-independent); identical → `''`; invalid JSON → `! compareStates: invalid JSON` (never throws). Pairs with `exportStateJson`/`importStateJson` — `a` = before, `b` = after. */
+  compareStates: (a: string, b: string) => string
 }
 
 /**

@@ -94,6 +94,7 @@ import type {
 } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
+import { compareStates as compareStatesDiff } from './compareStates'
 import { createPortal } from 'react-dom'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
@@ -5999,6 +6000,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       applyViewSnapshotRef.current(parsed as IrisTablePersistedState)
       return true
     },
+    // Batch DE (iris 独有): compare two exported-state JSONs and return a
+    // field-level diff text — `+` added / `-` removed / `~ old → new`,
+    // deterministic by sorted keys + structural deep-equal (order-independent);
+    // identical → '', invalid JSON → '! compareStates: invalid JSON' (never
+    // throws). Pairs naturally with exportStateJson / importStateJson (T12
+    // audit loop: export → compare → import).
+    compareStates: (a, b) => compareStatesDiff(a, b),
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current

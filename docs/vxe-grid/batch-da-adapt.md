@@ -1,43 +1,32 @@
-All gates pass on final HEAD (`8964a7b6`). Work complete.
+Done. Working tree clean, all gates green.
 
 ## Report — 批 DA：单元格格式化复制增强（iris 独有）
 
-### Situation — verify-style adapt, no new feature code
+### 结论：验证式 adapt
 
-Per `batch-da-baseline.md` (line-by-line recheck, not restating old docs): **the DA spec was already fully implemented by committed batch CU** — `5b5c85e9` + `09393338` (scanner hygiene) + `15bbc1d4` are ancestors of HEAD `8964a7b6`. I re-verified every spec claim directly against the code on disk rather than trusting the baseline:
+Per `docs/vxe-grid/batch-da-baseline.md`（我逐行复核、未引用旧文）：**该 spec 已被已提交的批 CU 完整实现**（`5b5c85e9` + `09393338` + `15bbc1d4` 均在 HEAD `8964a7b6` 之前落地）。本次会话直接对磁盘代码逐项验证，零新增功能代码（additive-only）：
 
-| Spec item                                                                  | Code evidence (verified this session)                                                                                                                                                                                                                                                                                                                       |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 复制选中区域时按列 formatter 输出（copyWithFormat 已有单格——扩展选区整体） | Single-cell 复制值 chain `contextCellText` (Table.tsx:2098, batch BW) pre-existed; CU extended it to the WHOLE selection: `buildRangeCopy` gains 3rd param `copyWithFormat` (Table.tsx:6822) and switches formatter columns onto the `contextCellText` chain per-cell across the range rect                                                                 |
-| 与 mask 组合（掩码优先）                                                   | `contextCellText` runs `applyCellMask` (mask) FIRST, then `formatter` receives the **masked string** — the display chain invariant; test pins `M:138****8000` (mask → formatter)                                                                                                                                                                            |
-| 测试（选区格式化复制）                                                     | 14/14 tests in `copy-with-format.test.tsx` (432 lines ≤ 500) — TSV `25.00`/`$25` pins, toolbar same-throat, non-formatter byte-identical, mask-before-formatter, exportRaw superseded + off-state, non-string fallback, csv RFC-4180 + OWASP, html escaping, copyFormat orthogonality, row-aware formatter, paste asymmetry, no-range no-op, formula column |
+| Spec 条目                                        | 代码证据（本次验证）                                                                                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 复制选中区域按列 formatter 输出（单格→选区整体） | 单格链 `contextCellText`（Table.tsx:2098，批 BW 已有）→ CU 扩展至 `buildRangeCopy(range, format, copyWithFormat)`（Table.tsx:6822）逐格切换 formatter 列 |
+| 与 mask 组合（掩码优先）                         | `contextCellText` 先 `applyCellMask` 再 `formatter`（formatter 收到掩码串）；测试钉 `M:138****8000`                                                      |
+| 测试（选区格式化复制）                           | `copy-with-format.test.tsx` 14/14（432 行 ≤500），spec 逐条 1:1 映射                                                                                     |
 
-Range-copy contract as built: both copy throats (Ctrl/Cmd+C Table.tsx:7049 + toolbar 复制 Table.tsx:7380) pass `!!clipConfig?.copyWithFormat`; all three serializers (tsv/csv/html) carry the formatted STRING (RFC-4180 quoting + OWASP neutralization still apply); only `col.formatter` columns switch chains — non-formatter columns stay byte-identical; `exportRaw`'s copy-path skip is superseded on formatter columns; paste stays raw TSV (asymmetry fiat). Zero core/vue/solid/svelte references (`copyWithFormat` is react-only).
+双喉（Ctrl/Cmd+C :7049 + 工具栏 :7380）均穿参；三序列化器（tsv/csv/html）都带格式化字符串（RFC-4180 + OWASP 仍生效）；非 formatter 列 byte-identical；paste 不对称；react-only。**有意不加** baseline 建议的 7 条边角测试——每句 spec 已有对应测试、14/14 是被门禁的 CU 契约、文件将逼近 500 行上限。
 
-### What I changed (0 source files)
+### Changed files
 
-Nothing — additive-only + gate-verify. All files belong to the committed CU batch:
+**0 source files**（全部属于 CU 已交付：props.ts +1 字段单行 clipConfig · Table.tsx · types.ts · copy-with-format.test.tsx）。本次提交 `9f771530` 仅 docs：`batch-da-adapt.md`（新）+ `DECISIONS.md`（adapt 条目）+ 顺手收编上阶段遗留的 `batch-cz-gate.md`/`batch-da-baseline.md`（175 insertions）。
 
-- `packages/react/src/primitives/table/props.ts` (+1 field, single-line `clipConfig` — scanner hygiene, 09393338)
-- `packages/react/src/primitives/table/Table.tsx` (buildRangeCopy + two throats)
-- `packages/react/src/primitives/table/types.ts` (formatter doc carries CU statement)
-- `packages/react/src/primitives/table/copy-with-format.test.tsx` (14 tests, 432 lines)
+### Tests & counts
 
-I deliberately did NOT add the baseline's 7 suggested edge tests: every DA spec sentence already maps 1:1 to a test, the 14/14 net is the gated CU contract the baseline says not to touch, and the file would approach the 500-line limit.
+- core test **1580/1580** ✓（102 files，框架无关未触碰）
+- react typecheck clean ✓ · react test **2671/2671** ✓（236 files）
+- react lint **0 errors** ✓（1 既有 IrisTable complexity warning）
+- spec `--mode all` **0 violations** ✓（1416 files）
+- gen:manifest **zero diff** ✓（155×4、86 tokens，CU 已同步）→ 已跑但无可提交内容
 
-### Gate counts (final HEAD `8964a7b6`)
+### Left
 
-| Gate                              | Result                                                                                           |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| core test                         | **1580/1580** (102 files) — framework-free, untouched                                            |
-| react typecheck                   | clean                                                                                            |
-| react test                        | **2671/2671** (236 files) — incl. the 14 CU tests                                                |
-| react lint                        | **0 errors** (1 pre-existing IrisTable complexity warning, Table.tsx:2580)                       |
-| spec `--mode all`                 | **0 violations** (1416 files)                                                                    |
-| gen:manifest                      | regenerates byte-identical — **zero diff** (155 components × 4, 86 tokens; already sync'd by CU) |
-| prettier / arch / manifest checks | not re-run in full; no source touched so prior CU gate results stand                             |
-
-### What is left
-
-- Pipeline: review stage (`batch-da-review.md`) then full-repo gate stage per batch process.
-- Pre-existing dirt not touched: `docs/vxe-grid/DECISIONS.md` (mod), `docs/vxe-grid/batch-cz-gate.md` (untracked), `docs/vxe-grid/batch-da-baseline.md` (untracked, this stage's evidence).
+- pipeline review（`batch-da-review.md`）+ 全仓 gate 阶段
+- 工作树干净；无未完成项

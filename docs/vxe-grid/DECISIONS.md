@@ -2386,3 +2386,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-da-baseline.md [ok]: 核心发现（逐行复核，非引用旧文）: **批 DA 的 spec 已被已提交的批 CU 完整实现**：`5b5c85e9` + `09393338` + `15bbc1d4` 已在 HEAD `8964a7b6` 之前落地，14/14 测试存在且与 spec 逐条对应。DA 正; 验证证据: | 检查 | 结果 |; 交付内容: - **Exact design**：现状契约（prop/单链/单喉/两分支/掩码优先不变量/fiat 清单）+ Anchor 行号
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-baseline.md
+
+## 2026-08-16 16:12:16 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-da-adapt.md [ok]: Report — 批 DA：单元格格式化复制增强（iris 独有）; 结论：验证式 adapt: Per `docs/vxe-grid/batch-da-baseline.md`（我逐行复核、未引用旧文）：**该 spec 已被已提交的批 CU 完整实现**（`5b5c85e9` + `09393338` + `15bbc1d4` 均在; Changed files: **0 source files**（全部属于 CU 已交付：props.ts +1 字段单行 clipConfig · Table.tsx · types.ts · copy-with-format.test.tsx）。本次提交 `9f7; Tests & counts: - core test **1580/1580** ✓（102 files，框架无关未触碰）; Left: - pipeline review（`batch-da-review.md`）+ 全仓 gate 阶段
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-adapt.md
+
+## 2026-08-16 16:28:27 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-da-review.md [ok]: Verdict: **PASS**: 批 DA spec（格式化复制补充：选区按列 formatter 输出 + 掩码优先 + 测试）经逐行核对，已被已提交的批 CU（`5b5c85e9`/`09393338`/`15bbc1d4`）完整覆盖——本次 adapt 是纯验证式交付
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-da-review.md

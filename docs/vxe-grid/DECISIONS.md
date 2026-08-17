@@ -2506,3 +2506,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dd-review.md [ok]: Verdict: **PASS**: Review written to `/home/u1/iris-ui/docs/vxe-grid/batch-dd-review.md`.; Summary: The implementation in commit `9fd3b0ea` exactly matches the batch DD baseline — a pure additive `regexp?: string | RegEx
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-review.md
+
+## 2026-08-17 07:15:34 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dd-gate.md [ok]: Verdict: `docs/vxe-grid/batch-dd-review.md` → **PASS** (no source-tree findings; 2 non-blocking informational notes).; Full repo gate: ``; Final test counts: | Suite | Result |; Comparison doc: Updated `docs/vxe-grid-comparison.md` (iris 独有 section):; Commit: ``
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dd-gate.md
+
+## 2026-08-17 07:19:18 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-baseline.md [ok]: What was established — 批 DE：表格状态对比（iris 独有）: **Spec**: `handle.compareStates(a: string, b: string): string` — 两个状态 JSON 对比（字段级差异文本）；测试（差异输出）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-baseline.md
+
+## 2026-08-17 07:24:06 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-adapt.md [ok]: Implementation — 批 DE：表格状态对比（iris 独有）: **`handle.compareStates(a: string, b: string): string`** — 纯加法 handle 方法，对比两个导出状态 JSON 并返回字段级差异文本。; Files changed (4, all committed `b4f8b6d`): | File | Change |; Verification (all green): - ✅ `--filter @iris-ui-kit/core test` — 102 files / 1584 tests pass; Change budget: - Files: 4 (target ≤5) · Core logic lines added: 107 (target ≤300) — filesize gate PASS.; What is left: Nothing for this batch. The optional T12 render-backed `exportStateJson → compareStates → importStateJson` audit-loop in
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-adapt.md
+
+## 2026-08-17 07:25:39 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-review.md [ok]: Summary: Reviewed commit `b4f8b6d1` (批 DE：表格状态对比) against baseline and adapt docs.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-review.md
+
+## 2026-08-17 07:30:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md [ok]: Verdict: `docs/vxe-grid/batch-de-review.md` → **PASS**.; Full repo gate: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2` → 180/180 tasks successful; audit:security 0 vulnerabilities; gen:manifest 155×4/86 tokens + check:manifest up to date (zero diff).; Final test counts: core 102 files/1584 tests · react 239 files/2711 tests.; Comparison doc: Updated `docs/vxe-grid-comparison.md` (iris 独有 section) — new 批 DE table row (`handle.compareStates`) + appended 批 DE to 构建状态 batch ledger.; Commit: `git add -A -- . ':!apps/ssr-solidstart/.vinxi'` + conventional commit.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md

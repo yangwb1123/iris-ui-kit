@@ -2646,3 +2646,58 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dk-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dk-baseline.md
+
+## 2026-08-17 10:12:32 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dk-adapt.md [ok]: What I did: **Core enhancement** (in `packages/react/src/primitives/table/Table.tsx`, `resolveColDrag`'s committed branch): after a ; Constraint compliance: - ✅ Core framework-free (react-only change), additive only, no dist/tgz/node_modules/manifest.json hand-edits; Verification (all green): - `corepack pnpm --filter @iris-ui-kit/core test` → 1584 passed; What's left: None for this batch — spec fully delivered. (Note: the pre-commit lint-staged/commit-size script reported a non-blocking
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dk-adapt.md
+
+## 2026-08-17 10:18:39 — stage 'review' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dk-review.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dk-review.md
+
+## 2026-08-17 10:20:10 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md
+
+## 2026-08-17 10:21:56 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-baseline.md
+
+## 2026-08-17 10:23:31 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dn-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-baseline.md
+
+## 2026-08-17 10:25:26 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-baseline.md
+
+## 2026-08-17 10:27:14 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dp-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-baseline.md
+
+## 2026-08-17 10:29:21 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-baseline.md
+
+## 2026-08-17 10:31:02 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md
+
+## 2026-08-17 10:33:00 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ds-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-baseline.md
+
+## 2026-08-17 10:35:11 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dt-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-baseline.md

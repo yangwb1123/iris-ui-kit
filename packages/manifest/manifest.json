@@ -13248,7 +13248,9 @@
           ],
           "events": [],
           "slots": [],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisDonutChartProps"
+          ]
         },
         "vue": {
           "source": "native",
@@ -13332,7 +13334,9 @@
           ],
           "events": [],
           "slots": [],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisDonutChartProps"
+          ]
         },
         "svelte": {
           "source": "native",
@@ -20386,16 +20390,6 @@
           "description": "Custom render per item."
         },
         {
-          "name": "item",
-          "type": "IrisListItem<T>",
-          "optional": false
-        },
-        {
-          "name": "state",
-          "type": "{ selected: boolean; active: boolean; index: number }",
-          "optional": false
-        },
-        {
           "name": "style",
           "type": "React.CSSProperties",
           "optional": true
@@ -20491,16 +20485,6 @@
               "type": "(",
               "optional": true,
               "description": "Custom render per item."
-            },
-            {
-              "name": "item",
-              "type": "IrisListItem<T>",
-              "optional": false
-            },
-            {
-              "name": "state",
-              "type": "{ selected: boolean; active: boolean; index: number }",
-              "optional": false
             },
             {
               "name": "style",
@@ -20784,7 +20768,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 18,
+        "propCount": 16,
         "eventCount": 2
       }
     },
@@ -23589,7 +23573,9 @@
           ],
           "events": [],
           "slots": [],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisMultiLineChartProps"
+          ]
         },
         "vue": {
           "source": "native",
@@ -23685,7 +23671,9 @@
           ],
           "events": [],
           "slots": [],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisMultiLineChartProps"
+          ]
         },
         "svelte": {
           "source": "native",
@@ -25826,6 +25814,41 @@
           "type": "React.ReactNode",
           "optional": true,
           "description": "Custom prefix slot."
+        },
+        {
+          "name": "size",
+          "type": "IrisInputSize",
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        {
+          "name": "type",
+          "type": "IrisInputType",
+          "optional": true,
+          "enum": [
+            "text",
+            "password",
+            "email",
+            "number",
+            "search",
+            "tel",
+            "url"
+          ]
+        },
+        {
+          "name": "invalid",
+          "type": "boolean",
+          "optional": true
+        },
+        {
+          "name": "ariaDescribedby",
+          "type": "string",
+          "optional": true,
+          "description": "Forwarded as aria-describedby."
         }
       ],
       "frameworkContracts": {
@@ -25850,6 +25873,41 @@
               "type": "React.ReactNode",
               "optional": true,
               "description": "Custom prefix slot."
+            },
+            {
+              "name": "size",
+              "type": "IrisInputSize",
+              "optional": true,
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "type",
+              "type": "IrisInputType",
+              "optional": true,
+              "enum": [
+                "text",
+                "password",
+                "email",
+                "number",
+                "search",
+                "tel",
+                "url"
+              ]
+            },
+            {
+              "name": "invalid",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "ariaDescribedby",
+              "type": "string",
+              "optional": true,
+              "description": "Forwarded as aria-describedby."
             }
           ],
           "events": [],
@@ -26126,7 +26184,7 @@
         "prefix"
       ],
       "quality": {
-        "propCount": 3,
+        "propCount": 7,
         "eventCount": 0
       }
     },
@@ -31709,6 +31767,12 @@
               "optional": true
             },
             {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "placeholder",
               "type": "string",
               "optional": true
@@ -34369,7 +34433,8 @@
             "IrisStackAlign",
             "IrisStackDirection",
             "IrisStackJustify",
-            "IrisStackProps"
+            "IrisStackProps",
+            "IrisStackedBarChartProps"
           ]
         },
         "vue": {
@@ -34496,7 +34561,8 @@
             "IrisStackAlign",
             "IrisStackDirection",
             "IrisStackJustify",
-            "IrisStackProps"
+            "IrisStackProps",
+            "IrisStackedBarChartProps"
           ]
         },
         "svelte": {
@@ -34658,7 +34724,9 @@
           ],
           "events": [],
           "slots": [],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisStackedBarChartProps"
+          ]
         },
         "vue": {
           "source": "native",
@@ -34776,7 +34844,9 @@
           ],
           "events": [],
           "slots": [],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisStackedBarChartProps"
+          ]
         },
         "svelte": {
           "source": "native",
@@ -36103,7 +36173,7 @@
       "props": [
         {
           "name": "columns",
-          "type": "IrisTableColumn<Row>[]",
+          "type": "TableTypes.IrisTableColumn<Row>[]",
           "optional": false
         },
         {
@@ -36146,17 +36216,17 @@
         },
         {
           "name": "sort",
-          "type": "IrisTableSortState | null",
+          "type": "TableTypes.IrisTableSortState | null",
           "optional": true
         },
         {
           "name": "defaultSort",
-          "type": "IrisTableSortState | null",
+          "type": "TableTypes.IrisTableSortState | null",
           "optional": true
         },
         {
           "name": "onSortChange",
-          "type": "(next: IrisTableSortState | null) => void",
+          "type": "(next: TableTypes.IrisTableSortState | null) => void",
           "optional": true
         },
         {
@@ -36166,19 +36236,19 @@
         },
         {
           "name": "multiSortState",
-          "type": "IrisTableSortState[]",
+          "type": "TableTypes.IrisTableSortState[]",
           "optional": true,
           "description": "Controlled multi-column sort state (multiSort mode)."
         },
         {
           "name": "defaultMultiSort",
-          "type": "IrisTableSortState[]",
+          "type": "TableTypes.IrisTableSortState[]",
           "optional": true,
           "description": "Default multi-column sort (multiSort mode, uncontrolled)."
         },
         {
           "name": "onMultiSortChange",
-          "type": "(next: IrisTableSortState[]) => void",
+          "type": "(next: TableTypes.IrisTableSortState[]) => void",
           "optional": true
         },
         {
@@ -36222,7 +36292,7 @@
         },
         {
           "name": "seqMethod",
-          "type": "(params: import('./types').IrisTableSeqMethodParams) => string | number",
+          "type": "(params: TableTypes.IrisTableSeqMethodParams) => string | number",
           "optional": true,
           "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
         },
@@ -36258,7 +36328,7 @@
         },
         {
           "name": "onHeaderClick",
-          "type": "(column: IrisTableColumn<Row>) => void",
+          "type": "(column: TableTypes.IrisTableColumn<Row>) => void",
           "optional": true,
           "description": "Header cell click (vxe header-click parity). Fired after the sort toggle on sortable headers."
         },
@@ -36282,35 +36352,25 @@
         },
         {
           "name": "footerMethod",
-          "type": "(params: IrisTableFooterMethodParams<Row>) => Row[]",
+          "type": "(params: TableTypes.IrisTableFooterMethodParams<Row>) => Row[]",
           "optional": true,
           "description": "Custom footer rows (vxe footer-method parity, batch N): one grid row per returned entry, cell value = `entry[col.key]`, same styling as the summary row; `footerData` renders below. `columns` = leaf columns, `data` = full filtered rows."
         },
         {
           "name": "footerSpanMethod",
-          "type": "IrisTableFooterSpanMethod<Row>",
+          "type": "TableTypes.IrisTableFooterSpanMethod<Row>",
           "optional": true,
           "description": "Footer cell merge (vxe footer-span-method parity, batch P): `colspan` > 1 spans adjacent cells (covered cells skipped, same occupy pattern as `spanMethod`); `rowspan` inert (each footer row is its own grid container). Applies over the footer stack in order: footerMethod rows → summary row → footerData rows; `rowIndex` is 0-based over that stack, `columns` = leaf columns, `data` = full filtered body rows. Group summary rows are not part of the stack."
         },
         {
           "name": "headerAlign",
-          "type": "IrisTableAlign",
-          "optional": true,
-          "enum": [
-            "left",
-            "center",
-            "right"
-          ]
+          "type": "TableTypes.IrisTableAlign",
+          "optional": true
         },
         {
           "name": "footerAlign",
-          "type": "IrisTableAlign",
-          "optional": true,
-          "enum": [
-            "left",
-            "center",
-            "right"
-          ]
+          "type": "TableTypes.IrisTableAlign",
+          "optional": true
         },
         {
           "name": "autoDetectTypes",
@@ -36342,37 +36402,37 @@
         },
         {
           "name": "cellClassName",
-          "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string",
+          "type": "(row: Row, column: TableTypes.IrisTableColumn<Row>, rowIndex: number) => string",
           "optional": true,
           "description": "Per-cell class hook (vxe cell-class-name parity)."
         },
         {
           "name": "headerCellClassName",
-          "type": "(column: IrisTableColumn<Row>) => string",
+          "type": "(column: TableTypes.IrisTableColumn<Row>) => string",
           "optional": true,
           "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
         },
         {
           "name": "footerCellClassName",
-          "type": "(column: IrisTableColumn<Row>, rowIndex: number) => string",
+          "type": "(column: TableTypes.IrisTableColumn<Row>, rowIndex: number) => string",
           "optional": true,
           "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
         },
         {
           "name": "rowStyle",
-          "type": "(row: Row, rowIndex: number) => CSSProperties",
+          "type": "(row: Row, rowIndex: number) => React.CSSProperties",
           "optional": true,
           "description": "Per-row inline style hook (vxe row-style parity)."
         },
         {
           "name": "cellStyle",
-          "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+          "type": "(",
           "optional": true,
           "description": "Per-cell inline style hook (vxe cell-style parity)."
         },
         {
           "name": "conditionalStyles",
-          "type": "IrisTableConditionalStyle<Row>[]",
+          "type": "TableTypes.IrisTableConditionalStyle<Row>[]",
           "optional": true,
           "description": "Conditional cell styles (batch AX, iris 独有): an ordered rule list merged onto matching body cells AFTER `cellStyle` — later matching rules win on conflicting keys. A rule matches when its `column` filter (omitted → every column) equals the cell's column key AND `when(row, value)` is true; `value` is the RAW cell value (dataIndex ?? key resolved, formula columns computed). Rules evaluate inline per visible cell (cost = visibleCells × rules; virtual scroll bounds it — memoize the array in the caller)."
         },
@@ -36390,25 +36450,25 @@
         },
         {
           "name": "headerCellStyle",
-          "type": "(column: IrisTableColumn<Row>) => CSSProperties",
+          "type": "(column: TableTypes.IrisTableColumn<Row>) => React.CSSProperties",
           "optional": true,
           "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
         },
         {
           "name": "footerCellStyle",
-          "type": "(column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+          "type": "(",
           "optional": true,
           "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
         },
         {
           "name": "onCellClick",
-          "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+          "type": "(params: TableTypes.IrisTableCellClickParams<Row>) => void",
           "optional": true,
           "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
         },
         {
           "name": "onCellDblClick",
-          "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+          "type": "(params: TableTypes.IrisTableCellClickParams<Row>) => void",
           "optional": true,
           "description": "Cell double-click (vxe cell-dblclick parity). Fired AFTER the inline edit starts on editable columns; non-editable columns fire it too."
         },
@@ -36436,6 +36496,12 @@
           "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys)."
         },
         {
+          "name": "widthHint",
+          "type": "boolean",
+          "optional": true,
+          "description": "Batch DS (iris 独有): show the live pixel width while a resize drag is active."
+        },
+        {
           "name": "autoResizeColumns",
           "type": "boolean",
           "optional": true,
@@ -36443,18 +36509,18 @@
         },
         {
           "name": "columnWidths",
-          "type": "IrisTableColumnWidths",
+          "type": "TableTypes.IrisTableColumnWidths",
           "optional": true,
           "description": "Controlled per-column pixel widths, keyed by column `key`."
         },
         {
           "name": "defaultColumnWidths",
-          "type": "IrisTableColumnWidths",
+          "type": "TableTypes.IrisTableColumnWidths",
           "optional": true
         },
         {
           "name": "onColumnWidthsChange",
-          "type": "(next: IrisTableColumnWidths) => void",
+          "type": "(next: TableTypes.IrisTableColumnWidths) => void",
           "optional": true
         },
         {
@@ -36543,13 +36609,13 @@
         },
         {
           "name": "filterValues",
-          "type": "import('./types').IrisTableFilterValues",
+          "type": "TableTypes.IrisTableFilterValues",
           "optional": true,
           "description": "Per-column checked filter sets (vxe filter-multiple parity): column key → values OR-matched against the raw `String(value)` of each row. Controlled via `onFilterValuesChange`; without a handler read-only."
         },
         {
           "name": "onFilterValuesChange",
-          "type": "(next: import('./types').IrisTableFilterValues) => void",
+          "type": "(next: TableTypes.IrisTableFilterValues) => void",
           "optional": true,
           "description": "Fired when the filter panel confirms or clears a column's checked set."
         },
@@ -36615,13 +36681,13 @@
         },
         {
           "name": "mergeHeaderCells",
-          "type": "IrisTableMergeCell[]",
+          "type": "TableTypes.IrisTableMergeCell[]",
           "optional": true,
           "description": "Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries keyed by leaf-column index of the FLAT header row (`row` 0 only — rows > 0 are ignored). A merge cell renders with `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null. Grouped headers and `columnVirtualization` are not merged (documented simplification)."
         },
         {
           "name": "mergeFooterItems",
-          "type": "IrisTableMergeFooterItem[]",
+          "type": "TableTypes.IrisTableMergeFooterItem[]",
           "optional": true,
           "description": "Footer merge (vxe-grid mergeFooterItems parity, batch R): declarative span entries in the SAME coordinate space as `footerSpanMethod` — `row` is the 0-based index over the rendered footer stack (footerMethod rows → summary row → footerData rows, whichever render) and `col` the leaf-column index; both start at 0. A merge cell renders `gridColumnEnd: span colspan`; the covered cells of the same row render null. `rowspan` is inert (each footer row is its own grid container — covered cells of later rows keep their own data; mirrors `footerSpanMethod`'s rowspan). The function wins: when `footerSpanMethod` is provided, `mergeFooterItems` is ignored. Entries outside the rendered stack are no-ops."
         },
@@ -36638,6 +36704,11 @@
           "description": "Row drag-sort configuration (composed over core createSortable)."
         },
         {
+          "name": "rowDragBetween",
+          "type": "TableTypes.IrisTableRowDragBetweenTarget<Row>[]",
+          "optional": true
+        },
+        {
           "name": "editConfig",
           "type": "{",
           "optional": true,
@@ -36645,26 +36716,26 @@
         },
         {
           "name": "validConfig",
-          "type": "IrisTableValidConfig",
+          "type": "TableTypes.IrisTableValidConfig",
           "optional": true,
           "description": "Edit-validation presentation (vxe-grid ValidConfig parity)."
         },
         {
           "name": "onCellEdit",
-          "type": "(event: IrisTableCellEditEvent<Row>) => void",
+          "type": "(event: TableTypes.IrisTableCellEditEvent<Row>) => void",
           "optional": true
         },
         {
           "name": "onEditStart",
-          "type": "(params: IrisTableEditStartParams<Row>) => void",
+          "type": "(params: TableTypes.IrisTableEditStartParams<Row>) => void",
           "optional": true,
           "description": "Edit start (vxe edit-activated parity, batch V): fired when an inline editor opens (cell double-click; cell mode only)."
         },
         {
           "name": "onEditClosed",
-          "type": "(params: IrisTableEditClosedParams<Row>) => void",
+          "type": "(params: TableTypes.IrisTableEditClosedParams<Row>) => void",
           "optional": true,
-          "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`)."
+          "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `TableTypes.IrisTableEditClosedParams`)."
         },
         {
           "name": "editAutosave",
@@ -36703,6 +36774,12 @@
           "description": "while an inline (cell-mode) editor is open, every other cell in the SAME column whose committed value exactly matches the current draft renders a light highlight (`data-iris-input-hint` + a `--iris-input-hint` token background) — a glanceable \"these rows already share this value\" cue while typing. Matching is RAW (`String(raw) === String(draft)`, same draft caliber as the editor/commit path — not the masked/formatted display). The editing cell itself is exempt. An empty draft is fail-closed (never floods the whole column). Computed live per keystroke via the existing cell-edit store — zero new state. Row-edit mode is a documented fiat: each column's draft lives in its own session, so row mode does not participate. Additive; default off (fail-closed)."
         },
         {
+          "name": "patternFill",
+          "type": "boolean",
+          "optional": true,
+          "description": "an inline draft is open, matching committed values in the same column get"
+        },
+        {
           "name": "columnTotals",
           "type": "boolean",
           "optional": true,
@@ -36728,19 +36805,19 @@
         },
         {
           "name": "onScroll",
-          "type": "(params: IrisTableScrollParams) => void",
+          "type": "(params: TableTypes.IrisTableScrollParams) => void",
           "optional": true,
           "description": "Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden)."
         },
         {
           "name": "renderDetail",
-          "type": "IrisTableRenderDetail<Row>",
+          "type": "TableTypes.IrisTableRenderDetail<Row>",
           "optional": true,
           "description": "Render an expandable detail panel beneath a row."
         },
         {
           "name": "rowExpandable",
-          "type": "IrisTableRowExpandable<Row>",
+          "type": "TableTypes.IrisTableRowExpandable<Row>",
           "optional": true,
           "description": "Which rows can expand a detail panel."
         },
@@ -36805,8 +36882,13 @@
           "description": "keys): F2 begins editing the focused cell's column (when editable), Delete/Backspace clears it to `''` — one batched `commitRowList` (undo-covered via the undo funnel). Requires `keyboardNavigation`'s focused-cell state (single-tabstop roving cell focus); without it the shortcuts are inert. While an inline editor is open the editor's own"
         },
         {
+          "name": "editKeys",
+          "type": "Array<'F2' | 'Enter' | 'Space'>",
+          "optional": true
+        },
+        {
           "name": "keymap",
-          "type": "Partial<Record<IrisTableKeyAction, string>>",
+          "type": "Partial<Record<Core.IrisTableKeyAction, string>>",
           "optional": true,
           "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
         },
@@ -36846,7 +36928,7 @@
         },
         {
           "name": "virtualScroll",
-          "type": "IrisTableVirtualOptions",
+          "type": "TableTypes.IrisTableVirtualOptions",
           "optional": true,
           "description": "Enable virtual scrolling for the body."
         },
@@ -36858,13 +36940,18 @@
         },
         {
           "name": "persistState",
-          "type": "import('./types').IrisTablePersistConfig",
+          "type": "TableTypes.IrisTablePersistConfig",
           "optional": true,
           "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); expandedKeys (batch BY) needs onExpandedRowsChange + an expandable table (renderDetail or tree) — restored through the expansion model, which replays the callback (full-set replace); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
         },
         {
+          "name": "autoSaveState",
+          "type": "TableTypes.IrisTableAutoSaveStateConfig",
+          "optional": true
+        },
+        {
           "name": "views",
-          "type": "import('./types').IrisTableViewConfig",
+          "type": "TableTypes.IrisTableViewConfig",
           "optional": true,
           "description": "Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots."
         },
@@ -36876,7 +36963,7 @@
         },
         {
           "name": "tableTabs",
-          "type": "import('./types').IrisTableTab[]",
+          "type": "TableTypes.IrisTableTab[]",
           "optional": true,
           "description": "A `role=tablist` strip rendered ABOVE the toolbar: clicking a tab applies each name in `views` IN ORDER through the same selectView path the toolbar select uses (unknown names are skipped fail-inert; when several views touch the same piece the last applied view wins and the toolbar select mirrors that last view). Fail-closed: without the prop nothing renders, and no tab"
         },
@@ -36966,7 +37053,7 @@
         },
         {
           "name": "emptyState",
-          "type": "ReactNode | IrisTableEmptyState",
+          "type": "React.ReactNode | IrisTableEmptyState",
           "optional": true,
           "description": "an `IrisTableEmptyState` descriptor (iris 独有 — vxe has no empty-state action button): `{ text?, action? }` renders the text plus an inline action"
         },
@@ -36984,13 +37071,13 @@
         },
         {
           "name": "loadingState",
-          "type": "ReactNode",
+          "type": "React.ReactNode",
           "optional": true,
           "description": "Custom loading-state node."
         },
         {
           "name": "errorState",
-          "type": "ReactNode",
+          "type": "React.ReactNode",
           "optional": true,
           "description": "Custom error-state node."
         },
@@ -37008,9 +37095,9 @@
         },
         {
           "name": "tooltipConfig",
-          "type": "IrisTableTooltipConfig<Row>",
+          "type": "TableTypes.IrisTableTooltipConfig<Row>",
           "optional": true,
-          "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
+          "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. With `showAll: false`, titles remain only for cells whose single-line content measures wider than the rendered cell; SSR/jsdom zero-width"
         },
         {
           "name": "annotations",
@@ -37020,7 +37107,7 @@
         },
         {
           "name": "cellNote",
-          "type": "(row: Row, column: IrisTableColumn<Row>) => string | null",
+          "type": "(row: Row, column: TableTypes.IrisTableColumn<Row>) => string | null",
           "optional": true,
           "description": "column — wins over the static `annotations` map. With a note the cell gets `data-iris-cell-note` + a corner badge + the note as its title"
         },
@@ -37044,19 +37131,19 @@
         },
         {
           "name": "presence",
-          "type": "IrisTablePresenceEntry[]",
+          "type": "TableTypes.IrisTablePresenceEntry[]",
           "optional": true,
           "description": "Collaborative-presence cursors (batch BD, iris 独有 — vxe has no cursor sharing): remote participants' selected cells. Each entry draws a 2px colored outline on its cell (`data-iris-presence=\"true\"`, outline in the entry's `color` — first entry wins when several share a cell) plus a corner label with the participant's name (`data-iris-presence-label` with `-id`/`-name`). Pure display: the table holds no collaboration state, so a NEW array reference re-renders while in-place mutation does not (same controlled contract as `data` / `annotations`)."
         },
         {
           "name": "headerTooltipConfig",
-          "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+          "type": "{ content?: (column: TableTypes.IrisTableColumn<Row>) => string }",
           "optional": true,
           "description": "native `title` on flat + grouped header cells; empty content drops the"
         },
         {
           "name": "footerTooltipConfig",
-          "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+          "type": "{ content?: (column: TableTypes.IrisTableColumn<Row>) => string }",
           "optional": true,
           "description": "native `title` on summary / footer-method / footer-data cells; empty"
         },
@@ -37064,7 +37151,7 @@
           "name": "contextMenu",
           "type": "{",
           "optional": true,
-          "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates. Batch BW (iris 独有): EVERY menu unconditionally gains two built-in quick actions after the user items (and after the value-distribution / summary items when those props are on, before the annotate items) — 复制值 (key `__iris-copy-value`, i18n `table.copyValue`, copies the cell's display text — mask → formatter → String — to the clipboard) and 清空 (key `__iris-clear-cell`, i18n `table.clearCell`, writes the cell to '' through the same commitRowList funnel as the Delete shortcut — undo / audit / onDataChange covered; locked/readonly cells no-op). Both keys are intercepted at the onSelect wiring, so the user callback never sees them; without a clipboard the copy no-ops safely."
+          "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates. Batch BW (iris 独有): EVERY menu unconditionally gains two built-in quick actions after the user items (and after the value-distribution / summary items when those props are on, before the annotate items) — 复制值 (key `__iris-copy-value`, i18n `table.copyValue`, copies the cell's display text — mask → formatter → String — to the clipboard) and 清空 (key `__iris-clear-cell`, i18n `table.clearCell`, writes the cell to '' through the same commitRowList funnel as the Delete shortcut — undo / audit / onDataChange covered; locked/readonly cells no-op). Both keys are intercepted at the onSelect wiring, so the user callback never sees them; without a clipboard the copy no-ops safely. Set `formatActions` to true to additionally append opt-in region format actions (number to two decimals and uppercase text). They remain intercepted by the table and use the same commit funnel; the default is false so an ordinary context menu is unchanged."
         },
         {
           "name": "valueDistribution",
@@ -37075,8 +37162,7 @@
         {
           "name": "nlSummary",
           "type": "boolean",
-          "optional": true,
-          "description": "NL column summary (batch AW, iris 独有 — vxe has no equivalent; its closest analog is a hand-built aggregate footer, which never tells you in one line what a column IS): when true, the context menu gains a built-in item (key `__iris-summary`, i18n `table.summary`) appended AFTER the value-distribution item; selecting it opens a floating panel (`data-iris-summary-panel`) showing the core `summarizeColumn` natural-language summary of the clicked column's values over `bodyData` — a numeric column gets `共 N 个值，范围 min–max，平均 avg，M 个缺失`, a categorical one its top-3 shares (`,` percentages) + a muted `，其余 R 个` fold. Requires `contextMenu` (pairs naturally with `valueDistribution`); Esc / outside / scroll close it like the distribution panel."
+          "optional": true
         },
         {
           "name": "chartPreview",
@@ -37146,7 +37232,7 @@
         },
         {
           "name": "tableRef",
-          "type": "MutableRefObject<IrisTableHandle<Row> | null>",
+          "type": "React.MutableRefObject<TableTypes.IrisTableHandle<Row> | null>",
           "optional": true,
           "description": "Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only additions): row ops, proxy/view/selection methods, and (batch BZ) the full view-state JSON export/import — `exportStateJson()` / `importStateJson(json)` (sort / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys / query — the same collector as `persistState`)."
         },
@@ -37190,6 +37276,16 @@
           "type": "{ theme?: 'default' | 'thin' }",
           "optional": true,
           "description": "`theme: 'thin'`, the root and its virtual-scroll descendant get 6px webkit scrollbars plus Firefox `scrollbar-width: thin` via"
+        },
+        {
+          "name": "scrollbarThumb",
+          "type": "boolean",
+          "optional": true
+        },
+        {
+          "name": "headerStats",
+          "type": "boolean",
+          "optional": true
         },
         {
           "name": "editDirtyConfig",
@@ -37253,7 +37349,7 @@
         },
         {
           "name": "style",
-          "type": "CSSProperties",
+          "type": "React.CSSProperties",
           "optional": true
         },
         {
@@ -37268,7 +37364,7 @@
           "props": [
             {
               "name": "columns",
-              "type": "IrisTableColumn<Row>[]",
+              "type": "TableTypes.IrisTableColumn<Row>[]",
               "optional": false
             },
             {
@@ -37311,17 +37407,17 @@
             },
             {
               "name": "sort",
-              "type": "IrisTableSortState | null",
+              "type": "TableTypes.IrisTableSortState | null",
               "optional": true
             },
             {
               "name": "defaultSort",
-              "type": "IrisTableSortState | null",
+              "type": "TableTypes.IrisTableSortState | null",
               "optional": true
             },
             {
               "name": "onSortChange",
-              "type": "(next: IrisTableSortState | null) => void",
+              "type": "(next: TableTypes.IrisTableSortState | null) => void",
               "optional": true
             },
             {
@@ -37331,19 +37427,19 @@
             },
             {
               "name": "multiSortState",
-              "type": "IrisTableSortState[]",
+              "type": "TableTypes.IrisTableSortState[]",
               "optional": true,
               "description": "Controlled multi-column sort state (multiSort mode)."
             },
             {
               "name": "defaultMultiSort",
-              "type": "IrisTableSortState[]",
+              "type": "TableTypes.IrisTableSortState[]",
               "optional": true,
               "description": "Default multi-column sort (multiSort mode, uncontrolled)."
             },
             {
               "name": "onMultiSortChange",
-              "type": "(next: IrisTableSortState[]) => void",
+              "type": "(next: TableTypes.IrisTableSortState[]) => void",
               "optional": true
             },
             {
@@ -37387,7 +37483,7 @@
             },
             {
               "name": "seqMethod",
-              "type": "(params: import('./types').IrisTableSeqMethodParams) => string | number",
+              "type": "(params: TableTypes.IrisTableSeqMethodParams) => string | number",
               "optional": true,
               "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
             },
@@ -37423,7 +37519,7 @@
             },
             {
               "name": "onHeaderClick",
-              "type": "(column: IrisTableColumn<Row>) => void",
+              "type": "(column: TableTypes.IrisTableColumn<Row>) => void",
               "optional": true,
               "description": "Header cell click (vxe header-click parity). Fired after the sort toggle on sortable headers."
             },
@@ -37447,35 +37543,25 @@
             },
             {
               "name": "footerMethod",
-              "type": "(params: IrisTableFooterMethodParams<Row>) => Row[]",
+              "type": "(params: TableTypes.IrisTableFooterMethodParams<Row>) => Row[]",
               "optional": true,
               "description": "Custom footer rows (vxe footer-method parity, batch N): one grid row per returned entry, cell value = `entry[col.key]`, same styling as the summary row; `footerData` renders below. `columns` = leaf columns, `data` = full filtered rows."
             },
             {
               "name": "footerSpanMethod",
-              "type": "IrisTableFooterSpanMethod<Row>",
+              "type": "TableTypes.IrisTableFooterSpanMethod<Row>",
               "optional": true,
               "description": "Footer cell merge (vxe footer-span-method parity, batch P): `colspan` > 1 spans adjacent cells (covered cells skipped, same occupy pattern as `spanMethod`); `rowspan` inert (each footer row is its own grid container). Applies over the footer stack in order: footerMethod rows → summary row → footerData rows; `rowIndex` is 0-based over that stack, `columns` = leaf columns, `data` = full filtered body rows. Group summary rows are not part of the stack."
             },
             {
               "name": "headerAlign",
-              "type": "IrisTableAlign",
-              "optional": true,
-              "enum": [
-                "left",
-                "center",
-                "right"
-              ]
+              "type": "TableTypes.IrisTableAlign",
+              "optional": true
             },
             {
               "name": "footerAlign",
-              "type": "IrisTableAlign",
-              "optional": true,
-              "enum": [
-                "left",
-                "center",
-                "right"
-              ]
+              "type": "TableTypes.IrisTableAlign",
+              "optional": true
             },
             {
               "name": "autoDetectTypes",
@@ -37507,37 +37593,37 @@
             },
             {
               "name": "cellClassName",
-              "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string",
+              "type": "(row: Row, column: TableTypes.IrisTableColumn<Row>, rowIndex: number) => string",
               "optional": true,
               "description": "Per-cell class hook (vxe cell-class-name parity)."
             },
             {
               "name": "headerCellClassName",
-              "type": "(column: IrisTableColumn<Row>) => string",
+              "type": "(column: TableTypes.IrisTableColumn<Row>) => string",
               "optional": true,
               "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
             },
             {
               "name": "footerCellClassName",
-              "type": "(column: IrisTableColumn<Row>, rowIndex: number) => string",
+              "type": "(column: TableTypes.IrisTableColumn<Row>, rowIndex: number) => string",
               "optional": true,
               "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
             },
             {
               "name": "rowStyle",
-              "type": "(row: Row, rowIndex: number) => CSSProperties",
+              "type": "(row: Row, rowIndex: number) => React.CSSProperties",
               "optional": true,
               "description": "Per-row inline style hook (vxe row-style parity)."
             },
             {
               "name": "cellStyle",
-              "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+              "type": "(",
               "optional": true,
               "description": "Per-cell inline style hook (vxe cell-style parity)."
             },
             {
               "name": "conditionalStyles",
-              "type": "IrisTableConditionalStyle<Row>[]",
+              "type": "TableTypes.IrisTableConditionalStyle<Row>[]",
               "optional": true,
               "description": "Conditional cell styles (batch AX, iris 独有): an ordered rule list merged onto matching body cells AFTER `cellStyle` — later matching rules win on conflicting keys. A rule matches when its `column` filter (omitted → every column) equals the cell's column key AND `when(row, value)` is true; `value` is the RAW cell value (dataIndex ?? key resolved, formula columns computed). Rules evaluate inline per visible cell (cost = visibleCells × rules; virtual scroll bounds it — memoize the array in the caller)."
             },
@@ -37555,25 +37641,25 @@
             },
             {
               "name": "headerCellStyle",
-              "type": "(column: IrisTableColumn<Row>) => CSSProperties",
+              "type": "(column: TableTypes.IrisTableColumn<Row>) => React.CSSProperties",
               "optional": true,
               "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
             },
             {
               "name": "footerCellStyle",
-              "type": "(column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+              "type": "(",
               "optional": true,
               "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
             },
             {
               "name": "onCellClick",
-              "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+              "type": "(params: TableTypes.IrisTableCellClickParams<Row>) => void",
               "optional": true,
               "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
             },
             {
               "name": "onCellDblClick",
-              "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+              "type": "(params: TableTypes.IrisTableCellClickParams<Row>) => void",
               "optional": true,
               "description": "Cell double-click (vxe cell-dblclick parity). Fired AFTER the inline edit starts on editable columns; non-editable columns fire it too."
             },
@@ -37601,6 +37687,12 @@
               "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys)."
             },
             {
+              "name": "widthHint",
+              "type": "boolean",
+              "optional": true,
+              "description": "Batch DS (iris 独有): show the live pixel width while a resize drag is active."
+            },
+            {
               "name": "autoResizeColumns",
               "type": "boolean",
               "optional": true,
@@ -37608,18 +37700,18 @@
             },
             {
               "name": "columnWidths",
-              "type": "IrisTableColumnWidths",
+              "type": "TableTypes.IrisTableColumnWidths",
               "optional": true,
               "description": "Controlled per-column pixel widths, keyed by column `key`."
             },
             {
               "name": "defaultColumnWidths",
-              "type": "IrisTableColumnWidths",
+              "type": "TableTypes.IrisTableColumnWidths",
               "optional": true
             },
             {
               "name": "onColumnWidthsChange",
-              "type": "(next: IrisTableColumnWidths) => void",
+              "type": "(next: TableTypes.IrisTableColumnWidths) => void",
               "optional": true
             },
             {
@@ -37708,13 +37800,13 @@
             },
             {
               "name": "filterValues",
-              "type": "import('./types').IrisTableFilterValues",
+              "type": "TableTypes.IrisTableFilterValues",
               "optional": true,
               "description": "Per-column checked filter sets (vxe filter-multiple parity): column key → values OR-matched against the raw `String(value)` of each row. Controlled via `onFilterValuesChange`; without a handler read-only."
             },
             {
               "name": "onFilterValuesChange",
-              "type": "(next: import('./types').IrisTableFilterValues) => void",
+              "type": "(next: TableTypes.IrisTableFilterValues) => void",
               "optional": true,
               "description": "Fired when the filter panel confirms or clears a column's checked set."
             },
@@ -37780,13 +37872,13 @@
             },
             {
               "name": "mergeHeaderCells",
-              "type": "IrisTableMergeCell[]",
+              "type": "TableTypes.IrisTableMergeCell[]",
               "optional": true,
               "description": "Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries keyed by leaf-column index of the FLAT header row (`row` 0 only — rows > 0 are ignored). A merge cell renders with `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null. Grouped headers and `columnVirtualization` are not merged (documented simplification)."
             },
             {
               "name": "mergeFooterItems",
-              "type": "IrisTableMergeFooterItem[]",
+              "type": "TableTypes.IrisTableMergeFooterItem[]",
               "optional": true,
               "description": "Footer merge (vxe-grid mergeFooterItems parity, batch R): declarative span entries in the SAME coordinate space as `footerSpanMethod` — `row` is the 0-based index over the rendered footer stack (footerMethod rows → summary row → footerData rows, whichever render) and `col` the leaf-column index; both start at 0. A merge cell renders `gridColumnEnd: span colspan`; the covered cells of the same row render null. `rowspan` is inert (each footer row is its own grid container — covered cells of later rows keep their own data; mirrors `footerSpanMethod`'s rowspan). The function wins: when `footerSpanMethod` is provided, `mergeFooterItems` is ignored. Entries outside the rendered stack are no-ops."
             },
@@ -37803,6 +37895,11 @@
               "description": "Row drag-sort configuration (composed over core createSortable)."
             },
             {
+              "name": "rowDragBetween",
+              "type": "TableTypes.IrisTableRowDragBetweenTarget<Row>[]",
+              "optional": true
+            },
+            {
               "name": "editConfig",
               "type": "{",
               "optional": true,
@@ -37810,26 +37907,26 @@
             },
             {
               "name": "validConfig",
-              "type": "IrisTableValidConfig",
+              "type": "TableTypes.IrisTableValidConfig",
               "optional": true,
               "description": "Edit-validation presentation (vxe-grid ValidConfig parity)."
             },
             {
               "name": "onCellEdit",
-              "type": "(event: IrisTableCellEditEvent<Row>) => void",
+              "type": "(event: TableTypes.IrisTableCellEditEvent<Row>) => void",
               "optional": true
             },
             {
               "name": "onEditStart",
-              "type": "(params: IrisTableEditStartParams<Row>) => void",
+              "type": "(params: TableTypes.IrisTableEditStartParams<Row>) => void",
               "optional": true,
               "description": "Edit start (vxe edit-activated parity, batch V): fired when an inline editor opens (cell double-click; cell mode only)."
             },
             {
               "name": "onEditClosed",
-              "type": "(params: IrisTableEditClosedParams<Row>) => void",
+              "type": "(params: TableTypes.IrisTableEditClosedParams<Row>) => void",
               "optional": true,
-              "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`)."
+              "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `TableTypes.IrisTableEditClosedParams`)."
             },
             {
               "name": "editAutosave",
@@ -37868,6 +37965,12 @@
               "description": "while an inline (cell-mode) editor is open, every other cell in the SAME column whose committed value exactly matches the current draft renders a light highlight (`data-iris-input-hint` + a `--iris-input-hint` token background) — a glanceable \"these rows already share this value\" cue while typing. Matching is RAW (`String(raw) === String(draft)`, same draft caliber as the editor/commit path — not the masked/formatted display). The editing cell itself is exempt. An empty draft is fail-closed (never floods the whole column). Computed live per keystroke via the existing cell-edit store — zero new state. Row-edit mode is a documented fiat: each column's draft lives in its own session, so row mode does not participate. Additive; default off (fail-closed)."
             },
             {
+              "name": "patternFill",
+              "type": "boolean",
+              "optional": true,
+              "description": "an inline draft is open, matching committed values in the same column get"
+            },
+            {
               "name": "columnTotals",
               "type": "boolean",
               "optional": true,
@@ -37893,19 +37996,19 @@
             },
             {
               "name": "onScroll",
-              "type": "(params: IrisTableScrollParams) => void",
+              "type": "(params: TableTypes.IrisTableScrollParams) => void",
               "optional": true,
               "description": "Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden)."
             },
             {
               "name": "renderDetail",
-              "type": "IrisTableRenderDetail<Row>",
+              "type": "TableTypes.IrisTableRenderDetail<Row>",
               "optional": true,
               "description": "Render an expandable detail panel beneath a row."
             },
             {
               "name": "rowExpandable",
-              "type": "IrisTableRowExpandable<Row>",
+              "type": "TableTypes.IrisTableRowExpandable<Row>",
               "optional": true,
               "description": "Which rows can expand a detail panel."
             },
@@ -37970,8 +38073,13 @@
               "description": "keys): F2 begins editing the focused cell's column (when editable), Delete/Backspace clears it to `''` — one batched `commitRowList` (undo-covered via the undo funnel). Requires `keyboardNavigation`'s focused-cell state (single-tabstop roving cell focus); without it the shortcuts are inert. While an inline editor is open the editor's own"
             },
             {
+              "name": "editKeys",
+              "type": "Array<'F2' | 'Enter' | 'Space'>",
+              "optional": true
+            },
+            {
               "name": "keymap",
-              "type": "Partial<Record<IrisTableKeyAction, string>>",
+              "type": "Partial<Record<Core.IrisTableKeyAction, string>>",
               "optional": true,
               "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
             },
@@ -38011,7 +38119,7 @@
             },
             {
               "name": "virtualScroll",
-              "type": "IrisTableVirtualOptions",
+              "type": "TableTypes.IrisTableVirtualOptions",
               "optional": true,
               "description": "Enable virtual scrolling for the body."
             },
@@ -38023,13 +38131,18 @@
             },
             {
               "name": "persistState",
-              "type": "import('./types').IrisTablePersistConfig",
+              "type": "TableTypes.IrisTablePersistConfig",
               "optional": true,
               "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); expandedKeys (batch BY) needs onExpandedRowsChange + an expandable table (renderDetail or tree) — restored through the expansion model, which replays the callback (full-set replace); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
             },
             {
+              "name": "autoSaveState",
+              "type": "TableTypes.IrisTableAutoSaveStateConfig",
+              "optional": true
+            },
+            {
               "name": "views",
-              "type": "import('./types').IrisTableViewConfig",
+              "type": "TableTypes.IrisTableViewConfig",
               "optional": true,
               "description": "Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots."
             },
@@ -38041,7 +38154,7 @@
             },
             {
               "name": "tableTabs",
-              "type": "import('./types').IrisTableTab[]",
+              "type": "TableTypes.IrisTableTab[]",
               "optional": true,
               "description": "A `role=tablist` strip rendered ABOVE the toolbar: clicking a tab applies each name in `views` IN ORDER through the same selectView path the toolbar select uses (unknown names are skipped fail-inert; when several views touch the same piece the last applied view wins and the toolbar select mirrors that last view). Fail-closed: without the prop nothing renders, and no tab"
             },
@@ -38131,7 +38244,7 @@
             },
             {
               "name": "emptyState",
-              "type": "ReactNode | IrisTableEmptyState",
+              "type": "React.ReactNode | IrisTableEmptyState",
               "optional": true,
               "description": "an `IrisTableEmptyState` descriptor (iris 独有 — vxe has no empty-state action button): `{ text?, action? }` renders the text plus an inline action"
             },
@@ -38149,13 +38262,13 @@
             },
             {
               "name": "loadingState",
-              "type": "ReactNode",
+              "type": "React.ReactNode",
               "optional": true,
               "description": "Custom loading-state node."
             },
             {
               "name": "errorState",
-              "type": "ReactNode",
+              "type": "React.ReactNode",
               "optional": true,
               "description": "Custom error-state node."
             },
@@ -38173,9 +38286,9 @@
             },
             {
               "name": "tooltipConfig",
-              "type": "IrisTableTooltipConfig<Row>",
+              "type": "TableTypes.IrisTableTooltipConfig<Row>",
               "optional": true,
-              "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
+              "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. With `showAll: false`, titles remain only for cells whose single-line content measures wider than the rendered cell; SSR/jsdom zero-width"
             },
             {
               "name": "annotations",
@@ -38185,7 +38298,7 @@
             },
             {
               "name": "cellNote",
-              "type": "(row: Row, column: IrisTableColumn<Row>) => string | null",
+              "type": "(row: Row, column: TableTypes.IrisTableColumn<Row>) => string | null",
               "optional": true,
               "description": "column — wins over the static `annotations` map. With a note the cell gets `data-iris-cell-note` + a corner badge + the note as its title"
             },
@@ -38209,19 +38322,19 @@
             },
             {
               "name": "presence",
-              "type": "IrisTablePresenceEntry[]",
+              "type": "TableTypes.IrisTablePresenceEntry[]",
               "optional": true,
               "description": "Collaborative-presence cursors (batch BD, iris 独有 — vxe has no cursor sharing): remote participants' selected cells. Each entry draws a 2px colored outline on its cell (`data-iris-presence=\"true\"`, outline in the entry's `color` — first entry wins when several share a cell) plus a corner label with the participant's name (`data-iris-presence-label` with `-id`/`-name`). Pure display: the table holds no collaboration state, so a NEW array reference re-renders while in-place mutation does not (same controlled contract as `data` / `annotations`)."
             },
             {
               "name": "headerTooltipConfig",
-              "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+              "type": "{ content?: (column: TableTypes.IrisTableColumn<Row>) => string }",
               "optional": true,
               "description": "native `title` on flat + grouped header cells; empty content drops the"
             },
             {
               "name": "footerTooltipConfig",
-              "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+              "type": "{ content?: (column: TableTypes.IrisTableColumn<Row>) => string }",
               "optional": true,
               "description": "native `title` on summary / footer-method / footer-data cells; empty"
             },
@@ -38229,7 +38342,7 @@
               "name": "contextMenu",
               "type": "{",
               "optional": true,
-              "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates. Batch BW (iris 独有): EVERY menu unconditionally gains two built-in quick actions after the user items (and after the value-distribution / summary items when those props are on, before the annotate items) — 复制值 (key `__iris-copy-value`, i18n `table.copyValue`, copies the cell's display text — mask → formatter → String — to the clipboard) and 清空 (key `__iris-clear-cell`, i18n `table.clearCell`, writes the cell to '' through the same commitRowList funnel as the Delete shortcut — undo / audit / onDataChange covered; locked/readonly cells no-op). Both keys are intercepted at the onSelect wiring, so the user callback never sees them; without a clipboard the copy no-ops safely."
+              "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates. Batch BW (iris 独有): EVERY menu unconditionally gains two built-in quick actions after the user items (and after the value-distribution / summary items when those props are on, before the annotate items) — 复制值 (key `__iris-copy-value`, i18n `table.copyValue`, copies the cell's display text — mask → formatter → String — to the clipboard) and 清空 (key `__iris-clear-cell`, i18n `table.clearCell`, writes the cell to '' through the same commitRowList funnel as the Delete shortcut — undo / audit / onDataChange covered; locked/readonly cells no-op). Both keys are intercepted at the onSelect wiring, so the user callback never sees them; without a clipboard the copy no-ops safely. Set `formatActions` to true to additionally append opt-in region format actions (number to two decimals and uppercase text). They remain intercepted by the table and use the same commit funnel; the default is false so an ordinary context menu is unchanged."
             },
             {
               "name": "valueDistribution",
@@ -38240,8 +38353,7 @@
             {
               "name": "nlSummary",
               "type": "boolean",
-              "optional": true,
-              "description": "NL column summary (batch AW, iris 独有 — vxe has no equivalent; its closest analog is a hand-built aggregate footer, which never tells you in one line what a column IS): when true, the context menu gains a built-in item (key `__iris-summary`, i18n `table.summary`) appended AFTER the value-distribution item; selecting it opens a floating panel (`data-iris-summary-panel`) showing the core `summarizeColumn` natural-language summary of the clicked column's values over `bodyData` — a numeric column gets `共 N 个值，范围 min–max，平均 avg，M 个缺失`, a categorical one its top-3 shares (`,` percentages) + a muted `，其余 R 个` fold. Requires `contextMenu` (pairs naturally with `valueDistribution`); Esc / outside / scroll close it like the distribution panel."
+              "optional": true
             },
             {
               "name": "chartPreview",
@@ -38311,7 +38423,7 @@
             },
             {
               "name": "tableRef",
-              "type": "MutableRefObject<IrisTableHandle<Row> | null>",
+              "type": "React.MutableRefObject<TableTypes.IrisTableHandle<Row> | null>",
               "optional": true,
               "description": "Imperative handle (vxe-grid edit insert/remove/setRow parity + iris-only additions): row ops, proxy/view/selection methods, and (batch BZ) the full view-state JSON export/import — `exportStateJson()` / `importStateJson(json)` (sort / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys / query — the same collector as `persistState`)."
             },
@@ -38355,6 +38467,16 @@
               "type": "{ theme?: 'default' | 'thin' }",
               "optional": true,
               "description": "`theme: 'thin'`, the root and its virtual-scroll descendant get 6px webkit scrollbars plus Firefox `scrollbar-width: thin` via"
+            },
+            {
+              "name": "scrollbarThumb",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "headerStats",
+              "type": "boolean",
+              "optional": true
             },
             {
               "name": "editDirtyConfig",
@@ -38418,7 +38540,7 @@
             },
             {
               "name": "style",
-              "type": "CSSProperties",
+              "type": "React.CSSProperties",
               "optional": true
             },
             {
@@ -38558,7 +38680,7 @@
             },
             {
               "name": "editConfig",
-              "type": "{ trigger?: 'click' | 'dblclick' | 'manual' showAsterisk?: boolean autoClear?: boolean /** Edit mode (vxe editConfig.mode parity, batch Z): `'cell'` (default) edits one cell at a time; `'row'` opens every editable column of the clicked row together — Enter/blur commits THAT column, Escape cancels the whole row, clicking another row commits the current row's open editors first. */ mode?: 'cell' | 'row' }",
+              "type": "{ trigger?: 'click' | 'dblclick' | 'manual' showAsterisk?: boolean autoClear?: boolean mode?: 'cell' | 'row' }",
               "optional": true
             },
             {
@@ -38566,6 +38688,89 @@
               "type": "boolean",
               "optional": true,
               "default": "true"
+            },
+            {
+              "name": "density",
+              "type": "IrisTableDensity",
+              "optional": true,
+              "default": "comfortable",
+              "enum": [
+                "comfortable",
+                "compact",
+                "cozy"
+              ]
+            },
+            {
+              "name": "densityToggle",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "editPreview",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "pattern",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "patternFill",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "views",
+              "type": "IrisTableViewConfig",
+              "optional": true
+            },
+            {
+              "name": "onActiveViewChange",
+              "type": "(key: string | null) =",
+              "optional": true
+            },
+            {
+              "name": "tableTabs",
+              "type": "IrisTableTab[]",
+              "optional": true
+            },
+            {
+              "name": "pinnedDrag",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "onColumnPinnedChange",
+              "type": "(key: string, side: 'left' | 'right' | null) =",
+              "optional": true
+            },
+            {
+              "name": "onPinnedCountChange",
+              "type": "(count: number) =",
+              "optional": true
+            },
+            {
+              "name": "autoDetectTypes",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "responsive",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "exportNames",
+              "type": "Array<{ key: string; ref: () => Array<Record<string, unknown>> }",
+              "optional": true
             },
             {
               "name": "resizableColumns",
@@ -38596,6 +38801,18 @@
               "default": "false"
             },
             {
+              "name": "printable",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "importPreview",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "onRetry",
               "type": "(() =",
               "optional": true
@@ -38617,6 +38834,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "clipConfig",
+              "type": "IrisTableClipConfig",
+              "optional": true
             },
             {
               "name": "renderDetail",
@@ -38726,8 +38948,11 @@
             "cellEdit",
             "expandedRowsChange",
             "multiSortChange",
+            "onActiveViewChange",
+            "onColumnPinnedChange",
             "onDataChange",
             "onFilterValuesChange",
+            "onPinnedCountChange",
             "onRetry",
             "rowClick",
             "rowDblclick",
@@ -38745,6 +38970,7 @@
           "publicTypes": [
             "IrisTableAggregateOp",
             "IrisTableCellEditEvent",
+            "IrisTableClipConfig",
             "IrisTableColumn",
             "IrisTableColumnDrag",
             "IrisTableColumnVisibility",
@@ -38757,6 +38983,7 @@
             "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableNamedView",
             "IrisTableProps",
             "IrisTableProxyConfig",
             "IrisTableProxyInfo",
@@ -38768,9 +38995,12 @@
             "IrisTableSortState",
             "IrisTableSpan",
             "IrisTableSpanMethodParams",
+            "IrisTableTab",
             "IrisTableToolbarBatch",
             "IrisTableToolbarButton",
             "IrisTableToolbarConfig",
+            "IrisTableViewConfig",
+            "IrisTableViewSnapshot",
             "IrisTableVirtualOptions"
           ]
         },
@@ -38949,6 +39179,93 @@
               "optional": true
             },
             {
+              "name": "density",
+              "type": "IrisTableDensity",
+              "optional": true,
+              "description": "Row-density preset; invalid runtime values fail closed to comfortable.",
+              "enum": [
+                "comfortable",
+                "compact",
+                "cozy"
+              ]
+            },
+            {
+              "name": "densityToggle",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show the local density cycle button in the table toolbar."
+            },
+            {
+              "name": "editPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a live formatter preview while an editor is open."
+            },
+            {
+              "name": "pattern",
+              "type": "boolean",
+              "optional": true,
+              "description": "Highlight committed cells matching the active inline draft."
+            },
+            {
+              "name": "patternFill",
+              "type": "boolean",
+              "optional": true,
+              "description": "Alias for pattern feedback."
+            },
+            {
+              "name": "views",
+              "type": "IrisTableViewConfig",
+              "optional": true,
+              "description": "Named snapshots available in the table toolbar."
+            },
+            {
+              "name": "onActiveViewChange",
+              "type": "(key: string | null) => void",
+              "optional": true,
+              "description": "Controlled active named view notification."
+            },
+            {
+              "name": "tableTabs",
+              "type": "IrisTableTab[]",
+              "optional": true,
+              "description": "Optional tab strip; tab clicks apply listed view names in order."
+            },
+            {
+              "name": "pinnedDrag",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a draggable boundary for the leading left-pinned columns."
+            },
+            {
+              "name": "onColumnPinnedChange",
+              "type": "(key: string, side: 'left' | 'right' | null) => void",
+              "optional": true,
+              "description": "Called for each column whose pin side changes."
+            },
+            {
+              "name": "onPinnedCountChange",
+              "type": "(count: number) => void",
+              "optional": true,
+              "description": "Called once after a pinned-boundary commit."
+            },
+            {
+              "name": "responsive",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "exportNames",
+              "type": "Array<{ key: string; ref: () => Row[] }>",
+              "optional": true,
+              "description": "Extra bare row sets appended as named CSV segments by the imperative handle."
+            },
+            {
+              "name": "autoDetectTypes",
+              "type": "boolean",
+              "optional": true
+            },
+            {
               "name": "loading",
               "type": "boolean",
               "optional": true
@@ -38957,6 +39274,18 @@
               "name": "error",
               "type": "boolean",
               "optional": true
+            },
+            {
+              "name": "printable",
+              "type": "boolean",
+              "optional": true,
+              "description": "Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS."
+            },
+            {
+              "name": "importPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a confirmation preview before the toolbar CSV import callback."
             },
             {
               "name": "emptyState",
@@ -39090,6 +39419,12 @@
               "optional": true
             },
             {
+              "name": "clipConfig",
+              "type": "IrisTableClipConfig",
+              "optional": true,
+              "description": "Range clipboard copy; copyWithFormat uses column formatter output."
+            },
+            {
               "name": "virtualScroll",
               "type": "IrisTableVirtualOptions",
               "optional": true
@@ -39106,7 +39441,9 @@
             }
           ],
           "events": [
+            "onActiveViewChange",
             "onCellEdit",
+            "onColumnPinnedChange",
             "onColumnVisibilityChange",
             "onColumnWidthsChange",
             "onDataChange",
@@ -39114,6 +39451,7 @@
             "onFilterValuesChange",
             "onFiltersChange",
             "onMultiSortChange",
+            "onPinnedCountChange",
             "onRetry",
             "onRowClick",
             "onSelectionChange",
@@ -39127,6 +39465,7 @@
           "publicTypes": [
             "IrisTableAggregateOp",
             "IrisTableCellEditEvent",
+            "IrisTableClipConfig",
             "IrisTableColumn",
             "IrisTableColumnWidths",
             "IrisTableContextMenuItem",
@@ -39139,6 +39478,7 @@
             "IrisTableFormField",
             "IrisTableHandle",
             "IrisTableLazyLoad",
+            "IrisTableNamedView",
             "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyConfig",
@@ -39149,9 +39489,12 @@
             "IrisTableSortDirection",
             "IrisTableSortState",
             "IrisTableSpanMethodParams",
+            "IrisTableTab",
             "IrisTableToolbarBatch",
             "IrisTableToolbarButton",
             "IrisTableToolbarConfig",
+            "IrisTableViewConfig",
+            "IrisTableViewSnapshot",
             "IrisTableVirtualOptions"
           ]
         },
@@ -39185,6 +39528,12 @@
                 "multi"
               ],
               "default": "none"
+            },
+            {
+              "name": "editConfig",
+              "type": "IrisTableEditConfig",
+              "optional": true,
+              "description": "Inline edit behavior; row mode opens all editable cells in a row."
             },
             {
               "name": "selection",
@@ -39267,6 +39616,30 @@
               "description": "filter text; rows filtered with substring, case-insensitive matching"
             },
             {
+              "name": "onFiltersChange",
+              "type": "(next: Record<string, string>) => void",
+              "optional": true,
+              "description": "Fired when an imperative filter clear replaces the controlled text map."
+            },
+            {
+              "name": "filterValues",
+              "type": "IrisTableFilterValues",
+              "optional": true,
+              "description": "Per-column checkbox filter sets (OR within a column, AND across columns)."
+            },
+            {
+              "name": "onFilterValuesChange",
+              "type": "(next: IrisTableFilterValues) => void",
+              "optional": true,
+              "description": "Fired when a checkbox filter panel is applied or cleared."
+            },
+            {
+              "name": "contextMenu",
+              "type": "IrisTableContextMenuConfig",
+              "optional": true,
+              "description": "Right-click menu for body leaf cells."
+            },
+            {
               "name": "formConfig",
               "type": "IrisTableFormConfig",
               "optional": true,
@@ -39303,6 +39676,100 @@
               "default": "true"
             },
             {
+              "name": "density",
+              "type": "IrisTableDensity",
+              "optional": true,
+              "description": "Row-density preset; invalid runtime values fail closed to comfortable.",
+              "enum": [
+                "comfortable",
+                "compact",
+                "cozy"
+              ]
+            },
+            {
+              "name": "densityToggle",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show the local density cycle button in the table toolbar.",
+              "default": "false"
+            },
+            {
+              "name": "editPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a live formatter preview while an editor is open.",
+              "default": "false"
+            },
+            {
+              "name": "pattern",
+              "type": "boolean",
+              "optional": true,
+              "description": "Highlight committed cells matching the active inline draft.",
+              "default": "false"
+            },
+            {
+              "name": "patternFill",
+              "type": "boolean",
+              "optional": true,
+              "description": "Alias for pattern feedback.",
+              "default": "false"
+            },
+            {
+              "name": "views",
+              "type": "IrisTableViewConfig",
+              "optional": true,
+              "description": "Named snapshots available in the table toolbar."
+            },
+            {
+              "name": "onActiveViewChange",
+              "type": "(key: string | null) => void",
+              "optional": true,
+              "description": "Controlled active named view notification."
+            },
+            {
+              "name": "tableTabs",
+              "type": "IrisTableTab[]",
+              "optional": true,
+              "description": "Optional tab strip; tab clicks apply listed view names in order."
+            },
+            {
+              "name": "pinnedDrag",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a draggable boundary for the leading left-pinned columns.",
+              "default": "false"
+            },
+            {
+              "name": "onColumnPinnedChange",
+              "type": "(key: string, side: 'left' | 'right' | null) => void",
+              "optional": true,
+              "description": "Called for each column whose pin side changes."
+            },
+            {
+              "name": "onPinnedCountChange",
+              "type": "(count: number) => void",
+              "optional": true,
+              "description": "Called once after a pinned-boundary commit."
+            },
+            {
+              "name": "responsive",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "exportNames",
+              "type": "Array<{",
+              "optional": true,
+              "description": "Extra bare row sets appended as named CSV segments by the imperative handle."
+            },
+            {
+              "name": "autoDetectTypes",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "loading",
               "type": "boolean",
               "optional": true,
@@ -39312,6 +39779,20 @@
               "name": "error",
               "type": "boolean",
               "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "printable",
+              "type": "boolean",
+              "optional": true,
+              "description": "Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS.",
+              "default": "false"
+            },
+            {
+              "name": "importPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a confirmation preview before the toolbar CSV import callback.",
               "default": "false"
             },
             {
@@ -39334,6 +39815,30 @@
               "type": "() => void",
               "optional": true,
               "description": "Fired by the built-in Retry button in the error state row."
+            },
+            {
+              "name": "rowDrag",
+              "type": "IrisTableRowDrag",
+              "optional": true,
+              "description": "Row drag-sort; the callback receives the reordered live row list."
+            },
+            {
+              "name": "columnDrag",
+              "type": "IrisTableColumnDrag",
+              "optional": true,
+              "description": "Column drag-sort; grouped header cells remain non-draggable."
+            },
+            {
+              "name": "onDataChange",
+              "type": "(rows: Array<Record<string, unknown>>) => void",
+              "optional": true,
+              "description": "Fired after an internal row reorder."
+            },
+            {
+              "name": "tableRef",
+              "type": "{ current: IrisTableHandle | null }",
+              "optional": true,
+              "description": "Imperative proxy/view handle (vxe loadData/reloadData/commitProxy parity)."
             },
             {
               "name": "virtualScroll",
@@ -39409,6 +39914,12 @@
               "default": "false"
             },
             {
+              "name": "clipConfig",
+              "type": "IrisTableClipConfig",
+              "optional": true,
+              "description": "Range clipboard copy; copyWithFormat uses column formatter output."
+            },
+            {
               "name": "onUpdateSelection",
               "type": "(value: Array<string | number>) => void",
               "optional": true
@@ -39435,9 +39946,15 @@
             }
           ],
           "events": [
+            "onActiveViewChange",
             "onCellEdit",
+            "onColumnPinnedChange",
             "onColumnWidthsChange",
+            "onDataChange",
             "onExpandedRowsChange",
+            "onFilterValuesChange",
+            "onFiltersChange",
+            "onPinnedCountChange",
             "onRetry",
             "onRowClick",
             "onUpdateMultiSort",
@@ -39452,26 +39969,40 @@
           "publicTypes": [
             "IrisTableAggregateOp",
             "IrisTableCellEditEvent",
+            "IrisTableClipConfig",
             "IrisTableColumn",
+            "IrisTableColumnDrag",
             "IrisTableColumnWidths",
+            "IrisTableContextMenuConfig",
+            "IrisTableContextMenuItem",
+            "IrisTableContextMenuParams",
+            "IrisTableEditConfig",
             "IrisTableEditor",
+            "IrisTableFilterOption",
+            "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableHandle",
+            "IrisTableNamedView",
             "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyConfig",
             "IrisTableProxyQueryParams",
             "IrisTableProxyQueryResult",
             "IrisTableRenderDetail",
+            "IrisTableRowDrag",
             "IrisTableRowExpandable",
             "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
             "IrisTableSpan",
             "IrisTableSpanMethodParams",
+            "IrisTableTab",
             "IrisTableToolbarBatch",
             "IrisTableToolbarButton",
             "IrisTableToolbarConfig",
+            "IrisTableViewConfig",
+            "IrisTableViewSnapshot",
             "IrisTableVirtualOptions"
           ]
         }
@@ -39516,7 +40047,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 192,
+        "propCount": 199,
         "eventCount": 32
       }
     },
@@ -43785,11 +44316,7 @@
             "update:expanded",
             "update:selected"
           ],
-          "slots": [
-            "empty",
-            "error",
-            "loading"
-          ],
+          "slots": [],
           "publicTypes": [
             "IrisTreeNode",
             "IrisTreeSelectNode",

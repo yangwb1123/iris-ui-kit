@@ -6,23 +6,17 @@
   },
   "files": {
     "packages/core/src/form.test.ts": 917,
-    "packages/core/src/form.ts": 885,
-    "packages/core/src/window.ts": 547,
-    "packages/plugin-pro-table/src/react/index.tsx": 502,
-    "packages/react/src/contracts.test.tsx": 905,
-    "packages/react/src/primitives/table/Table.test.tsx": 1174,
-    "packages/react/src/primitives/table/Table.tsx": 1255,
-    "packages/solid/src/contracts.test.tsx": 842,
+    "packages/react/src/contracts.test.tsx": 925,
+    "packages/react/src/primitives/table/Table.test.tsx": 1204,
+    "packages/react/src/primitives/table/Table.tsx": 9137,
+    "packages/solid/src/contracts.test.tsx": 860,
     "packages/solid/src/primitives/table/IrisTable.test.tsx": 857,
-    "packages/solid/src/primitives/table/IrisTable.tsx": 1314,
-    "packages/solid/src/primitives/tree/IrisTree.tsx": 571,
-    "packages/svelte/src/contracts.test.ts": 571,
-    "packages/svelte/src/primitives/table/IrisTable.svelte": 1128,
+    "packages/solid/src/primitives/table/IrisTable.tsx": 2340,
+    "packages/svelte/src/contracts.test.ts": 592,
+    "packages/svelte/src/primitives/table/IrisTable.svelte": 1493,
     "packages/svelte/src/primitives/table/IrisTable.test.ts": 848,
-    "packages/vue/src/contracts.test.ts": 567,
+    "packages/vue/src/contracts.test.ts": 584,
     "packages/vue/src/primitives/table/Table.test.ts": 1415,
-    "packages/vue/src/primitives/table/Table.ts": 1631,
-    "packages/vue/src/primitives/table/TableBody.ts": 527,
-    "packages/vue/src/primitives/table/useTableState.ts": 613
+    "packages/vue/src/primitives/table/Table.ts": 2539
   }
 }

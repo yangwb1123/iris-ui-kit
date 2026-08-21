@@ -7,14 +7,14 @@
   "version": "1.0.0",
   "frameworks": ["react", "vue", "solid", "svelte"],
   "dependencies": {
-    "@iris-ui-kit/core": "^0.2.0"
+    "@iris-ui-kit/core": "^0.2.1"
   },
   "dependenciesByFramework": {
     "react": {
-      "@iris-ui-kit/react": "^0.2.2"
+      "@iris-ui-kit/react": "^0.2.3"
     },
     "vue": {
-      "@iris-ui-kit/vue": "^0.2.21"
+      "@iris-ui-kit/vue": "^0.2.28"
     },
     "solid": {
       "@iris-ui-kit/solid": "^0.2.2"

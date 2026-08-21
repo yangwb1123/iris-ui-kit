@@ -1,6 +1,6 @@
 # SPRINT
 
-> 2026-07-27 收口清单。产品方向见 `ROADMAP.md`。
+> 2026-08-20 收口清单。产品方向见 `ROADMAP.md`。
 
 ## Sprint goal
 
@@ -9,7 +9,7 @@
 
 ## 功能面
 
-- [x] 安全、tokens/skins/icons、manifest/package 契约（616 native /
+- [x] 安全、tokens/skins/icons、manifest/package 契约（620 native /
       0 unavailable）。
 - [x] CMS auth/RBAC、真实 dashboard/login/users/settings/workspace、设置持久化
       与 resilience 消费（无 `GenericPage`）。
@@ -33,25 +33,40 @@
 - [x] `pnpm check:registry`（`admin-layout` 四框架 + 3 个 runtime resources）
 - [x] `pnpm size`
 - [x] `pnpm audit:tokens`
-- [x] `pnpm test:coverage`（388 files / 41,086 lines；high-complexity 缺口 0）
+- [x] `pnpm test:coverage`（529 files / 80,931 lines；high-complexity 缺口 0）
 - [x] `pnpm turbo run test:coverage:v8 --filter=@iris-ui-kit/core`
 - [x] `pnpm check:desktop-parity`
 - [x] `pnpm check:rsc`
 - [x] `pnpm test`
 - [x] 四框架 CMS Playwright E2E + React visual baselines（19/19）
-- [x] `pnpm bench`（14/14）
+- [x] `pnpm bench`（25/25 Turbo tasks）
 - [x] `pnpm arch-check:ratchet`
 - [x] 四套 SSR 应用的 build/test/typecheck/lint 与 production-route 验证
 
 本次整仓主门为 180/180 Turbo tasks；core V8 coverage 为 statements/lines
-91.75%、branches 90.65%、functions 94.5%（70 files、1093 tests）。
-适配器复杂组件补测中，Solid 目标 80/80、全包 873/873 + SSR 34/34；
-Svelte 目标 83/83、全包 855/855 + SSR 31/31。
+95.58%、branches 92.83%、functions 96.18%（103 test files、1594 tests）。
+适配器全量回归：React 2815/2815、Vue 1545/1545、Solid 986/986 + hydration
+38/38、Svelte 942/942 + hydration 35/35。
+
+本轮追加批 DL–DT：`patternFill`、`autoSaveState`、`headerStats`、右键格式化
+动作、滚动条拇指、外部行拖放、`editKeys`、列宽提示和按 key 导出均已落盘；
+专项回归 10/10，React 全量 2815/2815。右键格式化动作由
+`contextMenu.formatActions` 显式启用，默认菜单保持兼容。
+
+## 2026-08-20 Grid follow-up（当前工作树）
+
+- Vue 批 Y 复核已补齐：远程非空 filters 的 SSR 不请求回归、summary 的
+  `__expand` 轨道与 body 对齐；Vue package 1545/1545。
+- Solid/Svelte summary 同步加入 `__expand` 轨道与 grid-template 对齐断言，并
+  各自补充远程过滤 SSR 不请求回归；Solid 986/986 + hydration 38/38，Svelte
+  942/942 + hydration 35/35。
+- 表格渲染职责已拆出到 `table-summary*` 与 Vue 状态行渲染器；`pnpm
+arch-check:ratchet` 当前无阻断项。
 
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。
-- 四框架导出和行为契约仍保持对齐，manifest 保持 616 native /
+- 四框架导出和行为契约仍保持对齐，manifest 保持 620 native /
   0 unavailable。
 - 生成 manifest/llms、包 tarball、registry 模板与源码一致。
 - 四套 CMS 保持真实页面实现，四套 SSR reference 保持多路由生产证明。

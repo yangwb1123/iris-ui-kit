@@ -1,4 +1,9 @@
-Verdict written to `/home/u1/iris-ui/docs/vxe-grid/batch-bo-review.md`: **FAIL** (1 blocking finding).
+## Verdict: PASS — post-gate re-review
+
+The historical documentation-integrity finding below was fixed by restoring
+the BN row and removing its orphaned tail. The gate completed the full
+180/180 repository check; the original finding is retained as historical
+context.
 
 ## Verification results
 
@@ -18,6 +23,6 @@ Verdict written to `/home/u1/iris-ui/docs/vxe-grid/batch-bo-review.md`: **FAIL**
 - Button :7429 after batch-edit, before zoom; not in toolbar gate (zoom precedent, test-locked) ✓
 - i18n en+zh ✓ · zero core/types/styles/other-framework changes ✓ · tokens only ✓
 
-## Finding (blocking)
+## Historical pre-gate finding (resolved by the gate)
 
 1. **MEDIUM — `docs/vxe-grid-comparison.md:68–70`**: the commit truncated the pre-existing BN row mid-cell (no closing `|`) and stranded its tail as an orphaned paragraph line after the new BO row — broken markdown table + lost BN content, violating additive-only on existing content. Prettier doesn't catch it (format check passes). Fix: restore line 68 to BN's full original single-line row, delete line 70.

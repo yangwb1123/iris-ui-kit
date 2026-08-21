@@ -358,6 +358,7 @@ const COMMANDS = {
 function parseOpts(args) {
   const opts = {
     strict: args.includes('--strict'),
+    all: args.includes('--all'),
     ratchet: args.includes('--ratchet'),
     diff: args.includes('--diff'),
     updateBaseline: args.includes('--update-baseline'),

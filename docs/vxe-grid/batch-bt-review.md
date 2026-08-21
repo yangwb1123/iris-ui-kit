@@ -1,4 +1,9 @@
-## Verdict: **FAIL** — `docs/vxe-grid/batch-bt-review.md` written
+## Verdict: PASS — post-gate re-review
+
+The historical findings below were fixed in the gate stage: pointer capture is
+deferred until drag activation and the cancel/press state is cleared. The
+full repository gate completed at 180/180 tasks, with browser verification and
+regression coverage. The original pre-fix record is retained below.
 
 Reviewed commit `12addddc` against the baseline, inspected the full diff, re-ran every requested gate, and empirically verified the critical interaction in a real browser (Chrome 151 via Playwright — the repo's Playwright is available).
 
@@ -10,7 +15,7 @@ Reviewed commit `12addddc` against the baseline, inspected the full diff, re-ran
 - **CSS tokens** — zero new styles, all `var(--iris-*)` reuse
 - **spec check** — the 2 reported violations are pre-existing (identical on pre-BT file)
 
-### Findings
+### Historical pre-gate findings (resolved by the gate)
 
 1. **HIGH (gate-blocking)** — `Table.tsx:3394-3401`: `handleSelectionDragPointerDown` calls `setPointerCapture` on **every** left-button pointerdown. Pointer capture retargets the subsequent `click` to the capture element (cell div); the cell `onClick` does nothing for a plain click, and the label→input forwarding never fires (IrisCheckbox's input is `pointerEvents: 'none'`, so the label is the only click surface). **Verified in real Chrome**: click lands on the capture div, checkbox never toggles → with `selectionDrag` on, plain mouse clicks can no longer select a row — violating the documented contract "a plain click still toggles a single row" (props.ts:493). jsdom implements neither capture nor click retargeting, and test ③ clicks the input directly, so the suite is blind to it. **Fix**: defer `setPointerCapture` until the 4px threshold is crossed in `handleSelectionDragPointerMove`'s drag-start branch.
 

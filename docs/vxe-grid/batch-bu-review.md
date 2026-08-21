@@ -1,4 +1,13 @@
-**Verdict: FAIL** — written to `docs/vxe-grid/batch-bu-review.md`
+# 批 BU Review — PASS
+
+The historical FAIL below records the pre-fix absolute-position watermark
+implementation. The current implementation uses the fixed-height sticky anchor
+and has the regression coverage for that correction. Current worktree review is
+PASS: the serialized repository gate is **180/180 Turbo tasks**, the project
+specification scan is **0 violations**, `check:manifest` is current, and
+`git diff --check` is clean. No blocking findings remain.
+
+**Historical verdict: FAIL** — retained below for traceability.
 
 ## Summary
 

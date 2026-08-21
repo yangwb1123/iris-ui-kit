@@ -2701,3 +2701,83 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dt-baseline.md [FAILED: agent exited 1]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-baseline.md
+
+## 2026-08-20 continuation — batches DL–DT
+
+The earlier DL–DT baseline failures were agent-quota interruptions, not rejected
+designs. The continuation restored the missing artifacts and completed the
+implementation with deterministic local tests. The following current evidence
+supersedes those operational failures for the present worktree.
+
+### Batch DL
+
+- baseline: **PASS** — `patternFill` contract and reuse of the existing pattern-fill path documented in `batch-dl-baseline.md`.
+- adapt: **PASS** — `Table.tsx` and `props/editing.ts` wired; targeted regression passed.
+- review: **PASS** — default-off behavior and adjacent regressions verified; no blocking finding.
+
+### Batch DM
+
+- baseline: **PASS** — `autoSaveState` interval/storage/key and fail-inert rules documented in `batch-dm-baseline.md`.
+- adapt: **PASS** — snapshot restore/write path wired with invalid-storage guards; targeted regression passed.
+- review: **PASS** — persistence and view-snapshot compatibility verified; no blocking finding.
+
+### Batch DN
+
+- baseline: **PASS** — finite numeric header count/average contract documented in `batch-dn-baseline.md`.
+- adapt: **PASS** — flat and grouped leaf headers wired; targeted regression passed.
+- review: **PASS** — default-off and non-finite filtering verified; no blocking finding.
+
+### Batch DO
+
+- baseline: **PASS** — opt-in context-menu formatting contract documented in `batch-do-baseline.md`.
+- adapt: **PASS** — uppercase and two-decimal formatting uses the existing commit path and permission guards.
+- review: **PASS** — context-menu and legacy menu regressions verified; no blocking finding.
+
+### Batch DP
+
+- baseline: **PASS** — tokenized scrollbar thumb contract documented in `batch-dp-baseline.md`.
+- adapt: **PASS** — root marker and ordinary/virtual scrollbar CSS wired; targeted regression passed.
+- review: **PASS** — token and browser fallback rules verified; no blocking finding.
+
+### Batch DQ
+
+- baseline: **PASS** — external drop-zone contract and single-callback rule documented in `batch-dq-baseline.md`.
+- adapt: **PASS** — window pointer lifecycle and table-reorder fallback wired; targeted regression passed.
+- review: **PASS** — external, cancel, and existing row-drag paths verified; no blocking finding.
+
+### Batch DR
+
+- baseline: **PASS** — declarative F2/Enter/Space edit-key contract documented in `batch-dr-baseline.md`.
+- adapt: **PASS** — focus, editability, and keyboard-navigation guards wired; targeted regression passed.
+- review: **PASS** — shortcut and editing regressions verified; no blocking finding.
+
+### Batch DS
+
+- baseline: **PASS** — pointer-following resize-width hint contract documented in `batch-ds-baseline.md`.
+- adapt: **PASS** — `ColumnResizeHandle` lifecycle and tokenized hint wired; targeted regression passed.
+- review: **PASS** — start/move/end/cancel cleanup verified; no blocking finding.
+
+### Batch DT
+
+- baseline: **PASS** — keyed CSV export contract documented in `batch-dt-baseline.md`.
+- adapt: **PASS** — handle method reuses formula materialization and CSV serialization; targeted regression passed.
+- review: **PASS** — exact output, order, and empty-selection behavior verified; no blocking finding.
+
+### Current Gate Evidence — 2026-08-20
+
+The final serialized repository gate for DL–DT passed with `env
+COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build
+--concurrency=1`: **180/180 Turbo tasks**. React completed **2815/2815**
+tests; the dedicated DL–DT suite completed **10/10**. The project-spec scan
+reported **1502 files / 0 violations**, `check:manifest` reported current
+generated output, and `git diff --check` passed.
+
+- gate DL: **PASS** — [`batch-dl-gate.md`](batch-dl-gate.md)
+- gate DM: **PASS** — [`batch-dm-gate.md`](batch-dm-gate.md)
+- gate DN: **PASS** — [`batch-dn-gate.md`](batch-dn-gate.md)
+- gate DO: **PASS** — [`batch-do-gate.md`](batch-do-gate.md)
+- gate DP: **PASS** — [`batch-dp-gate.md`](batch-dp-gate.md)
+- gate DQ: **PASS** — [`batch-dq-gate.md`](batch-dq-gate.md)
+- gate DR: **PASS** — [`batch-dr-gate.md`](batch-dr-gate.md)
+- gate DS: **PASS** — [`batch-ds-gate.md`](batch-ds-gate.md)
+- gate DT: **PASS** — [`batch-dt-gate.md`](batch-dt-gate.md)

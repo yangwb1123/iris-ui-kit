@@ -11,7 +11,7 @@ bridge; every layer is themed by tokens; heavy capabilities ship as plugins.
 ## Status
 
 🔧 **Alpha** — the first npm publish has not been authorized. The generated
-manifest reports **154 components in each of four frameworks**. All **616
+manifest reports **155 components in each of four frameworks**. All **620
 adapter contracts** are extracted from their corresponding framework sources,
 with zero `unavailable` placeholders.
 
@@ -31,7 +31,7 @@ verified run.
 | `@iris-ui-kit/theme`                    | Theme store, CSS variables, RTL, reduced motion, and color-scheme handling                                                                          |
 | `@iris-ui-kit/skins`                    | Loadable/inheritable skins, persistence, FOUC prevention, live patching, and marketplace SDK                                                        |
 | `@iris-ui-kit/icons`                    | 90+ structured, individually tree-shakeable icons and registries                                                                                    |
-| `@iris-ui-kit/{react,vue,solid,svelte}` | The same 154-component surface, framework-native rendering, and thin core bridges                                                                   |
+| `@iris-ui-kit/{react,vue,solid,svelte}` | The same 155-component surface, framework-native rendering, and thin core bridges                                                                   |
 | `@iris-ui-kit/plugin-*`                 | 12 optional plugins: editor, pro-table, charts, form-builder, notifications, admin, calendar, dashboard, kanban, markdown, query-builder, locale-zh |
 | `@iris-ui-kit/{registry,marketplace}`   | Typed source registry and integrity-checked runtime resources                                                                                       |
 | `@iris-ui-kit/manifest`                 | Generated `manifest.json` / `llms.txt` for AI-native consumption                                                                                    |

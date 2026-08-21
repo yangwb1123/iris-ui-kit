@@ -58,12 +58,58 @@ export async function run() {
   }
   const knownCss = new Set([...knownDot].map(t => '--' + t.replace(/\./g, '-')))
 
-  // Known exceptions (from the original audit-tokens.js)
+  // Reviewed component-local/runtime variables. These are intentionally not
+  // design tokens: some are emitted by a component at runtime, while others
+  // feed a framework-specific scoped style block. Keep this list aligned with
+  // scripts/audit-tokens.mjs so the legacy CLI entry cannot disagree with the
+  // release audit.
   const KNOWN_EXCEPTIONS = {
     '--iris-breadcrumb-sep': 'Svelte-only: CSS custom property for ::before{content}',
     '--iris-masonry-gap': 'Svelte-only: needs CSS-var indirection for scoped <style>',
     '--iris-primary-ghost': 'Solid-only: translucent primary wash on tree selection',
+    '--iris-anim-': 'Dynamic animation variable prefix; concrete values are injected by floating styles',
+    '--iris-anim-dialog': 'Runtime-injected floating entrance animation variable',
+    '--iris-anim-popover': 'Runtime-injected floating entrance animation variable',
+    '--iris-anim-toast': 'Runtime-injected floating entrance animation variable',
+    '--iris-anim-tooltip': 'Runtime-injected floating entrance animation variable',
+    '--iris-border-subtle': 'Table panel separator alias; component-local, not a theme surface',
+    '--iris-cell-bg': 'Table row hover/selection runtime variable',
+    '--iris-cell-pad': 'React Table padding override emitted from a prop',
+    '--iris-cell-pad-y': 'React Table row-density override emitted from a prop',
+    '--iris-duration-md': 'Runtime table expand-animation duration variable',
+    '--iris-focus-ring': 'Vue scoped focus outline alias; component-local',
+    '--iris-input-hint': 'React Table inline-edit highlight override',
+    '--iris-letter-spacing-wide': 'Runtime/theme compatibility variable',
+    '--iris-mask': 'Svelte Tour scoped overlay mask variable',
+    '--iris-row-bg': 'Table row hover runtime variable used by Solid/Svelte',
+    '--iris-shadow-none': 'React Table runtime switch for disabling cell shadows',
+    '--iris-table-expand-max': 'React Table expand-animation fallback variable',
   }
+
+  // These are valid canonical/runtime values whose absence from one adapter is
+  // intentional (the adapter does not need that branch), not cross-framework
+  // token drift. This mirrors the release audit's DRIFT_EXEMPT set.
+  const DRIFT_EXEMPT = new Set([
+    '--iris-anim-',
+    '--iris-anim-dialog',
+    '--iris-anim-popover',
+    '--iris-anim-toast',
+    '--iris-anim-tooltip',
+    '--iris-cell-bg',
+    '--iris-row-bg',
+    '--iris-font-size-base',
+    '--iris-z-modal',
+    '--iris-z-popover',
+    '--iris-z-toast',
+    '--iris-z-tooltip',
+    '--iris-space-2xl',
+    '--iris-space-3xl',
+    '--iris-space-4xl',
+    '--iris-space-5xl',
+    '--iris-letter-spacing-wide',
+    '--iris-duration-md',
+    '--iris-table-expand-max',
+  ])
 
   // Scan each framework
   const frameworks = cfg.framework_parity.frameworks
@@ -115,7 +161,9 @@ export async function run() {
   console.log('\n  -- Per-framework coverage ----------------------------------------\n')
   let hasDrift = false
   for (const fw in perFramework) {
-    const missing = [...allTokens].filter(t => !perFramework[fw].has(t))
+    const missing = [...allTokens].filter(
+      t => !DRIFT_EXEMPT.has(t) && !perFramework[fw].has(t),
+    )
     if (missing.length === 0) {
       console.log(`  ${LABELS[fw]}: full coverage`)
     } else {

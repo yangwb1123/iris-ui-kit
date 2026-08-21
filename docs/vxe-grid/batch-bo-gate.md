@@ -1,4 +1,7 @@
-Gate stage complete — **review verdict was FAIL → fix applied → full gate green → committed**.
+## Gate: PASS
+
+The review verdict was historically FAIL; the documentation fix was applied,
+the full gate passed, and the result was committed.
 
 ## Review verdict
 

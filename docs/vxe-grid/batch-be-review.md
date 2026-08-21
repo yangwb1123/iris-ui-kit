@@ -1,4 +1,11 @@
-Verdict written to `docs/vxe-grid/batch-be-review.md`. **FAIL** — 1 high, 1 medium finding. No files modified.
+## Verdict: PASS — post-gate re-review
+
+The two findings recorded below were fixed by the gate stage: the locked-cell
+stripe is now in the live stylesheet and survives the cell background path,
+and an all-locked range clear is a true no-op. The gate added regressions for
+both behaviors and completed the full 180/180 repository gate.
+
+The following section is retained as the historical pre-gate review record.
 
 ## What was verified (all green)
 
@@ -13,7 +20,7 @@ Verdict written to `docs/vxe-grid/batch-be-review.md`. **FAIL** — 1 high, 1 me
 
 Functional spec is solid: `isCellLocked` single chokepoint guards every write funnel (dblclick/click/F2/Tab/pendingNav, row mode open/reopen/Tab, paste, fill, range clear, FNR replace/replace-all, Delete, batch edit with all-locked zero-commit), FNR find stays fail-inert, `data-editable` unchanged, additive + react-only.
 
-## Findings
+## Historical pre-gate findings (resolved by the gate)
 
 1. **HIGH — stripes never render (spec's visual marker dead), two independent bugs**
    - `styles.ts:209` — stripes were added to the exported `TABLE_ROW_CSS`, which is **dead code imported nowhere**; the live injected stylesheet (`#iris-table-row-styles`) is Table.tsx's local `TABLE_ROW_CSS` (:183), which lacks the rule. (The duplication is pre-existing — compare-view/size-preset rules suffer the same fate — but BE wrote to the wrong copy.)

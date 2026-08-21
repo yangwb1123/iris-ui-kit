@@ -11,7 +11,7 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { getConfig, ROOT } from './config.mjs'
 
@@ -28,17 +28,22 @@ export async function run() {
   }
 
   try {
+    // Compare the generator output with the files as they exist in the
+    // worktree, not with HEAD. A feature branch legitimately carries a
+    // generated manifest diff; using `git diff` here reported every such
+    // intended change as stale and made the acceptance suite impossible to
+    // pass before commit.
+    const before = new Map([
+      [manifestPath, readFileSync(manifestPath, 'utf8')],
+      [llmsPath, readFileSync(llmsPath, 'utf8')],
+    ])
+
     // Regenerate manifest
     execSync('pnpm gen:manifest', { cwd: ROOT, stdio: 'pipe', timeout: 60000 })
 
-    // Check if anything changed
-    const diff = execSync('git diff --stat -- packages/manifest/manifest.json packages/manifest/llms.txt 2>/dev/null || true', {
-      cwd: ROOT,
-      encoding: 'utf-8',
-    }).trim()
-
-    if (diff) {
-      console.log(`✗ Manifest is stale — changes detected:\n${diff}`)
+    const changed = [...before].filter(([path, content]) => readFileSync(path, 'utf8') !== content)
+    if (changed.length > 0) {
+      console.log(`✗ Manifest is stale — changes detected in ${changed.length} generated file(s).`)
       console.log('Run `pnpm gen:manifest` and commit the updated files.')
       return 1
     }

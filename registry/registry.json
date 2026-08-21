@@ -9,7 +9,7 @@
       "version": "1.0.0",
       "description": "Stable admin layout with persistent preferences, tabs, horizontal/sidebar navigation, and static page imports.",
       "url": "./items/admin-layout.json",
-      "integrity": "sha256-712d5adee17808a8c8c9e9f2f81f6d16d145694ee3f97eb4a6e708a47ecab835",
+      "integrity": "sha256-9a6e7f0b4541b8c0acf858bba24fefcfadd39c66864739fc4ce21cdba78a6753",
       "frameworks": ["react", "vue", "solid", "svelte"]
     }
   ]

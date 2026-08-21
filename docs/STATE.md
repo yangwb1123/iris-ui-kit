@@ -1,13 +1,13 @@
 # STATE
 
-> 当前工作树快照。日期：2026-07-27。历史过程见 `CHANGELOG.md`，架构约束见
+> 当前工作树快照。日期：2026-08-20。历史过程见 `CHANGELOG.md`，架构约束见
 > `ARCHITECTURE.md` 与根目录 `AGENTS.md`。
 
 ## 当前事实
 
 - 27 个可发布 package；版本已准备，但首次 npm 发布尚未获维护者授权。
-- `packages/manifest/manifest.json` 当前记录 154 个组件，React / Vue / Solid /
-  Svelte 均为 154，名称完全对齐；616 份 `frameworkContracts` 全部为
+- `packages/manifest/manifest.json` 当前记录 155 个组件，React / Vue / Solid /
+  Svelte 均为 155，名称完全对齐；620 份 `frameworkContracts` 全部为
   `source: native`，没有 `unavailable`。
 - 共享行为位于 `@iris-ui-kit/core`，四个框架包是渲染与反应式薄桥。
 - 12 个 `plugin-*` 包覆盖 admin、calendar、charts、dashboard、editor、
@@ -34,7 +34,7 @@
 
 - 发布安全、依赖升级与供应链元数据。
 - token/skin/icon 安全与语义补齐。
-- 四框架 manifest/export/package 原生契约（616 native / 0 unavailable）。
+- 四框架 manifest/export/package 原生契约（620 native / 0 unavailable）。
 - CMS 真实 auth/RBAC、资源 CRUD、持久化设置与韧性原语消费。
 - 安全 Markdown、持久化通知、dashboard、ProTable、FormBuilder、Editor。
 - Charts、QueryBuilder、Admin schema-driven CRUD/query/permission 插件。
@@ -49,22 +49,31 @@
   brace-expansion CJS/ESM 兼容；
 - 27 个可发布包的外部 npm pack/install、ESM/CJS、类型、Svelte consumer 与
   CLI smoke；
-- 154 × 4 manifest 连续生成哈希一致、`admin-layout` 四框架 registry 模板和
+- 155 × 4 manifest 连续生成哈希一致、`admin-layout` 四框架 registry 模板和
   3 个声明式 runtime resource；
 - size、tokens、RSC（58 entries）、desktop parity（20 apps / 23 features）、
-  bench（14/14）和 architecture ratchet；
+  bench（25/25 Turbo tasks）和 architecture ratchet；
 - 四框架 CMS Playwright + React visual baselines（19/19）；
 - Next、Nuxt、SolidStart、SvelteKit 的 build、hydration 与 production routes；
-- core V8 coverage：70 files / 1093 tests，statements/lines 91.75%、
-  branches 90.65%、functions 94.5%。
-- 适配器覆盖启发式：388 files / 41,086 lines，12 个原复杂组件均补充真实行为
-  用例，high-complexity `<100` 为 0；Solid 目标 80/80、全包 873/873 + SSR
-  34/34，Svelte 目标 83/83、全包 855/855 + SSR 31/31。
+- core V8 coverage：103 test files / 1594 tests，statements/lines 95.58%、
+  branches 92.83%、functions 96.18%。
+- 适配器覆盖启发式：529 files / 80,931 lines，high-complexity `<100` 为 0；
+  React 2815/2815、Vue 1545/1545、Solid 986/986 + hydration 38/38，
+  Svelte 942/942 + hydration 35/35。
+
+本轮批 DL–DT 已完成：React Table 增加 patternFill/autoSaveState/headerStats、
+显式 opt-in 的 contextMenu.formatActions、scrollbarThumb、rowDragBetween、
+editKeys、widthHint 与按 key 的 exportRowsCsv；专项 10/10，React 全量
+2815/2815。默认关闭路径保持兼容，格式化动作未启用时不会改变既有菜单。
 
 补测同时修复了 Solid DateRangePicker 的 owner 外惰性 computation 泄漏，以及
 Svelte TagInput 忽略空白逗号段、尾逗号后同步清空 DOM 输入值的边界缺陷。
 Manifest 与文档参考生成物均已通过生成前后内容一致性检查。权威逐项状态见
 `SPRINT.md`。
+
+本轮 Grid follow-up 已完成：Vue 远程非空 filters 的 SSR 初始态与 summary
+`__expand` 轨道、Solid/Svelte 同语义 summary 轨道及两端 SSR 过滤护栏均有回归；
+Solid/Svelte/Vue 表格的渲染职责已安全拆分，`arch-check:ratchet` 无阻断项。
 
 ## 仍需维护者决定
 

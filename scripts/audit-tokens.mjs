@@ -102,6 +102,20 @@ const KNOWN_EXCEPTIONS = {
     'fill it solid. A real cross-framework visual divergence, tracked here ' +
     'rather than silently flagged — unifying it is a deliberate design call, ' +
     'not a token-porting fix.',
+  '--iris-border-subtle':
+    'Table panel separator alias with --iris-border fallback; component-local, ' +
+    'not a theme surface.',
+  '--iris-cell-pad':
+    'React Table runtime override emitted from the padding prop; not a theme token.',
+  '--iris-cell-pad-y':
+    'React Table runtime row-density override emitted from size/density props; ' +
+    'not a theme token.',
+  '--iris-input-hint':
+    'React Table inline-edit match highlight override; component-local runtime var.',
+  '--iris-nav-item-active-hover':
+    'React/Vue admin NavMenu active hover surface alias; component-local style var.',
+  '--iris-shadow-none':
+    'React Table runtime switch for disabling cell shadows; component-local var.',
 }
 
 // Runtime-injected variables (defined in component-injected stylesheets

@@ -30,4 +30,4 @@ Each iteration update: `CHANGELOG.md` (done), `TODO.md` (backlog), `SPRINT.md` (
 
 ## Repo facts
 
-pnpm + Turbo monorepo, 27 publishable packages, 154 components × 4 adapters with 616 native manifest contracts and zero unavailable contracts, jsdom/SSR/browser tests, CI + changesets present. See `ARCHITECTURE.md`.
+pnpm + Turbo monorepo, 27 publishable packages, 155 components × 4 adapters with 620 native manifest contracts and zero unavailable contracts, jsdom/SSR/browser tests, CI + changesets present. See `ARCHITECTURE.md`.

@@ -1,4 +1,8 @@
-Gate stage complete. **Review verdict was FAIL** → fixes applied, browser-verified, full gate green, committed.
+## Gate: PASS
+
+Historical review verdict was FAIL; the anchoring and overlay-shape fixes were
+applied, browser-verified, and the full gate completed at **180/180** tasks
+before commit.
 
 ## Review fixes (per `batch-bu-review.md`)
 

@@ -1,4 +1,7 @@
-Gate stage complete — **PASS** ✅
+## Gate: PASS
+
+The historical review was FAIL; both findings were fixed and the full gate
+passed at **180/180** tasks.
 
 ## Summary
 

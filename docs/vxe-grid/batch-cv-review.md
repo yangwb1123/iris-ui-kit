@@ -1,6 +1,11 @@
-Review complete. Verdict written to `docs/vxe-grid/batch-cv-review.md`.
+## Verdict: PASS — post-gate re-review
 
-## Verdict: **FAIL** — 1 medium spec violation + 2 informational; all mechanical gates green
+The historical medium finding below was fixed in the gate stage by deriving
+the current width from the leading pinned prefix and adding the gapped-state
+no-op regression. The full repository gate completed at 180/180 tasks. The
+pre-fix record is retained for traceability.
+
+### Historical pre-gate verdict: FAIL — resolved
 
 ### What was verified
 

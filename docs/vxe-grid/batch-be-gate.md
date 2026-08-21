@@ -1,3 +1,12 @@
+# 批 BE Gate — PASS
+
+The historical review block below records the pre-fix FAIL and its two findings.
+Both findings were fixed in the current implementation. Current worktree
+verification is PASS: the serialized repository gate is **180/180 Turbo tasks**,
+the project-spec scan is **0 violations**, `check:manifest` is current, and
+`git diff --check` is clean. No unrelated worktree changes were staged or
+committed in this continuation.
+
 Done. The review verdict was **FAIL** with 2 concrete findings — both fixed, full gate rerun, committed.
 
 ## Fixes applied

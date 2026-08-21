@@ -13,7 +13,7 @@ hero:
       link: /components
 features:
   - title: Cross-framework parity
-    details: 154 components are exported with the same names and semantics from React, Vue, Solid, and Svelte. All 616 framework contracts are extracted natively; business logic lives in a framework-agnostic core and adapters remain thin reactive bridges.
+    details: 155 components are exported with the same names and semantics from React, Vue, Solid, and Svelte. All 620 framework contracts are extracted natively; business logic lives in a framework-agnostic core and adapters remain thin reactive bridges.
   - title: Logic that sinks to core
     details: Six engines — state machines, forms, i18n, virtualization, async resources, and pagination — are pure and framework-agnostic, each with a thin hook per framework.
   - title: Token-driven theming

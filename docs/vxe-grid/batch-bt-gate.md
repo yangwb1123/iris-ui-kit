@@ -1,6 +1,9 @@
-Gate stage complete. **FAIL → fixes applied → full gate green → committed.**
+## Gate: PASS
 
-## Verdict: FAIL (1 HIGH + 1 LOW + 1 INFO) — all addressed
+Historical review was FAIL; fixes were applied, browser-verified, and the full
+gate completed at **180/180** tasks before commit.
+
+### Historical pre-gate verdict: FAIL (all addressed)
 
 **HIGH (gate-blocking)** — `setPointerCapture` was called on every left-button pointerdown, retargeting the subsequent `click` to the capture div so the checkbox label never received it (input is `pointerEvents:none`) → rows un-toggleable by click with `selectionDrag` on. **Fixed**: capture deferred to the drag-start branch of `handleSelectionDragPointerMove` (4px threshold), targeting the press cell stored in a new `selectionDragPressCellRef`.
 

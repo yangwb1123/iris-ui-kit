@@ -42,6 +42,18 @@ function componentName(filePath) {
     .toLowerCase()
 }
 
+function isHighComplexityComponentTest(filePath) {
+  // Only the canonical component suite is a proxy for component coverage.
+  // Focused suites such as Table.ssr.test.ts, Table.row-click.test.tsx and
+  // TransferVirtual.test.ts intentionally stay small; treating their filename
+  // suffix as the whole component produced false coverage failures.
+  const stem = componentName(filePath).replace(/[^a-z0-9]/g, '')
+  return HIGH_COMPLEXITY.some((name) => {
+    const normalized = name.replace(/[^a-z0-9]/g, '')
+    return stem === normalized || stem === `iris${normalized}`
+  })
+}
+
 export async function run(opts = {}) {
   const cfg = getConfig()
   const { targets, high_complexity_min_test_lines } = cfg.coverage
@@ -76,7 +88,7 @@ export async function run(opts = {}) {
       const content = readFileSync(file, 'utf-8')
       const lines = content.split('\n').length
       const name = componentName(file)
-      const isComplex = HIGH_COMPLEXITY.some(hc => name.includes(hc))
+      const isComplex = isHighComplexityComponentTest(file)
       const entry = { framework: fw, name, file: relative(ROOT, file), lines, isComplex }
       allTests.push(entry)
 

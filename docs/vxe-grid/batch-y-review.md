@@ -1,5 +1,8 @@
 # Batch Y (vue parity round 2) — Adversarial Review Verdict
 
+> The original verdict below is retained as historical evidence. The follow-up
+> re-review at the end of this file is the current status.
+
 **Commit reviewed:** `6ef3dc36` · **Date:** 2026-08-11 · **Reviewer:** adversarial pass
 
 ## Verdict: **FAIL**
@@ -172,8 +175,34 @@ in the prop docstring.
 
 ## Required before re-approval
 
-- [ ] F1: don't push remote filters during setup (seed `initialParams.filters` and/or
+- [x] F1: don't push remote filters during setup (seed `initialParams.filters` and/or
       gate the immediate watch behind mount); add an SSR regression test with
       `remoteFilter + filters`.
-- [ ] F2: raise the vue size budget deliberately in the batch commit (or trim).
-- [ ] Optional: F4 one-line expand placeholder in `leadSummaryCells`.
+- [x] F2: raise the vue size budget deliberately in the batch commit (or trim).
+- [x] Optional: F4 one-line expand placeholder in `leadSummaryCells`.
+
+## Follow-up re-review — 2026-08-20
+
+**Verdict: PASS**
+
+The three concrete findings are now closed in the current worktree:
+
+- **F1 HIGH** — `useTableProxy` seeds the merged remote-filter map in
+  `initialParams`, and the mounted request remains the only auto-load request.
+  A dedicated SSR case with a non-empty `filters` prop and
+  `remoteFilter: true` proves `query` is not called and the server stays in the
+  initial empty state.
+- **F2 MEDIUM** — the Vue whole-package budget is deliberately set to 106KB in
+  `scripts/check-size.mjs`; the current measurement is 102.2KB gzip.
+- **F4 LOW** — summary rows now render the `__expand` placeholder between the
+  sequence and selection tracks, matching `gridTemplateColumns` and body rows.
+
+Regression evidence:
+
+- `Table.ssr.test.ts`: 3/3, including the non-empty remote-filter case.
+- `Table.test.ts`: 78/78, plus `test/summary-detail-alignment.test.ts`: 1/1,
+  including `seq + expand + selection + summary` track ordering.
+- Vue package suite: **1545/1545**.
+
+F3 and F5/F6 remain informational/documented semantics; they do not block the
+batch. The original failure is therefore superseded by this follow-up result.

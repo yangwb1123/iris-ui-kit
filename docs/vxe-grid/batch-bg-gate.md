@@ -1,4 +1,7 @@
-Gate complete — verdict was **FAIL** with 4 findings, all fixed and re-verified.
+## Gate: PASS
+
+Historical review verdict was **FAIL**; all four findings were fixed and
+re-verified. The full repository gate completed at **180/180** tasks.
 
 ## Fixes applied (review → code)
 

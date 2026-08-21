@@ -26,8 +26,10 @@ Commits (working tree clean):
 - `gen:manifest` + `check:manifest` up to date
 - `go-to-row.test.tsx` ≤ 500 行 ✓ · 实现改动文件 ≤ 4 + 测试 ✓ · additive only（core 零改动、vue/solid/svelte 零改动）✓
 
-### What is left
+### 后续记录
 
-1. **Batch CY 的 React 桥未完成**（历史遗留）：core `computeResponsiveColumns` + `responsive` prop 声明 + en/zh `table.scrollHint` 键已入库，但 ResizeObserver 测量 / 列折叠应用 / scroll-hint 渲染缺位。我把其死代码 scaffolding（未用 `responsiveNarrowActive`/`responsiveLeadWidth`/缺 import）移除以过 typecheck/lint——props 声明与 core 原样保留，CY retry 可从本提交续接并做 spec 需要的 `responsive-narrow.test.tsx`（react 2674 目标、propCount 185→185）。
+1. 批 CY 在 CZ 阶段仍是未消费的 `responsive` prop；后续已按
+   `docs/vxe-grid/batch-cy-baseline.md` 补齐 React ResizeObserver、列折叠、溢出提示与
+   `responsive-narrow.test.tsx`，当前实现记录见 `docs/vxe-grid/batch-cy-adapt.md`。
 2. 高亮视觉的「源序赢 selection 后衰减回」是纯 CSS 行为，jsdom 无法断言——测试锁定 attr 生命周期，视觉由 token 规格门禁覆盖。
 3. 全量 turbo gate（四框架 build/audit/E2E）未跑——仅执行任务 VERIFY 列出的命令。

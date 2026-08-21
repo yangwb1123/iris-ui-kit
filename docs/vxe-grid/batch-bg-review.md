@@ -1,6 +1,10 @@
-Verdict written to `docs/vxe-grid/batch-bg-review.md`. Summary:
+## Verdict: PASS — post-gate re-review
 
-## Verdict: **FAIL** (1 medium finding, 2 low, 1 nit)
+The historical findings below were all fixed in the gate stage and covered by
+the added editing-guard regression. The full repository gate completed at
+180/180 tasks, so this section is retained only as the pre-fix review record.
+
+### Historical pre-gate verdict: FAIL (resolved)
 
 **Verification (all run fresh, all green):**
 

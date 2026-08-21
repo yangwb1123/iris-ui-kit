@@ -1,5 +1,9 @@
 ## 批 CZ Review — 跳到行 `goToRow` — **PASS** ✅
 
+后续记录：本 review 中提到的批 CY 未消费 `responsive` prop 已按
+`docs/vxe-grid/batch-cy-baseline.md` 独立补齐；其实现与验证见
+`docs/vxe-grid/batch-cy-adapt.md`。
+
 Review 已写入 `docs/vxe-grid/batch-cz-review.md`。全部检查独立复跑：
 
 **验证结果（全绿）**

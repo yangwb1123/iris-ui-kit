@@ -1,7 +1,7 @@
 # TODO
 
 > 仅保留当前可行动项。完成历史见 `CHANGELOG.md`；不要把已关闭的历史 gap
-> 重新复制成新待办。日期：2026-08-07。
+> 重新复制成新待办。日期：2026-08-20。
 
 ## 当前收口
 
@@ -14,7 +14,7 @@
 
 ## 已实现、不要再报为缺口
 
-- 154 个 manifest 组件在 React/Vue/Solid/Svelte 四端对齐；616 份框架契约
+- 155 个 manifest 组件在 React/Vue/Solid/Svelte 四端对齐；620 份框架契约
   全部 native，`unavailable = 0`。
 - 42 个共享行为 scenario 均接入四端；包含 Table resize/edit、异步
   DataSource、overlay open/dismiss、portal destroy 与 focus restore。

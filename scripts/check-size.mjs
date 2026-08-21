@@ -92,15 +92,31 @@ const BUDGETS = {
   // math), replacing the four adapters' duplicated 8-case switches. Genuine
   // shared logic (A-core); the adapters each LOSE their switch (~30 lines), so
   // the net repo size is flat-to-down — measured +0.5KB gzip on core itself.
-  core: 36,
+  // Bumped 36→52 (2026-08-19): the completed grid convergence rounds added
+  // the shared form/data-view/window/controller surface and the four table
+  // bridges now consume it. The measured barrel is 49.2KB gzip; retain a
+  // small reviewable headroom instead of leaving the release gate red.
+  // Bumped 52→55 (2026-08-20): named table views/tabs with resilient
+  // persistence and the shared pinned-boundary math are now public core
+  // primitives consumed by all four Grid bridges. The measured barrel is
+  // 53.7KB gzip; retain reviewable headroom for the new contract.
+  core: 55,
   // Bumped 3→4 (2026-08-07): font.size 9 档刻度 + space 4pt + control.height +
   // foreground/floating/backdrop 语义 token 家族（设计系统统一 + 美学评审）。
   tokens: 4,
   theme: 3.5,
   skins: 5,
   icons: 7,
-  react: 80,
-  vue: 88,
+  // Bumped 80→160 (2026-08-19): grid parity rounds expanded the public
+  // adapter barrel (table editing, export, range/presence state and shared
+  // controller bridges). The measured barrel is 151.9KB gzip.
+  react: 160,
+  // Bumped 88→106 (2026-08-19): Vue grid parity and the shared table
+  // controller bridge now ship in the barrel. The measured size is 100.5KB.
+  // Bumped 106→110 (2026-08-20): named table views/tabs and pinned-boundary
+  // drag rendering are now native Vue Grid capabilities. Measured size is
+  // 108.7KB gzip with reviewable headroom.
+  vue: 110,
   // Bumped 85→87 (v3 R10): the adapters re-export core's new createVirtualizer
   // through their barrel; react/vue had headroom, solid sat at the edge.
   // Bumped 87→90 (2026-07-17): IrisTree gained lazy-loaded children
@@ -119,7 +135,12 @@ const BUDGETS = {
   // calendar-nav sink (that change SHRINKS solid: measured −144B gzip by
   // deleting the adapter's 8-case switch). Deliberate headroom for the
   // accumulated virtual-prop surface; re-measured 94.4KB pre-calendar.
-  solid: 95,
+  // Bumped 95→115 (2026-08-19): Solid grid parity now includes the native
+  // table controller/selection bridges. The measured barrel is 109.0KB.
+  // Bumped 115→120 (2026-08-20): named table views/tabs and pinned-boundary
+  // drag rendering are now native Solid Grid capabilities. Measured size is
+  // 117.0KB gzip with reviewable headroom.
+  solid: 120,
   svelte: 6,
   manifest: 2,
 }
@@ -137,7 +158,10 @@ const PLUGIN_BUDGETS = {
   // query state, CRUD forms, permissions, custom actions and four adapters).
   // Self-externalizing the shared core reduced the measured payload from
   // 24.7KB to 16.1KB before this deliberate budget update.
-  'plugin-admin': 17,
+  // Bumped 17→18 (2026-08-20): the four-framework admin editor was split into
+  // reusable layout/section renderers; the published multi-entry payload now
+  // measures 17.2KB gzip. Keep the small headroom explicit and reviewable.
+  'plugin-admin': 18,
   'plugin-calendar': 11,
   // Bumped 11→25 (2026-07-27): donut, multi-line, stacked-bar, and shared
   // legend renderers expanded the public chart surface across four adapters.
@@ -146,11 +170,16 @@ const PLUGIN_BUDGETS = {
   'plugin-editor': 9,
   'plugin-form-builder': 18,
   'plugin-kanban': 15,
-  'plugin-locale-zh': 3,
+  // Bumped 3→4 (2026-08-19): the locale package now carries the complete
+  // grid/table message set; measured payload is 3.2KB gzip.
+  'plugin-locale-zh': 4,
   'plugin-markdown': 12,
   'plugin-notifications': 9,
   'plugin-pro-table': 34,
-  'plugin-query-builder': 9,
+  // Bumped 9→10 (2026-08-20): the Solid query builder now publishes recursive
+  // group/rule renderers instead of a monolithic entry; measured payload is
+  // 9.0KB gzip with a small rounding-safe margin.
+  'plugin-query-builder': 10,
 }
 
 /**
@@ -162,7 +191,12 @@ const PLUGIN_BUDGETS = {
 const DIRECTORY_PAYLOAD_BUDGETS = {
   'svelte-published': {
     directory: join(repoRoot, 'packages', 'svelte', 'dist'),
-    budgetKb: 240,
+    // Bumped 240→255 (2026-08-19): the completed Svelte grid/select parity
+    // surface adds published component modules; measured payload is 244.7KB.
+    // Bumped 255→268 (2026-08-20): the native Svelte table import-preview
+    // bridge adds a CSV file-preview modal/controller to the published surface;
+    // measured payload is 256.3KB, with reviewable headroom for the new files.
+    budgetKb: 268,
   },
 }
 

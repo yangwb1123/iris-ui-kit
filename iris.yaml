@@ -61,8 +61,6 @@ filesize:
     - packages/vue/src/contracts.test.ts
     - packages/vue/src/primitives/table/Table.test.ts
     - packages/vue/src/primitives/table/Table.ts
-    - packages/vue/src/primitives/table/TableBody.ts
-    - packages/vue/src/primitives/table/useTableState.ts
     - packages/vue/src/primitives/tree/Tree.ts
     # 2026-08-08 能力组合（virtual 窗口化）：Select 实现随 virtual 扩展增长
     - packages/solid/src/primitives/select/IrisSelect.tsx
@@ -114,16 +112,21 @@ coverage:
 size:
   # gzipped KB 预算（dist/index.js 的 gzip 后大小）
   budgets:
-    "@iris-ui-kit/core": 35
-    "@iris-ui-kit/tokens": 3
+    # Grid convergence rounds added shared form/data-view/window/controller
+    # engines; measured barrel is 49.2KB gzip (budget includes review headroom).
+    "@iris-ui-kit/core": 52
+    # Bumped 3→4 (2026-08-19): typography/spacing token family growth; the
+    # measured barrel is 3.1KB gzip.
+    "@iris-ui-kit/tokens": 4
     "@iris-ui-kit/theme": 3.5
     "@iris-ui-kit/skins": 5
     # Unsafe SVG-node rejection and escaping added to the public SSR renderer.
     "@iris-ui-kit/icons": 7
-    "@iris-ui-kit/react": 80
-    "@iris-ui-kit/vue": 88
-    # Native controlled/default table-sort bridge; measured at 90.37KB.
-    "@iris-ui-kit/solid": 93
+    # Grid parity rounds expanded the public adapter barrels; measured sizes
+    # are React 151.9KB, Vue 100.5KB, Solid 109.0KB gzip respectively.
+    "@iris-ui-kit/react": 160
+    "@iris-ui-kit/vue": 106
+    "@iris-ui-kit/solid": 115
     "@iris-ui-kit/svelte": 6
     "@iris-ui-kit/manifest": 2
   budget_baseline_path: "scripts/size-baseline.json"

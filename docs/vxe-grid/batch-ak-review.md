@@ -70,3 +70,7 @@ core docstring 已注明 "typically the table's current rows"，比较文档未�
 - 遗留：vue/solid/svelte 三端 `unique` 为 no-op（core 就绪、一行接线，文档化缺口），符合 "react for the paste bridge" 的批范围。
 
 **结论：符合基线全部 4 项检查点；验证命令全绿；批准进入 gate 阶段。**
+
+## Follow-up note (2026-08-19)
+
+The historical review above predates the adapter follow-up. Vue, Solid, and Svelte now pass the same live-row uniqueness context as React, with adapter-level regression coverage; the former three-adapter no-op is closed.

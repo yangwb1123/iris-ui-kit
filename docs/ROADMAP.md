@@ -1,13 +1,13 @@
 # ROADMAP
 
-> 产品与工程方向的短快照。日期：2026-07-27。已完成过程见
+> 产品与工程方向的短快照。日期：2026-08-20。已完成过程见
 > `CHANGELOG.md`，当前执行清单见 `SPRINT.md`。
 
 ## 当前产品面
 
 Iris UI 是 token-driven、四框架、插件可扩展的 UI 基础设施：
 
-- 154 个 manifest 组件在 React / Vue / Solid / Svelte 完全对齐；616 份框架契约
+- 155 个 manifest 组件在 React / Vue / Solid / Svelte 完全对齐；620 份框架契约
   全部为原生源码提取，`unavailable = 0`。
 - core 承载共享控制器、状态机、表单、数据视图、i18n、virtual、异步与
   resilience；适配器保持薄桥。

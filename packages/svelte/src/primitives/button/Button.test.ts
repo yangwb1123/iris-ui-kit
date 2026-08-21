@@ -55,6 +55,13 @@ describe('@iris-ui-kit/svelte IrisButton', () => {
     expect(screen.getByRole('button').getAttribute('style') ?? '').toContain('var(--iris-primary)')
   })
 
+  it('size uses the shared control-height tokens', () => {
+    const { container } = render(IrisButton, { props: { size: 'lg' } })
+    expect(container.querySelector('button')!.getAttribute('style')).toContain(
+      'min-height: var(--iris-control-height-lg, 40px)',
+    )
+  })
+
   it('installs the singleton stylesheet once', () => {
     render(IrisButton)
     render(IrisButton)

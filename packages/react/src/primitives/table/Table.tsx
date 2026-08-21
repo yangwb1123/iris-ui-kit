@@ -2,8 +2,6 @@ import * as React from 'react'
 import {
   aggregate,
   buildFormValues,
-  buildHeaderMatrix,
-  chartDomain,
   computeVirtualRange,
   compareValues,
   createCellRange,
@@ -14,7 +12,6 @@ import {
   createPerfStats,
   createVersionHistory,
   createRecentFilters,
-  detectAutoLink,
   flattenLeafColumns,
   flattenTree,
   formatClock,
@@ -45,27 +42,19 @@ import {
   diffRows,
   type RowDiff,
   type RowDiffCellChange,
-  matchConditionalStyles,
-  splitSearchHits,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisInput } from '../input/Input'
-import { IrisSelect } from '../select/Select'
-import { IrisFormField } from '../form-field/FormField'
 import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
-  applyColumnPreset,
   cloneRowInList,
   columnLetter,
-  copyText,
   createCellEdit,
-  createRemoteTableSource,
   createSortable,
   detectColumnType,
   insertRowInList,
   matchTableKey,
-  memoizedFormulaValue,
   normalizeKeymap,
   type IrisTableKeymap,
   parseCsv,
@@ -78,26 +67,15 @@ import {
   type CellEdit,
   type DetectedColumnType,
   type FormulaTables,
-  type RemoteTableSource,
-  type RemoteTableSourceState,
   type SortableRect,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
-import { useDrag } from '../drag/useDrag'
-import { IrisPagination } from '../pagination'
+import { TableForm, TablePager } from './table-chrome'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
-import type {
-  IrisTableDensity,
-  IrisTableEmptyState,
-  IrisTableProps,
-  IrisTableProxyConfig,
-} from './props'
+import type { IrisTableDensity, IrisTableProps } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
-import { compareStates as compareStatesDiff } from './compareStates'
-import { createPortal } from 'react-dom'
-import { useFloating } from '../../floating/useFloating'
-import { useDismiss } from '../../floating/useDismiss'
+import { compareStates as compareStatesDiff } from '@iris-ui-kit/core'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
 import { TableEditHistoryPanel } from './EditHistoryPanel'
@@ -105,615 +83,131 @@ import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { TablePerfPanel } from './PerfPanel'
 import { TableShortcutHintsPanel } from './ShortcutHintsPanel'
 import {
-  CELL_NOTE_STYLE,
-  CHAR_COUNT_HANDLE_SHIFT_STYLE,
-  CHAR_COUNT_STYLE,
   COLUMN_TOTALS_STYLE,
-  COPY_FLASH_BG,
-  EDIT_PREVIEW_STYLE,
-  PRESENCE_LABEL_STYLE,
-  RANGE_FILL_HANDLE_STYLE,
-  RANGE_FILL_TARGET_BG,
-  RANGE_MOVE_STYLE,
-  SEARCH_HIT_STYLE,
-  WATERMARK_WRAPPER_STYLE,
-  WATERMARK_OVERLAY_STYLE,
-  WATERMARK_TILE_STYLE,
+  DEFAULT_PINNED_WIDTH,
+  EXPAND_COL_WIDTH,
+  SELECTION_COL_WIDTH,
+  STATE_ROW_STYLE,
 } from './styles'
+import { TABLE_ROW_CSS } from './table-css'
+import {
+  cellNoteState,
+  dirtyCellState,
+  dirtyKey,
+  justifyFor,
+  notePopoverCellHandlers,
+  presenceOf,
+  presenceStyle,
+  renderCellNoteBadge,
+  renderPresenceLabels,
+  renderSparkline,
+  renderTableWatermark,
+  rowHeightStyleOf,
+  sparklineCell,
+  sparklineSeries,
+  type SparklineData,
+} from './cell-helpers'
+import { EditorSurface } from './editor-surface'
+export { autoHeightSize } from './editor-surface'
+import { renderEmptyState } from './empty-state'
+import { TableAnnotatePanel, TableNotePopover } from './annotation-panels'
+import {
+  applySearchHighlight,
+  conditionalCellStyle,
+  contextCellText,
+  fnrCellStyle,
+  patternHintStyle,
+  readClipboardText,
+  renderAutoLinkCell,
+  replaceAllOccurrences,
+  writeClipboardText,
+  type PatternEditActive,
+} from './clipboard-display-helpers'
+import {
+  ColumnResizeHandle,
+  isValidColumnWidth,
+  leftPinnedCount,
+  measureColumnContentWidth,
+  pinnedCountFromBudget,
+  PinnedDragHandle,
+  resolvedColumnWidth,
+} from './column-layout'
+import {
+  cellPermissionRender,
+  csvRangeCell,
+  hasEditRules,
+  isCellLocked,
+  isCellReadonly,
+  isEditableColumn,
+  sameRowList,
+  serializeRefRows,
+  tsvCell,
+  withComputedFormulaCells,
+} from './table-value-helpers'
+import { mergeFilterValues, mergeQueryIntoFilters, nextRowMajorCell } from './table-query-helpers'
+import { buildComparisonCsv } from './comparison-export'
+import { useTableProxy } from './useTableProxy'
+import { useTableColumns } from './useTableColumns'
+import { TableGroupHeader, type TableGroupHeaderEntry } from './group-header'
+import { TableSummaryRow } from './summary-row'
+import { TableFooterStack, useFooterCellSpan } from './footer-stack'
+import { TableFilterTrigger } from './filter-trigger'
+import {
+  auditDiff,
+  charCountCellStyle,
+  cellContentIsTruncated,
+  clampReorderZone,
+  copyFlashCellAttr,
+  copyFlashCellStyle,
+  expandAnimAttr,
+  findTableRowEl,
+  isColDragOutLeft,
+  isRangeFillHandleCell,
+  isRangeMoveGripCell,
+  nextDensity,
+  previewColumnsFromRows,
+  rangeFillCellStyle,
+  rangeFillTargetAttr,
+  rangeMoveCellStyle,
+  renderRangeCharCountBadge,
+  renderRangeFillHandle,
+  renderRangeMoveGrip,
+  resolveRowDragDrop,
+  sameStringSet,
+  singleKeyDiff,
+  virtualItemKeyOf,
+  type BodyPlanEntry,
+} from './interaction-helpers'
+import {
+  ANNOTATE_EDIT_MENU_KEY,
+  ANNOTATE_MENU_KEY,
+  ANNOTATE_REMOVE_MENU_KEY,
+  CLEAR_CELL_MENU_KEY,
+  COPY_FLASH_MS,
+  COPY_VALUE_MENU_KEY,
+  DISTRIBUTION_MENU_KEY,
+  DRAG_COL_WIDTH,
+  EMPTY_QUERY_PARSE,
+  FNR_BUTTON_STYLE,
+  FORMAT_NUMBER_MENU_KEY,
+  FORMAT_UPPER_MENU_KEY,
+  getCellValue,
+  getFormulaValue,
+  PIN_LEFT_MENU_KEY,
+  ROW_TARGET_MS,
+  SEQ_COL_WIDTH,
+  setCurrentFormulaTables,
+  SUMMARY_MENU_KEY,
+  UNPIN_MENU_KEY,
+  coerceEditDraft,
+} from './table-constants'
 
-/* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
-   OUT of the row-render arrow so the eslint complexity budget on that hot
-   callback is untouched. Each helper is a pure function of its inputs. */
+// Layout measurement must happen before paint in the browser, but React's
+// server renderer cannot encode useLayoutEffect. Keep the tooltip bridge
+// SSR-safe without weakening its client-side timing.
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
 
-/** True when this cell is the range's bottom-right cell hosting the handle. */
-function isRangeFillHandleCell(
-  rangeFill: boolean,
-  range: { end: { row: number; col: number } } | null,
-  idx: number,
-  ci: number,
-): boolean {
-  return rangeFill && range !== null && range.end.row === idx && range.end.col === ci
-}
-
-/** The data-iris-range-fill-target attr value (undefined hides it). */
-function rangeFillTargetAttr(isTarget: boolean): string | undefined {
-  return isTarget ? 'true' : undefined
-}
-
-/** Batch CL expand-animation attr value (undefined hides it — fail-closed). */
-function expandAnimAttr(on: boolean): string | undefined {
-  return on ? 'true' : undefined
-}
-
-/** Batch CM summary-sticky attr value (undefined hides it — fail-closed). */
-function summaryStickyAttr(on: boolean): string | undefined {
-  return on ? 'true' : undefined
-}
-
-// One virtual body slot (batch AE + CS): a `detail` entry occupies a single
-// itemHeight slot — content taller than the slot scrolls INSIDE the detail
-// cell, so the virtualized body stays uniform-height. Hoisted to module scope
-// (was a component-local alias) so the batch-CS anchor helper
-// (`virtualItemKeyOf`) can share the shape with the plan constructor without
-// a local/global split.
-type BodyPlanEntry<Row extends Record<string, unknown>> =
-  | { kind: 'group-header'; groupKey: string; count: number; depth?: number; value?: string }
-  | { kind: 'row'; row: Row; rowIndex: number }
-  | { kind: 'group-summary'; groupKey: string; rows: Row[] }
-  | { kind: 'detail'; row: Row; rowIndex: number }
-
-/** Batch CS: stable identity for a body-plan entry — mirrors the keyOf passed
- * to IrisVirtualScroll, so the recorded content anchor can be re-located in a
- * NEW plan after an expansion commit (single source of truth for both sites). */
-function virtualItemKeyOf<Row extends Record<string, unknown>>(
-  item: BodyPlanEntry<Row>,
-  rowKeyOf: (row: Row, rowIndex?: number) => string | number,
-): string {
-  if (item.kind === 'group-header') return `group:${item.groupKey}`
-  if (item.kind === 'group-summary') return `group-summary:${item.groupKey}`
-  if (item.kind === 'detail') return `${String(rowKeyOf(item.row, item.rowIndex))}::detail`
-  return String(rowKeyOf(item.row, item.rowIndex))
-}
-
-/** Batch CS: the single key that differs between two expansion key lists — or
- * null when they are identical / differ by multiple keys. The discriminator
- * between a single-key toggle (exact anchor math) and a full-set restore
- * (`expandAll` / `persistState` replay → the virtualizer's re-clamp handles
- * it, documented fiat). */
-function singleKeyDiff(prev: readonly string[], next: readonly string[]): string | null {
-  if (prev === next) return null
-  const prevSet = new Set(prev)
-  const nextSet = new Set(next)
-  const added = next.filter((k) => !prevSet.has(k))
-  const removed = prev.filter((k) => !nextSet.has(k))
-  if (added.length + removed.length !== 1) return null
-  return added[0] ?? removed[0] ?? null
-}
-
-/** Batch CP density-cycle helper (module scope): the toolbar toggle cycles
- * comfortable → compact → cozy → comfortable (zoom toggle precedent). */
-function nextDensity(d: IrisTableDensity): IrisTableDensity {
-  return d === 'comfortable' ? 'compact' : d === 'compact' ? 'cozy' : 'comfortable'
-}
-
-/** Extra cell style for the fill-handle host (relative + above pinned) and
- * the drag-target highlight (token-driven background). */
-function rangeFillCellStyle(handleCell: boolean, targetCell: boolean): React.CSSProperties {
-  return {
-    ...(handleCell ? { position: 'relative', zIndex: 2 } : null),
-    ...(targetCell ? { background: RANGE_FILL_TARGET_BG } : null),
-  }
-}
-
-/** Batch CE copy flash: is (row, col) inside the copied-range SNAPSHOT? Kept
- * at module scope so the row-render arrow's eslint complexity budget stays
- * untouched (same discipline as the fill helpers above). */
-function inCopyFlashRange(range: CellRange | null, row: number, col: number): boolean {
-  if (range === null) return false
-  return (
-    row >= range.start.row && row <= range.end.row && col >= range.start.col && col <= range.end.col
-  )
-}
-
-/** The data-iris-copy-flash attr value (undefined hides it). */
-function copyFlashCellAttr(range: CellRange | null, row: number, col: number): string | undefined {
-  return inCopyFlashRange(range, row, col) ? 'true' : undefined
-}
-
-/** Batch CH (iris 独有 — vxe has no drag-out pin): a column-drag release
- * outside the table's LEFT edge triggers the drag-out pin (with
- * `columnPinMenu`); releases at/inside the left edge keep the plain reorder
- * path. Pure + DOM-free, so the root pointerup handler and the window
- * pointerup listener resolve through the SAME check. */
-function isColDragOutLeft(x: number, rootLeft: number): boolean {
-  return x < rootLeft
-}
-
-/** Batch DC (iris 独有 — vxe has no frozen-zone-aware reorder): clamp a
- * column drag's drop index into the dragged column's OWN pin zone — the
- * zone span currently held by same-zone columns (`zoneOf` returns the same
- * `pinOf` throat as pinnedOffsets; a pinned column's zone is 'left'/'right',
- * an unpinned column's 'free'). Same-zone drops pass through index as-is
- * (zero-pin tables stay byte-identical); drops over-before the zone clamp
- * to its start, drops over-after to its end. Invariant: a column drag never
- * changes a column's pin zone — the `[left][free][right]` partition holds
- * (gapped states included, per batch CV's documented gap handling). Pure +
- * DOM-free; resolveColDrag wires it (the pinned-reorder tests exercise it
- * through the full drag pipeline). */
-function clampReorderZone<Row extends Record<string, unknown>>(
-  cols: readonly IrisTableColumn<Row>[],
-  from: number,
-  to: number,
-  zoneOf: (col: IrisTableColumn<Row>) => 'left' | 'right' | 'free',
-): number {
-  const zone = zoneOf(cols[from]!)
-  let start = from
-  let end = from
-  for (let i = 0; i < cols.length; i++) {
-    if (i !== from && zoneOf(cols[i]!) === zone) {
-      if (i < start) start = i
-      if (i > end) end = i
-    }
-  }
-  if (to < start) return start
-  if (to > end) return end
-  return to
-}
-
-/** Batch CW import preview (iris 独有): the preview table's column headers
- * come from the FIRST parsed row's keys — every row is built by the same
- * `Object.fromEntries(header.map(...))`, so key order is stable across rows.
- * Null/empty → zero columns (header-only CSV still opens the preview). */
-function previewColumnsFromRows(rows: Record<string, unknown>[] | null): string[] {
-  if (!rows || rows.length === 0) return []
-  return Object.keys(rows[0])
-}
-
-/** Batch CZ (iris 独有 — vxe has no locate flash): locate a row's DOM node
- * by key via the same data attribute the row-drag path uses (flat, tree,
- * grouped and virtual rows all carry it). The selector is escaped for
- * attribute values (a raw `"` in a key would otherwise make querySelector
- * throw); jsdom lacks CSS.escape, so fall back to attribute iteration
- * there. Shared by scrollToRow and goToRow (extracted from the former). */
-function findTableRowEl(root: HTMLElement, key: string | number): HTMLElement | null {
-  const keyStr = String(key)
-  return typeof CSS !== 'undefined' && CSS.escape
-    ? root.querySelector<HTMLElement>(`[data-iris-table-row="${CSS.escape(keyStr)}"]`)
-    : (Array.from(root.querySelectorAll<HTMLElement>('[data-iris-table-row]')).find(
-        (n) => n.getAttribute('data-iris-table-row') === keyStr,
-      ) ?? null)
-}
-
-/** The copy-flash background — empty object outside the flashed rect so the
- * spread adds nothing (no operators in the hot arrow). */
-function copyFlashCellStyle(
-  range: CellRange | null,
-  row: number,
-  col: number,
-): React.CSSProperties {
-  if (!inCopyFlashRange(range, row, col)) return {}
-  return { backgroundColor: COPY_FLASH_BG }
-}
-
-/** The 6px fill handle (data-iris-range-fill), rendered only in the range's
- * bottom-right cell; pointerdown starts the drag (and stops the cell click). */
-function renderRangeFillHandle(
-  handleCell: boolean,
-  row: number,
-  col: number,
-  onPointerDown: (e: React.PointerEvent, row: number, col: number) => void,
-): React.ReactNode {
-  if (!handleCell) return null
-  return (
-    <span
-      data-iris-range-fill=""
-      onPointerDown={(e) => onPointerDown(e, row, col)}
-      style={RANGE_FILL_HANDLE_STYLE}
-    />
-  )
-}
-
-/* Batch CN cell drag-move helpers (module scope): same discipline as the
-   Batch AQ fill helpers — the per-cell move-grip logic stays OUT of the
-   row-render arrow so the eslint complexity budget on that hot callback is
-   untouched. Each helper is a pure function of its inputs. */
-
-/** True when this cell is the range's top-left cell hosting the move grip. */
-function isRangeMoveGripCell(
-  cellDrag: boolean,
-  range: { start: { row: number; col: number } } | null,
-  idx: number,
-  ci: number,
-): boolean {
-  return cellDrag && range !== null && range.start.row === idx && range.start.col === ci
-}
-
-/** Host style for the move-grip cell: relative + above pinned sticky cells
- * (zIndex 2 — the same anchor the fill-handle host uses; both styles spread
- * relative, which is idempotent). */
-function rangeMoveCellStyle(gripCell: boolean): React.CSSProperties {
-  return gripCell ? { position: 'relative', zIndex: 2 } : {}
-}
-
-/** The 12×4 move grip (data-iris-range-move) on the range's top edge,
- * rendered only in the range's top-left cell; pointerdown starts the drag
- * (and stops the cell click, fill-handle precedent). */
-function renderRangeMoveGrip(
-  gripCell: boolean,
-  row: number,
-  col: number,
-  onPointerDown: (e: React.PointerEvent, row: number, col: number) => void,
-): React.ReactNode {
-  if (!gripCell) return null
-  return (
-    <span
-      data-iris-range-move=""
-      onPointerDown={(e) => onPointerDown(e, row, col)}
-      style={RANGE_MOVE_STYLE}
-    />
-  )
-}
-
-/* Batch CG charCount (iris 独有 — vxe has no equivalent): the selection badge
-   lives at the range's bottom-right cell — the same corner as the fill handle
-   — and is a pure reduction over the EXISTING rangeStatsData memo (the same
-   material the stats panel consumes): count = Σ column non-null counts, sum =
-   Σ numeric column sums (null when NO column in the range has numeric data).
-   Returns null when there is nothing to show (no range / no entries). */
-function rangeCharCount(
-  entries: RangeStatsEntry[] | null,
-): { count: number; sum: number | null } | null {
-  if (!entries || entries.length === 0) return null
-  let count = 0
-  let sum = 0
-  let hasNumeric = false
-  for (const entry of entries) {
-    count += entry.stats.count
-    if (entry.stats.sum !== null) {
-      hasNumeric = true
-      sum += entry.stats.sum
-    }
-  }
-  return { count, sum: hasNumeric ? sum : null }
-}
-
-/** Batch CG: is this cell the selection badge host (the range's bottom-right
- *  cell)? The same corner the fill handle occupies, hence the collision
- *  handling in the badge render. Feature-gated on `charCount` (fail-closed). */
-function isRangeCharCountHost(
-  charCount: boolean | undefined,
-  range: { end: { row: number; col: number } } | null,
-  idx: number,
-  ci: number,
-): boolean {
-  return charCount === true && range !== null && range.end.row === idx && range.end.col === ci
-}
-
-/** Batch CG: the selection badge at the range's bottom-right cell — count (+ sum
- *  when the range has numeric data), the sum rounded via the SAME
- *  aggregateAccuracy gate as the summary row / selection summary. Shifts up
- *  (bottom 10px) when the cell is also the fill-handle host so the 6px handle
- *  stays usable. Rendered inside the cell div (the host cell gains position:
- *  relative from charCountCellStyle, so the chip anchors to the cell box). */
-function renderRangeCharCountBadge(
-  charCount: boolean | undefined,
-  activeRange: { end: { row: number; col: number } } | null,
-  rangeStatsData: RangeStatsEntry[] | null,
-  aggregateAccuracy: number | undefined,
-  idx: number,
-  ci: number,
-  fillHandleCell: boolean,
-  t: (key: string, params?: Record<string, string | number>) => string,
-): React.ReactNode {
-  if (!isRangeCharCountHost(charCount, activeRange, idx, ci)) return null
-  const stats = rangeCharCount(rangeStatsData)
-  if (stats === null) return null
-  const accuracy =
-    aggregateAccuracy !== undefined && aggregateAccuracy >= 0 && aggregateAccuracy <= 100
-      ? aggregateAccuracy
-      : undefined
-  const sumText =
-    stats.sum !== null && accuracy !== undefined
-      ? String(Number(stats.sum.toFixed(accuracy)))
-      : stats.sum !== null
-        ? String(stats.sum)
-        : null
-  return (
-    <span
-      data-iris-char-count=""
-      data-iris-char-count-range=""
-      style={fillHandleCell ? CHAR_COUNT_HANDLE_SHIFT_STYLE : CHAR_COUNT_STYLE}
-    >
-      {t('table.charCount.range', { count: String(stats.count) })}
-      {sumText !== null ? ` · ${t('table.charCount.rangeSum', { sum: sumText })}` : null}
-    </span>
-  )
-}
-
-/** Batch CG: the charCount corner badge anchors to a RELATIVE cell — the
- *  editing cell (badge inside the editor surface) and the selection badge host
- *  (the range's bottom-right cell). Empty object when nothing renders so the
- *  spread adds nothing to the hot row arrow; `editing && charCount` gates the
- *  editing case (fail-closed: an open editor without the prop shows nothing). */
-function charCountCellStyle(
-  editing: boolean,
-  charCount: boolean | undefined,
-  activeRange: { end: { row: number; col: number } } | null,
-  idx: number,
-  ci: number,
-): React.CSSProperties {
-  if (!charCount) return {}
-  if (editing || isRangeCharCountHost(charCount, activeRange, idx, ci)) {
-    return { position: 'relative' }
-  }
-  return {}
-}
-
-/**
- * Batch CD row-drag insertion indicator (iris 独有 — vxe has no drop line):
- * the ONE pure source of truth shared by the move handler (draws the 1px
- * line between rows) and the up handler (commits the drop) so the row
- * always lands exactly where the line was drawn. Side = the pointer vs. the
- * over row's vertical midpoint (dnd-kit style): at/above the center the
- * line sits ABOVE the over row, strictly below it sits BELOW. Returns null
- * when there is nothing to draw (no target / the active row itself / a
- * non-row target such as the header), and the insert index is expressed in
- * the ORIGINAL array space (pre-removal), matching the commit's
- * `splice(from,1); splice(to,0)` — so a net-zero move (`from ===
- * insertIndex`) is detectable by the caller.
- */
-interface RowDragDropResolve {
-  /** Which edge of the over row the insertion line sits on. */
-  side: 'above' | 'below'
-  /** Index in the ORIGINAL rows array the dragged row lands at. */
-  insertIndex: number
-}
-
-function resolveRowDragDrop<Row>(
-  pointerY: number,
-  activeId: string,
-  overId: string,
-  overRect: SortableRect,
-  rows: readonly Row[],
-  idOf: (row: Row, index: number) => string,
-): RowDragDropResolve | null {
-  if (activeId === overId) return null
-  const overIndex = rows.findIndex((row, index) => idOf(row, index) === overId)
-  if (overIndex < 0) return null
-  const side: RowDragDropResolve['side'] =
-    pointerY <= overRect.top + overRect.height / 2 ? 'above' : 'below'
-  return { side, insertIndex: overIndex + (side === 'below' ? 1 : 0) }
-}
-
-/**
- * Light audit diff (batch AT): compare the PREVIOUS row list against the
- * NEXT and resolve the FIRST changed row + FIRST changed cell, so each
- * mutation commit records exactly ONE audit entry (keeps the trail readable
- * and the complexity budget flat).
- *
- * Simplifications (documented): the walk is index-based — a reorder reads as
- * a structural change at the first index whose keys differ; a row that moved
- * but kept its key reads as a change at its old slot; only the first changed
- * row/cell is kept, not a full cell-level patch. Structural changes (rows
- * added/removed at the index, or key-mismatched rows) carry ONLY the rowKey
- * (no column/old→new — the panel renders those as partial-context rows);
- * same-key rows walk the union of own enumerable fields and record the first
- * differing cell.
- */
-function auditDiff<Row extends Record<string, unknown>>(
-  prev: readonly Row[],
-  next: readonly Row[],
-  resolveKey: (row: Row, index: number) => string | number,
-):
-  | { rowKey?: string | number; column?: string; oldValue?: unknown; newValue?: unknown }
-  | undefined {
-  const len = Math.max(prev.length, next.length)
-  for (let i = 0; i < len; i += 1) {
-    const a = prev[i]
-    const b = next[i]
-    if (a === b) continue
-    if (!a || !b) return { rowKey: a ? resolveKey(a, i) : resolveKey(b!, i) }
-    const ka = resolveKey(a, i)
-    const kb = resolveKey(b, i)
-    if (ka !== kb) {
-      // Structural at this index: prefer the key from the side that shrank
-      // (removed row) / grew (inserted row) — index-0 inserts report the
-      // shifted occupant instead (documented simplification).
-      return { rowKey: prev.length > next.length ? ka : kb }
-    }
-    // Same row — first differing cell across the union of fields.
-    const fields = new Set<string>()
-    Object.keys(a).forEach((f) => fields.add(f))
-    Object.keys(b).forEach((f) => fields.add(f))
-    for (const f of fields) {
-      if (a[f] !== b[f]) {
-        return { rowKey: ka, column: f, oldValue: a[f], newValue: b[f] }
-      }
-    }
-  }
-  return undefined
-}
-
-/** Batch BE: the 45° stripe background-image marking a locked cell — ONE
- * source shared by the injected stylesheet rule (interpolated into
- * TABLE_ROW_CSS below) and the inline cell style. The base cell path uses
- * background-COLOR longhands (fnrCellStyle), so the image survives; the
- * inline re-assertion (spread last in the render) additionally protects
- * against user/conditional `background` shorthands. Token-driven
- * (--iris-muted-subtle exists in both themes). */
-const LOCKED_CELL_STRIPE =
-  'repeating-linear-gradient(45deg, var(--iris-muted-subtle) 0, var(--iris-muted-subtle) 6px, transparent 6px, transparent 12px)'
-
-/** Batch BJ: the dotted 8pt-grid texture marking a permission-readonly cell —
- * visually distinct from locked's 45° stripes (dynamic permission vs static
- * declaration). Same background-image + inline re-assertion pattern as
- * LOCKED_CELL_STRIPE (a `background` shorthand resets background-image).
- * Token-driven (--iris-muted-subtle exists in both themes). */
-const READONLY_CELL_DOTS =
-  'radial-gradient(var(--iris-muted-subtle) 1px, transparent 1px) 0 0 / 8px 8px'
-
-const TABLE_ROW_CSS = `
-[data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
-  --iris-cell-bg: var(--iris-surface-hover);
-}
-[data-iris-table-row-selected="true"] {
-  --iris-cell-bg: var(--iris-surface-selected);
-}
-/* Row edit mode (batch K): the row whose editors are open gets the same
-   token-driven highlight as the selected/current row. */
-[data-iris-table-row][data-iris-row-editing="true"] {
-  --iris-cell-bg: var(--iris-surface-selected);
-}
-[data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
-  background: var(--iris-surface-hover);
-}
-/* Fixed height (batch N): the root becomes the scroll container; the header
-   row (flat AND grouped variants both carry data-iris-table-row="header") stays
-   visible with a sticky position. z-index 2 keeps it above pinned body cells
-   (zIndex 1 via pinnedStyle). */
-[data-iris-table-fixed-height] [data-iris-table-row="header"] {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-/* Batch CM summary sticky (iris 独有 — vxe has no summary sticky parity):
-   with summaryRowStyle = 'sticky' the GLOBAL summary row sticks to the
-   scroll container's bottom edge. Gated by fixed-height (the root is the
-   scroll container); z-index 1 mirrors pinned columns (below the sticky
-   header's z2). The row already carries an opaque --iris-surface background
-   + 2px top border, so no inline style changes are needed. */
-[data-iris-table-fixed-height] [data-iris-summary-sticky="true"] {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-}
-/* Lazy tree loading caret (batch J): keyframes can't be inline, so they live
-   in the singleton stylesheet; opacity + spin use token-driven values. */
-@keyframes iris-table-caret-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-[data-iris-table-tree-toggle][data-iris-tree-loading] {
-  opacity: 0.55;
-  animation: iris-table-caret-spin 900ms linear infinite;
-}
-/* Batch CL expand animation (iris 独有 — vxe has no expand animation): the
-   detail panel / tree row plays a max-height + opacity ENTER transition on
-   expand. Both endpoints force overflow hidden so content is never
-   permanently clipped — the animation ends back at the base state. Cap and
-   duration are token-driven with fallbacks (motion token precedent). */
-@keyframes iris-table-expand-enter {
-  from { max-height: 0; opacity: 0; overflow: hidden; }
-  to { max-height: var(--iris-table-expand-max, 512px); opacity: 1; overflow: hidden; }
-}
-[data-iris-expand-anim="true"] {
-  animation: iris-table-expand-enter var(--iris-duration-md, 200ms) ease-out;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-iris-expand-anim="true"] {
-    animation: none;
-  }
-}
-@media print {
-  [data-iris-table-tabs] {
-    display: none !important;
-  }
-  [data-iris-table-toolbar] {
-    display: none !important;
-  }
-  [data-iris-table-form] {
-    display: none !important;
-  }
-  [data-iris-table][data-printable="true"] {
-    border: none !important;
-    box-shadow: var(--iris-shadow-none, none) !important;
-  }
-}
-/* Dirty-cell dot (batch Q, vxe editDirtyConfig parity): a small primary dot
-   at the cell's inline-end corner marks a committed cell whose value differs
-   from its pre-edit original; the cell itself gets position: relative from
-   the render so the dot anchors to it. Logical inset-inline-end mirrors the
-   dot in RTL instead of pinning it to the physical right edge. */
-[data-iris-cell-dirty]::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  inset-inline-end: 4px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--iris-primary);
-}
-/* Locked cells (batch BE, iris 独有 — vxe has no cell-lock concept): 45°
-   diagonal stripes over the muted-subtle token (both themes define it) mark
-   a read-only cell; the render additionally drops the cursor to not-allowed
-   and sets data-iris-cell-locked. Background-IMAGE, so hover/selected row
-   backgrounds (background-color) still show through, and the dirty dot /
-   note badges (::after, absolute) stay visible on top. The render ALSO
-   re-asserts the image inline, spread AFTER every background shorthand
-   (see LOCKED_CELL_STRIPE). */
-[data-iris-cell-locked="true"] {
-  background-image: ${LOCKED_CELL_STRIPE};
-}
-/* Readonly cells (batch BJ, iris 独有): dotted 8pt texture — DYNAMIC
-   permission (re-evaluated per render) vs locked's static 45° stripes; a
-   cell that is both locked and readonly shows locked (locked wins). Same
-   background-image + inline re-assertion pattern as the locked rule. */
-[data-iris-cell-readonly="true"] {
-  background-image: ${READONLY_CELL_DOTS};
-}
-/* Thin scrollbars (batch Q, vxe scrollbarConfig parity): 6px webkit
-   scrollbars + Firefox scrollbar-width; covers the root scroller and the
-   virtual-scroll descendant. */
-[data-iris-scrollbar-thin="true"],
-[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll] {
-  scrollbar-width: thin;
-  scrollbar-color: var(--iris-border) transparent;
-}
-[data-iris-scrollbar-thin="true"]::-webkit-scrollbar,
-[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-[data-iris-scrollbar-thin="true"]::-webkit-scrollbar-thumb,
-[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb {
-  background: var(--iris-border);
-}
-[data-iris-scrollbar-thin="true"]::-webkit-scrollbar-thumb:hover,
-[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb:hover {
-  background: var(--iris-primary);
-}
-/* Zoom overlay (batch U, vxe toolbar zoom parity): position: fixed pins
-   the root as a fullscreen overlay — viewport inset, popover z-index,
-   surface background, its own scroll. The root itself is a plain block
-   (each ROW is its own CSS grid), so the internal grid layout is untouched
-   — the rows keep their shared gridTemplateColumns and the sticky-header /
-   scroll machinery engages via the inline height: 100%. Caveats: the
-   form/toolbar/pager sections are fragment siblings OUTSIDE the root and
-   stay in place; while zoomed the toolbar is lifted above the overlay
-   (position relative + popover z-index + 1 inline, so its ✕ exit stays
-   reachable — vxe keeps its toolbar inside the zoomed root, same effect),
-   and position: fixed + height: 100% are forced inline so a caller-supplied
-   style or zIndex prop cannot unpin the overlay. */
-[data-iris-table][data-iris-table-zoomed] {
-  position: fixed;
-  inset: 0;
-  z-index: var(--iris-z-popover, 1000);
-  background: var(--iris-surface);
-  overflow: auto;
-}
-/* Density presets (batch CP, iris 独有 — vxe has no density concept): a
-   SIBLING of the size presets — both write the same --iris-cell-pad-y, so a
-   density tier stacks ON TOP of the size tier (same specificity; where both
-   live in one sheet the density rules come later and win). comfortable is
-   the default and declares nothing (byte-identical to a bare table). */
-[data-iris-table][data-density="compact"] {
-  --iris-cell-pad-y: 6px;
-}
-[data-iris-table][data-density="cozy"] {
-  --iris-cell-pad-y: 4px;
-}
-`
 import { useTableSort } from './useTableSort'
 import { usePersistState } from './usePersistState'
 import { useTableViews } from './useTableViews'
@@ -726,9 +220,7 @@ import { RangeToolbar, type RangeStatsEntry } from './RangeToolbar'
 import type {
   IrisTableColumn,
   IrisTableColumnWidths,
-  IrisTableConditionalStyle,
   IrisTableContextMenuParams,
-  IrisTableEditDirtyConfig,
   IrisTablePresenceEntry,
   IrisTableSortDirection,
   IrisTableFilterValues,
@@ -737,1947 +229,7 @@ import type {
   IrisTableSortState,
 } from './types'
 
-/** Map a vxe-style cell alignment to a flex `justifyContent` value. */
-const justifyFor = (
-  align: 'left' | 'center' | 'right' | undefined,
-  fallback: 'left' | 'right' = 'left',
-): 'flex-start' | 'center' | 'flex-end' => {
-  const resolved = align ?? fallback
-  return resolved === 'right' ? 'flex-end' : resolved === 'center' ? 'center' : 'flex-start'
-}
-
-/** Dirty-map key (batch Q): `${rowKeyVal}::${colKey}` — the same `::`
- * delimiter as `cellId` so keys/colKeys containing `:` cannot collide
- * (`a:b`/`c` vs `a`/`b:c`). */
-const dirtyKey = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
-
-/** Per-cell dirty render state (batch Q, vxe editDirtyConfig parity): a
- * committed cell whose value differs from its pre-edit original is dirty
- * (tracked in the dirty map, keyed `${rowKeyVal}::${colKey}`). `indicator:
- * false` suppresses the dot + relative positioning but keeps tracking;
- * `className: true` adds an `iris-table-cell-dirty` class regardless.
- * Module-level so the cell render's cyclomatic complexity stays flat (a
- * call costs 0). */
-const dirtyCellState = (
-  config: IrisTableEditDirtyConfig | undefined,
-  map: ReadonlyMap<string, { original: unknown; current: unknown }> | null,
-  k: string | number | null,
-  colKey: string,
-): {
-  attr: string | undefined
-  dirtyClass: string | undefined
-  posStyle: React.CSSProperties | null
-} => {
-  if (config === undefined || k == null) {
-    return { attr: undefined, dirtyClass: undefined, posStyle: null }
-  }
-  const tracked = map !== null && map.has(dirtyKey(k, colKey))
-  const showDirty = tracked && config.indicator !== false
-  const withClass = tracked && config.className === true
-  return {
-    attr: showDirty ? 'true' : undefined,
-    dirtyClass: withClass ? 'iris-table-cell-dirty' : undefined,
-    posStyle: showDirty ? { position: 'relative' } : null,
-  }
-}
-
-/** Batch AZ cell annotation (iris 独有 — vxe has no cell-note concept): the
- * dynamic `cellNote` callback wins over the static `annotations` map, keyed
- * `${rowKeyVal}::${colKey}` — the same `::` delimiter as `cellId` (so the
- * lookup is exactly `annotations[cellId(k, col.key)]`). A null/'' note
- * renders nothing (no badge, no attr, no title). Module-level so the cell
- * render's cyclomatic complexity stays flat (a call costs 0). */
-const cellNoteOf = <Row extends Record<string, unknown>>(
-  annotations: Record<string, string> | undefined,
-  cellNote: ((row: Row, column: IrisTableColumn<Row>) => string | null) | undefined,
-  row: Row,
-  col: IrisTableColumn<Row>,
-  k: string | number | null,
-): string | null => {
-  if (cellNote) {
-    const dynamic = cellNote(row, col)
-    if (dynamic != null && dynamic !== '') return dynamic
-  }
-  if (k == null || annotations == null) return null
-  return annotations[`${k}::${col.key}`] ?? null
-}
-
-/** Batch AZ: the per-cell render state derived from the note — attr, the
- * relative-position style the badge needs, and the note itself (so the cell
- * arrow's title/attr/badge reads stay complexity-free — one call costs 0). */
-const cellNoteState = <Row extends Record<string, unknown>>(
-  annotations: Record<string, string> | undefined,
-  cellNote: ((row: Row, column: IrisTableColumn<Row>) => string | null) | undefined,
-  row: Row,
-  col: IrisTableColumn<Row>,
-  k: string | number | null,
-): { note: string | null; attr: string | undefined; posStyle: React.CSSProperties | null } => {
-  const note = cellNoteOf(annotations, cellNote, row, col, k)
-  return {
-    note,
-    attr: note ? 'true' : undefined,
-    posStyle: note ? { position: 'relative' } : null,
-  }
-}
-
-/** Batch AZ: the 6px corner badge — zero nodes when there is no note (so
- * noted cells are the only ones carrying the span; same pattern as the range
- * fill handle). */
-function renderCellNoteBadge(note: string | null): React.ReactNode {
-  if (!note) return null
-  return <span aria-hidden="true" data-iris-cell-note-badge="" style={CELL_NOTE_STYLE} />
-}
-
-/** Batch BM: the note-popover handlers for a noted cell — null when the
- * feature is off or the cell has no note (zero cost: no handlers, no
- * popover). Module-level so the cell render's cyclomatic complexity stays
- * flat (a call costs 0); the `::` cell key is the same canonical delimiter
- * as `cellId` / the `annotations` map. mouseleave closes (native-title
- * semantics); the popover is pointer-events none so it never blocks the
- * leave. */
-const notePopoverCellHandlers = (
-  notePopover: boolean | undefined,
-  note: string | null,
-  k: string | number,
-  colKey: string,
-  onEnter: (cellKey: string, text: string, el: HTMLElement) => void,
-  onLeave: () => void,
-): { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void } | null => {
-  if (!notePopover || !note) return null
-  const cellKey = `${k}::${colKey}`
-  return {
-    onMouseEnter: (e: React.MouseEvent) => onEnter(cellKey, note, e.currentTarget as HTMLElement),
-    onMouseLeave: onLeave,
-  }
-}
-
-/** Batch BN: the inline row height for the NON-virtual render path — fixed
- * form = uniform height, fn form = per-bodyData-index height; undefined when
- * unset (rows keep their natural content height, byte-identical with the
- * pre-batch behavior). Module-level so renderBodyEntry's complexity stays
- * flat; `rowStyle` (merged AFTER extraStyle) remains the per-row escape
- * hatch. Virtual mode never calls this — slots fill via `height: '100%'`. */
-const rowHeightStyleOf = (
-  rowHeight: number | ((index: number) => number) | undefined,
-  idx: number,
-): React.CSSProperties | undefined =>
-  rowHeight == null
-    ? undefined
-    : { height: typeof rowHeight === 'number' ? rowHeight : rowHeight(idx) }
-
-/** Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
- * the entries whose `cellKey` (the canonical `${rowKeyVal}::${colKey}`
- * delimiter) matches this cell — one Map lookup per visible cell, undefined
- * when there is no presence at all. Module-level so the cell render's
- * cyclomatic complexity stays flat (a call costs 0). */
-const presenceOf = (
-  byCell: ReadonlyMap<string, IrisTablePresenceEntry[]> | null,
-  k: string | number | null,
-  colKey: string,
-): IrisTablePresenceEntry[] | undefined => {
-  if (byCell === null || k == null) return undefined
-  return byCell.get(`${k}::${colKey}`)
-}
-
-/** Batch BD: the cell-level render state — a 2px outline in the FIRST
- * entry's color (same-cell stacking: first wins) + relative positioning for
- * the corner labels; null when this cell has no presence (zero nodes). */
-const presenceStyle = (
-  entries: IrisTablePresenceEntry[] | undefined,
-): { outline: string; position: 'relative' } | null =>
-  entries && entries.length > 0
-    ? { outline: `2px solid ${entries[0].color}`, position: 'relative' }
-    : null
-
-/** Batch BD: the corner name labels — one span per entry, cascaded below
- * each other when several share a cell (first entry on top); zero nodes when
- * there is no presence on this cell (same pattern as the range fill handle).
- * Pure display: the label carries the id/name attrs for tests and tooling. */
-function renderPresenceLabels(entries: IrisTablePresenceEntry[] | undefined): React.ReactNode {
-  if (!entries || entries.length === 0) return null
-  return entries.map((e, i) => (
-    <span
-      key={e.id}
-      aria-hidden="true"
-      data-iris-presence-label=""
-      data-iris-presence-id={e.id}
-      data-iris-presence-name={e.name}
-      style={{ ...PRESENCE_LABEL_STYLE, top: i * 14, background: e.color }}
-    >
-      {e.name}
-    </span>
-  ))
-}
-
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
-
-// ── Batch BU table watermark (iris 独有 — vxe has no watermark) ────────
-// A rotated, tiled text layer rendered INSIDE the table root (not wrapping
-// it — a wrapper would break the fixed-height scroll container and sticky
-// header). DOM shape mirrors the standalone IrisWatermark primitive
-// (data-iris-watermark wrapper → data-iris-watermark-overlay → tiles) so a
-// global [data-iris-watermark] selector matches one element shape everywhere.
-// The wrapper is the FIRST child of the root AND sticky: the root is the
-// scroll container itself, so a normal-position sticky at the content top
-// with `top: 0; height: 100%` pins the layer to the scroll viewport while
-// rows scroll beneath (absolute inset-0 — or sticky placed after the rows —
-// would scroll away with the content). Positioned z-auto paints it above
-// static rows / footer / pager but below the sticky header (z 2) and pinned
-// columns (z 1). Presence-gated at the call site: no prop / empty string →
-// zero nodes.
-const WATERMARK_TILE_COUNT = 72
-
-function renderTableWatermark(text: string): React.ReactNode {
-  return (
-    <div data-iris-watermark="" style={WATERMARK_WRAPPER_STYLE}>
-      <div data-iris-watermark-overlay="" aria-hidden="true" style={WATERMARK_OVERLAY_STYLE}>
-        {Array.from({ length: WATERMARK_TILE_COUNT }, (_, i) => (
-          <span key={i} data-iris-watermark-tile="" style={WATERMARK_TILE_STYLE}>
-            {text}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Batch BI column sparkline (iris 独有 — vxe has no sparkline) ───────
-// SVG geometry in viewBox units — 20×8, pure structured JSX (no SVG
-// strings, no dangerouslySetInnerHTML), stroke from the primary token
-// (ChartPanel precedent). The series is PER-PREFIX: the cell at filteredData
-// index i charts the column's values over [0..i] INCLUSIVE (the current
-// value is the final point).
-const SPARK_W = 20
-const SPARK_H = 8
-const SPARK_PAD = 1
-
-/** Batch BI render memo shape: filteredData row-identity index + per-column
- * RAW value arrays (values[i] = the i-th filteredData row's cell value). */
-interface SparklineData<Row extends Record<string, unknown>> {
-  rowIndexOf: Map<Row, number>
-  valuesByKey: Map<string, unknown[]>
-}
-
-/** x of the i-th point (0-based) over `count` points. */
-function sparkX(i: number, count: number): number {
-  if (count <= 1) return SPARK_W / 2
-  return SPARK_PAD + (i / (count - 1)) * (SPARK_W - 2 * SPARK_PAD)
-}
-
-/** y of value `v` within the padded [min, max] domain (never a zero span). */
-function sparkY(v: number, min: number, max: number): number {
-  const span = max - min
-  return SPARK_H - SPARK_PAD - ((v - min) / span) * (SPARK_H - 2 * SPARK_PAD)
-}
-
-/** Contiguous runs of finite points → polyline segments (a null point breaks
- * the line; each run renders its own polyline — ChartPanel parity). */
-function sparkSegments(
-  points: ReadonlyArray<number | null>,
-  min: number,
-  max: number,
-): Array<Array<[number, number]>> {
-  const segments: Array<Array<[number, number]>> = []
-  let current: Array<[number, number]> | null = null
-  points.forEach((p, i) => {
-    if (p === null) {
-      current = null
-      return
-    }
-    if (current === null) {
-      current = []
-      segments.push(current)
-    }
-    current.push([sparkX(i, points.length), sparkY(p, min, max)])
-  })
-  return segments
-}
-
-/** Batch BI: the per-prefix series for one cell — the sparkline column's
- * values over filteredData[0..i] INCLUSIVE (current value = final point),
- * with null/undefined/non-finite values as gaps (buildChartData parity).
- * null when the memo is off or the row is not in filteredData (fail-inert). */
-function sparklineSeries<Row extends Record<string, unknown>>(
-  memo: SparklineData<Row> | null,
-  row: Row,
-  col: IrisTableColumn<Row>,
-): Array<number | null> | null {
-  if (memo === null) return null
-  const index = memo.rowIndexOf.get(row)
-  if (index === undefined) return null
-  const values = memo.valuesByKey.get(col.key)
-  if (!values) return null
-  return values.slice(0, index + 1).map((raw) => {
-    // buildChartData parity: `Number` coercion — a numeric string charts
-    // as a point, null/non-finite becomes a gap.
-    const value = raw == null ? Number.NaN : Number(raw)
-    return Number.isFinite(value) ? value : null
-  })
-}
-
-/** Batch BI: whether this cell renders a sparkline — the per-cell numeric
- * gate (raw value must be a finite JS number); the same condition the cell
- * title uses. Module-level so the cell render's cyclomatic complexity stays
- * flat (a call costs 0). */
-function sparklineCell<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-  raw: unknown,
-): boolean {
-  return col.sparkline === true && typeof raw === 'number' && Number.isFinite(raw)
-}
-
-/** Batch BI: the 20×8 sparkline SVG for a series — polyline segments (gaps
- * break the line, ChartPanel parity), a circle dot for a single-point
- * prefix; stroke `var(--iris-primary)` strokeWidth 1.5 (token — ChartPanel
- * precedent). `role="img"` + aria-label = the series (the same string the
- * cell title shows). Zero nodes for a null/empty series. */
-function renderSparkline(series: Array<number | null> | null, colKey: string): React.ReactNode {
-  if (!series || series.length === 0) return null
-  const { min, max } = chartDomain(series)
-  const segments = sparkSegments(series, min, max)
-  return (
-    <svg
-      viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-      width={SPARK_W}
-      height={SPARK_H}
-      role="img"
-      aria-label={series.map((p) => (p === null ? '' : String(p))).join(', ')}
-      data-iris-sparkline={colKey}
-      style={{ display: 'block', pointerEvents: 'none' }}
-    >
-      {segments.map((seg, s) => (
-        <polyline
-          key={s}
-          points={seg.map(([x, y]) => `${x},${y}`).join(' ')}
-          fill="none"
-          stroke="var(--iris-primary)"
-          strokeWidth={1.5}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-      ))}
-      {series.length === 1 && series[0] !== null ? (
-        <circle
-          cx={sparkX(0, 1)}
-          cy={sparkY(series[0], min, max)}
-          r={1.5}
-          fill="var(--iris-primary)"
-        />
-      ) : null}
-    </svg>
-  )
-}
-
-interface EditorSurfaceProps<Row extends Record<string, unknown>> {
-  /** The edit session driving this editor (cell mode: the singleton; row
-   *  mode: that column's own session). */
-  session: CellEdit
-  col: IrisTableColumn<Row>
-  /** aria-describedby id of the validation error message. */
-  errorId: string
-  /** validConfig.showMessage !== false — skip only the message element. */
-  showError: boolean
-  /** Callback ref so the parent can focus the editor (stable per column). */
-  registerRef: (el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null) => void
-  onTab: (e: React.KeyboardEvent, dir: 1 | -1) => void
-  onCommit: () => void
-  onCancel: () => void
-  /** Row edit mode: bumped to (re)focus this editor; cell mode focuses via
-   *  the singleton editingTarget effect instead (always 0 here). */
-  focusToken: number
-  /** Row edit mode: fired when the session goes idle (committed) so the
-   *  parent can close just this column's editor. */
-  onSessionIdle?: () => void
-  /** Per-column native datalist options (batch AM, iris 独有): a map of
-   *  column key → suggestion strings, computed by the parent over the body
-   *  data so this surface stays free of it. Only the text editor consumes it. */
-  suggestOptions?: ReadonlyMap<string, string[]>
-  /** Batch CC (iris 独有): auto-height textarea editor — grows with content
-   *  (1 row start, 6-row cap), sized via scrollHeight on input. Off by
-   *  default (fail-closed; batch I's rows=3 stays). */
-  editAutoHeight?: boolean
-  /** Batch CG (iris 独有): show a live character count in the cell's
-   *  bottom-right corner — `String(draft).length`, recomputed per keystroke
-   *  via the existing session-store subscription (zero new state). */
-  charCount?: boolean
-  /** Batch CQ (iris 独有): show a live preview of the formatter-applied
-   *  draft below the editor — a muted small line (`data-iris-edit-preview`),
-   *  recomputed per keystroke via the session-store subscription (zero new
-   *  state). Only renders for columns with a `formatter`. */
-  editPreview?: boolean
-  /** The row being edited — the formatter's second argument, so a
-   *  row-aware formatter sees the same row the committed cell display feeds
-   *  it. */
-  row: Row
-  /** i18n translator (the parent's useI18n instance — same `t` the table uses). */
-  t: (key: string, params?: Record<string, string | number>) => string
-}
-
-/**
- * Batch CQ (iris 独有): THE single source of truth for edit-draft coercion.
- * The commit/validate path (`coerceValueFor`) and the live-preview path
- * (batch CQ) both funnel through here, so the preview can never silently
- * drift from what a future editor type actually commits. Select editors
- * resolve the option's TYPED value (a number option commits a number, a
- * string option a string — vxe edit-render parity), number editors coerce to
- * Number with the raw-value fallback, text/textarea pass through as strings.
- * A number stays a number — a formatter that calls `.toFixed` on the
- * committed value never crashes on a string draft (and the preview is
- * byte-faithful to the committed cell's display chain).
- */
-function coerceEditDraft<Row extends Record<string, unknown>>(
-  row: Row,
-  col: IrisTableColumn<Row>,
-  draft: unknown,
-): unknown {
-  if (col.editor === 'select') {
-    if (!col.editOptions) return String(draft)
-    if (typeof draft !== 'string') return draft
-    const opt = col.editOptions.find((o) => String(o.value) === draft)
-    return opt ? opt.value : draft
-  }
-  const s = String(draft)
-  if (col.editor !== 'number') return s
-  return s === '' || Number.isNaN(Number(s)) ? getCellValue(row, col) : Number(s)
-}
-
-/**
- * Shared inline-editor surface for cell AND row edit modes (batch K).
- * Subscribes to the session's core store so draft/error changes re-render
- * just the editor; the three editor branches (text/number input, select,
- * textarea) are the pre-batch-K UI, just parameterized by the session. Enter
- * commits THAT column (per-cell commit), Escape cancels (the whole row in
- * row mode), blur commits the column, Tab moves between editable columns.
- */
-function EditorSurface<Row extends Record<string, unknown>>({
-  session,
-  col,
-  errorId,
-  showError,
-  registerRef,
-  onTab,
-  onCommit,
-  onCancel,
-  focusToken,
-  onSessionIdle,
-  suggestOptions,
-  editAutoHeight,
-  charCount,
-  editPreview,
-  row,
-  t,
-}: EditorSurfaceProps<Row>): React.ReactElement {
-  const state = useStore(session.store)
-  const ref = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null)
-  React.useEffect(() => {
-    if (focusToken > 0) ref.current?.focus()
-  }, [focusToken])
-  // A committed session goes idle (editing cleared) — close this column's
-  // editor (row mode keeps the rest of the row's editors open).
-  React.useEffect(() => {
-    if (state.editing === null) onSessionIdle?.()
-  }, [state.editing, onSessionIdle])
-  // Batch CC: on open, size the auto-height textarea from its pre-filled
-  // draft (scrollHeight) — multi-line values arrive already sized; growth /
-  // shrink while typing is handled by onInput below (no setState, no
-  // re-render loop — the surface re-renders per keystroke anyway via the
-  // session store, but the inline height is written straight to the DOM).
-  React.useEffect(() => {
-    if (!editAutoHeight) return
-    const el = ref.current
-    if (!el || el.tagName !== 'TEXTAREA') return
-    applyEditorAutoHeight(el as HTMLTextAreaElement)
-  }, [editAutoHeight])
-  const setRef = (el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null): void => {
-    ref.current = el
-    registerRef(el)
-  }
-  // Const bindings let TS keep the select/options narrowing inside the nested
-  // JSX callbacks (a mutable `col` would lose it). A select editor with no
-  // editOptions falls back to the text input.
-  const isSelectEditor = col.editor === 'select' && col.editOptions !== undefined
-  const selectOptions = isSelectEditor ? col.editOptions : undefined
-  const draft = String(state.draft ?? '')
-  const error = state.error
-  // Batch AM: a text editor with suggestions renders a native <datalist>
-  // (`data-iris-edit-suggest`) linked via `list`; the id comes from useId (the
-  // repo's SSR-stable pattern). Only while editing — the surface mounts per session.
-  const suggestId = React.useId()
-  const suggestList = suggestOptions?.get(col.key)
-  // Text editor only: the shared text/number input is the only branch that
-  // consumes the datalist — select (with options) and textarea ignore it.
-  const showSuggest =
-    col.editor !== 'number' &&
-    !(isSelectEditor && selectOptions !== undefined) &&
-    col.editor !== 'textarea' &&
-    suggestList !== undefined &&
-    suggestList.length > 0
-  return (
-    <>
-      {isSelectEditor && selectOptions ? (
-        // vxe edit-render select parity (batch H): a native <select> commits
-        // the option's TYPED value (numbers stay numbers). Value matches
-        // options by String(value); when the current draft matches NO option,
-        // a synthetic option preserves it so a plain blur never silently
-        // replaces the cell value with the first option.
-        <select
-          ref={setRef}
-          value={draft}
-          data-iris-table-editor=""
-          data-iris-table-editor-select=""
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error && showError ? errorId : undefined}
-          onChange={(e) => {
-            const opt = selectOptions.find((o) => String(o.value) === e.target.value)
-            session.setDraft(opt ? opt.value : e.target.value)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Tab') {
-              onTab(e, e.shiftKey ? -1 : 1)
-            } else if (e.key === 'Enter') {
-              e.preventDefault()
-              onCommit()
-            } else if (e.key === 'Escape') {
-              e.preventDefault()
-              onCancel()
-            }
-          }}
-          onBlur={() => onCommit()}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            width: '100%',
-            border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-            borderRadius: 'var(--iris-radius-sm, 4px)',
-            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-            font: 'inherit',
-            background: 'var(--iris-background)',
-            color: 'var(--iris-foreground)',
-            outline: 'none',
-          }}
-        >
-          {!selectOptions.some((o) => String(o.value) === draft) ? (
-            <option value={draft}>{draft}</option>
-          ) : null}
-          {selectOptions.map((o) => (
-            <option key={String(o.value)} value={String(o.value)}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      ) : col.editor === 'textarea' ? (
-        // vxe edit-render textarea parity (batch I): Enter commits, Shift+Enter
-        // inserts a newline, Escape cancels — same commit/aria surface.
-        // Batch CC: editAutoHeight starts at 1 row and grows with content
-        // (6-row cap) via scrollHeight measured on input.
-        <textarea
-          ref={setRef}
-          rows={editAutoHeight ? 1 : 3}
-          value={draft}
-          data-iris-table-editor=""
-          data-iris-table-editor-textarea=""
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error && showError ? errorId : undefined}
-          onChange={(e) => session.setDraft(e.target.value)}
-          onInput={(e) => {
-            if (editAutoHeight) applyEditorAutoHeight(e.currentTarget)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Tab') {
-              onTab(e, e.shiftKey ? -1 : 1)
-            } else if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              onCommit()
-            } else if (e.key === 'Escape') {
-              e.preventDefault()
-              onCancel()
-            }
-          }}
-          onBlur={() => onCommit()}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            width: '100%',
-            border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-            borderRadius: 'var(--iris-radius-sm, 4px)',
-            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-            font: 'inherit',
-            background: 'var(--iris-background)',
-            color: 'var(--iris-foreground)',
-            outline: 'none',
-            resize: 'none',
-          }}
-        />
-      ) : (
-        <input
-          ref={setRef}
-          type={col.editor === 'number' ? 'number' : 'text'}
-          value={draft}
-          data-iris-table-editor=""
-          list={showSuggest ? suggestId : undefined}
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error && showError ? errorId : undefined}
-          onChange={(e) => session.setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Tab') {
-              onTab(e, e.shiftKey ? -1 : 1)
-            } else if (e.key === 'Enter') {
-              e.preventDefault()
-              onCommit()
-            } else if (e.key === 'Escape') {
-              e.preventDefault()
-              onCancel()
-            }
-          }}
-          onBlur={() => onCommit()}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            width: '100%',
-            border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-            borderRadius: 'var(--iris-radius-sm, 4px)',
-            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-            font: 'inherit',
-            background: 'var(--iris-background)',
-            color: 'var(--iris-foreground)',
-            outline: 'none',
-          }}
-        />
-      )}
-      {/* Batch AM: native suggestions for the text editor — a datalist with the
-      column's distinct values (or the explicit array form), id-linked to the
-      input's `list`. Rendered next to the input (datalists are invisible). */}
-      {showSuggest ? (
-        <datalist id={suggestId} data-iris-edit-suggest="">
-          {suggestList.map((opt) => (
-            <option key={opt} value={opt} />
-          ))}
-        </datalist>
-      ) : null}
-      {/* Batch CQ (iris 独有 — vxe has no equivalent): live preview of the
-      formatter-applied draft — the draft coerced like the commit path (the
-      SHARED coerceEditDraft, so the preview can never drift from the commit
-      coercion), then the same mask → formatter display chain as the
-      committed cell (batch AY contract), so the preview is byte-faithful to
-      what the cell will show. Recomputed per keystroke through the
-      session-store subscription above (zero new state); only columns with a
-      formatter render it (fail-closed). Rendered in-flow BEFORE the
-      validation error (same slot family) — the editing cell wraps while
-      editing and this line's flexBasis 100% stacks it UNDER the editor. */}
-      {editPreview && col.formatter ? (
-        <div data-iris-edit-preview="" style={EDIT_PREVIEW_STYLE}>
-          {col.formatter(applyCellMask(coerceEditDraft(row, col, draft), col), row)}
-        </div>
-      ) : null}
-      {/* validConfig.showMessage=false: validation still blocks the commit and
-      aria-invalid stays — only the message element is skipped (vxe ValidConfig
-      parity). */}
-      {error && showError ? (
-        <div
-          id={errorId}
-          role="alert"
-          data-iris-table-editor-error=""
-          style={{
-            marginTop: 'var(--iris-space-xxs, 4px)',
-            fontSize: 'var(--iris-font-size-xs, 12px)',
-            color: 'var(--iris-danger)',
-            // Batch CQ review fix: full flex line like the preview — stacks
-            // UNDER the editor (the editing cell wraps while editing).
-            flexBasis: '100%',
-            minWidth: 0,
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
-      {/* Batch CG (iris 独有): live character count at the cell's bottom-right
-      corner — String(draft).length recomputed per keystroke through the
-      session-store subscription above (zero new state). The host cell gains
-      position: relative from charCountCellStyle so the chip anchors to the
-      cell box; pointer-transparent so typing is never intercepted. */}
-      {charCount ? (
-        <span data-iris-char-count="" data-iris-char-count-edit="" style={CHAR_COUNT_STYLE}>
-          {t('table.charCount', { count: String(draft.length) })}
-        </span>
-      ) : null}
-    </>
-  )
-}
-
-/** Batch CC (iris 独有): the auto-height textarea editor grows with content,
- *  capped at this many rows (spec: max 6). */
-const EDITOR_AUTO_MAX_ROWS = 6
-/** Batch CC: line-height fallback when getComputedStyle reports 'normal' /
- *  an empty string (jsdom has no layout) or an absurd unitless value. */
-const EDITOR_AUTO_FALLBACK_LINE_HEIGHT = 16
-
-/**
- * Batch CC (iris 独有): pure size mapping for the auto-height textarea — from
- * the measured scrollHeight (and the session's line height) to the inline
- * `height` / `maxHeight` / `overflowY` trio. `height` grows with content
- * (floor = one line, cap = EDITOR_AUTO_MAX_ROWS lines) so shrinking content
- * shrinks the editor too; `overflowY` is `auto` only when content STRICTLY
- * exceeds the cap — exactly 6 rows has no scrollbar. Exported for unit tests
- * (the math lives here, not in jsdom's zero-layout DOM).
- */
-export function autoHeightSize(
-  scrollHeight: number,
-  lineHeight: number,
-): { height: number; maxHeight: number; overflowY: 'auto' | 'hidden' } {
-  const maxHeight = EDITOR_AUTO_MAX_ROWS * lineHeight
-  return {
-    height: Math.max(lineHeight, Math.min(scrollHeight, maxHeight)),
-    maxHeight,
-    overflowY: scrollHeight > maxHeight ? 'auto' : 'hidden',
-  }
-}
-
-/** Batch CC: the editor's line height, measured once per session (module-level
- *  cache — the surface re-measures nothing per keystroke). */
-let editorAutoLineHeight: number | null = null
-
-/** Batch CC: read + cache the textarea's line height; 'normal'/empty/absurd
- *  values (jsdom) fall back to EDITOR_AUTO_FALLBACK_LINE_HEIGHT. */
-function measureEditorLineHeight(el: HTMLTextAreaElement): number {
-  if (editorAutoLineHeight !== null) return editorAutoLineHeight
-  let lh = EDITOR_AUTO_FALLBACK_LINE_HEIGHT
-  if (typeof window !== 'undefined') {
-    const cs = window.getComputedStyle(el).lineHeight
-    const parsed = cs && cs !== 'normal' ? Number.parseFloat(cs) : NaN
-    if (Number.isFinite(parsed) && parsed >= 8) lh = parsed
-  }
-  editorAutoLineHeight = lh
-  return lh
-}
-
-/** Batch CC: measure + apply the auto-height trio (height/maxHeight/overflowY)
- *  to a textarea editor from its current scrollHeight. */
-function applyEditorAutoHeight(el: HTMLTextAreaElement): void {
-  const size = autoHeightSize(el.scrollHeight, measureEditorLineHeight(el))
-  el.style.height = `${size.height}px`
-  el.style.maxHeight = `${size.maxHeight}px`
-  el.style.overflowY = size.overflowY
-}
-
-const RESIZE_STEP = 16
-const SELECTION_COL_WIDTH = 40
-const EXPAND_COL_WIDTH = 40
-const SEQ_COL_WIDTH = 60
-const DRAG_COL_WIDTH = 40
-const DEFAULT_PINNED_WIDTH = 140
-/* Batch CE copy feedback (iris 独有): how long the copied-range highlight
-   stays after a SUCCESSFUL range copy before it clears. Re-copy restarts
-   the clock; unmount cleanup below. */
-const COPY_FLASH_MS = 600
-/* Batch CZ goToRow (iris 独有 — vxe has no row-locate flash): how long the
-   `goToRow` row-target highlight stays before the timer removes it.
-   Re-call restarts the clock; unmount cleanup below (copyFlash pattern). */
-const ROW_TARGET_MS = 2000
-/** Reserved context-menu key for the built-in value-distribution item (batch
- * AM): the table intercepts it at the onSelect wiring, so a user item with
- * the same key is deduped and the user callback never sees it. */
-const DISTRIBUTION_MENU_KEY = '__iris_distribution'
-/** Reserved context-menu key for the built-in NL-summary item (batch AW):
- * appended AFTER the distribution item when `nlSummary` is set; the table
- * intercepts it at the onSelect wiring, so a user item with the same key is
- * deduped and the user callback never sees it. */
-const SUMMARY_MENU_KEY = '__iris-summary'
-/** Reserved context-menu key for the built-in annotate-ADD item (batch BB):
- * the table intercepts it at the onSelect wiring, so a user item with the
- * same key is deduped and the user callback never sees it. */
-const ANNOTATE_MENU_KEY = '__iris-annotate'
-/** Reserved context-menu key for the built-in annotate-EDIT item (batch BB):
- * shown alongside the remove item when the clicked cell already has a note. */
-const ANNOTATE_EDIT_MENU_KEY = '__iris-annotate-edit'
-/** Reserved context-menu key for the built-in annotate-REMOVE item (batch
- * BB): deletes the cell's annotation directly through `onAnnotationsChange`. */
-const ANNOTATE_REMOVE_MENU_KEY = '__iris-annotate-remove'
-/** Reserved context-menu key for the built-in COPY-VALUE quick action (batch
- * BW): unconditionally appended on every context menu BEFORE the annotate
- * items; the table intercepts it at the onSelect wiring, so a user item
- * with the same key is deduped and the user callback never sees it. */
-const COPY_VALUE_MENU_KEY = '__iris-copy-value'
-/** Reserved context-menu key for the built-in CLEAR-CELL quick action (batch
- * BW): unconditionally appended on every context menu BEFORE the annotate
- * items; the table intercepts it at the onSelect wiring, so a user item
- * with the same key is deduped and the user callback never sees it. */
-const CLEAR_CELL_MENU_KEY = '__iris-clear-cell'
-/** Reserved menu key for the built-in PIN-LEFT item of the column header pin
- * menu (batch BX, iris 独有 — vxe has no header pin menu): the table
- * intercepts it at the onSelect wiring, so a user item with the same key is
- * deduped and the user callback never sees it. */
-const PIN_LEFT_MENU_KEY = '__iris-pin-left'
-/** Reserved menu key for the built-in UNPIN item of the column header pin
- * menu (batch BX, iris 独有): shown instead of 固定左 when the column is
- * already pinned (left OR right) — the two items are mutually exclusive
- * (spec has no pin-right action). */
-const UNPIN_MENU_KEY = '__iris-unpin'
-
-/** Shared style for the full-width empty / loading / error state rows. */
-const STATE_ROW_STYLE: React.CSSProperties = {
-  padding: '32px 12px',
-  textAlign: 'center',
-  color: 'var(--iris-muted)',
-}
-
-/** Inline style for the empty-state action button (batch CF, iris 独有 — vxe
- * has no empty-state action): mirrors the error-row retry button token for
- * token — all `--iris-*` tokens, zero magic values. */
-const EMPTY_ACTION_STYLE: React.CSSProperties = {
-  border: '1px solid var(--iris-border)',
-  background: 'var(--iris-surface)',
-  color: 'var(--iris-foreground)',
-  borderRadius: 'var(--iris-radius-sm, 4px)',
-  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-  fontSize: 'var(--iris-font-size-sm, 13px)',
-  cursor: 'pointer',
-}
-
-/** Discriminator guard: a plain object (not null, not an array, not a React
- * element, not a React-internal marker like portals) is the
- * `IrisTableEmptyState` descriptor; every other ReactNode (strings, elements,
- * fragments, portals, iterables) stays on the node path. */
-function isEmptyStateObject(
-  state: React.ReactNode | IrisTableEmptyState,
-): state is IrisTableEmptyState {
-  return (
-    typeof state === 'object' &&
-    state !== null &&
-    !Array.isArray(state) &&
-    !React.isValidElement(state) &&
-    // React portals carry `$$typeof: REACT_PORTAL_TYPE`, which isValidElement
-    // misses; any `$$typeof` marker is React-internal, never a descriptor.
-    !('$$typeof' in state)
-  )
-}
-
-/** Empty-state text: descriptor `.text` (or the localized fallback) vs node. */
-function emptyTextOf(
-  state: React.ReactNode | IrisTableEmptyState,
-  fallback: string,
-): React.ReactNode {
-  return isEmptyStateObject(state) ? (state.text ?? fallback) : (state ?? fallback)
-}
-
-/** Empty-state action button descriptor: `.action` only, null otherwise. */
-function emptyActionOf(
-  state: React.ReactNode | IrisTableEmptyState,
-): { label: string; onClick: () => void } | null {
-  return isEmptyStateObject(state) ? (state.action ?? null) : null
-}
-
-/** Empty row content: node path renders untouched (zero wrapper — existing
- * ReactNode `emptyState` behaves byte-identically); descriptor path renders
- * the text span (12px `marginInlineEnd` when an action follows — error-row
- * retry precedent, RTL-safe) plus the action button on the same centered row. */
-function renderEmptyState(
-  state: React.ReactNode | IrisTableEmptyState,
-  fallback: string,
-): React.ReactNode {
-  if (!isEmptyStateObject(state)) return state ?? fallback
-  const action = emptyActionOf(state)
-  return (
-    <>
-      <span
-        style={{
-          marginInlineEnd: action ? 'var(--iris-space-sm, 12px)' : 0,
-        }}
-      >
-        {emptyTextOf(state, fallback)}
-      </span>
-      {action ? (
-        <button
-          type="button"
-          data-iris-empty-action=""
-          onClick={action.onClick}
-          style={EMPTY_ACTION_STYLE}
-        >
-          {action.label}
-        </button>
-      ) : null}
-    </>
-  )
-}
-
-/** Empty parse result shared by the query bar (STABLE reference). */
-const EMPTY_QUERY_PARSE: ParsedTableQuery = {
-  filters: {},
-  inValues: {},
-  rules: [],
-  sort: null,
-  error: null,
-}
-
-/** Null-proxy snapshot for useSyncExternalStore (a STABLE reference is required). */
-const EMPTY_PROXY_STATE: RemoteTableSourceState<never> = {
-  data: [],
-  total: 0,
-  loading: false,
-  error: null,
-  params: { page: 1, pageSize: 10, sort: null, filters: {} },
-}
-const noopProxySubscribe = (): (() => void) => () => {}
-
-/**
- * Focusable resize grip at a column header's trailing edge. Pointer drag (via
- * `useDrag`) or Arrow-Left/Right adjusts the column's pixel width. `role=
- * "separator"` + `aria-orientation` follow the WAI-ARIA window-splitter pattern.
- */
-/** Auto-fit measurement (batch DG, iris 独有): the widest rendered content
- * width for a column — header + body cells' `scrollWidth`. Cells are
- * `nowrap + overflow:hidden` with symmetric padding, so `scrollWidth` already
- * includes both-side padding — "max content width + padding" needs no extra
- * term. Virtual scrolling measures only the rendered window (vxe autoResize
- * behavior); group headers share the same flat leaf query. Empty / detached
- * cells (scrollWidth 0) are ignored; caller clamps + rounds before writing. */
-function measureColumnContentWidth(container: ParentNode | null, colKey: string): number {
-  if (!container) return 0
-  let max = 0
-  container
-    .querySelectorAll(`[data-iris-table-cell="${colKey}"],[data-iris-table-header="${colKey}"]`)
-    .forEach((el) => {
-      const w = (el as HTMLElement).scrollWidth
-      if (w > max) max = w
-    })
-  return max
-}
-
-function ColumnResizeHandle({
-  colKey,
-  label,
-  width,
-  minWidth,
-  maxWidth,
-  onResize,
-  onAutoFit,
-}: {
-  colKey: string
-  label: string
-  width: number | undefined
-  minWidth: number
-  maxWidth: number
-  onResize: (key: string, width: number) => void
-  onAutoFit?: (key: string) => void
-}): React.ReactElement {
-  const ref = React.useRef<HTMLSpanElement | null>(null)
-  const startRef = React.useRef(0)
-  const clamp = (w: number): number => Math.max(minWidth, Math.min(maxWidth, Math.round(w)))
-  // Prefer the explicit override; fall back to the rendered header width.
-  const measure = (): number =>
-    width ?? ref.current?.parentElement?.getBoundingClientRect().width ?? minWidth
-
-  useDrag({
-    handle: ref,
-    onStart: () => {
-      startRef.current = measure()
-    },
-    onDrag: ({ dx }) => onResize(colKey, clamp(startRef.current + dx)),
-  })
-
-  return (
-    <span
-      ref={ref}
-      role="separator"
-      aria-orientation="vertical"
-      aria-label={`Resize ${label}`}
-      tabIndex={0}
-      data-iris-table-resize-handle=""
-      data-column-key={colKey}
-      onClick={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => {
-        e.stopPropagation()
-        if (onAutoFit) onAutoFit(colKey)
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault()
-          e.stopPropagation()
-          onResize(colKey, clamp(measure() - RESIZE_STEP))
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault()
-          e.stopPropagation()
-          onResize(colKey, clamp(measure() + RESIZE_STEP))
-        }
-      }}
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: 8,
-        cursor: 'col-resize',
-        touchAction: 'none',
-        userSelect: 'none',
-      }}
-    />
-  )
-}
-
-/** Width resolution shared by the pinned boundary (batch CV) and pinnedOffsets:
- * explicit override → column-declared number → default approximation. */
-function resolvedColumnWidth<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-  widths: Record<string, number>,
-): number {
-  return widths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
-}
-
-/** Number of leading leaf columns pinned left, capped at `cap` (the first
- * right-pinned index — a left boundary never crosses into the right block).
- * Reads through the SAME pinOf throat as every render path. */
-function leftPinnedCount<Row extends Record<string, unknown>>(
-  cols: readonly IrisTableColumn<Row>[],
-  pinOf: (col: IrisTableColumn<Row>) => 'left' | 'right' | null,
-  cap: number,
-): number {
-  let count = 0
-  for (let i = 0; i < cap; i += 1) {
-    if (pinOf(cols[i]!) === 'left') count = i + 1
-    else return count
-  }
-  return count
-}
-
-/** New left-pinned count for a boundary drag (batch CV): the widest prefix
- * whose cumulative width stays within `budget` (the boundary position
- * relative to the lead columns' trailing edge = current pinned width + dx),
- * clamped to `cap`. Widths approximate via resolvedColumnWidth — the same
- * fallback chain as pinnedOffsets (documented fiat). */
-function pinnedCountFromBudget<Row extends Record<string, unknown>>(
-  cols: readonly IrisTableColumn<Row>[],
-  widthOf: (col: IrisTableColumn<Row>) => number,
-  budget: number,
-  cap: number,
-): number {
-  let acc = 0
-  for (let i = 0; i < cap; i += 1) {
-    const w = widthOf(cols[i]!)
-    if (acc + w <= budget) acc += w
-    else return i
-  }
-  return cap
-}
-
-/**
- * Draggable separator at the pinned boundary (batch CV, iris 独有 — vxe has
- * no pinned boundary handle): rendered inside the LAST left-pinned leaf
- * header cell, whose trailing edge inherits the cell's sticky positioning.
- * Pointer drag shows a translateX ghost and commits on release; Arrow-Left /
- * Arrow-Right nudge the count by one (resolve(0) = the current count).
- * `role="separator"` + `aria-orientation` follow the window-splitter pattern
- * (ColumnResizeHandle precedent). The React onPointerDown stopPropagation
- * keeps the columnDrag arm-race away — the NATIVE useDrag listener on the
- * span itself still arms (react-drag order: native at span → React root
- * dispatch, so the cell's synthetic pointerdown never runs).
- */
-function PinnedDragHandle({
-  colKey,
-  label,
-  resolve,
-  commit,
-}: {
-  colKey: string
-  label: string
-  resolve: (dx: number) => number
-  commit: (count: number) => void
-}): React.ReactElement {
-  const ref = React.useRef<HTMLSpanElement | null>(null)
-  const [dx, setDx] = React.useState(0)
-  const dragging = dx !== 0
-
-  useDrag({
-    handle: ref,
-    onStart: () => setDx(0),
-    onDrag: ({ dx }) => setDx(dx),
-    onEnd: ({ dx }) => {
-      commit(resolve(dx))
-      setDx(0)
-    },
-  })
-
-  return (
-    <span
-      ref={ref}
-      role="separator"
-      aria-orientation="vertical"
-      aria-label={`Adjust pinned column count at ${label}`}
-      tabIndex={0}
-      data-iris-pinned-drag-handle=""
-      data-column-key={colKey}
-      data-iris-pinned-drag-active={dragging ? 'true' : undefined}
-      onPointerDown={(e) => e.stopPropagation()}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault()
-          e.stopPropagation()
-          commit(resolve(0) - 1)
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault()
-          e.stopPropagation()
-          commit(resolve(0) + 1)
-        }
-      }}
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: 8,
-        cursor: 'col-resize',
-        touchAction: 'none',
-        userSelect: 'none',
-        zIndex: 2,
-        transform: dragging ? `translateX(${dx}px)` : undefined,
-      }}
-    >
-      <span
-        aria-hidden="true"
-        data-iris-pinned-drag-line=""
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          insetInlineStart: '50%',
-          width: 2,
-          background: 'var(--iris-primary)',
-          transform: 'translateX(-50%)',
-        }}
-      />
-    </span>
-  )
-}
-
-function getCellValue<Row extends Record<string, unknown>>(
-  row: Row,
-  column: IrisTableColumn<Row>,
-): unknown {
-  // Batch AO formula columns: every data consumer (render, filter, groupBy,
-  // suggest, range stats, summary, tooltips, clipboard, distribution) funnels
-  // through this choke point — the COMPUTED value propagates everywhere.
-  // memoizedFormulaValue caches per (row, formula) under the table's
-  // documented immutable-row contract (new row reference = recompute).
-  // Batch BC: cross-table refs (`=other!col`) read the render-scoped
-  // currentFormulaTables slot — React's synchronous render walk assigns it
-  // before any consumer runs, so multi-table pages stay isolated; the
-  // mount-time CSV export handles pass an explicit argument instead.
-  if (column.formula) return memoizedFormulaValue(column.formula, row, currentFormulaTables)
-  const key = (column.dataIndex ?? column.key) as keyof Row
-  return row[key]
-}
-
-// Batch BC: external tables for cross-table formula refs. Module slot, NOT a
-// closure — getCellValue is a module-level function shared by ~30 render-time
-// call sites + the querySortedData comparator. Assigned at the top of every
-// IrisTable render (before any useMemo body runs) and read only from
-// synchronous render/effect paths; the on-demand CSV export handles use the
-// formulaTablesRef mirror with an explicit argument (dual-channel, see below).
-let currentFormulaTables: FormulaTables | undefined
-
-/** Batch AO: a formula column is DISPLAY-ONLY even when `editable` — every
- * editing entry point (inline, row mode, batch panel, data-editable attr,
- * cursor) reads this same condition. */
-function isEditableColumn<Row extends Record<string, unknown>>(col: IrisTableColumn<Row>): boolean {
-  return !!col.editable && !col.formula
-}
-
-/** Batch BE: a cell is locked when the column says so — `true` locks the
- * whole column, a predicate locks per-row (a predicate ignoring its column
- * argument is a row-level lock). Module-level so EVERY editing entry point
- * (inline, row mode, batch panel, paste/fill/clear/FNR/Delete funnels) and
- * the cell render (attr + cursor) read the same condition — one truth. */
-function isCellLocked<Row extends Record<string, unknown>>(
-  row: Row,
-  col: IrisTableColumn<Row>,
-): boolean {
-  return typeof col.locked === 'function' ? col.locked(row, col) : col.locked === true
-}
-
-/** Batch BJ: a cell is permission-readonly when the column predicate says so —
- * `'readonly'` locks editing, absent/`'editable'` → editable (default).
- * DYNAMIC: unlike `locked` (a static declaration), the predicate re-evaluates
- * on every render, so permission follows the current row/column state without
- * a re-mount. Same single-throat contract as isCellLocked — every editing
- * entry point reads this condition. */
-function isCellReadonly<Row extends Record<string, unknown>>(
-  row: Row,
-  col: IrisTableColumn<Row>,
-): boolean {
-  return col.cellPermission?.(row, col) === 'readonly'
-}
-
-/** Batch BR (iris 独有): does the column participate in the validation-
- *  summary ledger? Only declarative `editRules` columns count (legacy
- *  `validate` columns, paste/fill/FNR/batch bypasses and Escape cancels
- *  never reach it). Single truth shared by the cell and row commit wrappers. */
-function hasEditRules<Row extends Record<string, unknown>>(col: IrisTableColumn<Row>): boolean {
-  return !!col.editRules && col.editRules.length > 0
-}
-
-/** Batch BE+BJ: locked/readonly cell render material — the data attrs + the
- * dropped cursor, extracted so renderRow stays under the complexity budget.
- * Locked wins visually when both (stripes + not-allowed, no readonly attr);
- * readonly falls back to the dotted texture + not-allowed (only when the
- * column is editable — a non-editable readonly cell keeps the default).
- * Range cells keep the default cursor. */
-function cellPermissionRender(
-  locked: boolean,
-  readonly: boolean,
-  editable: boolean,
-  hasRange: boolean,
-): {
-  lockedAttr: 'true' | undefined
-  readonlyAttr: 'true' | undefined
-  cursor: string | undefined
-  style: React.CSSProperties
-} {
-  if (locked) {
-    return {
-      lockedAttr: 'true',
-      readonlyAttr: undefined,
-      cursor: 'not-allowed',
-      // Spread LAST in the cell style so the stripes survive every
-      // background shorthand (range-fill/conditional/user cellStyle) —
-      // background-color highlights still show through the transparent gaps.
-      style: { backgroundImage: LOCKED_CELL_STRIPE },
-    }
-  }
-  if (readonly) {
-    return {
-      lockedAttr: undefined,
-      readonlyAttr: 'true',
-      cursor: editable ? 'not-allowed' : hasRange ? 'default' : undefined,
-      style: { backgroundImage: READONLY_CELL_DOTS },
-    }
-  }
-  return {
-    lockedAttr: undefined,
-    readonlyAttr: undefined,
-    cursor: editable ? 'cell' : hasRange ? 'default' : undefined,
-    style: {},
-  }
-}
-
-/** CSV export shadow rows (batch AO): core `toCsv` reads `row[dataIndex]`
- * directly, so formula columns materialize their computed value onto a
- * shallow copy (original rows untouched — immutable contract). No formula
- * columns → the input array is returned as-is (reference-preserving). */
-function withComputedFormulaCells<Row extends Record<string, unknown>>(
-  rows: readonly Row[],
-  columns: readonly IrisTableColumn<Row>[],
-  formulaTables?: FormulaTables,
-): Row[] {
-  const formulaCols = columns.filter((c) => c.formula)
-  if (formulaCols.length === 0) return rows as Row[]
-  return rows.map((row) => {
-    let shadow: Row | null = null
-    for (const col of formulaCols) {
-      const key = (col.dataIndex ?? col.key) as keyof Row
-      const next: Row = shadow ?? { ...row }
-      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(
-        col.formula!,
-        row,
-        formulaTables,
-      )
-      shadow = next
-    }
-    return shadow as Row
-  })
-}
-
-/** Batch AL: structural equality for undo snapshots — same length + same row
- *  references (the table never mutates rows, so content equality reduces to
- *  reference equality on the row objects). Skips no-op pushes (re-commits of
- *  an identical list, and the rowId fallback path where setCellValue cannot
- *  locate the row) so dead undo steps never accumulate. */
-function sameRowList<Row extends Record<string, unknown>>(a: Row[], b: Row[]): boolean {
-  if (a === b) return true
-  if (a.length !== b.length) return false
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false
-  }
-  return true
-}
-
-/** Batch DI (iris 独有): serialize a BARE referenced row set (no column
- * configs — the caller only hands over `Row[]`) by its OWN enumerable keys:
- * the first row's keys (insertion order) become the header, each value read
- * by that key. Same core `toCsv` neutralization/quoting throughout. Empty
- * row set → '' (the multi-export emits only the segment header). */
-function serializeRefRows(rows: readonly Record<string, unknown>[]): string {
-  if (rows.length === 0) return ''
-  const keys = Object.keys(rows[0])
-  return toCsv(
-    rows as readonly Record<string, unknown>[],
-    keys.map((key) => ({ key, title: key })),
-  )
-}
-
-// ── Clipboard batch O (clipConfig): TSV serialization + safe clipboard ──
-// Cell text for the copy TSV: null → '', numbers verbatim (a typed number
-// cannot carry a formula payload), everything else gets the same OWASP
-// formula neutralization as core `toCsv` (a leading = + - @ tab CR is quoted
-// so spreadsheets import it as literal text). Cell text containing \t or \n
-// is a documented limitation of the newline/tab-delimited TSV shape.
-const TSV_FORMULA_LEAD = /^[=+\-@\t\r]/
-function tsvCell(value: unknown): string {
-  if (value == null) return ''
-  const text = String(value)
-  if (typeof value === 'number' && Number.isFinite(value)) return text
-  return TSV_FORMULA_LEAD.test(text) ? `'${text}` : text
-}
-
-// Range CSV export (batch AH): RFC-4180 field quoting + the same OWASP
-// formula neutralization as `tsvCell` / core `toCsv` (a leading = + - @ tab CR
-// is prefixed with a quote so spreadsheets import it as literal text). The
-// range export is HEADERLESS by design — a range is a rectangle of cells, not
-// a table view (baseline fiat).
-const CSV_FORMULA_LEAD = /^[=+\-@\t\r]/
-function csvRangeCell(value: unknown): string {
-  if (value == null) return ''
-  const text = String(value)
-  if (typeof value === 'number' && Number.isFinite(value)) return text
-  const safe = CSV_FORMULA_LEAD.test(text) ? `'${text}` : text
-  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
-}
-
-// ── Compare-diff export (batch BV, iris 独有) ───────────────────────────
-// The reserved key of the marker column prefixed to every exported diff row:
-// the English literal added/removed/changed (machine-readable), headed by the
-// i18n `table.compare.diff` title (en `Diff` / zh `差异`).
-const COMPARISON_DIFF_KEY = '__iris_diff'
-
-/**
- * Build the compare-diff CSV (batch BV, iris 独有 — vxe has no compare
- * capability, let alone its export): current-view rows whose status is
- * `removed`/`changed` in VIEW order (the same `filteredData` source as
- * `exportCurrentViewCsv`), then `compareWith`-only `added` rows at the tail
- * in SNAPSHOT order (no render slot, batch AU documented). Every row is
- * prefixed with a marker column (`__iris_diff`) and unchanged rows are
- * excluded. Changed cells export a `maskedOld → maskedNew` composite — mask
- * BEFORE composition (the batch AY default mask must never leak a bare value
- * through the composite; `exportRaw` keeps both sides bare); formula columns
- * do NOT self-composite (batch AU documented — their own cell diffs are not
- * reported; the referenced field cells are, and formulas still materialize
- * from PRISTINE data so a changed input can never leak its composite into a
- * dependent formula). Serialization shape = `exportCsv`'s: formula columns
- * materialized on shadow rows, batch AY masks applied, hidden columns
- * excluded (the caller passes `viewColumnsRef`), RFC-4180 quoting + OWASP
- * neutralization via core `toCsv`. Feature-off is NOT this function's
- * concern — the handle gates on the render memo being null.
- */
-function buildComparisonCsv<Row extends Record<string, unknown>>(
-  rows: readonly Row[],
-  snapshot: readonly Row[],
-  rowKeyField: string,
-  diff: RowDiff,
-  columns: readonly IrisTableColumn<Row>[],
-  formulaTables: FormulaTables | undefined,
-  markerTitle: string,
-): string {
-  // Diff row list: view-order removed/changed + snapshot-order added. Marker
-  // lands on a shadow row (original rows untouched — immutable contract).
-  const out: Row[] = []
-  for (const row of rows) {
-    const key = row[rowKeyField] as string | number | null | undefined
-    if (key == null) continue
-    const kind = diff.status.get(key)
-    if (kind !== 'removed' && kind !== 'changed') continue
-    out.push({ ...row, [COMPARISON_DIFF_KEY]: kind } as Row)
-  }
-  const snapshotByKey = new Map<string | number, Row>()
-  for (const r of snapshot) {
-    const k = r[rowKeyField] as string | number | null | undefined
-    if (k == null) continue
-    snapshotByKey.set(k, r)
-  }
-  for (const key of diff.added) {
-    const row = snapshotByKey.get(key)
-    if (row) out.push({ ...row, [COMPARISON_DIFF_KEY]: 'added' } as Row)
-  }
-  // Formula columns materialize from PRISTINE rows (the composite pass below
-  // overwrites only non-formula changed cells, so no composite ever feeds a
-  // formula). `withComputedFormulaCells` spreads rows, marker preserved.
-  let materialized = withComputedFormulaCells(out, columns, formulaTables)
-  // Batch AY default mask: every masked column (unless `exportRaw`) exports
-  // the masked value. Runs BEFORE the composite pass — a changed cell's
-  // composite then overwrites this field, so the composite is masked-before-
-  // composition and never re-masked by this pass.
-  const maskedCols = columns.filter((c) => c.mask && !c.exportRaw)
-  if (maskedCols.length > 0) {
-    materialized = materialized.map((row) => {
-      let shadow: Row | null = null
-      for (const col of maskedCols) {
-        const key = (typeof col.dataIndex === 'string' ? col.dataIndex : col.key) as keyof Row
-        const next: Row = shadow ?? { ...row }
-        ;(next as Record<string, unknown>)[key as string] = applyCellMask(
-          (row as Record<string, unknown>)[key as string],
-          col,
-        )
-        shadow = next
-      }
-      return shadow as Row
-    })
-  }
-  // Composite pass: changed cells of non-formula columns export
-  // `maskedOld → maskedNew` (`exportRaw` keeps both sides bare). Overwrites
-  // the masked raw value above — the composite itself is never re-masked.
-  const withComposite = materialized.map((row) => {
-    const kind = (row as Record<string, unknown>)[COMPARISON_DIFF_KEY]
-    if (kind !== 'changed') return row
-    const key = (row as Record<string, unknown>)[rowKeyField] as string | number | null | undefined
-    const changes = key == null ? undefined : diff.cellChanges.get(key)
-    if (!changes) return row
-    let shadow: Row | null = null
-    for (const col of columns) {
-      if (col.formula) continue
-      const cellKey = (col.dataIndex ?? col.key) as keyof Row
-      const change = changes.get(cellKey as string)
-      if (!change) continue
-      const oldSide = col.exportRaw ? change.oldValue : applyCellMask(change.oldValue, col)
-      const newSide = col.exportRaw ? change.newValue : applyCellMask(change.newValue, col)
-      const next: Row = shadow ?? { ...row }
-      ;(next as Record<string, unknown>)[cellKey as string] = `${String(oldSide ?? '')} → ${String(
-        newSide ?? '',
-      )}`
-      shadow = next
-    }
-    return (shadow ?? row) as Row
-  })
-  return toCsv(withComposite as readonly Record<string, unknown>[], [
-    { key: COMPARISON_DIFF_KEY, title: markerTitle, dataIndex: COMPARISON_DIFF_KEY },
-    ...columns.map((c) => ({
-      key: c.key,
-      title: c.title,
-      dataIndex: typeof c.dataIndex === 'string' ? c.dataIndex : undefined,
-    })),
-  ])
-}
-
-/** Read clipboard text; null when unavailable or denied (jsdom: no-op). */
-async function readClipboardText(): Promise<string | null> {
-  const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
-  if (!nav.clipboard?.readText) return null
-  try {
-    return await nav.clipboard.readText()
-  } catch {
-    return null
-  }
-}
-
-/**
- * Batch BW: the display text of a context-menu cell — `applyCellMask` mask
- * first, formatter second, `String` coercion (null/undefined → '') — the
- * SAME display chain as the cell body and `cellTooltip`, so the 复制值 quick
- * action copies exactly what the user sees.
- */
-function contextCellText<Row extends Record<string, unknown>>(
-  row: Row,
-  col: IrisTableColumn<Row>,
-): string {
-  const displayValue = applyCellMask(getCellValue(row, col), col)
-  if (col.formatter) {
-    const formatted = col.formatter(displayValue, row)
-    if (typeof formatted === 'string') return formatted
-  }
-  return String(displayValue ?? '')
-}
-
-/**
- * Batch CA (iris 独有 — vxe has no auto-link): the `autoLink` cell body —
- * the same display chain as `contextCellText` (mask → formatter ?? raw) —
- * renders an `<a data-iris-auto-link>` only when the final text is a string
- * that core `detectAutoLink` matches (whole-text URL/email, _blank +
- * noreferrer, click does not bubble into row/range handlers). Non-matching
- * text falls through to the formatter/raw branches byte-identically (a
- * non-string formatter result or non-string raw value returns it as-is, so
- * this branch is a drop-in replacement for the plain path).
- */
-function renderAutoLinkCell<Row extends Record<string, unknown>>(
-  row: Row,
-  col: IrisTableColumn<Row>,
-): React.ReactNode {
-  const displayValue = applyCellMask(getCellValue(row, col), col)
-  let detected: string | null = null
-  let text: string | null = null
-  if (col.formatter) {
-    const formatted = col.formatter(displayValue, row)
-    if (typeof formatted !== 'string') return formatted
-    text = formatted
-  } else if (typeof displayValue === 'string') {
-    text = displayValue
-  } else {
-    return displayValue as React.ReactNode
-  }
-  detected = detectAutoLink(text)
-  if (!detected) return text
-  return (
-    <a
-      data-iris-auto-link=""
-      href={detected}
-      target="_blank"
-      rel="noreferrer"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {text}
-    </a>
-  )
-}
-
-/**
- * Batch CK (iris 独有 — vxe has no inline search highlight): the
- * `searchHighlight` cell body — the same display chain as the plain
- * formatter/raw branches (mask → formatter ?? raw, exactly what autoLink
- * consumes) — renders a `<mark data-iris-search-hit>` around every
- * case-insensitive literal occurrence of the query (core `splitSearchHits`,
- * odd segment indices are hits). Non-string nodes and null segments (empty
- * query / empty text / no match) pass through untouched, so this branch is
- * a drop-in replacement for the plain path — byte-identical without the
- * prop (fail-closed).
- */
-function applySearchHighlight(node: React.ReactNode, query: string | undefined): React.ReactNode {
-  if (!query || typeof node !== 'string') return node
-  const segments = splitSearchHits(node, query)
-  if (!segments) return node
-  return segments.map((seg, i) =>
-    i % 2 === 1 ? (
-      <mark key={i} data-iris-search-hit="" style={SEARCH_HIT_STYLE}>
-        {seg}
-      </mark>
-    ) : (
-      seg
-    ),
-  )
-}
-
-/**
- * Write clipboard text — best-effort, ordered: registered host handler
- * (core `copyText`) → `navigator.clipboard.writeText` → hidden-textarea
- * `execCommand('copy')` fallback. In test environments without a clipboard
- * stub every step no-ops safely (never throws). Returns `true` when at
- * least one channel actually took the copy — the batch-CE copy-feedback
- * highlight gates on this (spec: “复制成功后”).
- */
-async function writeClipboardText(text: string): Promise<boolean> {
-  if (await copyText(text)) return true
-  const nav = navigator as Navigator & { clipboard?: { writeText?: (t: string) => Promise<void> } }
-  if (nav.clipboard?.writeText) {
-    try {
-      await nav.clipboard.writeText(text)
-      return true
-    } catch {
-      /* permission denied — fall through to the legacy path */
-    }
-  }
-  const ta = document.createElement('textarea')
-  ta.value = text
-  ta.setAttribute('readonly', '')
-  ta.style.position = 'fixed'
-  ta.style.opacity = '0'
-  document.body.appendChild(ta)
-  ta.select()
-  let copied = false
-  try {
-    copied = document.execCommand('copy')
-  } catch {
-    /* no-op */
-  }
-  ta.remove()
-  return copied
-}
-
-/** Case-insensitive replace of every occurrence (fnr replace / replace-all). */
-function replaceAllOccurrences(text: string, query: string, replacement: string): string {
-  if (query === '') return text
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  // Function replacement keeps `$` patterns in the replacement literal.
-  return text.replace(new RegExp(escaped, 'gi'), () => replacement)
-}
-
-/**
- * Cell background/color for fnr highlighting, folded into the cell style:
- * active match → primary fill, any match → surface-selected, otherwise the
- * pre-existing range/striped logic. Token-driven only (no raw colors).
- * BACKGROUND-COLOR longhand (batch BE): the `background` shorthand would
- * reset background-image — silently killing the locked-cell stripes and
- * tripping React's shorthand/longhand mixing warning on rerender.
- */
-function fnrCellStyle(
-  fnrActive: boolean,
-  fnrMatched: boolean,
-  rangeSelected: boolean,
-  stripedRow: boolean,
-): React.CSSProperties {
-  return {
-    backgroundColor: fnrActive
-      ? 'var(--iris-primary, #6366f1)'
-      : fnrMatched || rangeSelected
-        ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
-        : stripedRow
-          ? 'var(--iris-surface)'
-          : 'transparent',
-    ...(fnrActive ? { color: 'var(--iris-primary-foreground, #fff)' } : null),
-  }
-}
-
-/**
- * Batch AX conditional formatting: fold the ordered rule list into the body
- * cell's inline style — rules evaluate in array order and later matches win
- * (the same spread-order latitude `cellStyle` already has). The `value` is
- * the raw cell value (getCellValue: dataIndex ?? key, formula computed).
- * Early-returns null when no rules are set; inline per-cell evaluation with
- * cost = visibleCells × rules (no memo — virtual scroll bounds the cell
- * count and callers memoize the rules array).
- */
-function conditionalCellStyle<Row extends Record<string, unknown>>(
-  rules: readonly IrisTableConditionalStyle<Row>[] | undefined,
-  row: Row,
-  columnKey: string,
-  value: unknown,
-): React.CSSProperties | null {
-  if (!rules || rules.length === 0) return null
-  const merged = matchConditionalStyles(rules, row, columnKey, value)
-  return Object.keys(merged).length > 0 ? merged : null
-}
-
-/**
- * Batch DH (iris 独有): the active pattern-edit hint — the column being edited
- * plus its live draft (resolved from the cell-edit store). While a session is
- * open, cells in the SAME column whose committed RAW value equals the draft
- * highlight, so other rows sharing the value stay visible as a data-
- * consistency cue. The editing cell itself is exempt; an empty draft is
- * fail-closed (never floods a whole empty column). Row-edit mode never
- * resolves here (each column's draft lives in its own session — documented
- * fiat, inline cell mode is fully realtime via the shared store).
- */
-export interface PatternEditActive {
-  columnKey: string
-  draft: unknown
-}
-
-/** Shared background for pattern-edit hints (token with a default fallback). */
-const PATTERN_HINT_BG =
-  'linear-gradient(var(--iris-input-hint, rgba(251, 191, 36, 0.16)), var(--iris-input-hint, rgba(251, 191, 36, 0.16)))'
-
-/**
- * Per-cell pattern hint resolution: whether this cell highlights + its style.
- * Longhand background-image only (BE discipline) — never clobbers
- * background-image, spread AFTER conditional styles / BEFORE lockedRender.
- */
-export function patternHintStyle(
-  active: PatternEditActive | null,
-  colKey: string,
-  isEditing: boolean,
-  raw: unknown,
-): { hint: boolean; style?: React.CSSProperties } {
-  if (!active || active.columnKey !== colKey || isEditing) return { hint: false }
-  const draftStr = String(active.draft)
-  if (draftStr === '') return { hint: false }
-  if (String(raw) !== draftStr) return { hint: false }
-  return { hint: true, style: { backgroundImage: PATTERN_HINT_BG } }
-}
-
-/** Shared inline style for the fnr bar buttons (token-driven only). */
-const FNR_BUTTON_STYLE: React.CSSProperties = {
-  border: '1px solid var(--iris-border)',
-  borderRadius: 'var(--iris-radius-md, 6px)',
-  background: 'var(--iris-surface)',
-  color: 'var(--iris-foreground)',
-  cursor: 'pointer',
-  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-  fontSize: 'var(--iris-font-size-sm, 13px)',
-  fontFamily: 'inherit',
-}
-
-/** Shared style for the annotate panel action buttons (token-only, batch BB). */
-const ANNOTATE_ACTION_STYLE: React.CSSProperties = {
-  border: '1px solid var(--iris-border)',
-  borderRadius: 'var(--iris-radius-sm, 4px)',
-  background: 'var(--iris-surface)',
-  color: 'var(--iris-foreground)',
-  cursor: 'pointer',
-  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
-  fontSize: 'var(--iris-font-size-sm, 13px)',
-  fontFamily: 'inherit',
-}
-
-/**
- * Batch I: fold the checked filter sets into the query filter map as
- * comma-joined strings (vxe filter-multiple remote serialization parity).
- * Keys with an empty checked set are left untouched.
- */
-function mergeFilterValues(
-  filters: Record<string, string>,
-  filterValues: Record<string, string[]>,
-): Record<string, string> {
-  const next: Record<string, string> = { ...filters }
-  for (const [key, values] of Object.entries(filterValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
-}
-
-/**
- * Batch AI: fold a parsed query's substring (`=`/`contains`) and `in` channels
- * into a filter map — `in` lists comma-join exactly like checked filter sets
- * (vxe filter-multiple remote serialization parity). Typed relational rules
- * have no text serialization and stay local-only (documented).
- */
-function mergeQueryIntoFilters(
-  filters: Record<string, string>,
-  parsed: ParsedTableQuery,
-): Record<string, string> {
-  const next: Record<string, string> = { ...filters }
-  for (const [key, value] of Object.entries(parsed.filters)) {
-    if (value !== '') next[key] = value
-  }
-  for (const [key, values] of Object.entries(parsed.inValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
-}
-
-/**
- * Batch AV: row-major Tab navigation (spreadsheet parity). From `current`,
- * step ±1 cell in row-major order (`(r, c)` → `(r, c+1)` → `(r+1, 0)` …),
- * stopping at the grid bounds — NO wrap, so Tab from the last cell stays put
- * instead of silently moving focus off the table (fiat F1). Shared by
- * Tab / Shift+Tab in the grid keyboard handler.
- */
-function nextRowMajorCell(
-  current: GridCell,
-  dir: 1 | -1,
-  rowCount: number,
-  colCount: number,
-): GridCell {
-  const index = current.row * colCount + current.col + dir
-  if (index < 0 || index >= rowCount * colCount) return current
-  return { row: Math.floor(index / colCount), col: index % colCount }
-}
-
-/**
- * Floating annotation editor (batch BB, iris 独有 — vxe has no note
- * editing). Opens from the context menu's built-in `__iris-annotate` /
- * `__iris-annotate-edit` items and rides the SAME virtual cursor anchor the
- * menu used, so it appears exactly where the user right-clicked. Built with
- * the same building blocks as `TableContextMenu` — `useFloating` +
- * `useDismiss` + portal — with the same dismissal set (Escape / outside
- * pointer-down / any scroll).
- *
- * The textarea is seeded from `annotations[cellKey]` (`current`); 保存 with
- * empty text removes the key, non-empty sets it — both routed to the table's
- * `onAnnotationsChange` channel via `onSave`/`onRemove`. 删除 renders only
- * when a note exists. Without `onAnnotationsChange` the buttons are inert
- * (documented — the table never calls them). Every color is a `--iris-*`
- * token.
- */
-function TableAnnotatePanel({
-  open,
-  anchorRef,
-  cellKey,
-  current,
-  onSave,
-  onRemove,
-  onClose,
-  t,
-}: {
-  open: boolean
-  anchorRef: React.RefObject<HTMLElement | null>
-  cellKey: string
-  current: string | undefined
-  onSave: (text: string) => void
-  onRemove: () => void
-  onClose: () => void
-  t: (key: string, params?: Record<string, string | number>) => string
-}): React.ReactElement | null {
-  const panelRef = React.useRef<HTMLDivElement | null>(null)
-  const [text, setText] = React.useState(current ?? '')
-
-  const { floatingStyles } = useFloating({
-    anchor: anchorRef,
-    floating: panelRef,
-    open,
-    placement: 'bottom-start',
-    flip: false,
-    shift: false,
-  })
-
-  useDismiss({
-    enabled: open,
-    exclude: [panelRef],
-    onDismiss: onClose,
-  })
-
-  // Scroll anywhere closes the panel (capture phase — nested scrollers count).
-  const onCloseRef = React.useRef(onClose)
-  onCloseRef.current = onClose
-  React.useEffect(() => {
-    if (!open || typeof document === 'undefined') return
-    const onScroll = (): void => onCloseRef.current()
-    document.addEventListener('scroll', onScroll, true)
-    return () => document.removeEventListener('scroll', onScroll, true)
-  }, [open])
-
-  if (!open) return null
-
-  const node = (
-    <div
-      ref={panelRef}
-      role="dialog"
-      aria-label={current ? t('table.annotate.edit') : t('table.annotate')}
-      data-iris-annotate-panel=""
-      data-iris-annotate-cell={cellKey}
-      style={{
-        ...floatingStyles,
-        zIndex: 'var(--iris-z-popover, 1000)',
-        background: 'var(--iris-surface-floating, var(--iris-surface))',
-        color: 'var(--iris-foreground)',
-        border: '1px solid var(--iris-border)',
-        borderRadius: 'var(--iris-radius-md, 6px)',
-        boxShadow: 'var(--iris-shadow-lg)',
-        padding: 'var(--iris-space-xs, 8px)',
-        minWidth: 220,
-        maxWidth: 320,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--iris-space-xs, 8px)',
-        fontSize: 'var(--iris-font-size-sm, 13px)',
-      }}
-    >
-      <textarea
-        data-iris-annotate-input=""
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={3}
-        aria-label={current ? t('table.annotate.edit') : t('table.annotate')}
-        style={{
-          background: 'var(--iris-surface)',
-          color: 'var(--iris-foreground)',
-          border: '1px solid var(--iris-border)',
-          borderRadius: 'var(--iris-radius-sm, 4px)',
-          padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-          font: 'inherit',
-          resize: 'vertical',
-          minHeight: 64,
-        }}
-      />
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 'var(--iris-space-xs, 8px)',
-        }}
-      >
-        {current ? (
-          <button
-            type="button"
-            data-iris-annotate-remove=""
-            onClick={onRemove}
-            style={{ ...ANNOTATE_ACTION_STYLE, color: 'var(--iris-danger)' }}
-          >
-            {t('table.annotate.remove')}
-          </button>
-        ) : null}
-        <button
-          type="button"
-          data-iris-annotate-save=""
-          onClick={() => onSave(text)}
-          style={ANNOTATE_ACTION_STYLE}
-        >
-          {t('table.annotate.save')}
-        </button>
-      </div>
-    </div>
-  )
-
-  if (typeof document === 'undefined') return null
-  return createPortal(node, document.body)
-}
-
-/**
- * Floating note preview (batch BM, iris 独有 — vxe has no cell-note concept,
- * and its tooltip can only show the cell value). Hovering a noted cell with
- * `notePopover` replaces the native `title` on that cell with this popover:
- * a pure-display tooltip (`role="tooltip"`, pointer-events none so it never
- * steals hover) anchored to the cell's badge corner via the same virtual
- * anchor pattern as `TableContextMenu` — useFloating (placement top, offset
- * 8, flip/shift on) + useDismiss (Escape / outside pointer-down) + capture
- * scroll close + portal. Content-only: no i18n (the note text is user data).
- *
- * No sequence token (unlike the panels): the popover holds no internal state
- * to re-seed, and cell-to-cell hover moves close-then-reopen through
- * mouseleave/mouseenter (the popover is pointer-events none, so the pointer
- * physically leaves the old cell before entering the new one) — autoUpdate
- * re-runs on the fresh mount.
- */
-function TableNotePopover({
-  open,
-  anchorRef,
-  cellKey,
-  text,
-  onClose,
-}: {
-  open: boolean
-  anchorRef: React.RefObject<HTMLElement | null>
-  cellKey: string
-  text: string
-  onClose: () => void
-}): React.ReactElement | null {
-  const panelRef = React.useRef<HTMLDivElement | null>(null)
-
-  const { floatingStyles } = useFloating({
-    anchor: anchorRef,
-    floating: panelRef,
-    open,
-    placement: 'top',
-    offset: 8,
-    flip: true,
-    shift: true,
-  })
-
-  useDismiss({
-    enabled: open,
-    exclude: [panelRef],
-    onDismiss: onClose,
-  })
-
-  // Scroll anywhere closes the popover (capture phase — nested scrollers count).
-  const onCloseRef = React.useRef(onClose)
-  onCloseRef.current = onClose
-  React.useEffect(() => {
-    if (!open || typeof document === 'undefined') return
-    const onScroll = (): void => onCloseRef.current()
-    document.addEventListener('scroll', onScroll, true)
-    return () => document.removeEventListener('scroll', onScroll, true)
-  }, [open])
-
-  if (!open) return null
-
-  const node = (
-    <div
-      ref={panelRef}
-      role="tooltip"
-      data-iris-note-popover=""
-      data-iris-note-cell={cellKey}
-      style={{
-        ...floatingStyles,
-        zIndex: 'var(--iris-z-popover, 1000)',
-        background: 'var(--iris-surface-floating, var(--iris-surface))',
-        color: 'var(--iris-foreground)',
-        border: '1px solid var(--iris-border)',
-        borderRadius: 'var(--iris-radius-md, 6px)',
-        boxShadow: 'var(--iris-shadow-lg)',
-        padding: 'var(--iris-space-xs, 8px)',
-        maxWidth: 280,
-        whiteSpace: 'pre-wrap',
-        pointerEvents: 'none',
-        fontSize: 'var(--iris-font-size-sm, 13px)',
-        lineHeight: 1.5,
-      }}
-    >
-      {text}
-    </div>
-  )
-
-  if (typeof document === 'undefined') return null
-  return createPortal(node, document.body)
-}
 
 /**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
@@ -2731,9 +283,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   minHeight,
   maxHeight,
   scrollbarConfig,
+  scrollbarThumb = false,
+  headerStats = false,
   editDirtyConfig,
   autoResize = false,
   syncResize = false,
+  responsive = false,
   keepSource = false,
   zIndex,
   rowId,
@@ -2753,6 +308,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   round = false,
   padding,
   resizableColumns = false,
+  widthHint = false,
   autoResizeColumns = false,
   columnWidths: columnWidthsProp,
   defaultColumnWidths,
@@ -2774,6 +330,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   charCount,
   editPreview,
   pattern = false,
+  patternFill = false,
   columnTotals,
   expandScrollPreserve = false,
   shortcutHints,
@@ -2786,6 +343,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   editConfig,
   validConfig,
   rowDrag,
+  rowDragBetween,
   columnDrag,
   columnVisibility,
   onColumnVisibilityChange,
@@ -2841,6 +399,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   expandAnimation = false,
   keyboardNavigation = false,
   tableShortcuts = false,
+  editKeys,
   keymap,
   hotkeyScope = true,
   outerScope = false,
@@ -2861,6 +420,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   virtualScroll,
   rowHeight,
   persistState,
+  autoSaveState,
   views,
   onActiveViewChange,
   tableTabs,
@@ -2880,6 +440,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   className,
   ...rest
 }: IrisTableProps<Row>): React.ReactElement {
+  const rowDragEnabled = rowDrag !== undefined || (rowDragBetween?.length ?? 0) > 0
   // Batch BN (iris 独有): ONE throat for per-row heights — `rowHeight` wins
   // over `virtualScroll.itemHeight`; unset = existing behavior byte-identical
   // (virtual mode falls back to the virtualizer's itemHeight, non-virtual
@@ -2896,7 +457,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // and React's render walk is atomic per component (assigned before any
   // useMemo body executes; a StrictMode double-render re-assigns idempotently).
   // On-demand handle calls (CSV export) bypass this slot via formulaTablesRef.
-  currentFormulaTables = formulaTables
+  setCurrentFormulaTables(formulaTables)
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     if (document.getElementById('iris-table-row-styles')) return
@@ -2918,69 +479,85 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // badges + a leading row-number column. When `seq` is on the seq column IS
   // the row number — one leading number column either way.
   const showRowNumbers = seq || showCellRefs
-  // Defensive: null/undefined columns → empty array
-  // Batch CY: `hasDetail` HOISTED above the column memos — the responsive
-  // width model counts the leading detail toggle track (EXPAND_COL_WIDTH)
-  // when detail rows are enabled, mirroring gridTemplateColumns' track
-  // order. The expandable-detail comment lives with createExpansion below.
-  const hasDetail = renderDetail !== undefined
-  const safeColumns = React.useMemo(() => columns ?? [], [columns])
-
-  // ── Column width state (batch CV boundary / batch CY responsive, HOISTED
-  // above the column memos so the responsive fit reads the SAME throat every
-  // other render path uses). Dual channel: `columnWidths` controlled → the
-  // map is the ONLY read source; absent → an internal map (seeded by
-  // `defaultColumnWidths`) holds the overrides. `setColumnWidth` flips the
-  // internal map in uncontrolled mode and fires `onColumnWidthsChange`
-  // unconditionally in both channels; `resetColumnWidths` (batch BO) is the
-  // canonical 默认映射 — the empty map makes every `??` fall back to the
-  // column-DECLARED width.
-  const widthsControlled = columnWidthsProp !== undefined
-  const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
-    defaultColumnWidths ?? {},
+  // The root ref is shared by every size-sensitive bridge (virtual columns,
+  // auto/sync resize and narrow-width responsive fit). Keeping one ref also
+  // means the responsive observer measures the exact element that receives
+  // the overflow style below.
+  const rootRef = React.useRef<HTMLDivElement | null>(null)
+  // Tooltip cells are measured after layout only when showAll is explicitly
+  // false.  The callback map keeps ref identities stable across renders (an
+  // inline ref would cause a null/node pair on every render and repeatedly
+  // schedule measurements).  Virtual rows register as they enter the window.
+  const tooltipCellRefs = React.useRef(new Map<string, HTMLElement>())
+  const tooltipRefCallbacks = React.useRef(new Map<string, (node: HTMLElement | null) => void>())
+  const tooltipMeasureRaf = React.useRef<number | null>(null)
+  const [tooltipMeasureVersion, setTooltipMeasureVersion] = React.useState(0)
+  const [truncatedTooltipCells, setTruncatedTooltipCells] = React.useState<Set<string>>(
+    () => new Set(),
   )
-  const columnWidths = widthsControlled
-    ? (columnWidthsProp as IrisTableColumnWidths)
-    : widthsInternal
-  const setColumnWidth = (key: string, width: number) => {
-    const next = { ...columnWidths, [key]: width }
-    if (!widthsControlled) setWidthsInternal(next)
-    onColumnWidthsChange?.(next)
-  }
-  const resetColumnWidths = () => {
-    if (!widthsControlled) setWidthsInternal({})
-    onColumnWidthsChange?.({})
-  }
-
-  // ── Column pin state (batch BX, iris 独有 — vxe has no header pin menu;)
-  // HOISTED with the widths so the responsive fit reads the SAME `pinOf`
-  // throat as pinnedOffsets / visibleColSet / header attrs. Dual channel
-  // mirroring columnWidths: `pinnedColumns` controlled → the map is the ONLY
-  // read source (a `null` entry overrides a static `col.pinned` declaration);
-  // absent → an internal map (seeded by the static declarations via
-  // `pinOf`'s fallback). `setColumnPinned` flips the internal map in
-  // uncontrolled mode and fires `onColumnPinnedChange` unconditionally in
-  // both channels — controlled mode never optimistically flips.
-  const pinsControlled = pinnedColumns !== undefined
-  const [pinsInternal, setPinsInternal] = React.useState<Record<string, 'left' | 'right' | null>>(
-    {},
-  )
-  const pinOf = React.useCallback(
-    (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
-      if (pinsControlled)
-        // Absent keys fall back to the column's own declaration — only an
-        // EXPLICIT `null` entry overrides a static `col.pinned` pin (so
-        // `pinnedColumns={{}}` never unpins statically-declared pins).
-        return col.key in pinnedColumns ? pinnedColumns[col.key] : (col.pinned ?? null)
-      if (pinsInternal[col.key] !== undefined) return pinsInternal[col.key]
-      return col.pinned ?? null
+  const scheduleTooltipMeasure = React.useCallback(() => {
+    if (tooltipMeasureRaf.current !== null) return
+    if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+      setTooltipMeasureVersion((version) => version + 1)
+      return
+    }
+    tooltipMeasureRaf.current = window.requestAnimationFrame(() => {
+      tooltipMeasureRaf.current = null
+      setTooltipMeasureVersion((version) => version + 1)
+    })
+  }, [])
+  const tooltipCellRefOf = React.useCallback(
+    (id: string): ((node: HTMLElement | null) => void) => {
+      const existing = tooltipRefCallbacks.current.get(id)
+      if (existing) return existing
+      const callback = (node: HTMLElement | null): void => {
+        if (node) tooltipCellRefs.current.set(id, node)
+        else tooltipCellRefs.current.delete(id)
+        if (!node) tooltipRefCallbacks.current.delete(id)
+        scheduleTooltipMeasure()
+      }
+      tooltipRefCallbacks.current.set(id, callback)
+      return callback
     },
-    [pinsControlled, pinnedColumns, pinsInternal],
+    [scheduleTooltipMeasure],
   )
-  const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
-    if (!pinsControlled) setPinsInternal((prev) => ({ ...prev, [key]: side }))
-    onColumnPinnedChange?.(key, side)
-  }
+  const [responsiveWidth, setResponsiveWidth] = React.useState(0)
+  const {
+    hasDetail,
+    safeColumns,
+    presetColumns,
+    setDetectedTypes,
+    detectTypesRef,
+    orderedColumns,
+    displayColumns,
+    columnWidths,
+    setColumnWidth,
+    resetColumnWidths,
+    pinOf,
+    setColumnPinned,
+    responsiveDisplayColumns,
+    responsiveOverflow,
+    grouped,
+    leafColumns,
+    viewColumnsRef,
+    headerMatrix,
+  } = useTableColumns<Row>({
+    columns: columns ?? [],
+    renderDetail,
+    responsive,
+    responsiveWidth,
+    rowDrag: rowDragEnabled,
+    showRowNumbers,
+    selectable,
+    autoDetectTypes,
+    columnOrder,
+    columnVisibility,
+    columnWidths: columnWidthsProp,
+    defaultColumnWidths,
+    onColumnWidthsChange,
+    pinnedColumns,
+    onColumnPinnedChange,
+  })
   // Column visibility (vxe columnConfig.visible parity): filter hidden
   // columns out of every render path (header, body, summary).
   //
@@ -2990,118 +567,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // ignored. Reference-preserving: without the prop the result IS
   // `safeColumns` (byte-identical with the pre-order render path). Grouped
   // tables address top-level columns only.
-  const columnOrderIndex = React.useMemo(() => {
-    const map = new Map<string, number>()
-    columnOrder?.forEach((key, i) => {
-      if (!map.has(key)) map.set(key, i)
-    })
-    return map
-  }, [columnOrder])
-
-  // Batch AN column presets (iris 独有): a column with `preset` gets the
-  // preset's display defaults merged in by the core factory — defined-fields-
-  // only, user fields win (a plain spread would let `align: undefined` kill
-  // the default). Recursive over `children` so grouped headers' leaves
-  // inherit; when no column in the tree uses a preset the result IS
-  // `safeColumns` (reference-preserving, byte-identical with the pre-preset
-  // render path). `orderedColumns` (and everything downstream) consumes this.
-  const presetColumns = React.useMemo(() => {
-    const hasPreset = (cols: readonly IrisTableColumn<Row>[]): boolean =>
-      cols.some((c) => c.preset !== undefined || (c.children ? hasPreset(c.children) : false))
-    const applyPreset = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
-      const resolved = col.preset ? applyColumnPreset(col, col.preset) : col
-      if (resolved.children && resolved.children.length > 0) {
-        return { ...resolved, children: resolved.children.map(applyPreset) }
-      }
-      return resolved
-    }
-    return hasPreset(safeColumns) ? safeColumns.map(applyPreset) : safeColumns
-  }, [safeColumns])
-
-  // Batch CX (iris 独有): auto-detected column types — the one-shot effect
-  // below fills `detectedTypes` from the FIRST non-empty liveData; this memo
-  // applies the detected kinds onto the preset columns, filling ONLY the
-  // fields the caller left undefined (explicit `align`/`sortType` always win
-  // — preset defaults survive). number → right + 'number' sort; string/date/
-  // boolean → left + 'string'. Reference-preserving when the prop is off or
-  // nothing was detected: the result IS `presetColumns` (byte-identical with
-  // the pre-prop render path). `orderedColumns` (and everything downstream)
-  // consumes this. The state/ref are declared HERE (before the memo reads
-  // them); the one-shot detection effect itself lives next to the other
-  // data-arrival effects below.
-  const [detectedTypes, setDetectedTypes] = React.useState<Record<string, DetectedColumnType>>({})
-  const detectTypesRef = React.useRef(false)
-  const detectedColumns = React.useMemo(() => {
-    if (!autoDetectTypes || Object.keys(detectedTypes).length === 0) return presetColumns
-    const fillDetected = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
-      const kind = detectedTypes[col.key]
-      if (!kind) return col
-      const next = { ...col } as IrisTableColumn<Row>
-      if (kind === 'number') {
-        if (col.align === undefined) next.align = 'right'
-        if (col.sortType === undefined) next.sortType = 'number'
-      } else {
-        if (col.align === undefined) next.align = 'left'
-        if (col.sortType === undefined) next.sortType = 'string'
-      }
-      return next
-    }
-    const applyDetected = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
-      const resolved = fillDetected(col)
-      if (resolved.children && resolved.children.length > 0) {
-        return { ...resolved, children: resolved.children.map(applyDetected) }
-      }
-      return resolved
-    }
-    return presetColumns.map(applyDetected)
-  }, [autoDetectTypes, presetColumns, detectedTypes])
-
-  const orderedColumns = React.useMemo(() => {
-    if (!columnOrder || columnOrder.length === 0) return detectedColumns
-    const ordered = detectedColumns.filter((c) => columnOrderIndex.has(c.key))
-    const rest = detectedColumns.filter((c) => !columnOrderIndex.has(c.key))
-    ordered.sort((a, b) => columnOrderIndex.get(a.key)! - columnOrderIndex.get(b.key)!)
-    return [...ordered, ...rest]
-  }, [detectedColumns, columnOrder, columnOrderIndex])
-
-  const displayColumns = React.useMemo(() => {
-    let cols = orderedColumns
-    if (columnVisibility) cols = cols.filter((c) => columnVisibility[c.key] !== false)
-    // Batch U (vxe column visibleMethod parity): a per-column no-arg
-    // predicate evaluated in this memo — at most once per render. `false`
-    // HIDES the column and WINS over `columnVisibility: true` (a column
-    // whose own predicate vetoes itself must not render); absent / `true`
-    // keeps it. Filtering is reference-preserving when nothing uses it.
-    if (cols.some((c) => c.visibleMethod)) {
-      cols = cols.filter((c) => (c.visibleMethod ? c.visibleMethod() !== false : true))
-    }
-    return cols
-  }, [orderedColumns, columnVisibility])
-
-  // Multi-level (grouped) headers: a column with `children` forms a header group. The BODY always renders the leaf columns; only the header gains extra rows.
-
-  // When nothing is grouped, `leafColumns` is the original `safeColumns` (same
-  // reference) so the flat path is byte-identical.
-  const grouped = React.useMemo(
-    () => safeColumns.some((c) => c.children && c.children.length > 0),
-    [safeColumns],
-  )
-  const leafColumns = React.useMemo(
-    () => (grouped ? flattenLeafColumns(displayColumns) : displayColumns),
-    [grouped, displayColumns],
-  )
-  // Batch W: the view handle methods (getFilteredData / exportCurrentViewCsv)
-  // run against the mount-time handle, so mirror the latest visible LEAF
-  // columns per render (same pattern as liveDataRef / displaySelectionRef
-  // below). In flat mode leafColumns is reference-identical to
-  // displayColumns; in grouped mode it carries the data-bearing leaves.
-  const viewColumnsRef = React.useRef(leafColumns)
-  viewColumnsRef.current = leafColumns
-  const headerMatrix = React.useMemo(
-    () => (grouped ? buildHeaderMatrix(displayColumns) : null),
-    [grouped, displayColumns],
-  )
-
   // ── Batch AI: natural-language query (iris 独有, controlled-only) ────────
   // The query string is parsed by the core parseTableQuery grammar against the
   // leaf column keys (case-insensitive; the matched canonical key = the column
@@ -3116,54 +581,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [query, leafColumns])
 
   // ── Server-side proxy (vxe-grid proxyConfig parity, query slice) ────────
-  // The controller lives in a ref and is created once; the unified core data
-  // engine inside it owns paging / latest-wins / dedupe. The bridge only maps
-  // state → props and routes sort / filter / page events back to setParams.
+  // The framework-free controller and its external-store bridge live in a
+  // dedicated hook; this component keeps only lifecycle policy and rendering.
   const remoteSort = proxyConfig?.remoteSort === true
   const remoteFilter = proxyConfig?.remoteFilter === true
-  const proxyQueryRef = React.useRef<IrisTableProxyConfig<Row>['query'] | undefined>(undefined)
-  proxyQueryRef.current = proxyConfig?.query
-  const createProxySource = (): RemoteTableSource<Row> =>
-    createRemoteTableSource<Row>({
-      // The latest query closure is read at request time, so a parent that
-      // swaps the query never leaves a stale closure behind.
-      query: (params) => proxyQueryRef.current!(params),
-      // Kicked from an effect below — never fire a fetch during render.
-      autoLoad: false,
-      initialParams: {
-        page: proxyConfig?.defaultPage ?? 1,
-        pageSize: proxyConfig?.pageSize ?? 10,
-        sort: remoteSort ? ((sortProp !== undefined ? sortProp : defaultSort) ?? null) : null,
-        sorts: remoteSort && multiSort ? (multiSortStateProp ?? defaultMultiSort ?? []) : undefined,
-        // Batch AI: the parsed query's substring/in channels join the FIRST
-        // remote request so a mounted query does not double-fetch (the
-        // remoteFilter effect below covers subsequent changes).
-        filters: remoteFilter
-          ? mergeQueryIntoFilters(mergeFilterValues(filters ?? {}, filterValues ?? {}), queryParsed)
-          : {},
-      },
+  const { proxyRef, createProxySource, proxy, proxyState, tableLoading, tableError, retry } =
+    useTableProxy<Row>({
+      proxyConfig,
+      remoteSort,
+      remoteFilter,
+      sortProp,
+      defaultSort,
+      multiSort,
+      multiSortState: multiSortStateProp,
+      defaultMultiSort,
+      filters,
+      filterValues,
+      queryParsed,
+      loading,
+      error,
+      onRetry,
     })
-  const proxyRef = React.useRef<RemoteTableSource<Row> | null>(null)
-  if (proxyConfig && proxyRef.current === null) {
-    proxyRef.current = createProxySource()
-  }
-  // A proxyConfig-less render never exposes a (possibly destroyed) stale
-  // controller: rows/loading/pager all fall back to the null proxy.
-  const proxy = proxyConfig ? proxyRef.current : null
-  const proxyState = React.useSyncExternalStore(
-    proxy ? proxy.subscribe : noopProxySubscribe,
-    proxy ? proxy.getState : ((() => EMPTY_PROXY_STATE) as () => RemoteTableSourceState<Row>),
-    proxy ? proxy.getState : ((() => EMPTY_PROXY_STATE) as () => RemoteTableSourceState<Row>),
-  )
-  // Proxy mode drives the table's loading/error UI from the controller state
-  // (reusing the existing loading/error props rendering below).
-  const tableLoading = proxy ? proxyState.loading : loading
-  const tableError = proxy ? proxyState.error !== null : error
-  const handleRetry = React.useCallback(() => {
-    void proxyRef.current?.refetch()
-    onRetry?.()
-  }, [onRetry])
-  const retry = proxy ? handleRetry : onRetry
 
   // autoLoad parity: kick the first request from an effect (never during the
   // render phase); tear the controller down when the proxy is removed or the
@@ -3548,8 +986,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         // Batch AO: the parsed `sort by` clause sorts formula columns by the
         // COMPUTED value (same memoized evaluation as the cell render);
         // batch BC: cross-table refs read the render-scoped tables slot.
-        let va = memoizedFormulaValue(col.formula, a, currentFormulaTables)
-        let vb = memoizedFormulaValue(col.formula, b, currentFormulaTables)
+        let va = getFormulaValue(col.formula, a)
+        let vb = getFormulaValue(col.formula, b)
         if (col.sortType === 'number') {
           va = Number(va)
           vb = Number(vb)
@@ -4019,6 +1457,47 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // persistSnapshotRef above).
   const applyViewSnapshotRef = React.useRef<typeof applyViewSnapshot>(applyViewSnapshot)
   applyViewSnapshotRef.current = applyViewSnapshot
+  // Batch DM: periodic full-state snapshots deliberately use their own
+  // storage/key and the same JSON contract as exportStateJson. Restore runs
+  // before the first timer tick so the mount snapshot is never overwritten.
+  const autoSaveInterval = autoSaveState?.intervalMs ?? 0
+  const autoSaveStorage = autoSaveState?.storage
+  const autoSaveKey = autoSaveState?.key ?? 'iris-table-auto-state'
+  React.useEffect(() => {
+    if (!Number.isFinite(autoSaveInterval) || autoSaveInterval <= 0) return
+    if (autoSaveStorage === false) return
+    let storage: Pick<Storage, 'getItem' | 'setItem'> | null = autoSaveStorage ?? null
+    if (!storage && typeof window !== 'undefined') {
+      try {
+        storage = window.localStorage
+      } catch {
+        storage = null
+      }
+    }
+    if (!storage || typeof window === 'undefined') return
+    try {
+      const saved = storage.getItem(autoSaveKey)
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved)
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          applyViewSnapshotRef.current(parsed as IrisTablePersistedState)
+        }
+      }
+    } catch {
+      // Storage/JSON failures must never break table rendering.
+    }
+    const save = (): void => {
+      try {
+        const snapshot = { ...persistSnapshotRef.current }
+        delete (snapshot as { multiSortState?: unknown }).multiSortState
+        storage?.setItem(autoSaveKey, JSON.stringify(snapshot))
+      } catch {
+        // Quota/security failures are intentionally fail-inert.
+      }
+    }
+    const timer = window.setInterval(save, autoSaveInterval)
+    return () => window.clearInterval(timer)
+  }, [autoSaveInterval, autoSaveKey, autoSaveStorage])
   // Parse runs during the first render (guarded, idempotent); mirror the
   // parsed snapshot into the ref the proxy-creation effect reads above.
   const persistParsed = usePersistState({
@@ -4332,7 +1811,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // state). Row-edit mode drafts live in per-column sessions, so row mode is
   // intentionally excluded (documented fiat).
   const patternEdit: PatternEditActive | null =
-    pattern && editingTarget !== null
+    (pattern || patternFill) && editingTarget !== null
       ? { columnKey: editingTarget.columnKey, draft: editTarget.draft }
       : null
   // Row edit mode (vxe editConfig.mode parity, batch K): `'row'` opens one
@@ -4928,14 +2407,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
     overRect: SortableRect
   } | null>(null)
 
+  // Batch DQ: external drop zones belong to the parent. Hit-testing stays
+  // framework-free at the DOM bridge, and the matching callback is resolved
+  // from the latest prop on every pointer event.
+  const externalRowDropAt = (x: number, y: number): { onDrop: (row: Row) => void } | null => {
+    if (!rowDragBetween || typeof document === 'undefined') return null
+    const elementFromPoint = document.elementFromPoint
+    if (!elementFromPoint) return null
+    const target = elementFromPoint.call(document, x, y)
+    const zone = target?.closest<HTMLElement>('[data-iris-drop-zone]')
+    const key = zone?.getAttribute('data-iris-drop-zone')
+    if (key === null || key === undefined) return null
+    const entry = rowDragBetween.find((candidate) => candidate.key === key)
+    return entry ? { onDrop: entry.onDrop } : null
+  }
+
   const handleRowDragPointerDown = (e: React.PointerEvent, rowId: string) => {
-    if (!rowDrag || e.button !== 0) return
+    if (!rowDragEnabled || e.button !== 0) return
     e.preventDefault()
     rowDragCtrl.press(rowId, e.clientX, e.clientY)
   }
 
-  const handleRowDragPointerMove = (e: React.PointerEvent) => {
-    if (!rowDrag) return
+  const handleRowDragPointerMove = (e: Pick<PointerEvent, 'clientX' | 'clientY'>) => {
+    if (!rowDragEnabled) return
     if (rowDragCtrl.isPending()) {
       const started = rowDragCtrl.tryStart(e.clientX, e.clientY)
       if (started) {
@@ -4950,6 +2444,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     const state = rowDragCtrl.getState()
     if (state.activeId !== null) {
+      if (externalRowDropAt(e.clientX, e.clientY)) {
+        rowDragCtrl.over(null)
+        rowDropRef.current = null
+        setRowDropTarget(null)
+        return
+      }
       const overId = rowDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, rowRectsRef.current)
       updateRowDropIndicator(e.clientY, state.activeId, overId)
     }
@@ -5001,13 +2501,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
     )
   }
 
-  const handleRowDragPointerUp = () => {
-    if (!rowDrag) return
+  const handleRowDragPointerUp = (e?: Pick<PointerEvent, 'clientX' | 'clientY'>) => {
+    if (!rowDragEnabled) return
     if (rowDragCtrl.isPending()) {
       rowDragCtrl.cancel()
       // Batch CD cleanup: an aborted tap still clears the line + refs.
       rowDropRef.current = null
       setRowDropTarget(null)
+      return
+    }
+    const activeBeforeEnd = rowDragCtrl.getState().activeId
+    const external = activeBeforeEnd !== null && e ? externalRowDropAt(e.clientX, e.clientY) : null
+    if (activeBeforeEnd !== null && external) {
+      const row = bodyDataRef.current.find(
+        (candidate, index) => String(rowKeyOf(candidate, index)) === activeBeforeEnd,
+      )
+      rowDragCtrl.end()
+      rowDropRef.current = null
+      setRowDropTarget(null)
+      rowRectsRef.current = []
+      if (row) external.onDrop(row)
       return
     }
     const { activeId, overId } = rowDragCtrl.end()
@@ -5031,7 +2544,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (resolved && from >= 0 && from !== resolved.insertIndex) {
         const [moved] = rows.splice(from, 1)
         rows.splice(resolved.insertIndex, 0, moved)
-        rowDrag.onReorder(rows)
+        rowDrag?.onReorder(rows)
       }
     }
     rowRectsRef.current = []
@@ -5039,12 +2552,32 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const handleRowDragPointerLeave = () => {
     // Batch CD cleanup: leave aborts the drag AND clears the line + refs.
-    if (rowDrag && rowDragCtrl.getState().activeId !== null) {
+    if (rowDragEnabled && rowDragCtrl.getState().activeId !== null) {
       rowDragCtrl.cancel()
     }
     rowDropRef.current = null
     setRowDropTarget(null)
   }
+
+  React.useEffect(() => {
+    if (!rowDragBetween || rowDragBetween.length === 0 || rowDragActiveId === null) return
+    const onMove = (e: PointerEvent): void => handleRowDragPointerMove(e)
+    const onUp = (e: PointerEvent): void => handleRowDragPointerUp(e)
+    const onCancel = (): void => {
+      if (rowDragCtrl.getState().activeId !== null) rowDragCtrl.cancel()
+      rowDropRef.current = null
+      setRowDropTarget(null)
+      rowRectsRef.current = []
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+    }
+  }, [rowDragActiveId, rowDragBetween])
 
   // Row-selection drag range (batch BT, iris 独有 — vxe has no mouse-drag
   // checkbox range): pressing the `__selection` cell in multi mode records a
@@ -5395,7 +2928,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // String, the `contextCellText` chain shared with cellTooltip) via the
   // existing safe clipboard writer (three-channel, no-op when no clipboard).
   const copyContextValue = (params: IrisTableContextMenuParams<Row>): void => {
-    void writeClipboardText(contextCellText(params.row, params.column))
+    void writeClipboardText(contextCellText(params.row, params.column, getCellValue))
   }
   // Batch BW: 清空 — the clicked cell set to '' through ONE commitRowList
   // (the SAME funnel as the Delete shortcut: undo/audit/onDataChange
@@ -5406,6 +2939,42 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const current = externalDataRef.current ?? []
     const k = rowKeyOf(row, rowIndex)
     const next = setCellValue(current, rowKey, k, column.key, '')
+    if (next !== current) commitRowList(next)
+  }
+  // Batch DO: format the live cell range (or the clicked cell when no range is
+  // active) in one write-back. Formula, locked and readonly cells are
+  // display-only; non-matching values remain byte-identical.
+  const formatContextSelection = (
+    params: IrisTableContextMenuParams<Row>,
+    mode: 'number' | 'upper',
+  ): void => {
+    const range = cellRangeCtrl.getRange()
+    const start = range?.start ?? { row: params.rowIndex, col: params.columnIndex }
+    const end = range?.end ?? start
+    const rows = bodyDataRef.current
+    const cols = liveLeafRef.current
+    const current = externalDataRef.current ?? []
+    let next = current
+    for (let rowIndex = start.row; rowIndex <= end.row; rowIndex += 1) {
+      const row = rows[rowIndex]
+      if (!row) continue
+      const key = rowKeyOf(row, rowIndex)
+      if (key == null) continue
+      for (let columnIndex = start.col; columnIndex <= end.col; columnIndex += 1) {
+        const col = cols[columnIndex]
+        if (!col || col.formula || isCellLocked(row, col) || isCellReadonly(row, col)) continue
+        const value = getCellValue(row, col)
+        const formatted =
+          mode === 'number'
+            ? typeof value === 'number' && Number.isFinite(value)
+              ? value.toFixed(2)
+              : value
+            : typeof value === 'string'
+              ? value.toUpperCase()
+              : value
+        if (formatted !== value) next = setCellValue(next, rowKey, key, col.key, formatted)
+      }
+    }
     if (next !== current) commitRowList(next)
   }
   const handleContextMenu = (
@@ -5466,6 +3035,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     if (!items.some((i) => i.key === CLEAR_CELL_MENU_KEY)) {
       items.push({ key: CLEAR_CELL_MENU_KEY, label: t('table.clearCell') })
+    }
+    // Batch DO: region formatters are opt-in so the existing context-menu
+    // contract remains unchanged unless callers request them explicitly.
+    if (contextMenu.formatActions) {
+      if (!items.some((i) => i.key === FORMAT_NUMBER_MENU_KEY)) {
+        items.push({ key: FORMAT_NUMBER_MENU_KEY, label: t('table.formatNumber') })
+      }
+      if (!items.some((i) => i.key === FORMAT_UPPER_MENU_KEY)) {
+        items.push({ key: FORMAT_UPPER_MENU_KEY, label: t('table.formatUpper') })
+      }
     }
     // Batch BB: with `annotationEditing`, append the built-in annotate items
     // AFTER the summary item — 添加批注 on a note-less cell, 编辑批注 +
@@ -5852,9 +3431,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // methods run against the mount-time closure — read the per-render ref
     // mirrors (filteredDataRef / viewColumnsRef, set above) instead of the
     // render's memo values, which would go stale after any rerender.
-    // viewColumnsRef holds leafColumns: flat mode is reference-identical to
-    // displayColumns (zero flat regression) and grouped mode carries the
-    // data-bearing leaves, so the CSV keeps leaf data in both modes.
+    // viewColumnsRef holds leafColumns: flat mode follows the display list
+    // (and the responsive fitted list when active), while grouped mode carries
+    // the data-bearing leaves, so the CSV keeps leaf data in both modes.
     getFilteredData: () => [...filteredDataRef.current],
     exportCurrentViewCsv: () =>
       exportCsv(
@@ -5874,6 +3453,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
     exportSelectionCsv: () => {
       const selected = new Set(displaySelectionRef.current)
       const rows = bodyDataRef.current.filter((row, i) => selected.has(rowKeyOf(row, i)))
+      if (rows.length === 0) return ''
+      return exportCsv(
+        withComputedFormulaCells(rows, viewColumnsRef.current, formulaTablesRef.current),
+        viewColumnsRef.current,
+      )
+    },
+    // Batch DT: explicit row-key export uses the same current body order and
+    // serializer as selection export, but does not depend on checkbox state.
+    exportRowsCsv: (keys) => {
+      const wanted = new Set(keys)
+      const rows = bodyDataRef.current.filter((row, i) => wanted.has(rowKeyOf(row, i)))
       if (rows.length === 0) return ''
       return exportCsv(
         withComputedFormulaCells(rows, viewColumnsRef.current, formulaTablesRef.current),
@@ -6356,6 +3946,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   exportNamesRef.current = exportNames
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
+  // Batch DN: header-local numeric statistics are computed from the CURRENT
+  // rendered body, not the raw unfiltered input. Only finite number values
+  // participate, so text columns and mixed columns stay inert; the footer
+  // column-totals feature remains a separate opt-in path.
+  const headerStatsByKey = React.useMemo<Record<string, { count: number; average: number }>>(() => {
+    const out: Record<string, { count: number; average: number }> = {}
+    if (!headerStats) return out
+    for (const col of leafColumns) {
+      const values = bodyData
+        .map((row) => getCellValue(row, col))
+        .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+      if (values.length === 0) continue
+      out[col.key] = {
+        count: values.length,
+        average: values.reduce((sum, value) => sum + value, 0) / values.length,
+      }
+    }
+    return out
+  }, [headerStats, leafColumns, bodyData])
   // Batch AR mini chart preview (iris 独有): numeric leaf columns for the
   // chart panel — the two existing signals — a row whose `getCellValue` is a
   // number (formula columns flow through the choke point) OR a
@@ -6671,14 +4280,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // selection → leaf columns); batch AF: seq/rowDrag tracks were missing,
     // wrapping the last column onto a second line (react-only vs vue/solid/
     // svelte which all emit these tracks — cross-framework parity fix).
-    if (rowDrag) widths.push(`${DRAG_COL_WIDTH}px`)
+    if (rowDragEnabled) widths.push(`${DRAG_COL_WIDTH}px`)
     if (showRowNumbers) widths.push(`${SEQ_COL_WIDTH}px`)
     if (hasDetail) widths.push(`${EXPAND_COL_WIDTH}px`)
     if (selectable !== 'none') widths.push('40px')
     for (const col of leafColumns) {
       const override = columnWidths[col.key]
-      if (override != null) widths.push(`${override}px`)
-      else if (typeof col.width === 'number') widths.push(`${col.width}px`)
+      if (isValidColumnWidth(override)) widths.push(`${override}px`)
+      else if (isValidColumnWidth(col.width)) widths.push(`${col.width}px`)
       // Batch M: `width: 'auto'` sizes the track to its widest cell content
       // (vxe width=auto parity). Pinned offsets / column virtualization keep
       // the DEFAULT_PINNED_WIDTH (140) approximation — they need a number
@@ -6688,7 +4297,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else widths.push('minmax(0, 1fr)')
     }
     return widths.join(' ')
-  }, [leafColumns, selectable, columnWidths, hasDetail, showRowNumbers, rowDrag])
+  }, [leafColumns, selectable, columnWidths, hasDetail, showRowNumbers, rowDragEnabled])
 
   // Sticky offsets for pinned columns: each accumulates the resolved widths of
   // the pinned columns between it and its edge (plus the selection column on
@@ -6698,7 +4307,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const widthOf = (col: IrisTableColumn<Row>): number =>
       columnWidths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
     let left =
-      (rowDrag ? DRAG_COL_WIDTH : 0) +
+      (rowDragEnabled ? DRAG_COL_WIDTH : 0) +
       (showRowNumbers ? SEQ_COL_WIDTH : 0) +
       (hasDetail ? EXPAND_COL_WIDTH : 0) +
       (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
@@ -6717,7 +4326,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       }
     }
     return map
-  }, [leafColumns, columnWidths, selectable, hasDetail, showRowNumbers, rowDrag, pinOf])
+  }, [leafColumns, columnWidths, selectable, hasDetail, showRowNumbers, rowDragEnabled, pinOf])
 
   const pinnedStyle = (key: string): React.CSSProperties | null => {
     const p = pinnedOffsets[key]
@@ -6731,7 +4340,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   // -------- Column virtualization (opt-in) --------
-  const rootRef = React.useRef<HTMLDivElement | null>(null)
   const [scrollLeft, setScrollLeft] = React.useState(0)
   const [viewportWidth, setViewportWidth] = React.useState(0)
   // Batch Q (vxe auto-resize parity): last measured root size; drives the
@@ -6785,6 +4393,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
     'PageUp',
     'PageDown',
   ])
+  // Batch DR: an explicit editKeys prop extends the F2 edit affordance with
+  // Enter and/or Space. It is intentionally handled before navigation so an
+  // opted-in Enter starts an editor instead of moving the roving cell down.
+  const handleConfiguredEditKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (!keyboardNavigation || editKeys === undefined) return
+    if (editTarget.editing !== null || rowEditing !== null) return
+    const target = e.target as HTMLElement
+    if (target.dataset.gridRow === undefined || !focusedCell) return
+    const matches = editKeys.some((key) =>
+      key === 'F2'
+        ? e.key === 'F2'
+        : key === 'Enter'
+          ? e.key === 'Enter'
+          : e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space',
+    )
+    // F2 is the default and is always retained when the prop is present.
+    if (!matches && e.key !== 'F2') return
+    const row = bodyData[focusedCell.row]
+    const col = leafColumns[focusedCell.col]
+    if (!row || !col || !col.editable || col.formula) return
+    if (isCellLocked(row, col) || isCellReadonly(row, col)) return
+    e.preventDefault()
+    beginEdit(row, col, rowKeyOf(row, focusedCell.row), focusedCell.row)
+  }
+
   const handleGridKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
     if (!keyboardNavigation) return
     // Only navigate from a grid cell — never hijack keys inside an editing
@@ -7041,7 +4674,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             // convention verbatim; a numeric dataIndex falls back to `key`).
             out[typeof col.dataIndex === 'string' ? col.dataIndex : col.key] =
               copyWithFormat && col.formatter
-                ? contextCellText(row, col)
+                ? contextCellText(row, col, getCellValue)
                 : col.exportRaw
                   ? value
                   : applyCellMask(value, col)
@@ -7070,7 +4703,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // neutralization — the formatter-gate blast radius).
           const value = getCellValue(row, col)
           const masked = col.exportRaw ? value : applyCellMask(value, col)
-          const cellText = copyWithFormat && col.formatter ? contextCellText(row, col) : masked
+          const cellText =
+            copyWithFormat && col.formatter ? contextCellText(row, col, getCellValue) : masked
           cells.push(format === 'csv' ? csvRangeCell(cellText) : tsvCell(cellText))
         }
         lines.push(cells.join(format === 'csv' ? ',' : '\t'))
@@ -7877,13 +5511,36 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const resolvedColWidths = React.useMemo(
     () =>
-      leafColumns.map(
-        (col) =>
-          columnWidths[col.key] ??
-          (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH),
-      ),
+      leafColumns.map((col) => {
+        const override = columnWidths[col.key]
+        if (isValidColumnWidth(override)) return override
+        if (isValidColumnWidth(col.width)) return col.width
+        return DEFAULT_PINNED_WIDTH
+      }),
     [leafColumns, columnWidths],
   )
+
+  // Batch CY: responsive mode owns a separate, prop-gated observer. It is
+  // intentionally fail-closed when ResizeObserver is unavailable (SSR/jsdom):
+  // width stays zero and the core fit returns the original columns.
+  React.useEffect(() => {
+    if (!responsive) {
+      setResponsiveWidth(0)
+      return
+    }
+    const el = rootRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      // The root's clientWidth is the contract's sole measurement source.
+      // A zero value deliberately keeps the fit fail-closed (including hidden
+      // roots and jsdom), rather than trusting a stale ResizeObserver entry.
+      setResponsiveWidth(el.clientWidth)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [responsive])
 
   React.useEffect(() => {
     if (!columnVirtualization) return
@@ -8032,7 +5689,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // selection tracks), so a rendered cell lands in the right place even when
   // earlier cells are skipped. Order matches the row's cell order.
   const colTrack = (i: number): number =>
-    (rowDrag ? 1 : 0) +
+    (rowDragEnabled ? 1 : 0) +
     (showRowNumbers ? 1 : 0) +
     (hasDetail ? 1 : 0) +
     (selectable !== 'none' ? 1 : 0) +
@@ -8047,16 +5704,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const headerMergePlan = React.useMemo(() => {
     const byCol = new Map<number, { rowspan?: number; colspan?: number }>()
     const occupied = new Set<string>()
+    const responsiveIndex = new Map<string, number>()
+    responsiveDisplayColumns.forEach((col, index) => responsiveIndex.set(col.key, index))
     for (const m of mergeHeaderCells ?? []) {
       if (m.row !== 0) continue
-      byCol.set(m.col, { rowspan: m.rowspan, colspan: m.colspan })
-      const colspan = m.colspan ?? 1
+      // `mergeHeaderCells` is authored against the pre-fit flat display
+      // order. Remap its origin after responsive tail hiding so a merge never
+      // lands on a different surviving column; grouped headers ignore this
+      // plan as before.
+      const source = displayColumns[m.col]
+      const col = source ? responsiveIndex.get(source.key) : m.col
+      if (col === undefined) continue
+      const requestedColspan = Math.max(1, m.colspan ?? 1)
+      let colspan = requestedColspan
+      // Tail fitting can remove a column that was part of a merge. Keep the
+      // merge contiguous and clamp it to the surviving prefix; otherwise CSS
+      // creates an implicit track and the header visually crosses the fit.
+      if (source && responsiveDisplayColumns !== displayColumns) {
+        colspan = 0
+        while (colspan < requestedColspan) {
+          const candidate = displayColumns[m.col + colspan]
+          if (!candidate || responsiveIndex.get(candidate.key) !== col + colspan) break
+          colspan += 1
+        }
+        if (colspan === 0) continue
+      }
+      byCol.set(col, { rowspan: m.rowspan, colspan })
       const rowspan = m.rowspan ?? 1
-      for (let c = 1; c < colspan; c++) occupied.add(`0:${m.col + c}`)
-      for (let r = 1; r < rowspan; r++) occupied.add(`${r}:${m.col}`)
+      for (let c = 1; c < colspan; c++) occupied.add(`0:${col + c}`)
+      for (let r = 1; r < rowspan; r++) occupied.add(`${r}:${col}`)
     }
     return { byCol, occupied }
-  }, [mergeHeaderCells])
+  }, [mergeHeaderCells, displayColumns, responsiveDisplayColumns])
 
   const baseCellStyle: React.CSSProperties = {
     padding: 'var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)',
@@ -8073,12 +5752,54 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const cellOverflowOverride = { whiteSpace: 'normal', overflow: 'visible' } as const
   const borderStyle = bordered ? '1px solid var(--iris-border)' : 'none'
 
+  // Batch DL: implement vxe's `showAll=false` truncation gate without
+  // measuring during render. A ResizeObserver handles column/root changes;
+  // the window listener covers layout changes in browsers without the
+  // observer. Unknown layout dimensions (SSR/jsdom/hidden roots) are handled
+  // by `cellContentIsTruncated`'s fail-open rule, preserving the old title
+  // behavior until a real width is available.
+  useIsomorphicLayoutEffect(() => {
+    if (tooltipConfig?.showAll !== false) {
+      setTruncatedTooltipCells((previous) => (previous.size === 0 ? previous : new Set()))
+      return
+    }
+    const measure = (): void => {
+      const next = new Set<string>()
+      for (const [id, element] of tooltipCellRefs.current) {
+        if (cellContentIsTruncated(element)) next.add(id)
+      }
+      setTruncatedTooltipCells((previous) => (sameStringSet(previous, next) ? previous : next))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    const root = rootRef.current
+    let observer: ResizeObserver | null = null
+    if (root && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(measure)
+      observer.observe(root)
+    }
+    return () => {
+      window.removeEventListener('resize', measure)
+      observer?.disconnect()
+    }
+  }, [tooltipConfig?.showAll, tooltipMeasureVersion])
+
+  React.useEffect(
+    () => () => {
+      if (tooltipMeasureRaf.current !== null && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(tooltipMeasureRaf.current)
+        tooltipMeasureRaf.current = null
+      }
+    },
+    [],
+  )
+
   // Cell tooltips (vxe tooltipConfig parity, title mode, batch G): a native
-  // `title` on every body cell — content from the callback or the raw cell
-  // value; editing cells are exempt, and empty content drops the tooltip (vxe
-  // empty-content parity). Truncation gating is not implemented: titles render
-  // on every cell regardless of `showAll` (documented simplification — cheap
-  // and explicit).
+  // `title` on body cells — content from the callback or the raw cell value;
+  // editing cells are exempt, and empty content drops the tooltip (vxe
+  // empty-content parity). `showAll=false` keeps the title only for cells
+  // whose measured content overflows; the no-layout fallback remains
+  // fail-open for SSR/jsdom.
   const cellTooltip = (row: Row, col: IrisTableColumn<Row>): string | undefined => {
     if (!tooltipConfig) return undefined
     // Batch AY: the tooltip shows the MASKED value (mask first, formatter
@@ -8145,6 +5866,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     row: Row,
     col: IrisTableColumn<Row>,
     notePopover: boolean | undefined,
+    tooltipId?: string,
   ): string | undefined =>
     editing
       ? undefined
@@ -8154,7 +5876,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           : note
         : change
           ? compareTitle(change)
-          : (sparkTitle(row, col) ?? cellTooltip(row, col))
+          : (sparkTitle(row, col) ??
+            (tooltipConfig?.showAll === false &&
+            tooltipId !== undefined &&
+            !truncatedTooltipCells.has(tooltipId)
+              ? undefined
+              : cellTooltip(row, col)))
 
   // Header cell tooltips (vxe header-tooltip-config parity, batch P): a
   // native `title` on flat + grouped header cells; empty content drops the
@@ -8171,42 +5898,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!footerTooltipConfig) return undefined
     const content = footerTooltipConfig.content?.(col)
     return content === '' || content == null ? undefined : content
-  }
-
-  // Header filter trigger (vxe filterConfig parity, batch I): a small icon
-  // button at the end of the title; active (--iris-primary) when the column
-  // has a non-empty checked set. stopPropagation keeps it from sorting.
-  const renderFilterTrigger = (col: IrisTableColumn<Row>, leaf: boolean): React.ReactNode => {
-    if (!leaf || !col.filterable) return null
-    const active = (filterValues?.[col.key]?.length ?? 0) > 0
-    return (
-      <button
-        type="button"
-        data-iris-filter-trigger={col.key}
-        aria-label={t('table.filter')}
-        aria-haspopup="true"
-        aria-expanded={
-          filterPanelState?.open === true && filterPanelState.colKey === col.key
-            ? 'true'
-            : undefined
-        }
-        data-iris-filter-active={active ? 'true' : undefined}
-        onClick={(e) => openFilterPanel(e, col.key)}
-        onKeyDown={(e) => e.stopPropagation()}
-        style={{
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          padding: 0,
-          marginInlineStart: 'var(--iris-space-xxs, 4px)',
-          fontSize: 'var(--iris-font-size-xs, 12px)',
-          lineHeight: 1,
-          color: active ? 'var(--iris-primary)' : 'var(--iris-muted)',
-        }}
-      >
-        ⏷
-      </button>
-    )
   }
 
   // Each row is its own CSS grid (sharing `gridTemplateColumns`) rather than the
@@ -8274,7 +5965,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           ...(rowStyle?.(row, idx) ?? null),
         }}
       >
-        {rowDrag ? (
+        {rowDragEnabled ? (
           <div
             role="cell"
             data-iris-table-cell="__drag"
@@ -8512,6 +6203,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
           return (
             <div
               key={col.key}
+              ref={
+                tooltipConfig?.showAll === false ? tooltipCellRefOf(cellId(k, col.key)) : undefined
+              }
               role="cell"
               data-iris-table-cell={col.key}
               data-iris-table-pinned={pinOf(col)}
@@ -8524,7 +6218,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-cell-readonly={lockedRender.readonlyAttr}
               data-iris-input-hint={patternHint.hint ? 'true' : undefined}
               data-iris-presence={presenceInfo ? 'true' : undefined}
-              title={cellTitle(editing, noteInfo.note, compareChange, row, col, notePopover)}
+              data-iris-tooltip-truncated={
+                tooltipConfig?.showAll === false && truncatedTooltipCells.has(cellId(k, col.key))
+                  ? 'true'
+                  : undefined
+              }
+              title={cellTitle(
+                editing,
+                noteInfo.note,
+                compareChange,
+                row,
+                col,
+                notePopover,
+                cellId(k, col.key),
+              )}
               className={
                 [cellClassName?.(row, col, idx), dirtyInfo.dirtyClass].filter(Boolean).join(' ') ||
                 undefined
@@ -8746,6 +6453,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       <EditorSurface
                         session={session}
                         col={col}
+                        coerceDraft={coerceEditDraft}
                         errorId={`${id}-error`}
                         showError={validConfig?.showMessage !== false}
                         registerRef={registerRowEditorRef(col.key)}
@@ -8767,6 +6475,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   <EditorSurface
                     session={cellEdit}
                     col={col}
+                    coerceDraft={coerceEditDraft}
                     errorId={`${cellId(k, col.key)}-error`}
                     showError={validConfig?.showMessage !== false}
                     registerRef={setEditorRef}
@@ -8829,7 +6538,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // links — evaluated AFTER `col.link` (an explicit link column
                 // still wins), BEFORE the formatter/raw branches (a
                 // non-matching text falls through byte-identically).
-                renderAutoLinkCell(row, col)
+                renderAutoLinkCell(row, col, getCellValue)
               ) : col.formatter ? (
                 // vxe formatter parity (batch I): display-only — sorting,
                 // filtering, editing and summary all read the raw value. The
@@ -8867,91 +6576,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
     )
   }
 
-  // Batch-M group header row (vxe group-config parity): spans every grid
-  // track (`gridColumn: 1 / -1`), shows the group value + row count. Batch BH
-  // (iris 独有): a native `data-iris-group-toggle` button (▸/▾) collapses the
-  // group — the header keeps its FULL count and `data-iris-group-collapsed`
-  // marks the collapsed state; rows + per-group summary drop out of the plan.
-  // In the virtual path `extraStyle` fills the fixed-height slot.
   const renderGroupHeader = (
-    entry: { groupKey: string; count: number; depth?: number; value?: string },
+    entry: TableGroupHeaderEntry,
     extraStyle?: React.CSSProperties,
-  ): React.ReactElement => {
-    const collapsed = collapsedSet.has(entry.groupKey)
-    // Batch BS: nested group headers indent by depth with a token step — the
-    // composite key stays the collapse identity (`data-iris-group-key`), the
-    // displayed value is this level's own. `data-iris-group-depth` carries the
-    // nesting level for tests/consumers.
-    const depth = entry.depth ?? 0
-    return (
-      <div
-        key={`group:${entry.groupKey}`}
-        role="row"
-        data-iris-group-row=""
-        data-iris-group-key={entry.groupKey}
-        data-iris-group-depth={depth}
-        data-iris-group-collapsed={collapsed ? 'true' : undefined}
-        style={{
-          display: 'grid',
-          gridTemplateColumns,
-          background: 'var(--iris-surface)',
-          borderBottom: borderStyle,
-          fontWeight: 600,
-          ...extraStyle,
-        }}
-      >
-        <div
-          role="cell"
-          data-iris-group-cell=""
-          style={{
-            gridColumn: '1 / -1',
-            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-            paddingInlineStart: `calc(var(--iris-space-sm, 12px) + var(--iris-space-sm, 12px) * ${depth})`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--iris-space-xs, 8px)',
-            fontSize: 'var(--iris-font-size-sm, 13px)',
-            color: 'var(--iris-foreground)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          <button
-            type="button"
-            data-iris-group-toggle=""
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? t('table.groupExpand') : t('table.groupCollapse')}
-            onClick={() => toggleGroupCollapse(entry.groupKey)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 'var(--iris-space-md, 16px)',
-              height: 'var(--iris-space-md, 16px)',
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--iris-muted)',
-              cursor: 'pointer',
-              fontSize: 'var(--iris-font-size-xs, 12px)',
-              lineHeight: 1,
-              flexShrink: 0,
-            }}
-          >
-            {collapsed ? '▸' : '▾'}
-          </button>
-          <span data-iris-group-value="">{entry.value ?? entry.groupKey}</span>
-          <span
-            data-iris-group-count=""
-            style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
-          >
-            ({entry.count})
-          </span>
-        </div>
-      </div>
-    )
-  }
+  ): React.ReactElement => (
+    <TableGroupHeader
+      key={`group:${entry.groupKey}`}
+      entry={entry}
+      gridTemplateColumns={gridTemplateColumns}
+      borderStyle={borderStyle}
+      collapsed={collapsedSet.has(entry.groupKey)}
+      extraStyle={extraStyle}
+      onToggle={toggleGroupCollapse}
+      t={t}
+    />
+  )
 
   // One body entry (data row or its detail wrap), grouped or not: keeps the
   // row's ORIGINAL bodyData index so seq/striped/span/checkMethod semantics
@@ -9018,65 +6657,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     </div>
   )
 
-  // Footer merge plan (batch R, vxe-grid mergeFooterItems parity): declarative
-  // span entries in the SAME coordinate space as footerSpanMethod — `row` is
-  // the 0-based index over the rendered footer stack (footerMethod rows →
-  // summary row → footerData rows), `col` the leaf-column index; both start
-  // at 0. `rowspan` is INERT (review fix, mirrors footerSpanMethod/header
-  // rowspan): each footer row is its own grid container, so a span can never
-  // cover later rows — only the SAME row's right-hand cells are marked
-  // occupied (colspan). The FUNCTION wins: when footerSpanMethod is
-  // provided, mergeFooterItems is ignored entirely. Entries outside the
-  // rendered stack never match → no-op.
-  const footerMergePlan = React.useMemo(() => {
-    if (footerSpanMethod || !mergeFooterItems || mergeFooterItems.length === 0) return null
-    const byCell = new Map<string, { colspan?: number }>()
-    const occupied = new Set<string>()
-    for (const m of mergeFooterItems) {
-      if (m.row < 0 || m.col < 0) continue
-      const key = `${m.row}:${m.col}`
-      if (byCell.has(key)) continue
-      byCell.set(key, { colspan: m.colspan })
-      const colspan = m.colspan ?? 1
-      // Inert rowspan: covered cells of LATER rows keep their own data (a
-      // null would let the remaining cells auto-place into earlier tracks);
-      // only same-row colspan cells to the right are covered.
-      for (let c = 1; c < colspan; c++) occupied.add(`${m.row}:${m.col + c}`)
-    }
-    return { byCell, occupied }
-  }, [mergeFooterItems, footerSpanMethod])
-
-  // Footer cell span state shared by every footer path (summary /
-  // footer-method / footer-data). footerSpanMethod (function) wins over
-  // mergeFooterItems when both are provided. `skipped` cells render null;
-  // `spanStyle` carries the grid span — gridRowEnd cannot cross the per-row
-  // grid containers, so rowspan (from either source) is inert: no span
-  // styles, no occupy-marking of later rows' cells.
-  const footerCellSpan = (
-    rowIndex: number,
-    ci: number,
-  ): { skipped: boolean; colspan: number; spanStyle: React.CSSProperties | null } => {
-    if (footerSpanMethod && footerOccupyRef.current.has(`${rowIndex}:${ci}`))
-      return { skipped: true, colspan: 1, spanStyle: null }
-    if (footerMergePlan && footerMergePlan.occupied.has(`${rowIndex}:${ci}`))
-      return { skipped: true, colspan: 1, spanStyle: null }
-    const fspan = footerSpanMethod
-      ? footerSpanMethod({ rowIndex, columnIndex: ci, columns: leafColumns, data: bodyData })
-      : null
-    const mergeSpan = footerMergePlan?.byCell.get(`${rowIndex}:${ci}`)
-    const colspan = footerSpanMethod ? (fspan?.colspan ?? 1) : (mergeSpan?.colspan ?? 1)
-    if (footerSpanMethod && colspan > 1) {
-      for (let c = 1; c < colspan; c++) footerOccupyRef.current.add(`${rowIndex}:${ci + c}`)
-    }
-    const spanStyle = footerSpanMethod
-      ? colspan > 1
-        ? { gridColumnEnd: `span ${colspan}` }
-        : null
-      : mergeSpan && mergeSpan.colspan && mergeSpan.colspan > 1
-        ? { gridColumnEnd: `span ${mergeSpan.colspan}` }
-        : null
-    return { skipped: false, colspan, spanStyle }
-  }
+  const footerCellSpan = useFooterCellSpan({
+    mergeFooterItems,
+    footerSpanMethod,
+    leafColumns,
+    bodyData,
+    footerOccupy: footerOccupyRef,
+  })
 
   // Summary row material (global footer + per-group footers, batch M): the
   // same `aggregate` ops as before, computed over the passed rows. A group
@@ -9086,73 +6673,32 @@ export function IrisTable<Row extends Record<string, unknown>>({
     groupKey?: string,
     extraStyle?: React.CSSProperties,
     footerRowIndex?: number,
-  ): React.ReactElement => (
-    <div
-      role="row"
-      data-iris-table-row="summary"
-      data-iris-group-summary={groupKey !== undefined ? groupKey : undefined}
-      data-iris-summary-sticky={summaryStickyAttr(
-        summaryRowStyle === 'sticky' && groupKey === undefined,
-      )}
-      style={{
-        display: 'grid',
-        gridTemplateColumns,
-        fontWeight: 600,
-        borderTop: '2px solid var(--iris-border)',
-        background: 'var(--iris-surface)',
-        ...extraStyle,
-      }}
-    >
-      {selectable !== 'none' ? (
-        <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
-      ) : null}
-      {leafColumns.map((col, ci) => {
-        if (visibleColSet && !visibleColSet.has(ci)) return null
-        // footerSpanMethod (batch P) / mergeFooterItems (batch R): the same
-        // occupy-skip pattern; `footerRowIndex` is 0-based over the rendered
-        // footer stack. Only the global footer passes an index — group
-        // summaries are not spanned/merged.
-        const fspanState = footerRowIndex !== undefined ? footerCellSpan(footerRowIndex, ci) : null
-        if (fspanState?.skipped) return null
-        const op = col.summary
-        const rawValue = op ? aggregate(rows, (r) => getCellValue(r, col), op) : null
-        // aggregateAccuracy (batch P): the single rounding point for summary
-        // values (global + per-group) — finite numbers only, before
-        // `renderSummary` so custom renderers see the rounded value. Values
-        // outside 0–100 are ignored (toFixed RangeError guard).
-        const accuracy =
-          aggregateAccuracy !== undefined && aggregateAccuracy >= 0 && aggregateAccuracy <= 100
-            ? aggregateAccuracy
-            : undefined
-        const value =
-          rawValue != null && accuracy !== undefined && Number.isFinite(rawValue)
-            ? Number(rawValue.toFixed(accuracy))
-            : rawValue
-        return (
-          <div
-            key={col.key}
-            role="cell"
-            data-iris-table-cell={col.key}
-            data-iris-table-summary-cell={op ? '' : undefined}
-            title={footerTooltip(col)}
-            style={{
-              ...baseCellStyle,
-              ...(showFooterOverflow ? null : cellOverflowOverride),
-              ...(fspanState?.spanStyle ?? null),
-              justifyContent: justifyFor(footerAlign ?? col.align),
-              ...pinnedStyle(col.key),
-            }}
-          >
-            {op != null && value != null
-              ? col.renderSummary
-                ? col.renderSummary(value, rows)
-                : String(value)
-              : null}
-          </div>
-        )
-      })}
-    </div>
-  )
+  ): React.ReactElement =>
+    TableSummaryRow({
+      rows,
+      groupKey,
+      extraStyle,
+      footerRowIndex,
+      gridTemplateColumns,
+      summarySticky: summaryRowStyle === 'sticky' && groupKey === undefined,
+      rowDrag: rowDragEnabled,
+      showRowNumbers,
+      seq,
+      hasDetail,
+      selectable,
+      leafColumns,
+      visibleColSet,
+      baseCellStyle,
+      cellOverflowOverride,
+      showFooterOverflow,
+      footerAlign,
+      aggregateAccuracy,
+      colTrack,
+      pinnedStyle,
+      footerTooltip,
+      footerCellSpan,
+      getCellValue,
+    })
 
   // Batch-M toolbar action: read once so the closure below stays narrowed
   // (no non-null assertions needed).
@@ -9314,193 +6860,62 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }
 
-  // Footer stack (batch P): footerMethod rows → summary row → footerData rows
-  // — in that order, whichever render (footerMethod REPLACES the summary op
-  // row; footerData renders below, even with an empty body). footerSpanMethod
-  // receives a 0-based rowIndex over this rendered stack; spans share the
-  // occupy-skip pattern of spanMethod but use their own ref so body keys never
-  // collide. Group summary rows are not part of the stack.
-  const renderFooterStack = (): React.ReactNode => {
-    if (tableError || tableLoading) return null
-    if (footerSpanMethod) footerOccupyRef.current.clear()
-    const nodes: React.ReactNode[] = []
-    let fi = 0
-    if (bodyData.length > 0) {
-      const methodRows = footerMethod
-        ? footerMethod({ columns: leafColumns, data: bodyData })
-        : null
-      if (methodRows) {
-        for (const footerRow of methodRows) {
-          const rowIndex = fi
-          fi += 1
-          nodes.push(
-            <div
-              key={String((footerRow as Record<string, unknown>)[rowKey] ?? rowIndex)}
-              role="row"
-              data-iris-table-row="summary"
-              data-iris-table-footer-method-row={String(rowIndex)}
-              data-iris-summary-sticky={summaryStickyAttr(summaryRowStyle === 'sticky')}
-              style={{
-                display: 'grid',
-                gridTemplateColumns,
-                fontWeight: 600,
-                borderTop: rowIndex === 0 ? '2px solid var(--iris-border)' : borderStyle,
-                background: 'var(--iris-surface)',
-              }}
-            >
-              {selectable !== 'none' ? (
-                <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
-              ) : null}
-              {leafColumns.map((col, ci) => {
-                if (visibleColSet && !visibleColSet.has(ci)) return null
-                const fspanState = footerCellSpan(rowIndex, ci)
-                if (fspanState.skipped) return null
-                const value = getCellValue(footerRow, col)
-                return (
-                  <div
-                    key={col.key}
-                    role="cell"
-                    data-iris-table-cell={col.key}
-                    data-iris-table-footer-method-cell=""
-                    className={footerCellClassName?.(col, rowIndex)}
-                    title={footerTooltip(col)}
-                    style={{
-                      ...baseCellStyle,
-                      ...(showFooterOverflow ? null : cellOverflowOverride),
-                      ...(fspanState.spanStyle ?? null),
-                      justifyContent: justifyFor(footerAlign ?? col.align),
-                      ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
-                      ...(footerCellStyle?.(col, rowIndex) ?? null),
-                    }}
-                  >
-                    {String(value ?? '')}
-                  </div>
-                )
-              })}
-            </div>,
-          )
-        }
-      } else if (leafColumns.some((c) => c.summary)) {
-        const rowIndex = fi
-        fi += 1
-        nodes.push(
-          <React.Fragment key={`summary:${rowIndex}`}>
-            {renderSummaryRow(bodyData, undefined, undefined, rowIndex)}
-          </React.Fragment>,
-        )
-      }
-    }
-    if (footerData && footerData.length > 0) {
-      nodes.push(
-        <div key="iris-table-footer-data" data-iris-table-footer="" style={{ display: 'contents' }}>
-          {footerData.map((footerRow, fd) => {
-            const rowIndex = fi
-            fi += 1
-            return (
-              <div
-                key={String((footerRow as Record<string, unknown>)[rowKey] ?? fd)}
-                role="row"
-                data-iris-table-row={`footer-${fd}`}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns,
-                  fontWeight: 600,
-                  background: 'var(--iris-surface)',
-                }}
-              >
-                {selectable !== 'none' ? (
-                  <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
-                ) : null}
-                {leafColumns.map((col, ci) => {
-                  if (visibleColSet && !visibleColSet.has(ci)) return null
-                  const fspanState = footerCellSpan(rowIndex, ci)
-                  if (fspanState.skipped) return null
-                  const value = getCellValue(footerRow, col)
-                  return (
-                    <div
-                      key={col.key}
-                      role="cell"
-                      data-iris-table-cell={col.key}
-                      data-iris-table-footer-cell=""
-                      className={footerCellClassName?.(col, fd)}
-                      title={footerTooltip(col)}
-                      style={{
-                        ...baseCellStyle,
-                        ...(showFooterOverflow ? null : cellOverflowOverride),
-                        ...(fspanState.spanStyle ?? null),
-                        justifyContent: justifyFor(
-                          footerAlign ??
-                            col.align ??
-                            (typeof value === 'number' ? 'right' : 'left'),
-                        ),
-                        ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
-                        ...(footerCellStyle?.(col, fd) ?? null),
-                      }}
-                    >
-                      {String(value ?? '')}
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          })}
-        </div>,
-      )
-    }
-    return nodes.length > 0 ? nodes : null
-  }
+  const footerStack = (
+    <TableFooterStack
+      tableError={tableError}
+      tableLoading={tableLoading}
+      footerSpanMethod={footerSpanMethod}
+      footerMethod={footerMethod}
+      footerData={footerData}
+      bodyData={bodyData}
+      leafColumns={leafColumns}
+      rowKey={rowKey}
+      summaryRowStyle={summaryRowStyle}
+      gridTemplateColumns={gridTemplateColumns}
+      borderStyle={borderStyle}
+      selectable={selectable}
+      visibleColSet={visibleColSet}
+      baseCellStyle={baseCellStyle}
+      cellOverflowOverride={cellOverflowOverride}
+      showFooterOverflow={showFooterOverflow}
+      footerAlign={footerAlign}
+      footerCellClassName={footerCellClassName}
+      footerCellStyle={footerCellStyle}
+      footerTooltip={footerTooltip}
+      colTrack={colTrack}
+      footerCellSpan={footerCellSpan}
+      footerOccupy={footerOccupyRef}
+      getCellValue={getCellValue}
+      renderSummaryRow={renderSummaryRow}
+    />
+  )
+
+  // Batch DL follow-up: expose the logical grid dimensions for assistive
+  // technology when roving keyboard navigation is enabled.  The row count is
+  // based on the rendered body plan (group headers/summaries and virtual
+  // detail slots included) rather than the current DOM window; the column
+  // count follows the same leading-track order as gridTemplateColumns.
+  const ariaGridRowCount = keyboardNavigation
+    ? (groupPlan ? groupPlan.length : virtualItems.length) + (showHeader ? 1 : 0)
+    : undefined
+  const ariaGridColumnCount = keyboardNavigation
+    ? leafColumns.length +
+      (rowDragEnabled ? 1 : 0) +
+      (showRowNumbers ? 1 : 0) +
+      (hasDetail ? 1 : 0) +
+      (selectable !== 'none' ? 1 : 0)
+    : undefined
 
   return (
     <>
-      {formConfig && layouts?.form !== 'hidden' ? (
-        <form
-          data-iris-table-form=""
-          onSubmit={handleFormSubmit}
-          onReset={handleFormReset}
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'flex-end',
-            gap: 'var(--iris-space-sm, 12px)',
-            padding: 'var(--iris-space-sm, 12px)',
-            border: '1px solid var(--iris-border)',
-            borderBottom: 'none',
-            background: 'var(--iris-surface)',
-            fontSize: 'var(--iris-font-size-sm, 13px)',
-          }}
-        >
-          {formConfig.fields.map((field) => (
-            <div key={field.key} data-iris-table-form-field={field.key} style={{ minWidth: 180 }}>
-              <IrisFormField label={field.label} size="sm">
-                {field.type === 'select' ? (
-                  <IrisSelect
-                    items={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
-                    value={formDraft[field.key] ?? ''}
-                    onValueChange={(v) => setFormValue(field.key, String(v ?? ''))}
-                    placeholder={field.placeholder ?? t('select.placeholder')}
-                    size="sm"
-                  />
-                ) : (
-                  <IrisInput
-                    value={formDraft[field.key] ?? ''}
-                    onChange={(e) => setFormValue(field.key, e.target.value)}
-                    placeholder={field.placeholder}
-                    size="sm"
-                  />
-                )}
-              </IrisFormField>
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: 'var(--iris-space-xs, 8px)' }}>
-            <IrisButton type="submit" size="sm" data-iris-table-form-submit="">
-              {formConfig.submitText ?? t('table.formSubmit')}
-            </IrisButton>
-            <IrisButton type="reset" variant="outline" size="sm" data-iris-table-form-reset="">
-              {formConfig.resetText ?? t('table.formReset')}
-            </IrisButton>
-          </div>
-        </form>
-      ) : null}
+      <TableForm
+        config={formConfig && layouts?.form !== 'hidden' ? formConfig : undefined}
+        draft={formDraft}
+        setValue={setFormValue}
+        onSubmit={handleFormSubmit}
+        onReset={handleFormReset}
+        t={t}
+      />
       {tabs.length > 0 ? (
         <div
           data-iris-table-tabs=""
@@ -10640,6 +8055,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
         // grid/table role as before (treegrid implies managed cell focus).
         role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
+        aria-rowcount={ariaGridRowCount}
+        aria-colcount={ariaGridColumnCount}
         data-iris-table=""
         data-size={size}
         data-density={effectiveDensity}
@@ -10650,12 +8067,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-table-fixed-height={fixedHeight ? 'true' : undefined}
         data-iris-table-zoomed={zoomed ? 'true' : undefined}
         data-iris-scrollbar-thin={scrollbarConfig?.theme === 'thin' ? 'true' : undefined}
+        data-iris-scrollbar-thumb={scrollbarThumb ? 'true' : undefined}
         data-iris-auto-resize={autoResize ? 'true' : undefined}
         data-iris-no-hover={highlightHoverRow ? undefined : 'true'}
         className={className}
         onKeyDown={
-          keyboardNavigation || cellRange || tableShortcuts || rangeFill || query !== undefined
+          keyboardNavigation ||
+          cellRange ||
+          tableShortcuts ||
+          editKeys !== undefined ||
+          rangeFill ||
+          query !== undefined
             ? (e) => {
+                if (editKeys !== undefined) handleConfiguredEditKey(e)
+                if (e.defaultPrevented) return
                 if (keyboardNavigation) handleGridKey(e)
                 if (cellRange) handleCellRangeKey(e)
                 if (tableShortcuts) handleTableShortcutKey(e)
@@ -10687,7 +8112,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : undefined
         }
         onPointerMove={
-          rowDrag || columnDrag || rangeFill || cellDrag || selectionDrag
+          rowDragEnabled || columnDrag || rangeFill || cellDrag || selectionDrag
             ? (e) => {
                 handleRowDragPointerMove(e)
                 handleColDragPointerMove(e)
@@ -10698,9 +8123,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : undefined
         }
         onPointerUp={
-          rowDrag || columnDrag || rangeFill || cellDrag || selectionDrag
+          rowDragEnabled || columnDrag || rangeFill || cellDrag || selectionDrag
             ? (e) => {
-                handleRowDragPointerUp()
+                handleRowDragPointerUp(e)
                 resolveColDrag(e.clientX, e.clientY)
                 handleRangeFillPointerUp()
                 handleCellDragPointerUp()
@@ -10708,9 +8133,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }
             : undefined
         }
-        onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
+        onPointerLeave={rowDragEnabled && !rowDragBetween ? handleRowDragPointerLeave : undefined}
         onPointerCancel={
-          rangeFill || cellDrag || selectionDrag || rowDrag
+          rangeFill || cellDrag || selectionDrag || rowDragEnabled
             ? () => {
                 // Aborted drag → drop the target highlight, nothing committed.
                 // Re-arm dismissal too (same stale-flag fix as pointerup).
@@ -10731,7 +8156,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // Batch CD: aborted row drag → drop the insertion line + its
                 // resolve ref and cancel the controller (previously a
                 // pointercancel could leave the row drag stuck in activeId).
-                if (rowDrag) {
+                if (rowDragEnabled) {
                   if (rowDragCtrl.getState().activeId !== null) rowDragCtrl.cancel()
                   rowDropRef.current = null
                   setRowDropTarget(null)
@@ -10762,7 +8187,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // the --iris-cell-pad var (BASE_CELL_STYLE fallback chain).
           ...(padding ? ({ '--iris-cell-pad': padding } as React.CSSProperties) : null),
           // Column virtualization turns the table into a horizontal scroll container.
-          overflow: fixedHeight ? 'auto' : columnVirtualization ? 'auto' : 'hidden',
+          overflow: responsiveOverflow
+            ? 'auto'
+            : fixedHeight
+              ? 'auto'
+              : columnVirtualization
+                ? 'auto'
+                : 'hidden',
           ...(fixedHeight ? { height, maxHeight, minHeight } : null),
           // Batch Q (vxe auto-resize parity): with no explicit `height` the
           // root uses `height: 100%` so it fills AND tracks its parent (a
@@ -10777,6 +8208,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // `...style` — a caller-provided style can still override.
           ...(zIndex !== undefined ? { position: 'relative', zIndex } : null),
           ...style,
+          ...(responsiveOverflow ? { overflowX: 'auto' } : null),
           // Batch BU watermark: the layer is sticky, but its containing block
           // is this root — the root must be a positioning context, forced
           // AFTER `...style` so a caller-provided style cannot unanchor the
@@ -10786,7 +8218,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // Batch CD: the row-drag insertion line is absolutely positioned
           // in this root — same forced-anchor precedent as the BU watermark,
           // also AFTER `...style` so a caller style cannot unanchor it.
-          ...(rowDrag ? { position: 'relative' } : null),
+          ...(rowDragEnabled ? { position: 'relative' } : null),
           // Batch U zoom (vxe toolbar zoom parity): the stylesheet pins the
           // root fixed (data-iris-table-zoomed); the inline height: 100%
           // keeps the fixed-height machinery engaged so the sticky header
@@ -10843,7 +8275,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               gridTemplateRows: `repeat(${headerMatrix.length}, auto)`,
             }}
           >
-            {rowDrag ? (
+            {rowDragEnabled ? (
               <div
                 role="columnheader"
                 data-iris-table-header="__drag"
@@ -10855,7 +8287,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 role="columnheader"
                 data-iris-table-header={seq ? '__seq' : '__row-ref'}
                 style={{
-                  gridColumn: String((rowDrag ? 1 : 0) + 1),
+                  gridColumn: String((rowDragEnabled ? 1 : 0) + 1),
                   gridRow: '1 / -1',
                   display: 'flex',
                   alignItems: 'center',
@@ -10870,7 +8302,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               <div
                 role="columnheader"
                 style={{
-                  gridColumn: String((rowDrag ? 1 : 0) + (showRowNumbers ? 1 : 0) + 1),
+                  gridColumn: String((rowDragEnabled ? 1 : 0) + (showRowNumbers ? 1 : 0) + 1),
                   gridRow: '1 / -1',
                 }}
               />
@@ -10881,7 +8313,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 data-iris-table-header=""
                 style={{
                   gridColumn: String(
-                    (rowDrag ? 1 : 0) + (showRowNumbers ? 1 : 0) + (hasDetail ? 2 : 1),
+                    (rowDragEnabled ? 1 : 0) + (showRowNumbers ? 1 : 0) + (hasDetail ? 2 : 1),
                   ),
                   gridRow: '1 / -1',
                   ...baseCellStyle,
@@ -10926,7 +8358,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     : sort?.direction
                   : undefined
                 const lead =
-                  (rowDrag ? 1 : 0) +
+                  (rowDragEnabled ? 1 : 0) +
                   (showRowNumbers ? 1 : 0) +
                   (hasDetail ? 1 : 0) +
                   (selectable !== 'none' ? 1 : 0)
@@ -10996,6 +8428,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       {col.title}
                       {col.titleSuffix}
                     </span>
+                    {headerStats && isLeaf && headerStatsByKey[col.key] ? (
+                      <span
+                        data-iris-header-stats=""
+                        aria-label={`count ${headerStatsByKey[col.key]!.count}, average ${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                        style={{
+                          marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                          fontSize: 'var(--iris-font-size-xs, 12px)',
+                          color: 'var(--iris-muted)',
+                          fontWeight: 400,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {`n=${headerStatsByKey[col.key]!.count} · avg=${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                      </span>
+                    ) : null}
                     {showCellRefs && isLeaf ? (
                       <span
                         aria-hidden="true"
@@ -11023,7 +8470,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
                       </span>
                     ) : null}
-                    {renderFilterTrigger(col, isLeaf)}
+                    {isLeaf ? (
+                      <TableFilterTrigger
+                        column={col}
+                        active={(filterValues?.[col.key]?.length ?? 0) > 0}
+                        expanded={
+                          filterPanelState?.open === true && filterPanelState.colKey === col.key
+                        }
+                        ariaLabel={t('table.filter')}
+                        onOpen={openFilterPanel}
+                      />
+                    ) : null}
                     {/* Multi mode: non-primary sort columns show their click-order
                       sequence number (vxe sort-config sequence parity). */}
                     {multiSort && multiIdx > 0 ? (
@@ -11058,7 +8515,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             data-iris-table-row="header"
             style={{ display: 'grid', gridTemplateColumns }}
           >
-            {rowDrag ? (
+            {rowDragEnabled ? (
               <div
                 role="columnheader"
                 data-iris-table-header="__drag"
@@ -11120,7 +8577,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 }}
               />
             ) : null}
-            {displayColumns.map((col, ci) => {
+            {responsiveDisplayColumns.map((col, ci) => {
               if (visibleColSet && !visibleColSet.has(ci)) return null
               // Header merge (batch P): covered cells render null; a merge
               // origin cell gets gridColumnEnd/gridRowEnd spans (row 0 only).
@@ -11210,6 +8667,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     {col.title}
                     {col.titleSuffix}
                   </span>
+                  {headerStats && headerStatsByKey[col.key] ? (
+                    <span
+                      data-iris-header-stats=""
+                      aria-label={`count ${headerStatsByKey[col.key]!.count}, average ${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                      style={{
+                        marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
+                        color: 'var(--iris-muted)',
+                        fontWeight: 400,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {`n=${headerStatsByKey[col.key]!.count} · avg=${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                    </span>
+                  ) : null}
                   {showCellRefs ? (
                     <span
                       aria-hidden="true"
@@ -11237,7 +8709,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
                     </span>
                   ) : null}
-                  {renderFilterTrigger(col, true)}
+                  {col.filterable ? (
+                    <TableFilterTrigger
+                      column={col}
+                      active={(filterValues?.[col.key]?.length ?? 0) > 0}
+                      expanded={
+                        filterPanelState?.open === true && filterPanelState.colKey === col.key
+                      }
+                      ariaLabel={t('table.filter')}
+                      onOpen={openFilterPanel}
+                    />
+                  ) : null}
                   {/* Multi mode: non-primary sort columns show their click-order
                     sequence number (vxe sort-config sequence parity). */}
                   {multiSort && multiIdx > 0 ? (
@@ -11268,6 +8750,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       minWidth={col.minWidth ?? 60}
                       maxWidth={col.maxWidth ?? Infinity}
                       onResize={setColumnWidth}
+                      widthHint={widthHint}
                       onAutoFit={
                         autoResizeColumns
                           ? (key) => {
@@ -11381,266 +8864,250 @@ export function IrisTable<Row extends Record<string, unknown>>({
         {/* Footer stack (batch P): footerMethod rows → summary row →
           footerData rows — whichever render, in that order; footerSpanMethod
           spans across it with a stack-wide 0-based rowIndex. */}
-        {renderFooterStack()}
+        {footerStack}
+      </div>
 
-        {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
+      {responsiveOverflow && !zoomed && !printable ? (
+        <div
+          data-iris-scroll-hint=""
+          role="status"
+          aria-live="polite"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--iris-space-xxs, 4px)',
+            padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+            color: 'var(--iris-muted)',
+            background: 'var(--iris-surface)',
+            borderInline: '1px solid var(--iris-border)',
+            borderBottom: '1px solid var(--iris-border)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+          }}
+        >
+          <span aria-hidden="true">⇆</span>
+          <span>{t('table.scrollHint')}</span>
+        </div>
+      ) : null}
+
+      {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
           controller's page/pageSize/total; page changes call setParams and
           proxyConfig.onPageChange. */}
-        {contextMenu && contextMenuState ? (
-          <TableContextMenu
-            key={contextMenuSeq}
-            open={contextMenuState.open}
-            anchorRef={contextAnchorRef}
-            items={contextMenuState.items}
-            params={contextMenuState.params}
-            onSelect={(key, params) => {
-              // Batch AM: the built-in distribution item never reaches the
-              // user callback — it opens the panel at the menu's anchor.
-              if (key === DISTRIBUTION_MENU_KEY) openDistribution(params)
-              // Batch AW: same interception for the built-in summary item.
-              else if (key === SUMMARY_MENU_KEY) openSummary(params)
-              // Batch BB: annotate add/edit open the annotate panel at the
-              // same anchor; the remove item deletes the cell's note.
-              else if (key === ANNOTATE_MENU_KEY || key === ANNOTATE_EDIT_MENU_KEY)
-                openAnnotate(params)
-              else if (key === ANNOTATE_REMOVE_MENU_KEY) {
-                const k = rowKeyOf(params.row, params.rowIndex)
-                removeAnnotationKey(cellId(k, params.column.key))
-              } else if (key === COPY_VALUE_MENU_KEY) copyContextValue(params)
-              else if (key === CLEAR_CELL_MENU_KEY) clearContextCell(params)
-              else contextMenu.onSelect(key, params)
-            }}
-            onClose={closeContextMenu}
-          />
-        ) : null}
-        {/* Column header pin menu (batch BX, iris 独有): a second, independent
+      {contextMenu && contextMenuState ? (
+        <TableContextMenu
+          key={contextMenuSeq}
+          open={contextMenuState.open}
+          anchorRef={contextAnchorRef}
+          items={contextMenuState.items}
+          params={contextMenuState.params}
+          onSelect={(key, params) => {
+            // Batch AM: the built-in distribution item never reaches the
+            // user callback — it opens the panel at the menu's anchor.
+            if (key === DISTRIBUTION_MENU_KEY) openDistribution(params)
+            // Batch AW: same interception for the built-in summary item.
+            else if (key === SUMMARY_MENU_KEY) openSummary(params)
+            // Batch BB: annotate add/edit open the annotate panel at the
+            // same anchor; the remove item deletes the cell's note.
+            else if (key === ANNOTATE_MENU_KEY || key === ANNOTATE_EDIT_MENU_KEY)
+              openAnnotate(params)
+            else if (key === ANNOTATE_REMOVE_MENU_KEY) {
+              const k = rowKeyOf(params.row, params.rowIndex)
+              removeAnnotationKey(cellId(k, params.column.key))
+            } else if (key === COPY_VALUE_MENU_KEY) copyContextValue(params)
+            else if (key === CLEAR_CELL_MENU_KEY) clearContextCell(params)
+            else if (key === FORMAT_NUMBER_MENU_KEY) formatContextSelection(params, 'number')
+            else if (key === FORMAT_UPPER_MENU_KEY) formatContextSelection(params, 'upper')
+            else contextMenu.onSelect(key, params)
+          }}
+          onClose={closeContextMenu}
+        />
+      ) : null}
+      {/* Column header pin menu (batch BX, iris 独有): a second, independent
           floating instance gated by `columnPinMenu` — same TableContextMenu
           host, virtual cursor anchor, ONE built-in item per the column's
           CURRENT pin state. Every key is intercepted here (the pin menu has
           no user items); `setColumnPinned` handles the dual channel. */}
-        {columnPinMenu && pinMenuState ? (
-          <TableContextMenu
-            key={`pin-${pinMenuSeq}`}
-            open={pinMenuState.open}
-            anchorRef={pinMenuAnchorRef}
-            items={
-              pinOf(pinMenuState.col)
-                ? [{ key: UNPIN_MENU_KEY, label: t('table.unpin') }]
-                : [{ key: PIN_LEFT_MENU_KEY, label: t('table.pinLeft') }]
-            }
-            params={{
-              row: undefined as unknown as Row,
-              column: pinMenuState.col,
-              rowIndex: -1,
-              columnIndex: leafColumns.findIndex((c) => c.key === pinMenuState.col.key),
-            }}
-            onSelect={(key) => {
-              if (key === PIN_LEFT_MENU_KEY) setColumnPinned(pinMenuState.col.key, 'left')
-              else if (key === UNPIN_MENU_KEY) setColumnPinned(pinMenuState.col.key, null)
-            }}
-            onClose={closePinMenu}
-          />
-        ) : null}
-        {distributionState ? (
-          <TableDistributionPanel
-            key={`distribution-${distributionSeq}`}
-            open={distributionState.open}
-            anchorRef={distributionAnchorRef}
-            columnTitle={distributionState.columnTitle}
-            rows={bodyData}
-            valueKey={distributionState.colKey}
-            onClose={closeDistribution}
-            t={t}
-          />
-        ) : null}
-        {summaryState ? (
-          <TableSummaryPanel
-            key={`summary-${summarySeq}`}
-            open={summaryState.open}
-            anchorRef={summaryAnchorRef}
-            columnTitle={summaryState.columnTitle}
-            rows={bodyData}
-            valueKey={summaryState.colKey}
-            onClose={closeSummary}
-            t={t}
-          />
-        ) : null}
-        {annotateState ? (
-          <TableAnnotatePanel
-            key={`annotate-${annotateSeq}`}
-            open={annotateState.open}
-            anchorRef={annotateAnchorRef}
-            cellKey={annotateState.cellKey}
-            current={annotations?.[annotateState.cellKey]}
-            onSave={(text) => saveAnnotation(annotateState.cellKey, text)}
-            onRemove={() => removeAnnotationKey(annotateState.cellKey)}
-            onClose={closeAnnotate}
-            t={t}
-          />
-        ) : null}
-        {notePopover && noteHover ? (
-          <TableNotePopover
-            open
-            anchorRef={noteHoverAnchorRef}
-            cellKey={noteHover.cellKey}
-            text={noteHover.text}
-            onClose={closeNotePopover}
-          />
-        ) : null}
-        {chartPreview && chartOpen ? (
-          <TableChartPanel
-            open
-            anchorRef={chartAnchorRef}
-            rows={filteredData}
-            columns={chartNumericColumns}
-            onClose={() => setChartOpen(false)}
-            t={t}
-          />
-        ) : null}
-        {auditLog && auditOpen ? (
-          <TableAuditPanel
-            open
-            anchorRef={auditAnchorRef}
-            audit={audit}
-            onClear={() => audit.clear()}
-            onClose={() => setAuditOpen(false)}
-            t={t}
-          />
-        ) : null}
-        {versionHistory && historyOpen ? (
-          <TableVersionHistoryPanel
-            open
-            anchorRef={historyAnchorRef}
-            history={history}
-            onRestore={(index) => {
-              restoreVersion(index)
-              setHistoryOpen(false)
-            }}
-            onClose={() => setHistoryOpen(false)}
-            t={t}
-          />
-        ) : null}
-        {editSidebar && editSidebarOpen ? (
-          <TableEditHistoryPanel
-            open
-            history={versionHistory ? history : null}
-            audit={auditLog ? audit : null}
-            onRestore={(index) => {
-              restoreVersion(index)
-              setEditSidebarOpen(false)
-            }}
-            onClose={() => setEditSidebarOpen(false)}
-            t={t}
-          />
-        ) : null}
-        {perfStats && perfOpen ? (
-          <TablePerfPanel
-            open
-            anchorRef={perfAnchorRef}
-            perf={perf}
-            audit={auditLog ? audit : null}
-            onClose={() => setPerfOpen(false)}
-            t={t}
-          />
-        ) : null}
-        {shortcutHints && hintsOpen ? (
-          <TableShortcutHintsPanel
-            open
-            anchorRef={hintsAnchorRef}
-            bindings={keyBindings}
-            onClose={() => setHintsOpen(false)}
-            t={t}
-          />
-        ) : null}
-        {cellRange && activeRange ? (
-          <RangeToolbar
-            key={rangeToolbarSeq}
-            open
-            anchorRef={rangeToolbarAnchorRef}
-            onCopy={copyActiveRange}
-            onExport={() => void downloadCsv('table-range.csv', exportActiveRangeCsv())}
-            onClear={clearActiveRange}
-            onDismiss={dismissRange}
-            t={t}
-            statsOpen={rangeStatsOpen}
-            onToggleStats={() => setRangeStatsOpen((o) => !o)}
-            stats={rangeStatsData}
-          />
-        ) : null}
-        {filterPanelState
-          ? (() => {
-              const fcol = displayColumns.find((c) => c.key === filterPanelState.colKey)
-              if (!fcol || !fcol.filterable) return null
-              return (
-                <TableFilterPanel
-                  key={filterPanelSeq}
-                  open={filterPanelState.open}
-                  anchorRef={filterAnchorRef}
-                  columnKey={fcol.key}
-                  options={fcol.filterOptions ?? []}
-                  initialChecked={filterValues?.[fcol.key] ?? []}
-                  onApply={applyFilterValues}
-                  onClear={clearFilterValues}
-                  onClose={closeFilterPanel}
-                  t={t}
-                  recent={recentFilters ? recent.list() : []}
-                  onApplyRecent={applyRecentFilter}
-                  columns={displayColumns}
-                />
-              )
-            })()
-          : null}
-        {proxy && layouts?.pager !== 'hidden' ? (
-          <div
-            data-iris-table-pager=""
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-              borderTop: borderStyle,
-              background: 'var(--iris-surface)',
-            }}
-          >
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: 'var(--iris-space-xs, 8px)' }}
-            >
-              {pagerConfig?.showTotal ? (
-                <span
-                  data-iris-table-total=""
-                  style={{ color: 'var(--iris-muted)', whiteSpace: 'nowrap' }}
-                >
-                  {t('table.total', { total: proxyState.total })}
-                </span>
-              ) : null}
-              {pagerConfig?.pageSizes && pagerConfig.pageSizes.length > 0 ? (
-                <IrisSelect
-                  items={pagerConfig.pageSizes.map((s) => ({
-                    value: String(s),
-                    label: `${s} / ${t('table.page')}`,
-                  }))}
-                  value={String(proxyState.params.pageSize)}
-                  onValueChange={(v) => {
-                    const size = Number(v)
-                    proxyRef.current?.setParams({ pageSize: size, page: 1 })
-                    proxyConfig?.onPageChange?.(1, size)
-                  }}
-                  aria-label={t('table.pageSize')}
-                />
-              ) : null}
-              <IrisPagination
-                total={proxyState.total}
-                pageSize={proxyState.params.pageSize}
-                value={proxyState.params.page}
-                onValueChange={(page) => {
-                  proxyRef.current?.setParams({ page })
-                  proxyConfig?.onPageChange?.(page, proxyState.params.pageSize)
-                }}
+      {columnPinMenu && pinMenuState ? (
+        <TableContextMenu
+          key={`pin-${pinMenuSeq}`}
+          open={pinMenuState.open}
+          anchorRef={pinMenuAnchorRef}
+          items={
+            pinOf(pinMenuState.col)
+              ? [{ key: UNPIN_MENU_KEY, label: t('table.unpin') }]
+              : [{ key: PIN_LEFT_MENU_KEY, label: t('table.pinLeft') }]
+          }
+          params={{
+            row: undefined as unknown as Row,
+            column: pinMenuState.col,
+            rowIndex: -1,
+            columnIndex: leafColumns.findIndex((c) => c.key === pinMenuState.col.key),
+          }}
+          onSelect={(key) => {
+            if (key === PIN_LEFT_MENU_KEY) setColumnPinned(pinMenuState.col.key, 'left')
+            else if (key === UNPIN_MENU_KEY) setColumnPinned(pinMenuState.col.key, null)
+          }}
+          onClose={closePinMenu}
+        />
+      ) : null}
+      {distributionState ? (
+        <TableDistributionPanel
+          key={`distribution-${distributionSeq}`}
+          open={distributionState.open}
+          anchorRef={distributionAnchorRef}
+          columnTitle={distributionState.columnTitle}
+          rows={bodyData}
+          valueKey={distributionState.colKey}
+          onClose={closeDistribution}
+          t={t}
+        />
+      ) : null}
+      {summaryState ? (
+        <TableSummaryPanel
+          key={`summary-${summarySeq}`}
+          open={summaryState.open}
+          anchorRef={summaryAnchorRef}
+          columnTitle={summaryState.columnTitle}
+          rows={bodyData}
+          valueKey={summaryState.colKey}
+          onClose={closeSummary}
+          t={t}
+        />
+      ) : null}
+      {annotateState ? (
+        <TableAnnotatePanel
+          key={`annotate-${annotateSeq}`}
+          open={annotateState.open}
+          anchorRef={annotateAnchorRef}
+          cellKey={annotateState.cellKey}
+          current={annotations?.[annotateState.cellKey]}
+          onSave={(text) => saveAnnotation(annotateState.cellKey, text)}
+          onRemove={() => removeAnnotationKey(annotateState.cellKey)}
+          onClose={closeAnnotate}
+          t={t}
+        />
+      ) : null}
+      {notePopover && noteHover ? (
+        <TableNotePopover
+          open
+          anchorRef={noteHoverAnchorRef}
+          cellKey={noteHover.cellKey}
+          text={noteHover.text}
+          onClose={closeNotePopover}
+        />
+      ) : null}
+      {chartPreview && chartOpen ? (
+        <TableChartPanel
+          open
+          anchorRef={chartAnchorRef}
+          rows={filteredData}
+          columns={chartNumericColumns}
+          onClose={() => setChartOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {auditLog && auditOpen ? (
+        <TableAuditPanel
+          open
+          anchorRef={auditAnchorRef}
+          audit={audit}
+          onClear={() => audit.clear()}
+          onClose={() => setAuditOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {versionHistory && historyOpen ? (
+        <TableVersionHistoryPanel
+          open
+          anchorRef={historyAnchorRef}
+          history={history}
+          onRestore={(index) => {
+            restoreVersion(index)
+            setHistoryOpen(false)
+          }}
+          onClose={() => setHistoryOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {editSidebar && editSidebarOpen ? (
+        <TableEditHistoryPanel
+          open
+          history={versionHistory ? history : null}
+          audit={auditLog ? audit : null}
+          onRestore={(index) => {
+            restoreVersion(index)
+            setEditSidebarOpen(false)
+          }}
+          onClose={() => setEditSidebarOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {perfStats && perfOpen ? (
+        <TablePerfPanel
+          open
+          anchorRef={perfAnchorRef}
+          perf={perf}
+          audit={auditLog ? audit : null}
+          onClose={() => setPerfOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {shortcutHints && hintsOpen ? (
+        <TableShortcutHintsPanel
+          open
+          anchorRef={hintsAnchorRef}
+          bindings={keyBindings}
+          onClose={() => setHintsOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {cellRange && activeRange ? (
+        <RangeToolbar
+          key={rangeToolbarSeq}
+          open
+          anchorRef={rangeToolbarAnchorRef}
+          onCopy={copyActiveRange}
+          onExport={() => void downloadCsv('table-range.csv', exportActiveRangeCsv())}
+          onClear={clearActiveRange}
+          onDismiss={dismissRange}
+          t={t}
+          statsOpen={rangeStatsOpen}
+          onToggleStats={() => setRangeStatsOpen((o) => !o)}
+          stats={rangeStatsData}
+        />
+      ) : null}
+      {filterPanelState
+        ? (() => {
+            const fcol = displayColumns.find((c) => c.key === filterPanelState.colKey)
+            if (!fcol || !fcol.filterable) return null
+            return (
+              <TableFilterPanel
+                key={filterPanelSeq}
+                open={filterPanelState.open}
+                anchorRef={filterAnchorRef}
+                columnKey={fcol.key}
+                options={fcol.filterOptions ?? []}
+                initialChecked={filterValues?.[fcol.key] ?? []}
+                onApply={applyFilterValues}
+                onClear={clearFilterValues}
+                onClose={closeFilterPanel}
+                t={t}
+                recent={recentFilters ? recent.list() : []}
+                onApplyRecent={applyRecentFilter}
+                columns={displayColumns}
               />
-            </div>
-          </div>
-        ) : null}
-      </div>
+            )
+          })()
+        : null}
+      {proxy && layouts?.pager !== 'hidden' ? (
+        <TablePager
+          proxyState={proxyState}
+          config={pagerConfig}
+          borderTop={borderStyle}
+          setParams={(partial) => proxyRef.current?.setParams(partial)}
+          onPageChange={proxyConfig?.onPageChange}
+          t={t}
+        />
+      ) : null}
     </>
   )
 }

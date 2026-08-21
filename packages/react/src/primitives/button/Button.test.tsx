@@ -93,6 +93,21 @@ describe('@iris-ui-kit/react IrisButton', () => {
     expect(inline).toContain('var(--iris-primary)')
   })
 
+  it('size uses the shared control-height tokens', () => {
+    const { rerender } = render(<IrisButton size="sm">X</IrisButton>)
+    expect(screen.getByRole('button').getAttribute('style')).toContain(
+      'var(--iris-control-height-sm, 28px)',
+    )
+    rerender(<IrisButton size="md">X</IrisButton>)
+    expect(screen.getByRole('button').getAttribute('style')).toContain(
+      'var(--iris-control-height-md, 34px)',
+    )
+    rerender(<IrisButton size="lg">X</IrisButton>)
+    expect(screen.getByRole('button').getAttribute('style')).toContain(
+      'var(--iris-control-height-lg, 40px)',
+    )
+  })
+
   it('installs styles exactly once across multiple mounts', () => {
     render(<IrisButton>1</IrisButton>)
     render(<IrisButton>2</IrisButton>)

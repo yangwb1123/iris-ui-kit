@@ -70,11 +70,11 @@ export const IrisInput = defineComponent({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 'var(--iris-gap-sm)',
-        background: 'var(--iris-background)',
+        background: props.readonly ? 'var(--iris-surface)' : 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         border: `1px solid ${borderColor}`,
         borderRadius: 'var(--iris-radius-md)',
-        cursor: props.disabled ? 'not-allowed' : 'text',
+        cursor: props.disabled ? 'not-allowed' : props.readonly ? 'default' : 'text',
         opacity: props.disabled ? '0.6' : '1',
         transition: 'border-color 120ms ease, box-shadow 120ms ease',
         boxShadow,
@@ -117,7 +117,13 @@ export const IrisInput = defineComponent({
           ...attrs,
           'data-iris-input': '',
           'data-iris-input-size': props.size,
-          'data-state': props.invalid ? 'invalid' : focused.value ? 'focused' : 'idle',
+          'data-state': props.invalid
+            ? 'invalid'
+            : focused.value
+              ? 'focused'
+              : props.readonly
+                ? 'readonly'
+                : 'idle',
           style: {
             ...wrapperStyle.value,
             ...((attrs.style as Record<string, string> | undefined) ?? {}),

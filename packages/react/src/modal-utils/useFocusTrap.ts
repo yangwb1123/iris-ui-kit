@@ -33,6 +33,35 @@ export interface UseFocusTrapOptions {
   initialFocus?: boolean
 }
 
+function createFocusTrapKeyHandler(
+  container: React.RefObject<HTMLElement | null>,
+): (event: KeyboardEvent) => void {
+  return (event: KeyboardEvent): void => {
+    if (event.key !== 'Tab') return
+    const root = container.current
+    if (!root) return
+    const focusables = getFocusable(root)
+    if (focusables.length === 0) {
+      event.preventDefault()
+      root.focus()
+      return
+    }
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    const active = document.activeElement as HTMLElement | null
+
+    if (event.shiftKey) {
+      if (active === first || !root.contains(active)) {
+        event.preventDefault()
+        last.focus()
+      }
+    } else if (active === last || !root.contains(active)) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+}
+
 /**
  * Constrain Tab / Shift+Tab focus traversal to descendants of `container`.
  *
@@ -59,32 +88,7 @@ export function useFocusTrap(options: UseFocusTrapOptions): void {
 
     previouslyFocusedRef.current = (document.activeElement as HTMLElement | null) ?? null
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return
-      const root = container.current
-      if (!root) return
-      const focusables = getFocusable(root)
-      if (focusables.length === 0) {
-        event.preventDefault()
-        root.focus()
-        return
-      }
-      const first = focusables[0]!
-      const last = focusables[focusables.length - 1]!
-      const active = document.activeElement as HTMLElement | null
-
-      if (event.shiftKey) {
-        if (active === first || !root.contains(active)) {
-          event.preventDefault()
-          last.focus()
-        }
-      } else {
-        if (active === last || !root.contains(active)) {
-          event.preventDefault()
-          first.focus()
-        }
-      }
-    }
+    const onKeyDown = createFocusTrapKeyHandler(container)
     document.addEventListener('keydown', onKeyDown)
 
     let raf: number | undefined

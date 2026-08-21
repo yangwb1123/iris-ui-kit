@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { IrisTable, type IrisTableColumn, type IrisTableProxyQueryParams } from '@iris-ui-kit/svelte'
+  import {
+    IrisTable,
+    type IrisTableColumn,
+    type IrisTableProxyQueryParams,
+  } from '@iris-ui-kit/svelte'
 
   /**
    * vxe-grid 官方示例的 IrisTable 实现（与 apps/cms-react 同款对照页）。
@@ -140,11 +144,13 @@
     >
       官方示例对照：border / showOverflow / resizable / keyField / seq / sortable
     </p>
-    <IrisTable bordered resizableColumns rowKey="id" seq columns={columns} data={tableData} />
+    <IrisTable bordered resizableColumns rowKey="id" seq {columns} data={tableData} />
   </section>
 
   <section>
-    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">行编辑（Row editing）</h2>
+    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
+      行编辑（Row editing）
+    </h2>
     <p
       style="
         margin: 0 0 12px;
@@ -194,12 +200,14 @@
         ],
       }}
       proxyConfig={{ query: remoteQuery, remoteSort: true, pageSize: 8 }}
-      columns={columns}
+      {columns}
     />
   </section>
 
   <section>
-    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">搜索表单（Search form）</h2>
+    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
+      搜索表单（Search form）
+    </h2>
     <p
       style="
         margin: 0 0 12px;
@@ -233,7 +241,7 @@
         resetText: '重置',
       }}
       proxyConfig={{ query: remoteQuery, remoteFilter: true, pageSize: 8 }}
-      columns={columns}
+      {columns}
     />
   </section>
 

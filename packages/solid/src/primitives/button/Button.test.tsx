@@ -68,6 +68,13 @@ describe('@iris-ui-kit/solid IrisButton', () => {
     expect(getByRole('button').getAttribute('style') ?? '').toContain('var(--iris-primary)')
   })
 
+  it('size uses the shared control-height tokens', () => {
+    const { container } = render(() => <IrisButton size="lg">X</IrisButton>)
+    expect(container.querySelector('button')!.getAttribute('style')).toContain(
+      'min-height: var(--iris-control-height-lg, 40px)',
+    )
+  })
+
   it('installs the singleton stylesheet once', () => {
     render(() => <IrisButton>A</IrisButton>)
     render(() => <IrisButton>B</IrisButton>)

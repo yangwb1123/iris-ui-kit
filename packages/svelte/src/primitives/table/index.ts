@@ -1,6 +1,6 @@
 export { default as IrisTable } from './IrisTable.svelte'
 export type { IrisTableProps } from './props'
-export { exportCsv, downloadCsv } from './exportCsv'
+export { exportCsv, downloadCsv, parseCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'
 export type {
   IrisTableColumn,
@@ -9,6 +9,16 @@ export type {
   IrisTableEditor,
   IrisTableAggregateOp,
   IrisTableCellEditEvent,
+  IrisTableClipConfig,
+  IrisTableEditConfig,
+  IrisTableColumnDrag,
+  IrisTableRowDrag,
+  IrisTableHandle,
+  IrisTableFilterOption,
+  IrisTableFilterValues,
+  IrisTableContextMenuItem,
+  IrisTableContextMenuParams,
+  IrisTableContextMenuConfig,
   IrisTableVirtualOptions,
   IrisTableColumnWidths,
   IrisTableRenderDetail,
@@ -24,5 +34,9 @@ export type {
   IrisTableSpan,
   IrisTableToolbarButton,
   IrisTableToolbarBatch,
+  IrisTableNamedView,
+  IrisTableTab,
+  IrisTableViewConfig,
+  IrisTableViewSnapshot,
   IrisTableToolbarConfig,
 } from './types'

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setFileSaveHandler } from '@iris-ui-kit/core'
-import { downloadCsv, exportCsv } from './exportCsv'
+import { downloadCsv, exportCsv, parseCsv } from './exportCsv'
 import { downloadExcel, exportExcel } from './exportExcel'
 
 const rows = [{ name: 'Ada', score: 42 }]
@@ -15,6 +15,13 @@ describe('Solid table exports', () => {
   it('shares the safe CSV and SpreadsheetML serializers', () => {
     expect(exportCsv(rows, columns)).toBe('Name,Score\nAda,42')
     expect(exportExcel(rows, columns)).toContain('<Data ss:Type="Number">42</Data>')
+  })
+
+  it('exposes the shared RFC-4180 parser for import flows', () => {
+    expect(parseCsv('Name,Note\nAda,"a,b"')).toEqual([
+      ['Name', 'Note'],
+      ['Ada', 'a,b'],
+    ])
   })
 
   it('routes CSV and Excel downloads through the native host bridge', async () => {

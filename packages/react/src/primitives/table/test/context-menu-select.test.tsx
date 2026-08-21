@@ -207,6 +207,7 @@ describe('@iris-ui-kit/react IrisTable contextMenu (vxe contextMenu parity, batc
             { key: 'delete', label: 'Delete row', disabled: params.rowIndex === 1 },
           ],
           onSelect,
+          formatActions: true,
         }}
       />,
     )
@@ -224,11 +225,13 @@ describe('@iris-ui-kit/react IrisTable contextMenu (vxe contextMenu parity, batc
     const items = menu!.querySelectorAll('[data-iris-table-context-menu-item]')
     // Batch BW: the unconditional 复制值 / 清空 quick actions append after
     // the user items.
-    expect(items.length).toBe(4)
+    expect(items.length).toBe(6)
     expect(items[0]!.textContent).toBe('Edit row')
     expect(items[1]!.textContent).toBe('Delete row')
     expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
     expect(items[3]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
+    expect(items[4]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-format-number')
+    expect(items[5]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-format-upper')
     // Positioned at the cursor via the virtual anchor.
     await waitFor(() => {
       expect(menu!.style.transform).toContain('translate3d(120px, 80px')

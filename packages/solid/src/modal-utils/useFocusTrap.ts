@@ -33,14 +33,8 @@ export interface UseFocusTrapOptions {
   initialFocus?: boolean
 }
 
-/**
- * Constrain Tab / Shift+Tab focus traversal to descendants of `container`.
- * Solid port of the Vue modal-utils `useFocusTrap`.
- */
-export function useFocusTrap(options: UseFocusTrapOptions): void {
-  let previouslyFocused: HTMLElement | null = null
-
-  const onKeyDown = (event: KeyboardEvent): void => {
+function createFocusTrapKeyHandler(options: UseFocusTrapOptions): (event: KeyboardEvent) => void {
+  return (event: KeyboardEvent): void => {
     if (!options.active() || event.key !== 'Tab') return
     const root = options.container()
     if (!root) return
@@ -59,13 +53,20 @@ export function useFocusTrap(options: UseFocusTrapOptions): void {
         event.preventDefault()
         last.focus()
       }
-    } else {
-      if (activeEl === last || !root.contains(activeEl)) {
-        event.preventDefault()
-        first.focus()
-      }
+    } else if (activeEl === last || !root.contains(activeEl)) {
+      event.preventDefault()
+      first.focus()
     }
   }
+}
+
+/**
+ * Constrain Tab / Shift+Tab focus traversal to descendants of `container`.
+ * Solid port of the Vue modal-utils `useFocusTrap`.
+ */
+export function useFocusTrap(options: UseFocusTrapOptions): void {
+  let previouslyFocused: HTMLElement | null = null
+  const onKeyDown = createFocusTrapKeyHandler(options)
 
   createEffect(() => {
     const isActive = options.active()

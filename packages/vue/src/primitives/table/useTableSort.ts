@@ -1,6 +1,6 @@
 import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
 import { compareValues } from '@iris-ui-kit/core'
-import { getCellValue } from './useTableState'
+import { getCellValue } from './table-helpers'
 import type { IrisTableColumn, IrisTableSortState } from './types'
 
 export interface UseTableSortOptions<Row> {

@@ -171,17 +171,51 @@ describe('IrisTable tooltipConfig (batch G)', () => {
     )
   })
 
-  it('showAll=false still renders titles on every cell (documented simplification: truncation gating is not implemented)', () => {
+  it('showAll=false keeps titles in jsdom when layout dimensions are unavailable', () => {
     const { container } = render(
       <IrisTable columns={cols} data={rows} rowKey="id" tooltipConfig={{ showAll: false }} />,
     )
-    // Same always-on behavior as showAll: true — cheap and explicit.
+    // jsdom reports clientWidth=0, so the implementation fails open rather
+    // than hiding useful titles in a layout it cannot measure.
     expect(container.querySelector('[data-iris-table-cell="name"]')?.getAttribute('title')).toBe(
       'Alice',
     )
     expect(container.querySelector('[data-iris-table-cell="age"]')?.getAttribute('title')).toBe(
       '25',
     )
+  })
+
+  it('showAll=false gates titles to measured overflow and rechecks after resize', () => {
+    const { container } = render(
+      <IrisTable columns={cols} data={rows} rowKey="id" tooltipConfig={{ showAll: false }} />,
+    )
+    const name = container.querySelector('[data-iris-table-cell="name"]') as HTMLElement
+    const age = container.querySelector('[data-iris-table-cell="age"]') as HTMLElement
+    Object.defineProperties(name, {
+      clientWidth: { configurable: true, value: 40 },
+      scrollWidth: { configurable: true, value: 120 },
+    })
+    Object.defineProperties(age, {
+      clientWidth: { configurable: true, value: 40 },
+      scrollWidth: { configurable: true, value: 40 },
+    })
+    act(() => window.dispatchEvent(new Event('resize')))
+    expect(name.getAttribute('title')).toBe('Alice')
+    expect(name.getAttribute('data-iris-tooltip-truncated')).toBe('true')
+    expect(age.getAttribute('title')).toBeNull()
+
+    Object.defineProperties(name, {
+      clientWidth: { configurable: true, value: 200 },
+      scrollWidth: { configurable: true, value: 120 },
+    })
+    Object.defineProperties(age, {
+      clientWidth: { configurable: true, value: 20 },
+      scrollWidth: { configurable: true, value: 80 },
+    })
+    act(() => window.dispatchEvent(new Event('resize')))
+    expect(name.getAttribute('title')).toBeNull()
+    expect(age.getAttribute('title')).toBe('25')
+    expect(age.getAttribute('data-iris-tooltip-truncated')).toBe('true')
   })
 
   it('editing cells are exempt from the title', () => {

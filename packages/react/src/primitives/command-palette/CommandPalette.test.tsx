@@ -232,6 +232,9 @@ describe('@iris-ui-kit/react IrisCommandPalette virtual', () => {
       Number(el.getAttribute('data-iris-virtual-index')),
     )
 
+  // This is an intentional 10k-row stress case for the opt-out/plain path.
+  // Keep the suite's normal 5s timeout for ordinary tests, but give this
+  // browser-like DOM construction enough room on slower CI workers.
   it('A1: default off — full DOM, no virtual scroller', () => {
     const { unmount } = render(<IrisCommandPalette open items={BIG} />)
     expect(document.querySelectorAll('[data-iris-command-palette-item]').length).toBe(10_000)
@@ -240,7 +243,7 @@ describe('@iris-ui-kit/react IrisCommandPalette virtual', () => {
     // Group headers still render on the plain path.
     render(<IrisCommandPalette open items={items} />)
     expect(document.querySelectorAll('[data-iris-command-palette-group]').length).toBe(2)
-  })
+  }, 15_000)
 
   it('A2: virtual on — windowed mount, exact spacer, single listbox', () => {
     render(<IrisCommandPalette open items={BIG} virtual />)

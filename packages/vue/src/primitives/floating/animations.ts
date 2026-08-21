@@ -1,12 +1,4 @@
-/**
- * Shared floating-layer entrance animations (P3: aesthetic review).
- *
- * Injects one global stylesheet with the @keyframes and CSS variables that
- * the overlay components (Dialog / Popover / Toast / Tooltip) reference via
- * `animation: var(--iris-anim-*)`. `prefers-reduced-motion` flips the
- * variables to `none`, so overlays degrade to instant appearance without any
- * per-component motion checks.
- */
+/** Shared floating-layer entrance animations for Vue overlays. */
 const STYLE_ID = 'iris-floating-animations'
 let installed = false
 
@@ -15,42 +7,18 @@ export const ANIM_POPOVER = 'var(--iris-anim-popover)'
 export const ANIM_TOAST = 'var(--iris-anim-toast)'
 export const ANIM_TOOLTIP = 'var(--iris-anim-tooltip)'
 
-export function installFloatingAnimations(): void {
-  if (installed || typeof document === 'undefined') return
-  installed = true
-  if (document.getElementById(STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = `
+const ANIMATION_CSS = `
 :root {
   --iris-anim-dialog: iris-dialog-in 150ms ease-out;
   --iris-anim-popover: iris-popover-in 150ms ease-out;
   --iris-anim-toast: iris-toast-in 200ms ease-out;
   --iris-anim-tooltip: iris-tooltip-in 120ms ease-out;
 }
-/*
- * NOTE: these keyframes animate OPACITY ONLY. The floating layers are
- * positioned via inline transform: translate3d(...) (Floating UI), and any
- * transform in the keyframes would override it for the animation duration —
- * flashing the panel at the viewport origin (0,0) before it jumps into place.
- * Fade-only keeps the entrance motion without touching positioning.
- */
-@keyframes iris-dialog-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes iris-popover-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes iris-toast-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes iris-tooltip-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+/* Fade-only keyframes preserve Floating UI's inline translate3d position. */
+@keyframes iris-dialog-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes iris-popover-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes iris-toast-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes iris-tooltip-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   :root {
     --iris-anim-dialog: none;
@@ -59,7 +27,6 @@ export function installFloatingAnimations(): void {
     --iris-anim-tooltip: none;
   }
 }
-/* P4: global focus-visible ring for interactive controls */
 [data-iris-tabs-trigger]:focus-visible,
 [data-iris-switch]:focus-visible,
 [data-iris-checkbox]:focus-visible,
@@ -71,5 +38,13 @@ export function installFloatingAnimations(): void {
   outline-offset: 2px;
 }
 `
+
+export function installFloatingAnimations(): void {
+  if (installed || typeof document === 'undefined') return
+  installed = true
+  if (document.getElementById(STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = STYLE_ID
+  style.textContent = ANIMATION_CSS
   document.head.appendChild(style)
 }

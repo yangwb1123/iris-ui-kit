@@ -3,22 +3,24 @@
   import type { Snippet } from 'svelte'
   type RowSnippet = Snippet<[Record<string, unknown>]>
   import {
-    aggregate,
     buildFormValues,
     buildHeaderMatrix,
-    compareValues,
-    computeVirtualRange,
+    compareStates,
     createCellRange,
     createRemoteTableSource,
     createSelectionModel,
     createExpansion,
+    detectColumnType,
     flattenLeafColumns,
     flattenTree,
     mergeFormFilters,
+    removeRowsFromList,
     seedFormValues,
+    tableDisplayText,
+    toCsvRows,
     withSortedChildren,
-    nextGridCell,
-    type GridNavKey,
+    type DetectedColumnType,
+    type RemoteTableParams,
     type RemoteTableSource,
     type RemoteTableSourceState,
     type TreeRow,
@@ -28,14 +30,52 @@
   import { useI18n } from '../../i18n'
   import { useDrag } from '../drag/useDrag.svelte'
   import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
-  import IrisButton from '../button/IrisButton.svelte'
-  import IrisFormField from '../form-field/FormField.svelte'
-  import IrisInput from '../input/Input.svelte'
-  import IrisPagination from '../pagination/IrisPagination.svelte'
-  import IrisSelect from '../select/IrisSelect.svelte'
+  import TableCellEditor from './TableCellEditor.svelte'
+  import TableChrome from './TableChrome.svelte'
+  import TableContextMenu from './TableContextMenu.svelte'
+  import TableDragHandle from './TableDragHandle.svelte'
+  import TableFilterPanel from './TableFilterPanel.svelte'
+  import TableHeader from './TableHeader.svelte'
+  import TableTabs from './TableTabs.svelte'
+  import TableViews from './TableViews.svelte'
+  import TableSummary from './TableSummary.svelte'
   import type { IrisTableProps } from './props'
-  import type { IrisTableColumn, IrisTableSortState, IrisTableColumnWidths } from './types'
-
+  import type {
+    IrisTableColumn,
+    IrisTableSortState,
+    IrisTableColumnWidths,
+    IrisTableDensity,
+  } from './types'
+  import { createTableDragBridge } from './table-drag'
+  import { createTableHandle } from './table-handle'
+  import { exportCsv as serializeTableCsv } from './exportCsv'
+  import {
+    applyTableFilters,
+    buildSpanPlan,
+    clampWidth,
+    computeVisibleColSet,
+    createMultiSortComparator,
+    createSortComparator,
+    getCellValue,
+    mergeFilterValues,
+    resolveInitialWidth,
+    resolveResponsiveWidth,
+    editPreviewText,
+    TABLE_CONST,
+    cellId,
+    type SpanPlan,
+    computeResponsiveTableColumns,
+  } from './tableUtils'
+  import { createTableFilterController } from './table-filter.svelte'
+  import { createTableRowEditController } from './table-row-edit.svelte'
+  import { createTableKeyboard } from './table-keyboard'
+  import { handleTableRowKeyDown } from './table-events'
+  import { applyDetectedTableTypes } from './table-columns'
+  import { createPinnedDragMath } from './table-pinned-drag'
+  import { createTableViewsController } from './table-views.svelte'
+  import { TABLE_STYLES } from './table-styles'
+  import TableSortIndicator from './TableSortIndicator.svelte'
+  import TableStateRow from './TableStateRow.svelte'
   const EMPTY_PROXY_STATE: RemoteTableSourceState<Record<string, unknown>> = {
     data: [],
     total: 0,
@@ -44,80 +84,12 @@
     params: { page: 1, pageSize: 10, sort: null, filters: {} },
   }
 
-  type SpanPlan = {
-    occupied: Set<string>
-    spans: Map<string, { rowspan: number; colspan: number }>
-  }
-
-  // Cell merge (vxe spanMethod parity): a pure pass over the full body grid
-  // computing which cells an earlier rowspan/colspan origin occupies and what
-  // span each origin cell claims. Rebuilt per reactive pass ($derived.by), so
-  // it stays correct across virtual-window boundaries (windowed cells just
-  // consult the plan) and needs no render-time ref mutation.
-  function buildSpanPlan(
-    rowCount: number,
-    colCount: number,
-    method: (params: {
-      rowIndex: number
-      columnIndex: number
-    }) => { rowspan?: number; colspan?: number } | null | undefined,
-  ): SpanPlan {
-    const occupied = new Set<string>()
-    const spans = new Map<string, { rowspan: number; colspan: number }>()
-    for (let r = 0; r < rowCount; r += 1) {
-      for (let c = 0; c < colCount; c += 1) {
-        const key = `${r}:${c}`
-        if (occupied.has(key)) continue
-        const span = method({ rowIndex: r, columnIndex: c })
-        const rowspan = span?.rowspan ?? 1
-        const colspan = span?.colspan ?? 1
-        if (rowspan > 1 || colspan > 1) {
-          spans.set(key, { rowspan, colspan })
-          for (let rr = 1; rr < rowspan; rr += 1) occupied.add(`${r + rr}:${c}`)
-          for (let cc = 1; cc < colspan; cc += 1) occupied.add(`${r}:${c + cc}`)
-        }
-      }
-    }
-    return { occupied, spans }
-  }
-
-  // Ordered multi-column comparator (vxe sort-config.multiple parity): the
-  // click-order list chains per-column comparators; the first non-zero
-  // comparison wins, ties fall through to the next column.
-  function createMultiSortComparator(
-    list: IrisTableSortState[],
-    leafCols: IrisTableColumn[],
-    getValue: (row: Record<string, unknown>, col: IrisTableColumn) => unknown,
-  ): ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null {
-    if (list.length === 0) return null
-    const colMap = new Map(leafCols.map((c) => [c.key, c]))
-    const chain: Array<{
-      dir: number
-      sorter: (a: Record<string, unknown>, b: Record<string, unknown>) => number
-    }> = []
-    for (const s of list) {
-      const col = colMap.get(s.key)
-      if (!col) continue
-      chain.push({
-        dir: s.direction === 'asc' ? 1 : -1,
-        sorter: col.sorter ?? ((a, b) => compareValues(getValue(a, col), getValue(b, col))),
-      })
-    }
-    if (chain.length === 0) return null
-    return (a, b) => {
-      for (const step of chain) {
-        const cmp = step.sorter(a, b)
-        if (cmp !== 0) return cmp * step.dir
-      }
-      return 0
-    }
-  }
-
   let {
     columns,
     data,
     rowKey = 'id',
     selectable = 'none',
+    editConfig,
     selection,
     defaultSelection,
     sort,
@@ -132,18 +104,42 @@
     spanMethod,
     columnVisibility,
     filters,
+    onFiltersChange,
+    filterValues,
+    onFilterValuesChange,
     formConfig,
     toolbar,
+    contextMenu,
     proxyConfig,
     pagerConfig,
     striped = false,
     bordered = true,
+    density = 'comfortable' as IrisTableDensity,
+    densityToggle = false,
+    editPreview = false,
+    pattern = false,
+    patternFill = false,
+    pinnedDrag = false,
+    onColumnPinnedChange,
+    onPinnedCountChange,
+    views,
+    onActiveViewChange,
+    tableTabs,
+    autoDetectTypes = false,
+    responsive = false,
+    exportNames,
     loading = false,
     error = false,
+    printable = false,
+    importPreview = false,
     emptyState,
     loadingState,
     errorState,
     onRetry = undefined as (() => void) | undefined,
+    rowDrag,
+    columnDrag,
+    onDataChange,
+    tableRef,
     virtualScroll,
     columnVirtualization = false,
     resizableColumns = false,
@@ -157,6 +153,7 @@
     getSubRows,
     keyboardNavigation = false,
     cellRange = false,
+    clipConfig,
     onUpdateSelection,
     onUpdateSort,
     onRowClick,
@@ -166,52 +163,78 @@
   }: IrisTableProps = $props()
 
   const { t } = useI18n()
-
-  const DEFAULT_COL_WIDTH = 140
-  const DEFAULT_MIN_WIDTH = 60
-  const RESIZE_STEP = 16
-
-  function resolveInitialWidth(col: IrisTableColumn): number {
-    if (typeof col.width === 'number') return col.width
-    if (typeof col.width === 'string') {
-      const m = col.width.match(/^(\d+(?:\.\d+)?)px$/)
-      if (m) return Number(m[1])
-    }
-    return DEFAULT_COL_WIDTH
+  let densityState = $state<IrisTableDensity>('comfortable')
+  const effectiveDensity = $derived(
+    densityToggle
+      ? densityState
+      : density === 'compact' || density === 'cozy'
+        ? density
+        : 'comfortable',
+  )
+  function cycleDensity(): void {
+    densityState =
+      densityState === 'comfortable'
+        ? 'compact'
+        : densityState === 'compact'
+          ? 'cozy'
+          : 'comfortable'
   }
-
-  function getCellValue(row: Record<string, unknown>, column: IrisTableColumn): unknown {
-    const key = (column.dataIndex ?? column.key) as string
-    return row[key]
-  }
-
-  // Column visibility (vxe columnConfig.visible parity): hidden columns are
-  // dropped from every render path (header, body, summary). Reference-
-  // preserving: without the prop the result IS `columns`, so the flat path is
-  // byte-identical with the pre-visibility render path.
-  const displayColumns = $derived(
+  let responsiveWidth = $state(0)
+  const sourceDisplayColumns = $derived(
     columnVisibility !== undefined
       ? columns.filter((c) => columnVisibility![c.key] !== false)
       : columns,
   )
 
-  // Multi-level (grouped) headers: a column with `children` forms a header group.
-  // The BODY always renders the leaf columns; only the header gains extra rows.
-  // When nothing is grouped, `leafColumns` is the original `displayColumns` (same
-  // reference) so the flat path is byte-identical.
+  let detectedTypes = $state<Record<string, DetectedColumnType>>({})
+  let detectTypesDone = false
+  const detectedDisplayColumns = $derived(
+    !autoDetectTypes || Object.keys(detectedTypes).length === 0
+      ? sourceDisplayColumns
+      : applyDetectedTableTypes(sourceDisplayColumns, detectedTypes),
+  )
+
+  const responsiveLeadingWidth = $derived(
+    (rowDrag ? 40 : 0) +
+      (seq ? 60 : 0) +
+      (renderDetail !== undefined ? 40 : 0) +
+      (selectable !== 'none' ? 40 : 0),
+  )
+  const responsiveWidthOf = (column: IrisTableColumn): number =>
+    resolveResponsiveWidth(column, columnWidths, defaultColumnWidths)
+  const responsiveResult = $derived(
+    responsive
+      ? computeResponsiveTableColumns(
+          detectedDisplayColumns,
+          responsiveWidth,
+          responsiveLeadingWidth,
+          responsiveWidthOf,
+        )
+      : { columns: detectedDisplayColumns, overflow: false },
+  )
+  const responsiveDisplayColumns = $derived(responsiveResult.columns)
+  const responsiveOverflow = $derived(responsiveResult.overflow)
+  const displayColumns = $derived(responsiveDisplayColumns)
+
   const grouped = $derived(displayColumns.some((c) => c.children && c.children.length > 0))
   const leafColumns = $derived(grouped ? flattenLeafColumns(displayColumns) : displayColumns)
   const headerMatrix = $derived(grouped ? buildHeaderMatrix(displayColumns) : null)
 
-  // Sort state
   // svelte-ignore state_referenced_locally — `defaultSort` is an initial seed.
   let internalSort = $state<IrisTableSortState | null>(defaultSort ?? null)
   const effectiveSort = $derived(sort !== undefined ? sort : internalSort)
 
-  // ---- Multi-column sort (vxe sort-config.multiple parity) ----------------
-  // Array order = click order (most-significant first). React parity: a
-  // column not in the list APPENDS asc; an existing column cycles
-  // asc → desc → REMOVE. Header badges show the click-order sequence.
+  const tableViews = createTableViewsController({
+    config: () => views,
+    sort: () => effectiveSort,
+    applySort: (next) => {
+      if (sort === undefined) internalSort = next
+      onUpdateSort?.(next)
+      if (remoteSort) proxyRef?.setParams({ sort: next })
+    },
+    onActiveViewChange: (key) => onActiveViewChange?.(key),
+  })
+
   const multiControlled = $derived(multiSortState !== undefined)
   // svelte-ignore state_referenced_locally — seeded from defaultMultiSort; controlled syncs via the prop.
   let multiInternal = $state<IrisTableSortState[]>(defaultMultiSort ?? [])
@@ -245,20 +268,11 @@
     setMultiSort(next)
   }
 
-  // ---- Server-side proxy (vxe-grid proxyConfig parity, query slice) -------
-  // The controller lives in a plain closure variable created ONCE per proxy
-  // PRESENCE — an inline proxyConfig object with a fresh identity each render
-  // never destroys/recreates it — and is torn down when the proxy disappears
-  // or the component unmounts, so a late response never writes back to a dead
-  // instance. State flows controller → $state via store subscribe (the same
-  // bridge pattern as selection / expansion / cell-range). Effects never run
-  // during renderToString, so the first fetch is SSR-safe by construction.
   const hasProxy = $derived(proxyConfig !== undefined)
   const remoteSort = $derived(proxyConfig?.remoteSort === true)
   const remoteFilter = $derived(proxyConfig?.remoteFilter === true)
   let proxyRef: RemoteTableSource<Record<string, unknown>> | null = null
   let proxyUnsub: (() => void) | null = null
-  // `proxyState` naming (not `state`) keeps the AGENTS.md $state collision rule.
   let proxyState = $state<RemoteTableSourceState<Record<string, unknown>>>(EMPTY_PROXY_STATE)
   $effect(() => {
     if (!hasProxy) {
@@ -271,24 +285,17 @@
       proxyState = EMPTY_PROXY_STATE
       return
     }
-    // Presence-keyed: `hasProxy` is the only tracked dependency — every prop
-    // read below is untracked so an inline proxyConfig (fresh identity per
-    // render) or a sort/filter prop change never destroys/recreates the
-    // controller (react hasProxy / vue cfg===undefined parity).
     if (proxyRef) return
     const source = untrack(() => {
       const src = createRemoteTableSource<Record<string, unknown>>({
-        // The latest query closure is read at request time, so a parent that
-        // swaps the query never leaves a stale closure behind.
         query: (params) => proxyConfig!.query(params),
-        // Kicked below — never fire a fetch during render.
         autoLoad: false,
         initialParams: {
           page: proxyConfig?.defaultPage ?? 1,
           pageSize: proxyConfig?.pageSize ?? 10,
           sort: remoteSort ? ((sort !== undefined ? sort : defaultSort) ?? null) : null,
           sorts: remoteSort && multiSort ? (multiSortState ?? defaultMultiSort ?? []) : undefined,
-          filters: remoteFilter ? (filters ?? {}) : {},
+          filters: remoteFilter ? mergeFilterValues(filters ?? {}, filterValues ?? {}) : {},
         },
       })
       proxyRef = src
@@ -310,11 +317,6 @@
       proxyState = EMPTY_PROXY_STATE
     }
   })
-  // Proxy rows feed the table as the data source; a new page/refetch
-  // reference replaces them wholesale. Local edit write-backs (below) stick
-  // until then (react liveData parity) — the reference guard only replaces
-  // when the proxy actually lands a NEW page array (a loading flip keeps the
-  // locally-edited copy on screen).
   let proxyRows = $state<Array<Record<string, unknown>>>([])
   let lastProxyDataRef: Array<Record<string, unknown>> | undefined
   $effect(() => {
@@ -325,24 +327,39 @@
       proxyRows = next
     }
   })
-  const baseData = $derived(hasProxy ? proxyRows : (data ?? []))
+  let localRows = $state<Array<Record<string, unknown>> | null>(null)
+  // svelte-ignore state_referenced_locally
+  let lastInputData = data
+  $effect(() => {
+    if (hasProxy) return
+    const next = data
+    if (next !== lastInputData) {
+      lastInputData = next
+      localRows = null
+    }
+  })
+  const baseData = $derived(hasProxy ? proxyRows : (localRows ?? data ?? []))
 
-  // The active sort comparator (or null). Shared by the root-row sort AND the
-  // tree-mode child sort so a sortable tree reorders siblings at every depth.
+  $effect(() => {
+    if (!autoDetectTypes || detectTypesDone || baseData.length === 0) return
+    detectTypesDone = true
+    const next: Record<string, DetectedColumnType> = {}
+    for (const column of flattenLeafColumns(columns)) {
+      const candidate = column as IrisTableColumn & { formula?: unknown }
+      if (candidate.formula) continue
+      next[column.key] = detectColumnType(baseData.map((row) => getCellValue(row, candidate)))
+    }
+    detectedTypes = next
+  })
+
+  const filterController = createTableFilterController({
+    getControlled: () => filterValues,
+    onChange: (next) => onFilterValuesChange?.(next),
+  })
+  const effectiveFilterValues = $derived(filterController.values)
   const sortComparator = $derived<
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
-  >(() => {
-    const state = effectiveSort
-    if (!state) return null
-    const column = leafColumns.find((c) => c.key === state.key)
-    if (!column) return null
-    const dir = state.direction === 'asc' ? 1 : -1
-    const sorter =
-      column.sorter ??
-      ((a: Record<string, unknown>, b: Record<string, unknown>) =>
-        compareValues(getCellValue(a, column), getCellValue(b, column)))
-    return (a, b) => sorter(a, b) * dir
-  })
+  >(() => createSortComparator(effectiveSort, leafColumns, getCellValue))
 
   const sortedRows = $derived((): Array<Record<string, unknown>> => {
     // remoteSort parity: the server owns the ordering — never re-sort locally.
@@ -359,21 +376,12 @@
     return [...baseData].sort(compare)
   })
 
-  // remoteSort parity: hand the active sort state to the server. Header
-  // clicks are pushed through the wrappers above (setMultiSort / the click
-  // handler); this effect covers controlled `sort`/`multiSortState` prop
-  // updates from the parent (core setParams dedupes unchanged params, so the
-  // click path does not double-request). In multiSort mode the single-column
-  // channel is inert — the multi channel owns the sync.
   $effect(() => {
     if (!hasProxy || !remoteSort) return
     if (multiSort) proxyRef?.setParams({ sorts: effectiveMultiSort })
     else proxyRef?.setParams({ sort: effectiveSort ?? null })
   })
 
-  // ---- Search form (vxe-grid formConfig parity) ---------------------------
-  // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
-  // query); submit/reset promote the built values into the APPLIED filters.
   // svelte-ignore state_referenced_locally — initial seed only; re-seeding is keyed on the field signature below.
   let formDraft = $state<Record<string, string>>(seedFormValues(formConfig?.fields))
   let formApplied = $state<Record<string, string>>({})
@@ -407,10 +415,11 @@
     const values = buildFormValues(formConfig?.fields, formDraft)
     formConfig?.onSearch?.(values)
     formApplied = values
-    // Proxy mode: the server owns filtering — merge the form values into the
-    // controller filters (page resets to 1 in core applyParams, vxe behavior).
     if (proxyRef) {
-      void proxyRef.setParams({ filters: mergeFormFilters(filters ?? {}, values), page: 1 })
+      void proxyRef.setParams({
+        filters: mergeFilterValues(mergeFormFilters(filters ?? {}, values), effectiveFilterValues),
+        page: 1,
+      })
     }
   }
   function handleFormReset(e: Event): void {
@@ -421,12 +430,12 @@
     formApplied = values
     formConfig?.onReset?.(values)
     if (proxyRef) {
-      // setParams returns false when the merged params are unchanged (e.g.
-      // filters already cleared) — a reset must still re-query, so force a
-      // refetch only in that no-op case (no double request when it changed).
       if (
         proxyRef.setParams({
-          filters: mergeFormFilters(filters ?? {}, values),
+          filters: mergeFilterValues(
+            mergeFormFilters(filters ?? {}, values),
+            effectiveFilterValues,
+          ),
           page: 1,
         }) === false
       ) {
@@ -434,44 +443,25 @@
       }
     }
   }
-  // remoteFilter parity: hand the filter map to the server and never hide
-  // rows client-side (vxe proxyConfig.filter). Form values are merged in so a
-  // later `filters` prop change from the parent does not silently drop the
-  // applied search. (Core setParams dedupes unchanged params.)
   $effect(() => {
     if (!hasProxy || !remoteFilter) return
-    proxyRef?.setParams({ filters: mergeFormFilters(filters ?? {}, formApplied) })
+    proxyRef?.setParams({
+      filters: mergeFilterValues(
+        mergeFormFilters(filters ?? {}, formApplied),
+        effectiveFilterValues,
+      ),
+    })
   })
 
-  // Client-side filters (vxe filterConfig parity, local mode): substring
-  // filter over the sorted data before tree flattening (flat mode). With
-  // remoteFilter the server owns filtering — rows are never hidden locally.
-  // The search form's applied values merge over the `filters` prop (form wins,
-  // neither input is mutated); in proxy mode the server owns form filtering,
-  // so only the prop map filters the loaded page.
   const filteredRows = $derived((): Array<Record<string, unknown>> => {
     if (remoteFilter) return sortedRows()
     const merged: Record<string, string> = hasProxy
       ? (filters ?? {})
       : mergeFormFilters(filters ?? {}, formApplied)
-    const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
-    if (active.length === 0) return sortedRows()
-    return sortedRows().filter((row) =>
-      active.every(([key, value]) => {
-        const col = displayColumns.find((c) => c.key === key)
-        if (!col) return true
-        const raw = getCellValue(row, col)
-        if (col.filterMethod) return col.filterMethod(raw, row, value)
-        return String(raw ?? '')
-          .toLowerCase()
-          .includes(value.toLowerCase())
-      }),
-    )
+    return applyTableFilters(sortedRows(), displayColumns, merged, effectiveFilterValues)
   })
 
   function handleHeaderClick(column: IrisTableColumn): void {
-    // Sortable header click: multi mode appends/cycles the click-order list,
-    // single mode keeps the asc → desc → none cycle.
     if (multiSort) {
       cycleMultiSort(column)
       return
@@ -488,8 +478,6 @@
     }
     if (sort === undefined) internalSort = next
     onUpdateSort?.(next)
-    // remoteSort parity: sort changes re-query the server (page resets to 1
-    // in the core controller, vxe behavior).
     if (remoteSort) proxyRef?.setParams({ sort: next })
   }
 
@@ -499,20 +487,80 @@
     handleHeaderClick(column)
   }
 
-  function handleRowKeyDown(
-    event: KeyboardEvent,
-    row: Record<string, unknown>,
-    index: number,
-  ): void {
-    if (!onRowClick || (event.key !== 'Enter' && event.key !== ' ')) return
-    event.preventDefault()
-    onRowClick(row, index)
+  function clearSort(): void {
+    if (sort === undefined) internalSort = null
+    onUpdateSort?.(null)
+    if (multiSort) {
+      if (!multiControlled) multiInternal = []
+      onUpdateMultiSort?.([])
+    }
+    if (proxyRef) {
+      const next: Partial<RemoteTableParams> = multiSort ? { sorts: [] } : { sort: null }
+      void proxyRef.setParams(next)
+    }
   }
 
-  // Selection state — single-sourced in the core selection model (single/multiple
-  // toggle, dedup, select-all). The model owns the uncontrolled state; a
-  // controlled `selection` prop is mirrored in via `sync` from an effect, and
-  // every change is emitted through `onUpdateSelection`.
+  function clearFilter(): void {
+    formDraft = seedFormValues(formConfig?.fields)
+    formApplied = {}
+    onFiltersChange?.({})
+    filterController.clearAll()
+    if (proxyRef) {
+      const changed = proxyRef.setParams({ filters: {}, page: 1 })
+      if (changed === false) void proxyRef.refetch()
+    }
+  }
+
+  const tableHandle = createTableHandle({
+    setRows: (rows) => {
+      if (hasProxy) proxyRows = rows
+      else localRows = rows
+    },
+    onDataChange: (rows) => onDataChange?.(rows),
+    refetch: () => {
+      if (proxyRef) void proxyRef.refetch()
+    },
+    setParams: (overrides) => {
+      if (proxyRef) void proxyRef.setParams(overrides)
+    },
+    getProxyInfo: () =>
+      hasProxy
+        ? {
+            page: proxyState.params.page,
+            pageSize: proxyState.params.pageSize,
+            total: proxyState.total,
+          }
+        : null,
+    clearSort,
+    clearFilter,
+    removeRows: removeRowsForHandle,
+    getFilteredData: () => [...bodyData],
+    exportCurrentViewCsv: () => serializeTableCsv(bodyData, leafColumns),
+    exportMultiCsv: () => {
+      const current = serializeTableCsv(bodyData, leafColumns)
+      if (!exportNames || exportNames.length === 0) return current
+      const segments = [`# current${current ? `\n${current}` : ''}`]
+      for (const entry of exportNames) {
+        if (!entry.key) continue
+        const refCsv = toCsvRows(entry.ref())
+        segments.push(`# ${entry.key}${refCsv ? `\n${refCsv}` : ''}`)
+      }
+      return segments.join('\n\n')
+    },
+    compareStates,
+    getRoot: () => rootEl,
+  })
+
+  $effect(() => {
+    const ref = tableRef
+    if (!ref) return
+    ref.current = tableHandle
+    return () => {
+      if (ref.current === tableHandle) ref.current = null
+      tableHandle.dispose()
+    }
+  })
+
   const selControlled = $derived(selection !== undefined)
   // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
   const selectionModel = createSelectionModel<string | number>({
@@ -522,27 +570,15 @@
   })
   const selectedKeys = toStore(selectionModel.store)
 
-  // Controlled: mirror the prop into the model without re-emitting onChange.
   $effect(() => {
     if (selControlled) selectionModel.sync(selection!)
   })
 
-  // Controlled tables RENDER from the prop (true controlled semantics): a local
-  // toggle emits onUpdateSelection, but the displayed selection only changes when
-  // the parent writes `selection` back — so a parent that validates/rejects a
-  // change no longer sees the row flip optimistically. Uncontrolled renders from
-  // the model store as before.
   const displaySelection = $derived(selControlled ? selection! : $selectedKeys)
-  // Re-base the model on the controlled prop before a toggle so the emitted next
-  // value is computed against what the parent actually holds (not a prior,
-  // possibly-rejected, optimistic value).
   function rebaseToProp(): void {
     if (selControlled) selectionModel.sync(selection!)
   }
 
-  // Expandable detail rows: a leading toggle column + a full-width detail panel,
-  // driven by the framework-agnostic createExpansion (multiple-open). The
-  // expanded keys are strings; the store is bridged into Svelte via toStore.
   const hasDetail = $derived(renderDetail !== undefined)
   // svelte-ignore state_referenced_locally — defaults are read once at creation.
   const expansion = createExpansion({
@@ -562,21 +598,12 @@
     return index
   }
 
-  // Tree mode (opt-in via getSubRows): flatten the data into the visible rows
-  // honoring the (shared) expansion model. `bodyData` is the row list the body,
-  // selection, and summary all operate on — identical to `sortedRows()` in flat
-  // mode, so non-tree behavior is unchanged. Each flat entry carries its
-  // TreeRow meta (depth / hasChildren / expanded) for the first-cell indent.
   const treeMode = $derived(getSubRows !== undefined)
-  // Tree children sort by the same comparator as the roots: multi mode chains
-  // the multi comparator, single mode keeps the single one.
   const treeComparator = $derived(() => (multiSort ? multiSortComparator() : sortComparator()))
   const flatTree = $derived<Array<TreeRow<Record<string, unknown>>> | null>(
     treeMode
       ? flattenTree(filteredRows(), {
           getKey: (r) => String(rowId(r, 0)),
-          // With an active sort, sort each level's children by the same
-          // comparator so the whole tree reorders hierarchically.
           getChildren: treeComparator()
             ? withSortedChildren((r) => getSubRows!(r), treeComparator()!)
             : (r) => getSubRows!(r),
@@ -612,19 +639,23 @@
     selectionModel.toggleAll(allRowIds)
   }
 
-  // Column widths — uncontrolled state seeded ONLY from `defaultColumnWidths`
-  // (mirroring React's `widthsInternal = defaultColumnWidths ?? {}`); columns
-  // without an explicit override resolve through `gridTemplate`'s
-  // `?? resolveInitialWidth(col)` fallback, so the emitted map stays sparse
-  // (a resize emits just the touched keys, like React). A controlled
-  // `columnWidths` prop overrides the internal state via `effectiveWidths`, and
-  // every resize emits the resulting map through `onColumnWidthsChange`.
+  function removeRowsForHandle(keys: Array<string | number>): void {
+    const { rows, removedKeys } = removeRowsFromList(baseData, rowKey, keys)
+    if (removedKeys.size === 0) return
+    if (hasProxy) proxyRows = rows
+    else localRows = rows
+    const selected = displaySelection
+    const nextSelection = selected.filter((key) => !removedKeys.has(key))
+    if (nextSelection.length !== selected.length) {
+      rebaseToProp()
+      selectionModel.set(nextSelection)
+    }
+    onDataChange?.(rows)
+  }
+
   // svelte-ignore state_referenced_locally
   let internalWidths = $state<IrisTableColumnWidths>({ ...(defaultColumnWidths ?? {}) })
 
-  // Controlled (`columnWidths` prop) wins over the internal state; uncontrolled
-  // reads the seeded internal map. The `!== undefined` check means an empty {}
-  // prop still controls (matching React/Vue's controlled-detection).
   const widthsControlled = $derived(columnWidths !== undefined)
   const effectiveWidths = $derived<IrisTableColumnWidths>(
     widthsControlled ? columnWidths! : internalWidths,
@@ -635,25 +666,7 @@
     onColumnWidthsChange?.(next)
   }
 
-  // -------- Interactive column resizing (opt-in via `resizableColumns`) --------
-  // Each header gains a draggable separator grip on its trailing edge. Pointer
-  // drag (via the in-repo `useDrag` primitive) or focus + Arrow-Left/Right
-  // adjusts that column's pixel width, clamped to [minWidth, maxWidth]. The grip
-  // element refs live in a reactive map (mirroring IrisResizer); `useDrag` is
-  // wired once per leaf column at init and its handle getter is reactive, so the
-  // drag attaches when the grip mounts. When `resizableColumns` is off no grip
-  // renders and the drag getter stays null — a true no-op.
-  function clampWidth(col: IrisTableColumn, w: number): number {
-    const minW = col.minWidth ?? DEFAULT_MIN_WIDTH
-    const maxW = col.maxWidth ?? Infinity
-    return Math.max(minW, Math.min(maxW, Math.round(w)))
-  }
   const resizeHandleEls = $state<Record<string, HTMLElement | undefined>>({})
-  // Wire a pointer drag per leaf column (over the initial column set, like
-  // IrisResizer wires over its fixed handle list). Each drag reads the live
-  // start width on pointerdown and writes a clamped width on every move. The
-  // initial `leafColumns` snapshot is intentional — useDrag's own $effect
-  // attaches lazily once each grip mounts, so static columns are fully wired.
   // svelte-ignore state_referenced_locally
   for (const col of leafColumns) {
     let startWidth = 0
@@ -683,33 +696,34 @@
     e.preventDefault()
     e.stopPropagation()
     const cur = effectiveWidths[col.key] ?? resolveInitialWidth(col)
-    const delta = e.key === 'ArrowRight' ? RESIZE_STEP : -RESIZE_STEP
+    const delta = e.key === 'ArrowRight' ? TABLE_CONST.RESIZE_STEP : -TABLE_CONST.RESIZE_STEP
     setColumnWidth(col.key, clampWidth(col, cur + delta))
   }
 
+  const pinnedDragMath = createPinnedDragMath({
+    enabled: () => pinnedDrag,
+    columns: () => leafColumns,
+    widthOf: (column) => effectiveWidths[column.key] ?? resolveInitialWidth(column),
+    onColumnPinnedChange: (key, side) => onColumnPinnedChange?.(key, side),
+    onPinnedCountChange: (count) => onPinnedCountChange?.(count),
+  })
+  const pinnedBoundaryKey = $derived(pinnedDragMath.boundaryKey())
+  const resolvePinnedCount = pinnedDragMath.resolvePinnedCount
+  const commitPinnedCount = pinnedDragMath.commitPinnedCount
+
   const showSelection = $derived(selectable !== 'none')
-
-  // Leading non-data columns (seq, detail toggle, selection) that offset the
-  // grouped header cells' grid placement.
-  const lead = $derived((seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 1 : 0))
-
-  // Summary/footer row appears when any column declares a `summary` aggregate op.
-  const hasSummary = $derived(leafColumns.some((c) => c.summary))
-
-  // Base per-cell style shared by the summary cells (mirrors the body cell base).
-  const summaryCellStyle = (col: IrisTableColumn): string =>
-    `display: flex; align-items: center; justify-content: ${col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
+  const lead = $derived(
+    (rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 1 : 0),
+  )
 
   const gridTemplate = $derived(() => {
     const parts: string[] = []
+    if (rowDrag) parts.push('40px')
     if (seq) parts.push('60px')
     if (hasDetail) parts.push('40px')
     if (showSelection) parts.push('40px')
     for (const col of leafColumns) {
       const override = effectiveWidths[col.key]
-      // React parity (batch AF): width-less columns render `minmax(0, 1fr)`
-      // (fill the container) instead of the fixed 140px fallback; explicit
-      // widths, resized values and `width: 'auto'` keep their tracks.
       if (override != null) parts.push(`${override}px`)
       else if (typeof col.width === 'number') parts.push(`${col.width}px`)
       else if (col.width === 'auto') parts.push('minmax(max-content, max-content)')
@@ -718,15 +732,10 @@
     }
     return parts.join(' ')
   })
-
-  // Editing
   let editingCellId = $state<string | null>(null)
+  let editingColumnKey = $state<string | null>(null)
   let editingDraft = $state('')
   let editError = $state<string | null>(null)
-
-  function cellId(rowIdent: string | number, colKey: string): string {
-    return `${rowIdent}::${colKey}`
-  }
 
   function beginEdit(
     row: Record<string, unknown>,
@@ -735,6 +744,7 @@
   ): void {
     if (!column.editable) return
     editingCellId = cellId(rowIdent, column.key)
+    editingColumnKey = column.key
     const current = getCellValue(row, column)
     editingDraft = current == null ? '' : String(current)
     editError = null
@@ -754,9 +764,9 @@
           ? oldValue
           : Number(draft)
         : draft
-    // Declarative editRules run async (may contain async validators).
     if (column.editRules && column.editRules.length > 0) {
-      void validateEditRulesAsync(column.editRules, draft, row).then(
+      const context = { rows: baseData, columnKey: column.key }
+      void validateEditRulesAsync(column.editRules, draft, row, false, context).then(
         (r: { valid: boolean; messages: string[] }) => {
           if (!r.valid) {
             editError = r.messages[0] ?? null
@@ -767,8 +777,7 @@
       )
       return
     }
-    // A column validator can reject the draft: keep the editor open, surface the
-    // message, and skip the commit until the value is valid (or the user cancels).
+    // A column validator keeps the editor open until the draft is valid.
     if (column.validate) {
       const error = column.validate(newValue, row)
       if (error) {
@@ -788,6 +797,7 @@
   ): void {
     editError = null
     editingCellId = null
+    editingColumnKey = null
     if (newValue !== oldValue) {
       onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
       // Proxy mode: write the committed value into the local page copy so the
@@ -805,50 +815,65 @@
   function cancelEdit(): void {
     editError = null
     editingCellId = null
+    editingColumnKey = null
   }
+
+  const rowMode = $derived(editConfig?.mode === 'row')
+  const rowEdit = createTableRowEditController({
+    getColumns: () => leafColumns,
+    getRows: () => bodyData,
+    getRowId: rowId,
+    getCellValue,
+    onCommit: (event) => {
+      onCellEdit?.(event)
+      if (proxyRef) {
+        const ident = rowId(event.row, event.rowIndex)
+        proxyRows = proxyRows.map((current, index) =>
+          rowId(current, index) === ident
+            ? { ...current, [event.column.key]: event.newValue }
+            : current,
+        )
+      }
+    },
+  })
 
   const stateRowStyle = 'padding: 32px 12px; text-align: center; color: var(--iris-muted)'
 
   // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
   let rootEl = $state<HTMLDivElement | null>(null)
   let focusedCell = $state<{ row: number; col: number } | null>(null)
-  const GRID_NAV_KEYS = new Set([
-    'ArrowUp',
-    'ArrowDown',
-    'ArrowLeft',
-    'ArrowRight',
-    'Home',
-    'End',
-    'PageUp',
-    'PageDown',
-  ])
-  function handleGridKey(e: KeyboardEvent): void {
-    if (!keyboardNavigation || !GRID_NAV_KEYS.has(e.key)) return
-    // Only navigate from a grid cell — never hijack arrows inside an editing
-    // cell's <input> (which carries no data-grid-row).
-    const target = e.target as HTMLElement
-    if (target.dataset.gridRow === undefined) return
-    e.preventDefault()
-    const current = focusedCell ?? { row: 0, col: 0 }
-    const next = nextGridCell(current, e.key as GridNavKey, {
-      rowCount: bodyData.length,
-      colCount: leafColumns.length,
-      pageSize: 10,
-    })
-    focusedCell = next
-    const cell = rootEl?.querySelector<HTMLElement>(
-      `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
-    )
-    cell?.focus()
-  }
 
-  // Roving tabindex: exactly one data cell is tabbable (0); the rest are -1.
-  function cellTabIndex(rowIndex: number, colIndex: number): number {
-    const isActive = focusedCell
-      ? focusedCell.row === rowIndex && focusedCell.col === colIndex
-      : rowIndex === 0 && colIndex === 0
-    return isActive ? 0 : -1
-  }
+  const dragBridge = createTableDragBridge({
+    getRoot: () => rootEl,
+    getRows: () => baseData,
+    getColumns: () => leafColumns,
+    getRowId: rowId,
+    isGrouped: () => grouped,
+    getRowDrag: () => rowDrag,
+    getColumnDrag: () => columnDrag,
+    commitRows: (rows) => {
+      if (hasProxy) proxyRows = rows
+      else localRows = rows
+      onDataChange?.(rows)
+    },
+  })
+  let rowDragSnapshot = $state(dragBridge.rowController.getState())
+  let columnDragSnapshot = $state(dragBridge.columnController.getState())
+  const dragEnabled = $derived(rowDrag !== undefined || columnDrag !== undefined)
+  $effect(() => {
+    if (!dragEnabled) return
+    const stopRow = dragBridge.rowController.subscribe((next) => (rowDragSnapshot = next))
+    const stopColumn = dragBridge.columnController.subscribe((next) => (columnDragSnapshot = next))
+    return () => {
+      stopRow()
+      stopColumn()
+    }
+  })
+  const handleRowDragPointerDown = dragBridge.rowPointerDown
+  const handleColumnDragPointerDown = dragBridge.columnPointerDown
+  const handleDragPointerCancel = dragBridge.cancel
+  const handleDragPointerMove = dragBridge.pointerMove
+  const handleDragPointerUp = dragBridge.pointerUp
 
   // Cell-range selection (opt-in via `cellRange`). The controller is created
   // once; its state is bridged into Svelte via a $state variable subscribed to
@@ -864,45 +889,35 @@
     return unsub
   })
 
-  function isInRange(row: number, col: number): boolean {
-    const { anchor, active } = cellRangeState
-    if (!anchor || !active) return false
-    const minRow = Math.min(anchor.row, active.row)
-    const maxRow = Math.max(anchor.row, active.row)
-    const minCol = Math.min(anchor.col, active.col)
-    const maxCol = Math.max(anchor.col, active.col)
-    return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol
-  }
+  const keyboard = createTableKeyboard({
+    keyboardNavigation: () => keyboardNavigation,
+    cellRange: () => cellRange,
+    clipConfig: () => clipConfig,
+    rows: () => bodyData,
+    columns: () => leafColumns,
+    root: () => rootEl,
+    getFocused: () => focusedCell,
+    setFocused: (next) => (focusedCell = next),
+    range: cellRangeCtrl,
+    getRangeState: () => cellRangeState,
+  })
+  const { handleRootKeyDown, cellTabIndex, isInRange, activeCellRange, copyActiveRange } = keyboard
 
-  function handleCellRangeKey(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      cellRangeCtrl.clearRange()
+  $effect(() => {
+    if (!responsive || !rootEl) {
+      responsiveWidth = 0
       return
     }
-    const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
-    if (!e.shiftKey || !ARROW_KEYS.has(e.key)) return
-    const target = e.target as HTMLElement
-    const rowAttr = target.dataset.irisCellRow
-    const colAttr = target.dataset.irisCellCol
-    if (rowAttr === undefined || colAttr === undefined) return
-    e.preventDefault()
-    const anchor = cellRangeCtrl.getState().anchor
-    const active = anchor
-      ? (cellRangeCtrl.getState().active ?? { row: Number(rowAttr), col: Number(colAttr) })
-      : { row: Number(rowAttr), col: Number(colAttr) }
-    let nextRow = active.row
-    let nextCol = active.col
-    if (e.key === 'ArrowUp') nextRow = Math.max(0, nextRow - 1)
-    else if (e.key === 'ArrowDown') nextRow = Math.min(bodyData.length - 1, nextRow + 1)
-    else if (e.key === 'ArrowLeft') nextCol = Math.max(0, nextCol - 1)
-    else nextCol = Math.min(leafColumns.length - 1, nextCol + 1)
-    cellRangeCtrl.extendRange(nextRow, nextCol)
-  }
-
-  function handleRootKeyDown(e: KeyboardEvent): void {
-    if (keyboardNavigation) handleGridKey(e)
-    if (cellRange) handleCellRangeKey(e)
-  }
+    const el = rootEl
+    const measure = (): void => {
+      responsiveWidth = el.clientWidth
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
 
   // -------- Column virtualization (opt-in) --------
   // Render only the horizontally-visible columns (+ pinned + a small overscan)
@@ -935,31 +950,21 @@
 
   // Set of leaf-column indices to render: the visible window (+ overscan),
   // always unioned with pinned columns. `null` ⇒ render every column (off).
-  const visibleColSet = $derived<Set<number> | null>(
-    (() => {
-      if (!columnVirtualization) return null
-      const cols = leafColumns
-      const w = computeVirtualRange({
-        itemCount: cols.length,
-        scrollTop: scrollLeft,
-        viewportSize: viewportWidth,
-        itemSize: (i) => effectiveWidths[cols[i].key] ?? resolveInitialWidth(cols[i]),
-        buffer: 2,
-      })
-      const set = new Set<number>()
-      for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
-      cols.forEach((col, i) => {
-        if (col.pinned) set.add(i)
-      })
-      return set
-    })(),
+  const visibleColSet = $derived.by<Set<number> | null>(() =>
+    computeVisibleColSet(
+      columnVirtualization,
+      leafColumns,
+      scrollLeft,
+      viewportWidth,
+      effectiveWidths,
+    ),
   )
 
   // 1-based grid track for a leaf-column index (after the optional detail +
   // selection tracks), so a rendered cell lands in the right place even when
   // earlier cells are skipped.
   function colTrack(i: number): number {
-    return (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 2 : 1) + i
+    return (rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 2 : 1) + i
   }
 
   // Sequence numbers (vxe seqConfig parity): a leading read-only column whose
@@ -1015,383 +1020,155 @@
     if (document.getElementById('iris-table-row-styles')) return
     const style = document.createElement('style')
     style.id = 'iris-table-row-styles'
-    style.textContent = `
-[data-iris-table] [role="row"]:hover {
-  --iris-row-bg: var(--iris-surface-hover);
-}
-[data-iris-table-row-selected="true"] {
-  --iris-row-bg: var(--iris-surface-selected);
-}
-`
+    style.textContent = TABLE_STYLES
     document.head.appendChild(style)
   })
 </script>
 
 {#snippet sortIndicator(col: IrisTableColumn)}
-  {@const multiIdx = multiSort ? effectiveMultiSort.findIndex((s) => s.key === col.key) : -1}
-  {@const isActive = multiSort ? multiIdx >= 0 : effectiveSort?.key === col.key}
-  {@const dir = isActive
-    ? multiSort
-      ? effectiveMultiSort[multiIdx]!.direction
-      : effectiveSort!.direction
-    : null}
-  {#if col.sortable}
-    <span
-      aria-hidden="true"
-      style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {isActive
-        ? 'var(--iris-primary)'
-        : 'var(--iris-muted)'}"
-    >
-      <span style="opacity: {dir === 'asc' ? '1' : '0.45'}">▲</span>
-      <span style="opacity: {dir === 'desc' ? '1' : '0.45'}">▼</span>
-    </span>
-    {#if multiSort && multiIdx > 0}
-      <span
-        data-iris-sort-seq=""
-        style="margin-inline-start: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
-        >{multiIdx + 1}</span
-      >
-    {/if}
-  {/if}
+  <TableSortIndicator
+    column={col}
+    {multiSort}
+    multiSortState={effectiveMultiSort}
+    sortState={effectiveSort}
+  />
 {/snippet}
 
-<!-- Search form (vxe-grid formConfig parity). -->
-{#if formConfig}
-  <form
-    data-iris-table-form=""
-    onsubmit={handleFormSubmit}
-    onreset={handleFormReset}
-    style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--iris-space-sm, 12px); padding: var(--iris-space-sm, 12px); border: 1px solid var(--iris-border); border-bottom: none; background: var(--iris-surface); font-size: var(--iris-font-size-sm, 13px)"
-  >
-    {#each formConfig.fields as field}
-      <div data-iris-table-form-field={field.key} style="min-width: 180px">
-        <IrisFormField label={field.label} size="sm">
-          {#if field.type === 'select'}
-            <IrisSelect
-              items={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
-              value={formDraft[field.key] ?? ''}
-              onValueChange={(v) => setFormValue(field.key, String(v ?? ''))}
-              placeholder={field.placeholder ?? t('select.placeholder')}
-              size="sm"
-            />
-          {:else}
-            <IrisInput
-              value={formDraft[field.key] ?? ''}
-              oninput={(e) => setFormValue(field.key, (e.target as HTMLInputElement).value)}
-              placeholder={field.placeholder}
-              size="sm"
-            />
-          {/if}
-        </IrisFormField>
-      </div>
-    {/each}
-    <div style="display: flex; gap: var(--iris-space-xs, 8px)">
-      <IrisButton type="submit" size="sm" data-iris-table-form-submit="">
-        {formConfig.submitText ?? t('table.formSubmit')}
-      </IrisButton>
-      <IrisButton type="reset" variant="outline" size="sm" data-iris-table-form-reset="">
-        {formConfig.resetText ?? t('table.formReset')}
-      </IrisButton>
-    </div>
-  </form>
-{/if}
+<TableTabs tabs={tableTabs} activeKey={tableViews.activeTab} onApply={tableViews.applyTableTab} />
+<TableViews
+  config={views}
+  views={tableViews.viewList}
+  activeKey={tableViews.activeViewKey}
+  onSelect={tableViews.selectView}
+  onSave={tableViews.saveView}
+  onDelete={tableViews.deleteView}
+/>
 
-<!-- Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). -->
-{#if toolbar}
-  <div
-    data-iris-table-toolbar=""
-    style="display: flex; align-items: center; gap: var(--iris-space-sm, 12px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border: 1px solid var(--iris-border); border-bottom: none; border-top-left-radius: var(--iris-radius-md, 6px); border-top-right-radius: var(--iris-radius-md, 6px); background: var(--iris-surface); font-size: var(--iris-font-size-sm, 13px); position: relative"
-  >
-    {#if toolbar.title}
-      <span style="font-weight: 600; color: var(--iris-foreground)">{toolbar.title}</span>
-    {/if}
-    <div style="flex: 1"></div>
-    {#if toolbar.onRefresh}
-      <button
-        type="button"
-        data-iris-table-toolbar-refresh=""
-        onclick={() => {
-          toolbar?.onRefresh?.()
-          // proxy mode: the built-in refresh also re-queries (vxe parity).
-          if (proxyRef) void proxyRef.refetch()
-        }}
-        style="border: none; background: transparent; cursor: pointer; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
-        aria-label={t('table.refresh')}
-        title={t('table.refresh')}>↻</button
-      >
-    {/if}
-    {#if toolbar.onExport}
-      <button
-        type="button"
-        data-iris-table-toolbar-export=""
-        onclick={() => toolbar?.onExport?.()}
-        style="border: none; background: transparent; cursor: pointer; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
-        aria-label={t('table.export')}
-        title={t('table.export')}>⇩</button
-      >
-    {/if}
-    {#if selectable === 'multi' && displaySelection.length > 0 && toolbar.batch}
-      <button
-        type="button"
-        data-iris-table-toolbar-batch=""
-        onclick={() => toolbar?.batch?.onClick([...displaySelection])}
-        style="border: none; cursor: pointer; background: var(--iris-primary); color: var(--iris-primary-foreground); font-size: var(--iris-font-size-md, 14px); display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); border-radius: var(--iris-radius-sm, 4px)"
-        aria-label={toolbar.batch.label}
-        title={toolbar.batch.label}
-      >
-        {#if toolbar.batch.icon}
-          <span aria-hidden="true" style="font-size: var(--iris-font-size-sm, 13px)"
-            >{toolbar.batch.icon}</span
-          >
-        {/if}
-        {toolbar.batch.label}
-      </button>
-    {/if}
-    {#each toolbar.buttons ?? [] as btn}
-      <button
-        type="button"
-        data-iris-table-toolbar-button={btn.key}
-        onclick={btn.onClick}
-        style="border: none; background: transparent; cursor: pointer; color: var(--iris-foreground); font-size: var(--iris-font-size-md, 14px); display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); padding: 0 var(--iris-space-xxs, 4px)"
-        aria-label={btn.label}
-        title={btn.label}
-      >
-        {#if btn.icon}
-          <span aria-hidden="true" style="font-size: var(--iris-font-size-sm, 13px)"
-            >{btn.icon}</span
-          >
-        {/if}
-        {btn.label}
-      </button>
-    {/each}
-  </div>
-{/if}
+<TableChrome
+  config={formConfig}
+  draft={formDraft}
+  setValue={setFormValue}
+  onSubmit={handleFormSubmit}
+  onReset={handleFormReset}
+  {toolbar}
+  {selectable}
+  selectedKeys={displaySelection}
+  refresh={() => {
+    if (proxyRef) void proxyRef.refetch()
+  }}
+  enabled={hasProxy}
+  {pagerConfig}
+  snapshot={proxyState}
+  setParams={(partial) => proxyRef?.setParams(partial)}
+  onPageChange={proxyConfig?.onPageChange}
+  {importPreview}
+  {densityToggle}
+  {effectiveDensity}
+  onDensityToggle={cycleDensity}
+  {t}
+/>
 
 <div
   {...rest}
   bind:this={rootEl}
   role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
   data-iris-table
+  data-density={effectiveDensity}
+  data-printable={printable ? 'true' : undefined}
   data-column-virtualized={columnVirtualization ? 'true' : undefined}
-  onkeydown={keyboardNavigation || cellRange ? handleRootKeyDown : undefined}
+  onkeydown={keyboardNavigation || cellRange || clipConfig ? handleRootKeyDown : undefined}
+  onpointermove={dragEnabled ? handleDragPointerMove : undefined}
+  onpointerup={dragEnabled ? handleDragPointerUp : undefined}
+  onpointercancel={dragEnabled ? handleDragPointerCancel : undefined}
+  onpointerleave={dragEnabled ? handleDragPointerCancel : undefined}
   onscroll={columnVirtualization ? handleRootScroll : undefined}
   style="background: var(--iris-background); color: var(--iris-foreground); font-size: var(--iris-font-size-md, 14px); border: {bordered
     ? '1px solid var(--iris-border)'
-    : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization
+    : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization ||
+  responsiveOverflow
     ? 'auto'
-    : 'hidden'};{style ? ' ' + style : ''}"
+    : 'hidden'};{responsiveOverflow ? ' overflow-x: auto;' : ''}{style ? ' ' + style : ''}"
 >
+  {#if clipConfig && clipConfig.copy !== false && activeCellRange()}
+    <button type="button" data-iris-table-range-copy onclick={copyActiveRange}>
+      {t('table.range.copy')}
+    </button>
+  {/if}
   <!-- Header row -->
-  {#if grouped && headerMatrix}
-    <!-- Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;
-         each cell placed by its leaf-column span (colStart/colSpan) and row span.
-         The BODY still renders the leaf columns; only the header gains rows. -->
-    <div
-      role="row"
-      data-iris-table-row="header"
-      data-iris-table-header-grouped=""
-      style="display: grid; grid-template-columns: {gridTemplate()}; grid-template-rows: repeat({headerMatrix.length}, auto)"
-    >
-      {#if seq}
-        <div
-          role="columnheader"
-          data-iris-table-header="__seq"
-          style="grid-column: 1; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-        ></div>
-      {/if}
-      {#if hasDetail}
-        <div
-          role="columnheader"
-          style="grid-column: {seq
-            ? 2
-            : 1}; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-        ></div>
-      {/if}
-      {#if showSelection}
-        <div
-          role="columnheader"
-          style="grid-column: {(seq ? 1 : 0) +
-            (hasDetail
-              ? 2
-              : 1)}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-        >
-          {#if selectable === 'multi'}
-            <input
-              type="checkbox"
-              checked={allSelected}
-              indeterminate={someSelected}
-              onchange={toggleAll}
-              aria-label={t('table.selectAll')}
-            />
-            {#if selection && selection.length > 0}
-              <span
-                data-iris-table-selected-count=""
-                style="margin-inline-start: var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted); white-space: nowrap"
-              >
-                {t('table.selectedCount', { count: String(selection.length) })}
-              </span>
-            {/if}
-          {/if}
-        </div>
-      {/if}
-      {#each headerMatrix as rowCells}
-        {#each rowCells as cell}
-          {@const col = cell.column}
-          <!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
-          {@const isGroup = !!(col.children && col.children.length > 0)}
-          {@const sortable = !isGroup && col.sortable}
-          <div
-            role="columnheader"
-            data-iris-table-header={col.key}
-            data-iris-table-header-group={isGroup ? '' : undefined}
-            aria-colspan={cell.colSpan}
-            onclick={sortable ? () => handleHeaderClick(col) : undefined}
-            onkeydown={sortable ? (event) => handleHeaderKeyDown(event, col) : undefined}
-            tabindex={sortable ? 0 : undefined}
-            aria-sort={sortable ? sortAria(col) : undefined}
-            style="position: relative; display: flex; align-items: center; justify-content: {isGroup
-              ? 'center'
-              : col.align === 'right'
-                ? 'flex-end'
-                : col.align === 'center'
-                  ? 'center'
-                  : 'flex-start'}; grid-column: {lead +
-              cell.colStart} / span {cell.colSpan}; grid-row: {cell.level +
-              1} / span {cell.rowSpan}; padding: 8px var(--iris-padding-md, 12px); cursor: {sortable
-              ? 'pointer'
-              : 'default'}; user-select: {sortable
-              ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
-          >
-            {col.title}
-            {@render sortIndicator(col)}
-          </div>
-        {/each}
-      {/each}
-    </div>
-  {:else}
-    <div
-      role="row"
-      data-iris-table-header-row
-      style="display: grid; grid-template-columns: {gridTemplate()}"
-    >
-      {#if seq}
-        <div
-          role="columnheader"
-          data-iris-table-header="__seq"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-        ></div>
-      {/if}
-      {#if hasDetail}
-        <div
-          role="columnheader"
-          data-iris-table-header="__expand"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-        ></div>
-      {/if}
-      {#if showSelection}
-        <div
-          role="columnheader"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-        >
-          {#if selectable === 'multi'}
-            <input
-              type="checkbox"
-              checked={allSelected}
-              indeterminate={someSelected}
-              onchange={toggleAll}
-              aria-label={t('table.selectAll')}
-            />
-            {#if selection && selection.length > 0}
-              <span
-                data-iris-table-selected-count=""
-                style="margin-inline-start: var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted); white-space: nowrap"
-              >
-                {t('table.selectedCount', { count: String(selection.length) })}
-              </span>
-            {/if}
-          {/if}
-        </div>
-      {/if}
-      {#each displayColumns as col, ci}
-        {#if !visibleColSet || visibleColSet.has(ci)}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            role="columnheader"
-            data-iris-table-header={col.key}
-            data-iris-table-pinned={col.pinned}
-            onclick={col.sortable ? () => handleHeaderClick(col) : undefined}
-            onkeydown={col.sortable ? (event) => handleHeaderKeyDown(event, col) : undefined}
-            tabindex={col.sortable ? 0 : undefined}
-            aria-sort={sortAria(col)}
-            style="position: relative; display: flex; align-items: center; justify-content: {col.align ===
-            'right'
-              ? 'flex-end'
-              : col.align === 'center'
-                ? 'center'
-                : 'flex-start'};{visibleColSet
-              ? ` grid-column-start: ${colTrack(ci)};`
-              : ''} padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable
-              ? 'pointer'
-              : 'default'}; user-select: {col.sortable
-              ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
-          >
-            {col.title}
-            {@render sortIndicator(col)}
-            {#if resizableColumns}
-              <!-- Draggable resize grip at the header's trailing edge. role=
-                 "separator" + aria-orientation follow the WAI-ARIA window-
-                 splitter pattern; the click-stop keeps a drag from toggling sort.
-                 The grip IS the interactive control (focusable, keyboard-resizable),
-                 so the noninteractive-* a11y heuristics don't apply here. -->
-              <span
-                use:registerResizeHandle={col.key}
-                role="slider"
-                aria-orientation="horizontal"
-                aria-label={t('table.resizeColumn', { column: col.title })}
-                aria-valuenow={effectiveWidths[col.key] ?? resolveInitialWidth(col)}
-                aria-valuemin={col.minWidth ?? DEFAULT_MIN_WIDTH}
-                aria-valuemax={col.maxWidth ?? 10_000}
-                tabindex="0"
-                data-iris-table-resize-handle=""
-                data-column-key={col.key}
-                onclick={(e) => e.stopPropagation()}
-                onkeydown={(e) => onResizeHandleKeydown(e, col)}
-                style="position: absolute; top: 0; right: 0; bottom: 0; width: 6px; border: 0; padding: 0; background: transparent; cursor: col-resize; touch-action: none; user-select: none; z-index: 1"
-              ></span>
-            {/if}
-          </div>
-        {/if}
-      {/each}
-    </div>
+  <TableHeader
+    columns={displayColumns}
+    {grouped}
+    {headerMatrix}
+    {rowDrag}
+    {columnDrag}
+    {columnDragSnapshot}
+    {handleColumnDragPointerDown}
+    {seq}
+    {hasDetail}
+    {showSelection}
+    {selectable}
+    {selection}
+    {allSelected}
+    {someSelected}
+    {toggleAll}
+    {lead}
+    {sortAria}
+    {handleHeaderClick}
+    {handleHeaderKeyDown}
+    {sortIndicator}
+    {gridTemplate}
+    {visibleColSet}
+    {colTrack}
+    {resizableColumns}
+    {registerResizeHandle}
+    {effectiveWidths}
+    {onResizeHandleKeydown}
+    {pinnedDrag}
+    {pinnedBoundaryKey}
+    {resolvePinnedCount}
+    {commitPinnedCount}
+    filterValues={effectiveFilterValues}
+    onFilterOpen={filterController.open}
+    showAsterisk={editConfig?.showAsterisk === true}
+    {t}
+  />
+
+  <TableContextMenu
+    root={rootEl}
+    config={contextMenu}
+    columns={leafColumns}
+    getRows={() => bodyData}
+  />
+
+  {#if filterController.openKey}
+    {@const filterColumn = displayColumns.find((column) => column.key === filterController.openKey)}
+    {#if filterColumn}
+      <TableFilterPanel
+        column={filterColumn}
+        values={filterController.draft}
+        onToggle={filterController.toggle}
+        onApply={() => filterController.apply(filterColumn.key)}
+        onClear={() => filterController.clear(filterColumn.key)}
+        onClose={filterController.close}
+        {t}
+      />
+    {/if}
   {/if}
 
   <!-- Body -->
   {#if tableError}
-    <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-      <span style="margin-inline-end: {onRetry || hasProxy ? 'var(--iris-space-sm, 12px)' : '0px'}">
-        {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
-      </span>
-      {#if onRetry || hasProxy}
-        <button
-          type="button"
-          data-iris-table-retry=""
-          onclick={handleRetry}
-          style="border: 1px solid var(--iris-border); background: var(--iris-surface); color: var(--iris-foreground); border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); cursor: pointer"
-        >
-          {t('table.retry')}
-        </button>
-      {/if}
-    </div>
+    <TableStateRow
+      kind="error"
+      style={stateRowStyle}
+      {errorState}
+      retryable={Boolean(onRetry || hasProxy)}
+      onRetry={handleRetry}
+      {t}
+    />
   {:else if tableLoading}
-    <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
-      {#if loadingState}{@render loadingState()}{:else}{t('table.loading')}{/if}
-    </div>
+    <TableStateRow kind="loading" style={stateRowStyle} {loadingState} retryable={false} {t} />
   {:else if bodyData.length === 0}
-    <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
-      {#if emptyState}{@render emptyState()}{:else}{t('table.empty')}{/if}
-    </div>
+    <TableStateRow kind="empty" style={stateRowStyle} {emptyState} retryable={false} {t} />
   {:else if useVirtual}
     <!-- Virtualize flat mode, and tree mode too — tree rows are uniform height,
          so the only thing that bars it is variable-height detail panels, hence
@@ -1455,26 +1232,42 @@
   )}
     {@const id = rowId(row, index)}
     {@const selected = isSelected(id)}
+    {@const rowEditing = rowMode && rowEdit.active?.key === id}
     <!-- svelte-ignore a11y_interactive_supports_focus -->
     <div
       role="row"
       aria-selected={selectable !== 'none' ? selected : undefined}
       data-iris-table-row
+      data-iris-table-row-key={String(id)}
+      data-iris-table-row-index={index}
+      data-iris-row-editing={rowEditing ? 'true' : undefined}
       data-state={selected ? 'selected' : undefined}
       aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
       aria-setsize={treeMeta ? treeMeta.setSize : undefined}
       aria-posinset={treeMeta ? treeMeta.posInset : undefined}
       onclick={onRowClick ? () => onRowClick(row, index) : undefined}
-      onkeydown={onRowClick ? (event) => handleRowKeyDown(event, row, index) : undefined}
+      onkeydown={onRowClick
+        ? (event) => handleTableRowKeyDown(event, row, index, onRowClick)
+        : undefined}
       tabindex={onRowClick ? 0 : undefined}
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
         ? ' height: 100%;'
         : ''} background: {selected
         ? 'var(--iris-surface-selected)'
-        : striped && index % 2 === 1
-          ? 'var(--iris-surface)'
-          : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease; cursor: default"
+        : rowEditing
+          ? 'var(--iris-surface-selected)'
+          : striped && index % 2 === 1
+            ? 'var(--iris-surface)'
+            : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease; cursor: default"
     >
+      {#if rowDrag}
+        <TableDragHandle
+          id={String(id)}
+          active={rowDragSnapshot.activeId === String(id)}
+          over={rowDragSnapshot.overId === String(id)}
+          onPress={(event) => handleRowDragPointerDown(event, String(id))}
+        />
+      {/if}
       {#if seq}
         <div
           role="cell"
@@ -1530,7 +1323,16 @@
           {@const spanKey = `${index}:${ci}`}
           {@const spanEntry = spanPlan?.spans.get(spanKey)}
           {@const spanCovered = spanPlan ? spanPlan.occupied.has(spanKey) : false}
-          {@const isEditing = editingCellId === cellId(id, col.key)}
+          {@const editId = cellId(id, col.key)}
+          {@const rowSession = rowMode ? rowEdit.session(editId) : undefined}
+          {@const isEditing = rowSession !== undefined || (!rowMode && editingCellId === editId)}
+          {@const patternHint =
+            (pattern || patternFill) &&
+            !rowMode &&
+            editingColumnKey === col.key &&
+            !isEditing &&
+            editingDraft !== '' &&
+            String(getCellValue(row, col) ?? '') === editingDraft}
           {#if !spanCovered}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
@@ -1539,6 +1341,7 @@
               data-iris-table-pinned={col.pinned}
               data-editable={col.editable ? '' : undefined}
               data-editing={isEditing ? '' : undefined}
+              data-iris-input-hint={patternHint ? 'true' : undefined}
               data-grid-row={keyboardNavigation ? index : undefined}
               data-grid-col={keyboardNavigation ? ci : undefined}
               data-iris-cell-row={cellRange ? index : undefined}
@@ -1548,15 +1351,19 @@
               onfocus={keyboardNavigation
                 ? () => (focusedCell = { row: index, col: ci })
                 : undefined}
-              onclick={cellRange
-                ? (e: MouseEvent) => {
-                    if (e.shiftKey) {
-                      cellRangeCtrl.extendRange(index, ci)
-                    } else {
-                      cellRangeCtrl.startRange(index, ci)
+              onclick={rowMode && editConfig?.trigger !== 'manual'
+                ? () => rowEdit.handleCellClick(row, col, index, id)
+                : cellRange
+                  ? (e: MouseEvent) => {
+                      if (e.shiftKey) {
+                        cellRangeCtrl.extendRange(index, ci)
+                      } else {
+                        cellRangeCtrl.startRange(index, ci)
+                      }
                     }
-                  }
-                : undefined}
+                  : editConfig?.trigger === 'click' && col.editable
+                    ? () => beginEdit(row, col, id)
+                    : undefined}
               onkeydown={cellRange
                 ? (event) => {
                     if (event.key !== 'Enter' && event.key !== ' ') return
@@ -1565,7 +1372,13 @@
                     else cellRangeCtrl.startRange(index, ci)
                   }
                 : undefined}
-              ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
+              ondblclick={rowMode && editConfig?.trigger !== 'manual'
+                ? () => rowEdit.switchTo(row, index, col.key)
+                : col.editable &&
+                    editConfig?.trigger !== 'click' &&
+                    editConfig?.trigger !== 'manual'
+                  ? () => beginEdit(row, col, id)
+                  : undefined}
               style="display: flex; align-items: center; justify-content: {(col.align ??
                 (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
                 ? 'flex-end'
@@ -1581,6 +1394,8 @@
                 ? 'cell'
                 : 'default'}{cellRange && isInRange(index, ci)
                 ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
+                : ''}{isEditing ? '; flex-wrap: wrap' : ''}{patternHint
+                ? '; background-image: linear-gradient(var(--iris-input-hint, rgba(251, 191, 36, 0.16)), var(--iris-input-hint, rgba(251, 191, 36, 0.16)))'
                 : ''}"
             >
               {#if treeMeta && ci === 0}
@@ -1611,44 +1426,33 @@
                 </span>
               {/if}
               {#if isEditing}
-                <input
-                  type={col.editor === 'number' ? 'number' : 'text'}
-                  value={editingDraft}
-                  data-iris-table-editor
-                  aria-invalid={editError ? 'true' : undefined}
-                  aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
-                  oninput={(e) => {
-                    editingDraft = (e.target as HTMLInputElement).value
+                <TableCellEditor
+                  type={col.editor}
+                  value={rowMode ? (rowSession?.draft ?? '') : editingDraft}
+                  error={rowMode ? (rowSession?.error ?? null) : editError}
+                  errorId={`${editId}-error`}
+                  onInput={(value) => {
+                    if (rowMode) rowEdit.setDraft(editId, value)
+                    else editingDraft = value
                   }}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      commitEdit(row, col, index)
-                    } else if (e.key === 'Escape') {
-                      e.preventDefault()
-                      cancelEdit()
-                    }
+                  onCommit={() => {
+                    if (rowMode) rowEdit.commit(editId, row, col, index, id)
+                    else commitEdit(row, col, index)
                   }}
-                  onblur={() => commitEdit(row, col, index)}
-                  onclick={(e) => e.stopPropagation()}
-                  style="width: 100%; border: 1px solid {editError
-                    ? 'var(--iris-danger)'
-                    : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px); font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+                  onCancel={() => (rowMode ? rowEdit.cancel() : cancelEdit())}
+                  showPreview={editPreview && col.formatter !== undefined}
+                  preview={editPreview && col.formatter !== undefined
+                    ? editPreviewText(row, col, rowMode ? (rowSession?.draft ?? '') : editingDraft)
+                    : undefined}
+                  onTab={rowMode && rowSession
+                    ? (direction) => rowEdit.tab(editId, row, col, index, id, direction)
+                    : undefined}
+                  inputRef={rowMode ? (node) => rowEdit.registerInput(col.key, node) : undefined}
                 />
-                {#if editError}
-                  <div
-                    id={`${cellId(id, col.key)}-error`}
-                    role="alert"
-                    data-iris-table-editor-error
-                    style="margin-top: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
-                  >
-                    {editError}
-                  </div>
-                {/if}
               {:else if col.render}
                 {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
               {:else}
-                {String(getCellValue(row, col) ?? '')}
+                {tableDisplayText(row, col)}
               {/if}
             </div>
           {/if}
@@ -1656,89 +1460,29 @@
       {/each}
     </div>
   {/snippet}
-
-  <!-- Summary / footer row: each column with a `summary` op aggregates over the
-       full sorted dataset (the core `aggregate` material). -->
-  {#if !tableError && !tableLoading && bodyData.length > 0 && hasSummary}
-    <div
-      role="row"
-      data-iris-table-row="summary"
-      style="display: grid; grid-template-columns: {gridTemplate()}; font-weight: 600; border-top: 2px solid var(--iris-border); background: var(--iris-surface)"
-    >
-      {#if seq}
-        <div
-          role="cell"
-          data-iris-table-cell="__seq"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
-        ></div>
-      {/if}
-      {#if showSelection}
-        <div
-          role="cell"
-          data-iris-table-cell="__selection"
-          style={summaryCellStyle({ key: '__selection' } as IrisTableColumn)}
-        ></div>
-      {/if}
-      {#each leafColumns as col, ci}
-        {#if !visibleColSet || visibleColSet.has(ci)}
-          {@const op = col.summary}
-          {@const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null}
-          <div
-            role="cell"
-            data-iris-table-cell={col.key}
-            data-iris-table-summary-cell={op ? '' : undefined}
-            style="{summaryCellStyle(col)}{visibleColSet
-              ? `; grid-column-start: ${colTrack(ci)}`
-              : ''}"
-          >
-            {#if op != null && value != null}{col.renderSummary
-                ? col.renderSummary(value, bodyData)
-                : String(value)}{/if}
-          </div>
-        {/if}
-      {/each}
-    </div>
-  {/if}
-
-  <!-- Server-side pager (vxe-grid proxyConfig parity): driven by the
-       controller's page/pageSize/total; page changes call setParams and
-       proxyConfig.onPageChange. -->
-  {#if hasProxy}
-    <div
-      data-iris-table-pager=""
-      style="display: flex; justify-content: flex-end; align-items: center; padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border-top: 1px solid var(--iris-border); background: var(--iris-surface)"
-    >
-      <div style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px)">
-        {#if pagerConfig?.showTotal}
-          <span data-iris-table-total="" style="color: var(--iris-muted); white-space: nowrap">
-            {t('table.total', { total: String(proxyState.total) })}
-          </span>
-        {/if}
-        {#if pagerConfig?.pageSizes && pagerConfig.pageSizes.length > 0}
-          <IrisSelect
-            items={(pagerConfig.pageSizes ?? []).map((s) => ({
-              value: String(s),
-              label: `${s} / ${t('table.page')}`,
-            }))}
-            value={String(proxyState.params.pageSize)}
-            onValueChange={(v) => {
-              const size = Number(v)
-              proxyRef?.setParams({ pageSize: size, page: 1 })
-              proxyConfig?.onPageChange?.(1, size)
-            }}
-            aria-label={t('table.pageSize')}
-          />
-        {/if}
-        <IrisPagination
-          total={proxyState.total}
-          pageSize={proxyState.params.pageSize}
-          value={proxyState.params.page}
-          onchange={(page) => {
-            proxyRef?.setParams({ page })
-            proxyConfig?.onPageChange?.(page, proxyState.params.pageSize)
-          }}
-        />
-      </div>
-    </div>
+  {#if !tableError && !tableLoading}
+    <TableSummary
+      {bodyData}
+      {leafColumns}
+      {rowDrag}
+      {seq}
+      {hasDetail}
+      {showSelection}
+      {visibleColSet}
+      {gridTemplate}
+      {colTrack}
+      {getCellValue}
+    />
   {/if}
 </div>
+{#if responsive && responsiveOverflow && !printable}
+  <div
+    data-iris-scroll-hint=""
+    role="status"
+    aria-live="polite"
+    style="display: flex; align-items: center; gap: var(--iris-space-xxs, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px); color: var(--iris-muted); background: var(--iris-surface); border-inline: 1px solid var(--iris-border); border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-sm, 13px)"
+  >
+    <span aria-hidden="true">⇆</span>
+    <span>{t('table.scrollHint')}</span>
+  </div>
+{/if}

@@ -7,13 +7,14 @@ import {
   onCleanup,
   Show,
   untrack,
-  For,
   type JSX,
 } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useI18n } from '../../i18n'
+import { SelectOptions } from './SelectOptions'
+import { SELECT_LISTBOX_MAX_HEIGHT, SELECT_ROW_HEIGHT, SELECT_SIZE_MAP } from './select-constants'
 import {
   createKeyboardNav,
   createVirtualizer,
@@ -57,31 +58,6 @@ export interface IrisSelectProps<T = unknown> {
    * keyboard navigation scrolls the active option into view. Default false.
    */
   virtual?: boolean
-}
-
-/** Listbox maxHeight — the virtualizer's viewport (px). */
-const LISTBOX_MAX_HEIGHT = 240
-/** Fixed per-option row height (px) — option padding 6+6 + 14px line ≈ 32px
- *  plus the 4px inter-row gap; estimate, never measured (combobox approach). */
-const ROW_HEIGHT = 36
-
-const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> = {
-  sm: {
-    padding: '4px 24px 4px 8px',
-    fontSize: 'var(--iris-font-size-xs, 12px)',
-    minHeight: '28px',
-  },
-  md: {
-    padding:
-      'var(--iris-padding-sm, 6px) var(--iris-space-xl, 24px) var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
-    fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: '34px',
-  },
-  lg: {
-    padding: '8px 32px 8px 12px',
-    fontSize: 'var(--iris-font-size-lg, 16px)',
-    minHeight: '40px',
-  },
 }
 
 /**
@@ -186,9 +162,9 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
       if (!vInstance) {
         vInstance = createVirtualizer({
           count: 0,
-          estimateSize: () => ROW_HEIGHT,
+          estimateSize: () => SELECT_ROW_HEIGHT,
           getItemKey: (i) => String(itemsMemo()[i]?.value ?? i),
-          viewportSize: LISTBOX_MAX_HEIGHT,
+          viewportSize: SELECT_LISTBOX_MAX_HEIGHT,
           buffer: 4,
         })
       }
@@ -216,7 +192,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
     v.setCount(itemsMemo().length)
     const el = listboxEl
     if (el) {
-      const max = Math.max(0, v.totalSize() - LISTBOX_MAX_HEIGHT)
+      const max = Math.max(0, v.totalSize() - SELECT_LISTBOX_MAX_HEIGHT)
       if (el.scrollTop > max) el.scrollTop = max
     }
   })
@@ -240,8 +216,8 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
     const el = listboxEl
     if (!el) return
     const top = el.scrollTop
-    const start = index * ROW_HEIGHT
-    if (start >= top && start + ROW_HEIGHT <= top + LISTBOX_MAX_HEIGHT) return
+    const start = index * SELECT_ROW_HEIGHT
+    if (start >= top && start + SELECT_ROW_HEIGHT <= top + SELECT_LISTBOX_MAX_HEIGHT) return
     el.scrollTop = vInstance.scrollToIndex(index, start < top ? 'start' : 'end')
   }
 
@@ -327,7 +303,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
     setOpen(false)
   }
 
-  const sz = createMemo(() => SIZE_MAP[merged.size])
+  const sz = createMemo(() => SELECT_SIZE_MAP[merged.size])
 
   const listboxContent = (): JSX.Element => (
     <div
@@ -356,147 +332,21 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         'z-index': 1000,
       }}
     >
-      <Show when={merged.items.length === 0}>
-        <div
-          data-iris-select-empty=""
-          style={{
-            padding: 'var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px)',
-            color: 'var(--iris-muted)',
-            'font-size': 'var(--iris-font-size-sm, 13px)',
-            'text-align': 'center',
-          }}
-        >
-          {t('select.empty')}
-        </div>
-      </Show>
-      <Show
-        when={virtualizer() !== null && itemsMemo().length > 0}
-        fallback={
-          <For each={merged.items}>
-            {(item, index) => {
-              const i = index()
-              const isActive = () => i === activeIndex()
-              const isSelected = () =>
-                merged.multiple
-                  ? selectedValues().includes(item.value)
-                  : item.value === currentValue()
-              return (
-                <div
-                  role="option"
-                  aria-selected={isSelected() ? 'true' : 'false'}
-                  aria-disabled={item.disabled ? 'true' : undefined}
-                  data-iris-select-option=""
-                  onMouseDown={(e) => e.preventDefault()}
-                  onMouseEnter={() => !item.disabled && setActiveIndex(i)}
-                  onClick={() => selectItem(item)}
-                  style={{
-                    padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
-                    'font-size': sz().fontSize,
-                    'border-radius': 'var(--iris-radius-sm, 4px)',
-                    cursor: item.disabled ? 'not-allowed' : 'pointer',
-                    color: item.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                    background: isSelected()
-                      ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-                      : isActive()
-                        ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                        : 'transparent',
-                    'font-weight': isSelected() ? '600' : '400',
-                  }}
-                >
-                  <span style={{ flex: '1', 'min-width': '0' }}>
-                    {item.label ?? String(item.value)}
-                  </span>
-                  <Show when={isSelected()}>
-                    <svg
-                      aria-hidden="true"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--iris-primary)"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                  </Show>
-                </div>
-              )
-            }}
-          </For>
-        }
-      >
-        <div
-          role="presentation"
-          aria-hidden="true"
-          data-iris-select-spacer=""
-          data-iris-select-spacer-type="top"
-          style={{ height: `${vstate().offsetBefore}px` }}
-        />
-        <For each={windowed()}>
-          {(w) => {
-            const isActive = () => w.index === activeIndex()
-            const isSelected = () => w.opt.value === currentValue()
-            return (
-              <div
-                role="option"
-                aria-selected={isSelected() ? 'true' : 'false'}
-                aria-disabled={w.opt.disabled ? 'true' : undefined}
-                aria-setsize={merged.items.length}
-                aria-posinset={w.index + 1}
-                data-iris-select-option=""
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => !w.opt.disabled && setActiveIndex(w.index)}
-                onClick={() => selectItem(w.opt)}
-                style={{
-                  padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
-                  'font-size': sz().fontSize,
-                  'border-radius': 'var(--iris-radius-sm, 4px)',
-                  cursor: w.opt.disabled ? 'not-allowed' : 'pointer',
-                  color: w.opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                  background: isSelected()
-                    ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-                    : isActive()
-                      ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                      : 'transparent',
-                  'font-weight': isSelected() ? '600' : '400',
-                }}
-              >
-                <span style={{ flex: '1', 'min-width': '0' }}>
-                  {w.opt.label ?? String(w.opt.value)}
-                </span>
-                <Show when={isSelected()}>
-                  <svg
-                    aria-hidden="true"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--iris-primary)"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                </Show>
-              </div>
-            )
-          }}
-        </For>
-        <div
-          role="presentation"
-          aria-hidden="true"
-          data-iris-select-spacer=""
-          data-iris-select-spacer-type="bottom"
-          style={{
-            height: `${
-              vstate().totalSize - vstate().offsetBefore - vstate().items.length * ROW_HEIGHT
-            }px`,
-          }}
-        />
-      </Show>
+      <SelectOptions
+        items={itemsMemo}
+        multiple={merged.multiple ?? false}
+        currentValue={currentValue}
+        selectedValues={selectedValues}
+        activeIndex={activeIndex}
+        fontSize={() => sz().fontSize}
+        virtual={() => virtualizer() !== null}
+        virtualState={vstate}
+        windowed={windowed}
+        rowHeight={SELECT_ROW_HEIGHT}
+        emptyLabel={t('select.empty')}
+        onFocus={setActiveIndex}
+        onSelect={selectItem}
+      />
     </div>
   )
 

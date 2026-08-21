@@ -45,17 +45,8 @@ export interface UseFocusTrapOptions {
   initialFocus?: boolean
 }
 
-/**
- * Wire inside a component with `$effect`. Attach/detach automatically.
- *
- * ```ts
- * useFocusTrap({ container: () => containerEl, active: () => open })
- * ```
- */
-export function useFocusTrap(options: UseFocusTrapOptions): void {
-  let previouslyFocused: HTMLElement | null = null
-
-  const onKeyDown = (event: KeyboardEvent): void => {
+function createFocusTrapKeyHandler(options: UseFocusTrapOptions): (event: KeyboardEvent) => void {
+  return (event: KeyboardEvent): void => {
     if (!options.active() || event.key !== 'Tab') return
     const root = options.container()
     if (!root) return
@@ -74,13 +65,24 @@ export function useFocusTrap(options: UseFocusTrapOptions): void {
         event.preventDefault()
         last.focus()
       }
-    } else {
-      if (active === last || !root.contains(active)) {
-        event.preventDefault()
-        first.focus()
-      }
+    } else if (active === last || !root.contains(active)) {
+      event.preventDefault()
+      first.focus()
     }
   }
+}
+
+/**
+ * Wire inside a component with `$effect`. Attach/detach automatically.
+ *
+ * ```ts
+ * useFocusTrap({ container: () => containerEl, active: () => open })
+ * ```
+ */
+export function useFocusTrap(options: UseFocusTrapOptions): void {
+  let previouslyFocused: HTMLElement | null = null
+
+  const onKeyDown = createFocusTrapKeyHandler(options)
 
   const activate = (): void => {
     if (typeof document === 'undefined') return

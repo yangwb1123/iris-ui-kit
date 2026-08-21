@@ -114,6 +114,15 @@ describe('IrisButton', () => {
     expect(style).toMatch(/padding:\s*0(?:px)?(?:\s*;|$)/)
   })
 
+  it('size uses the shared control-height tokens', () => {
+    const sm = mount(IrisButton, { props: { size: 'sm' } }).attributes('style') ?? ''
+    const md = mount(IrisButton, { props: { size: 'md' } }).attributes('style') ?? ''
+    const lg = mount(IrisButton, { props: { size: 'lg' } }).attributes('style') ?? ''
+    expect(sm).toContain('var(--iris-control-height-sm, 28px)')
+    expect(md).toContain('var(--iris-control-height-md, 34px)')
+    expect(lg).toContain('var(--iris-control-height-lg, 40px)')
+  })
+
   it('installs styles only once across multiple mounts', () => {
     mount(IrisButton)
     mount(IrisButton)

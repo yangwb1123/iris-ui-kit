@@ -74,6 +74,29 @@ describe('@iris-ui-kit/react IrisTable context quick actions (batch BW, iris 独
     expect(menuItem('__iris-clear-cell')).not.toBeNull()
   })
 
+  it('format actions are opt-in and use the normal data-change funnel', () => {
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        contextMenu={{ items: () => [], onSelect: vi.fn(), formatActions: true }}
+        onDataChange={onDataChange}
+      />,
+    )
+    openMenu(1, 'age')
+    expect(menuItems().map((i) => i.textContent)).toEqual([
+      'Copy value',
+      'Clear cell',
+      'Format number (2 decimals)',
+      'Uppercase text',
+    ])
+    fireEvent.click(menuItem('__iris-format-number')!)
+    expect(onDataChange).toHaveBeenCalledTimes(1)
+    expect((onDataChange.mock.calls[0]![0] as Row[])[0]!.age).toBe('25.00')
+  })
+
   it('copy/clear sit after the distribution+summary built-ins and BEFORE annotate', () => {
     render(
       <IrisTable

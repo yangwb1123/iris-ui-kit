@@ -33,6 +33,33 @@ export interface UseFocusTrapOptions {
   initialFocus?: boolean
 }
 
+function createFocusTrapKeyHandler(options: UseFocusTrapOptions): (event: KeyboardEvent) => void {
+  return (event: KeyboardEvent): void => {
+    if (!options.active.value || event.key !== 'Tab') return
+    const root = options.container.value
+    if (!root) return
+    const focusables = getFocusable(root)
+    if (focusables.length === 0) {
+      event.preventDefault()
+      root.focus()
+      return
+    }
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    const active = document.activeElement as HTMLElement | null
+
+    if (event.shiftKey) {
+      if (active === first || !root.contains(active)) {
+        event.preventDefault()
+        last.focus()
+      }
+    } else if (active === last || !root.contains(active)) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+}
+
 /**
  * Constrain Tab / Shift+Tab focus traversal to descendants of `container`.
  *
@@ -52,32 +79,7 @@ export interface UseFocusTrapOptions {
 export function useFocusTrap(options: UseFocusTrapOptions): void {
   let previouslyFocused: HTMLElement | null = null
 
-  const onKeyDown = (event: KeyboardEvent) => {
-    if (!options.active.value || event.key !== 'Tab') return
-    const root = options.container.value
-    if (!root) return
-    const focusables = getFocusable(root)
-    if (focusables.length === 0) {
-      event.preventDefault()
-      root.focus()
-      return
-    }
-    const first = focusables[0]!
-    const last = focusables[focusables.length - 1]!
-    const active = document.activeElement as HTMLElement | null
-
-    if (event.shiftKey) {
-      if (active === first || !root.contains(active)) {
-        event.preventDefault()
-        last.focus()
-      }
-    } else {
-      if (active === last || !root.contains(active)) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-  }
+  const onKeyDown = createFocusTrapKeyHandler(options)
 
   const activate = () => {
     if (typeof document === 'undefined') return

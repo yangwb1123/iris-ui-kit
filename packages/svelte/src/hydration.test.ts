@@ -79,6 +79,7 @@ import IrisSpinner from './primitives/spinner/IrisSpinner.svelte'
 import Input from './primitives/input/Input.svelte'
 import IrisCheckbox from './primitives/checkbox/IrisCheckbox.svelte'
 import Switch from './primitives/switch/Switch.svelte'
+import IrisTable from './primitives/table/IrisTable.svelte'
 
 // Each case is an SSR-safe, non-overlay component (no portal / floating-ui /
 // document-dependent render path). FormField + Accordion are included
@@ -118,6 +119,16 @@ const cases: { name: string; Comp: Component<never>; props: Record<string, unkno
     props: { label: 'Email', error: 'Required' },
   },
   { name: 'Accordion', Comp: AccordionHarness as Component<never>, props: {} },
+  {
+    name: 'Table (printable)',
+    Comp: IrisTable as unknown as Component<never>,
+    props: {
+      columns: [{ key: 'name', title: 'Name' }],
+      data: [{ id: 1, name: 'Alpha' }],
+      rowKey: 'id',
+      printable: true,
+    },
+  },
 ]
 
 afterEach(() => {
@@ -188,6 +199,34 @@ describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overl
     expect(body).toContain('background: black')
     expect(body).toContain('color: blue')
     expect(body).toContain('data-iris-button-variant="solid"')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('Table printable SSR emits the shared print marker', () => {
+    const { body, errors, warnings } = ssr(IrisTable as unknown as Component<never>, {
+      columns: [{ key: 'name', title: 'Name' }],
+      data: [{ id: 1, name: 'Alpha' }],
+      rowKey: 'id',
+      printable: true,
+    })
+    expect(body).toContain('data-printable="true"')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('Table proxy SSR keeps non-empty remote filters without running the query', () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 1, name: 'Alice' }], total: 1 }))
+    const { body, errors, warnings } = ssr(IrisTable as unknown as Component<never>, {
+      columns: [{ key: 'name', title: 'Name' }],
+      data: [],
+      rowKey: 'id',
+      filters: { name: 'Alice' },
+      proxyConfig: { query, remoteFilter: true },
+    })
+    expect(query).not.toHaveBeenCalled()
+    expect(body).toContain('data-iris-table-row="empty"')
+    expect(body).not.toContain('data-iris-table-row="loading"')
     expect(errors).toEqual([])
     expect(warnings).toEqual([])
   })

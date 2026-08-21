@@ -64,11 +64,11 @@ export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(func
     display: 'inline-flex',
     alignItems: 'center',
     gap: 'var(--iris-space-xs, 8px)',
-    background: 'var(--iris-background)',
+    background: rest.readOnly ? 'var(--iris-surface)' : 'var(--iris-background)',
     color: 'var(--iris-foreground)',
     border: `1px solid ${borderColor}`,
     borderRadius: 'var(--iris-radius-md, 6px)',
-    cursor: rest.disabled ? 'not-allowed' : 'text',
+    cursor: rest.disabled ? 'not-allowed' : rest.readOnly ? 'default' : 'text',
     opacity: rest.disabled ? 0.6 : 1,
     transition: 'border-color 120ms ease, box-shadow 120ms ease',
     boxShadow,
@@ -94,7 +94,7 @@ export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(func
     <label
       data-iris-input=""
       data-iris-input-size={size}
-      data-state={invalid ? 'invalid' : focused ? 'focused' : 'idle'}
+      data-state={invalid ? 'invalid' : focused ? 'focused' : rest.readOnly ? 'readonly' : 'idle'}
       style={wrapperStyle}
     >
       {prefix ? (

@@ -1,9 +1,32 @@
+import type {
+  TableNamedView,
+  TableTab,
+  TableViewConfig,
+  TableViewSnapshot,
+} from '@iris-ui-kit/core'
+
 export type IrisTableSortDirection = 'asc' | 'desc'
+
+/** Table row-density preset. */
+export type IrisTableDensity = 'comfortable' | 'compact' | 'cozy'
+
+/** Clipboard range-copy options. Invalid runtime formats fall back to TSV. */
+export interface IrisTableClipConfig {
+  copy?: boolean
+  paste?: boolean
+  copyFormat?: 'tsv' | 'csv' | 'html'
+  copyWithFormat?: boolean
+}
 
 export interface IrisTableSortState {
   key: string
   direction: IrisTableSortDirection
 }
+
+export type IrisTableViewConfig = TableViewConfig
+export type IrisTableViewSnapshot = TableViewSnapshot
+export type IrisTableNamedView = TableNamedView<IrisTableViewSnapshot>
+export type IrisTableTab = TableTab
 
 export type IrisTableEditor = 'text' | 'number'
 
@@ -14,9 +37,19 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string
   dataIndex?: keyof Row | string
+  /** Format the masked display value; copyWithFormat uses this string. */
+  formatter?: (value: unknown, row: Row) => unknown
+  /** Mask the display/copy value before the formatter. */
+  mask?: 'sensitive' | ((value: unknown) => string)
+  /** Copy/export the raw value instead of the masked value (formatter copy remains masked). */
+  exportRaw?: boolean
   sortable?: boolean
   /** Custom client-side filter (vxe filter-method parity). Return true to keep the row. Overrides the default case-insensitive substring match. */
   filterMethod?: (value: unknown, row: Row, filterValue: string) => boolean
+  /** Show a checkbox filter trigger in the header. */
+  filterable?: boolean
+  /** Checkbox options rendered by the filter panel. */
+  filterOptions?: IrisTableFilterOption[]
   width?: number | string
   minWidth?: number
   maxWidth?: number
@@ -81,6 +114,60 @@ export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   oldValue: unknown
   newValue: unknown
   rowIndex: number
+}
+
+/** Inline-edit configuration (vxe-grid editConfig parity). */
+export interface IrisTableEditConfig {
+  /** What opens the editor. Default is `'dblclick'`. */
+  trigger?: 'click' | 'dblclick' | 'manual'
+  /** Show a required asterisk next to headers of columns with rules. */
+  showAsterisk?: boolean
+  /** Drop the draft when opening another cell without committing. */
+  autoClear?: boolean
+  /** `'row'` opens every editable column in the clicked row together. */
+  mode?: 'cell' | 'row'
+}
+
+/** Column drag-sort (vxe columnDragConfig parity). Group headers are not draggable. */
+export interface IrisTableColumnDrag {
+  /** Called with the reordered leaf-column array after a drop. */
+  onReorder: (columns: IrisTableColumn[]) => void
+}
+
+/** One checkbox option in a column filter panel. */
+export interface IrisTableFilterOption {
+  value: string
+  label: string
+}
+
+/** Per-column checked values; values within one column are OR-matched. */
+export type IrisTableFilterValues = Record<string, string[]>
+
+/** One right-click context-menu item. */
+export interface IrisTableContextMenuItem {
+  key: string
+  label: string
+  disabled?: boolean
+}
+
+/** Coordinates delivered to the table context-menu callbacks. */
+export interface IrisTableContextMenuParams {
+  row: Record<string, unknown>
+  column: IrisTableColumn
+  rowIndex: number
+  columnIndex: number
+}
+
+/** Right-click menu configuration for body leaf cells. */
+export interface IrisTableContextMenuConfig {
+  items: (params: IrisTableContextMenuParams) => IrisTableContextMenuItem[]
+  onSelect: (key: string, params: IrisTableContextMenuParams) => void
+}
+
+/** Row drag-sort (vxe rowDragConfig parity). */
+export interface IrisTableRowDrag {
+  /** Called with the reordered row array after a drop. */
+  onReorder: (rows: Array<Record<string, unknown>>) => void
 }
 
 export interface IrisTableVirtualOptions {
@@ -172,6 +259,36 @@ export interface IrisTableProxyConfig {
   onPageChange?: (page: number, pageSize: number) => void
 }
 
+/** Imperative proxy/view handle (vxe loadData/reloadData/commitProxy parity). */
+export interface IrisTableHandle {
+  /** Replace the live rows without issuing a query. */
+  loadData: (rows: Array<Record<string, unknown>>) => void
+  /** Re-fetch the current proxy page; a local table is a no-op. */
+  reloadData: () => void
+  /** Merge query parameters and request the current proxy page. */
+  commitProxy: (overrides: Partial<IrisTableProxyQueryParams>) => void
+  /** Return the current proxy page snapshot, or null in local mode. */
+  getProxyInfo: () => { page: number; pageSize: number; total: number } | null
+  /** Clear the single and multi sort channels. */
+  clearSort: () => void
+  /** Clear the applied text/form filters and proxy filter channel. */
+  clearFilter: () => void
+  /** Remove rows by row-key without issuing a query; missing keys are no-ops. */
+  removeRows: (keys: Array<string | number>) => void
+  /** Snapshot (copy) of the currently filtered + sorted body rows. */
+  getFilteredData: () => Array<Record<string, unknown>>
+  /** Serialize the current filtered/sorted row view using visible leaf columns. */
+  exportCurrentViewCsv: () => string
+  /** Serialize the current view plus named bare row sets as CSV segments. */
+  exportMultiCsv: () => string
+  /** Compare two exported-state JSON strings; never throws on invalid input. */
+  compareStates: (a: string, b: string) => string
+  /** Scroll the rendered row with `key` into view; missing/virtualized rows are no-ops. */
+  scrollToRow: (key: string | number) => void
+  /** Scroll and transiently highlight the rendered row with `key`; the target clears after 2s. */
+  goToRow: (key: string | number) => void
+}
+
 /** Pager options (vxe-grid pagerConfig parity). */
 export interface IrisTablePagerConfig {
   /** Rows-per-page options rendered as a size selector next to the pager. A
@@ -224,6 +341,8 @@ export interface IrisTableToolbarConfig {
   onRefresh?: () => void
   /** Fired by the export button (vxe toolbar export parity). */
   onExport?: () => void
+  /** Fired with parsed CSV rows by the import button. */
+  onImport?: (rows: Array<Record<string, unknown>>) => void
   /** Custom action buttons rendered after the built-ins (vxe toolbar buttons parity). */
   buttons?: IrisTableToolbarButton[]
   /** Batch action rendered while rows are selected (vxe toolbar batch parity). */

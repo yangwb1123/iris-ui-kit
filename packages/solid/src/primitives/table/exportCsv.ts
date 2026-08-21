@@ -1,4 +1,4 @@
-import { downloadFile, toCsv } from '@iris-ui-kit/core'
+import { downloadFile, parseCsv, toCsv } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 /** Serialize rows as RFC-4180 CSV using the shared core implementation. */
@@ -15,6 +15,9 @@ export function exportCsv<Row extends Record<string, unknown>>(
     })),
   )
 }
+
+/** Parse RFC-4180 CSV with quoted commas/newlines using the shared core parser. */
+export { parseCsv }
 
 /** Save through a native host bridge, falling back to an SSR-safe web download. */
 export async function downloadCsv(filename: string, csv: string): Promise<void> {

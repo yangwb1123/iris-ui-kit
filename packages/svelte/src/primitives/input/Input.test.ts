@@ -28,6 +28,15 @@ describe('@iris-ui-kit/svelte IrisInput', () => {
     expect(label.getAttribute('style')).toContain('opacity: 0.6')
   })
 
+  it('readonly forwards native state and uses readonly surface', () => {
+    const { container } = render(IrisInput, { props: { readonly: true } })
+    const input = container.querySelector('input')!
+    const label = container.querySelector('[data-iris-input]') as HTMLElement
+    expect(input.readOnly).toBe(true)
+    expect(label.getAttribute('data-state')).toBe('readonly')
+    expect(label.getAttribute('style')).toContain('background: var(--iris-surface)')
+  })
+
   it('invalid sets aria-invalid + data-state="invalid"', () => {
     const { container } = render(IrisInput, { props: { invalid: true } })
     expect(container.querySelector('input')!.getAttribute('aria-invalid')).toBe('true')

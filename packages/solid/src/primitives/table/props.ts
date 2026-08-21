@@ -1,6 +1,7 @@
 import type { JSX } from 'solid-js'
 import type {
   IrisTableCellEditEvent,
+  IrisTableClipConfig,
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableContextMenuItem,
@@ -16,8 +17,11 @@ import type {
   IrisTableRowExpandable,
   IrisTableSeqMethodParams,
   IrisTableSortState,
+  IrisTableDensity,
   IrisTableToolbarConfig,
   IrisTableVirtualOptions,
+  IrisTableTab,
+  IrisTableViewConfig,
 } from './types'
 
 /** Public input surface for the Solid table adapter. */
@@ -85,8 +89,42 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   pagerConfig?: IrisTablePagerConfig
   striped?: boolean
   bordered?: boolean
+  /** Row-density preset; invalid runtime values fail closed to comfortable. */
+  density?: IrisTableDensity
+  /** Show the local density cycle button in the table toolbar. */
+  densityToggle?: boolean
+  /** Show a live formatter preview while an editor is open. */
+  editPreview?: boolean
+  /** Highlight committed cells matching the active inline draft. */
+  pattern?: boolean
+  /** Alias for pattern feedback. */
+  patternFill?: boolean
+  /** Named snapshots available in the table toolbar. */
+  views?: IrisTableViewConfig
+  /** Controlled active named view notification. */
+  onActiveViewChange?: (key: string | null) => void
+  /** Optional tab strip; tab clicks apply listed view names in order. */
+  tableTabs?: IrisTableTab[]
+  /** Show a draggable boundary for the leading left-pinned columns. */
+  pinnedDrag?: boolean
+  /** Called for each column whose pin side changes. */
+  onColumnPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
+  /** Called once after a pinned-boundary commit. */
+  onPinnedCountChange?: (count: number) => void
+  /** Below 480px, greedily hide the lowest-priority top-level columns until
+   * the natural width fits; pinned columns survive. */
+  responsive?: boolean
+  /** Extra bare row sets appended as named CSV segments by the imperative handle. */
+  exportNames?: Array<{ key: string; ref: () => Row[] }>
+  /** Infer leaf-column value kinds from the first non-empty data arrival and
+   * fill only missing alignment defaults. Disabled by default. */
+  autoDetectTypes?: boolean
   loading?: boolean
   error?: boolean
+  /** Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS. */
+  printable?: boolean
+  /** Show a confirmation preview before the toolbar CSV import callback. */
+  importPreview?: boolean
   emptyState?: JSX.Element
   loadingState?: JSX.Element
   errorState?: JSX.Element
@@ -146,6 +184,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   lazyLoad?: IrisTableLazyLoad<Row>
   keyboardNavigation?: boolean
   cellRange?: boolean
+  /** Range clipboard copy; copyWithFormat uses column formatter output. */
+  clipConfig?: IrisTableClipConfig
   virtualScroll?: IrisTableVirtualOptions
   columnVirtualization?: boolean
   style?: JSX.CSSProperties

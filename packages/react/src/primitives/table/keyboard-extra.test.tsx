@@ -47,6 +47,23 @@ async function flushScroll(): Promise<void> {
 }
 
 describe('@iris-ui-kit/react IrisTable grid keyboard batch AV', () => {
+  it('exposes logical row/column counts when keyboard grid semantics are active', () => {
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        keyboardNavigation
+        rowDrag
+        seq
+        selectable="multi"
+      />,
+    )
+    const root = document.querySelector('[data-iris-table]')!
+    expect(root.getAttribute('role')).toBe('grid')
+    expect(root.getAttribute('aria-rowcount')).toBe('4')
+    expect(root.getAttribute('aria-colcount')).toBe('5')
+  })
+
   it('Tab moves focus right row-major; Shift+Tab moves left', () => {
     render(<IrisTable columns={baseColumns} data={rows} keyboardNavigation />)
     act(() => cellAt(0, 0)!.focus())

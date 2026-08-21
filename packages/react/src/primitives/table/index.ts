@@ -48,5 +48,5 @@ export {
   type IrisTableAuditEntry,
   type IrisTablePresenceEntry,
 } from './types'
-export { exportCsv, downloadCsv } from './exportCsv'
+export { exportCsv, downloadCsv, parseCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'

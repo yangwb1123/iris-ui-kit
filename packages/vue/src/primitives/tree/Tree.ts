@@ -13,19 +13,13 @@ import { createTreeSelection, nextEnabledIndex, type TreeSelectionNode } from '@
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
+import { renderTreeState } from './renderTreeState'
 
 interface FlatNode {
   node: IrisTreeNode
   depth: number
   parentId: string | null
   hasChildren: boolean
-}
-
-const TREE_STATE_STYLE: Record<string, string> = {
-  padding: 'var(--iris-space-sm, 12px)',
-  textAlign: 'center',
-  color: 'var(--iris-muted)',
-  fontSize: 'var(--iris-font-size-md, 14px)',
 }
 
 /**
@@ -318,33 +312,6 @@ export const IrisTree = defineComponent({
       }
     }
 
-    const renderStateNode = () => {
-      const content =
-        state.value === 'error'
-          ? slots.error
-            ? slots.error()
-            : t('tree.error')
-          : state.value === 'loading'
-            ? slots.loading
-              ? slots.loading()
-              : t('tree.loading')
-            : slots.empty
-              ? slots.empty()
-              : t('tree.empty')
-      return h(
-        'div',
-        {
-          key: stateKey.value,
-          role: 'presentation',
-          'data-iris-tree-state': state.value,
-          'aria-live': 'polite',
-          ...stateProps.value,
-          style: TREE_STATE_STYLE,
-        },
-        content,
-      )
-    }
-
     const renderItems = (): VNode[] => {
       // Touch the live checked set so the render re-runs on every check change.
       void checkedKeys.value
@@ -498,7 +465,17 @@ export const IrisTree = defineComponent({
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
-        isContent.value ? renderItems() : [renderStateNode()],
+        isContent.value
+          ? renderItems()
+          : [
+              renderTreeState({
+                state: state.value as 'error' | 'loading' | 'empty',
+                stateKey: stateKey.value,
+                stateProps: stateProps.value as unknown as Record<string, unknown>,
+                slots,
+                translate: t,
+              }),
+            ],
       )
   },
 })

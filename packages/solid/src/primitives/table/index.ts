@@ -1,5 +1,5 @@
 export { IrisTable, type IrisTableProps } from './IrisTable'
-export { exportCsv, downloadCsv } from './exportCsv'
+export { exportCsv, downloadCsv, parseCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'
 export type {
   IrisTableColumn,
@@ -8,6 +8,7 @@ export type {
   IrisTableEditor,
   IrisTableAggregateOp,
   IrisTableCellEditEvent,
+  IrisTableClipConfig,
   IrisTableVirtualOptions,
   IrisTableColumnWidths,
   IrisTableRenderDetail,
@@ -22,6 +23,10 @@ export type {
   IrisTableToolbarConfig,
   IrisTableToolbarButton,
   IrisTableToolbarBatch,
+  IrisTableNamedView,
+  IrisTableTab,
+  IrisTableViewConfig,
+  IrisTableViewSnapshot,
   IrisTableFilterOption,
   IrisTableFilterValues,
   IrisTableContextMenuItem,

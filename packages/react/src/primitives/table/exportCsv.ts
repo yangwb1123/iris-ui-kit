@@ -1,4 +1,4 @@
-import { downloadFile, maskValue, toCsv } from '@iris-ui-kit/core'
+import { downloadFile, maskValue, parseCsv, toCsv } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 /**
@@ -62,6 +62,9 @@ export function exportCsv<Row extends Record<string, unknown>>(
     })),
   )
 }
+
+/** Parse RFC-4180 CSV with quoted commas/newlines using the shared core parser. */
+export { parseCsv }
 
 /**
  * Trigger a download of the given CSV string. A host `FileSaveHandler` (set via

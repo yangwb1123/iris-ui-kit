@@ -58,6 +58,7 @@ import { IrisSwitch } from './primitives/switch'
 import { IrisFormField } from './primitives/form-field'
 import { IrisAccordion, IrisAccordionItem } from './primitives/accordion'
 import { IrisRadioGroup, IrisRadio } from './primitives/radio'
+import { IrisTable } from './primitives/table'
 
 // Each case is an SSR-safe, non-overlay component (no portal / floating-ui /
 // document-dependent render path). The components whose render reads
@@ -128,6 +129,17 @@ const cases: { name: string; render: () => JSX.Element }[] = [
       </IrisRadioGroup>
     ),
   },
+  {
+    name: 'Table (printable)',
+    render: () => (
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[{ id: 1, name: 'Alpha' }]}
+        rowKey="id"
+        printable
+      />
+    ),
+  },
 ]
 
 afterEach(() => {
@@ -195,6 +207,38 @@ describe('@iris-ui-kit/solid — SSR render + createUniqueId drift guard (non-ov
     expect(html).toContain('id="ssr-link"')
     expect(html).toContain('class="iris-button parent child"')
     expect(html).toContain('color:blue')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('Table printable SSR emits the shared print marker', () => {
+    const { html, errors, warnings } = ssr(() => (
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[{ id: 1, name: 'Alpha' }]}
+        rowKey="id"
+        printable
+      />
+    ))
+    expect(html).toContain('data-printable="true"')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('Table proxy SSR keeps non-empty remote filters without running the query', () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 1, name: 'Alice' }], total: 1 }))
+    const { html, errors, warnings } = ssr(() => (
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[]}
+        rowKey="id"
+        filters={{ name: 'Alice' }}
+        proxyConfig={{ query, remoteFilter: true }}
+      />
+    ))
+    expect(query).not.toHaveBeenCalled()
+    expect(html).toContain('data-iris-table-row="empty"')
+    expect(html).not.toContain('data-iris-table-row="loading"')
     expect(errors).toEqual([])
     expect(warnings).toEqual([])
   })

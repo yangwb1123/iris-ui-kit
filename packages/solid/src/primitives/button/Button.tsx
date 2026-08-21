@@ -10,14 +10,17 @@ const SIZE_STYLES: Record<IrisButtonSize, StyleMap> = {
   sm: {
     padding: 'var(--iris-padding-sm) var(--iris-padding-md)',
     'font-size': 'var(--iris-font-size-xs, 12px)',
+    'min-height': 'var(--iris-control-height-sm, 28px)',
   },
   md: {
     padding: 'var(--iris-padding-sm) var(--iris-padding-lg)',
     'font-size': 'var(--iris-font-size-md, 14px)',
+    'min-height': 'var(--iris-control-height-md, 34px)',
   },
   lg: {
     padding: 'var(--iris-padding-md) var(--iris-padding-lg)',
     'font-size': 'var(--iris-font-size-lg, 16px)',
+    'min-height': 'var(--iris-control-height-lg, 40px)',
   },
 }
 
@@ -52,7 +55,10 @@ const VARIANT_STYLES: Record<IrisButtonVariant, StyleMap> = {
 
 function buildInlineStyle(variant: IrisButtonVariant, size: IrisButtonSize): JSX.CSSProperties {
   const base: StyleMap = { ...SIZE_STYLES[size], ...VARIANT_STYLES[variant] }
-  if (variant === 'link') base.padding = '0'
+  if (variant === 'link') {
+    base.padding = '0'
+    delete base['min-height']
+  }
   return base as JSX.CSSProperties
 }
 

@@ -1,10 +1,19 @@
-import { compareValues, computeVirtualRange, createCellRange } from '@iris-ui-kit/core'
+import {
+  applyTableMask,
+  compareValues,
+  computeResponsiveColumns,
+  computeVirtualRange,
+  createCellRange,
+  flattenLeafColumns,
+  RESPONSIVE_NARROW_WIDTH,
+} from '@iris-ui-kit/core'
 import type {
   IrisTableColumn,
   IrisTableSortState,
   IrisTableColumnWidths,
   IrisTableVirtualOptions,
   IrisTableCellEditEvent,
+  IrisTableFilterValues,
 } from './types'
 
 export interface IrisTableProps {
@@ -16,6 +25,7 @@ export interface IrisTableProps {
   sort?: IrisTableSortState | null
   striped?: boolean
   bordered?: boolean
+  autoDetectTypes?: boolean
   loading?: boolean
   error?: boolean
   virtualScroll?: IrisTableVirtualOptions
@@ -49,6 +59,35 @@ export const TABLE_CONST = {
   RESIZE_STEP: 16,
 } as const
 
+export function computeResponsiveTableColumns(
+  columns: IrisTableColumn[],
+  containerWidth: number,
+  leadingWidth: number,
+  widthOf: (column: IrisTableColumn) => number,
+): { columns: IrisTableColumn[]; overflow: boolean } {
+  if (containerWidth <= 0 || containerWidth >= RESPONSIVE_NARROW_WIDTH) {
+    return { columns, overflow: false }
+  }
+  const isPinned = (column: IrisTableColumn): boolean =>
+    column.children && column.children.length > 0
+      ? column.children.some(isPinned)
+      : column.pinned !== undefined
+  const fitted = computeResponsiveColumns(columns, Math.max(1, containerWidth - leadingWidth), {
+    widthOf: (column) => widthOf(column as IrisTableColumn),
+    isPinned: (column) => isPinned(column as IrisTableColumn),
+    narrowWidth: RESPONSIVE_NARROW_WIDTH - leadingWidth,
+  }) as IrisTableColumn[]
+  const natural = fitted.reduce(
+    (sum, column) =>
+      sum +
+      (column.children && column.children.length > 0
+        ? flattenLeafColumns([column]).reduce((nested, leaf) => nested + widthOf(leaf), 0)
+        : widthOf(column)),
+    leadingWidth,
+  )
+  return { columns: fitted, overflow: natural > containerWidth }
+}
+
 export function resolveInitialWidth(col: IrisTableColumn): number {
   if (typeof col.width === 'number') return col.width
   if (typeof col.width === 'string') {
@@ -58,9 +97,76 @@ export function resolveInitialWidth(col: IrisTableColumn): number {
   return TABLE_CONST.DEFAULT_COL_WIDTH
 }
 
+export function resolveResponsiveWidth(
+  column: IrisTableColumn,
+  columnWidths: IrisTableColumnWidths | undefined,
+  defaultColumnWidths: IrisTableColumnWidths | undefined,
+): number {
+  const configured = columnWidths?.[column.key] ?? defaultColumnWidths?.[column.key]
+  if (typeof configured === 'number' && Number.isFinite(configured) && configured >= 0) {
+    return configured
+  }
+  return resolveInitialWidth(column)
+}
+
+export function editPreviewText(
+  row: Record<string, unknown>,
+  column: IrisTableColumn,
+  draft: string,
+): string {
+  const raw =
+    column.editor === 'number'
+      ? draft === '' || isNaN(Number(draft))
+        ? getCellValue(row, column)
+        : Number(draft)
+      : draft
+  return String(column.formatter?.(applyTableMask(raw, column), row) ?? '')
+}
+
 export function getCellValue(row: Record<string, unknown>, column: IrisTableColumn): unknown {
   const key = (column.dataIndex ?? column.key) as string
   return row[key]
+}
+
+/** Serialize checked filter sets for a remote query (vxe comma parity). */
+export function mergeFilterValues(
+  filters: Record<string, string>,
+  filterValues: IrisTableFilterValues,
+): Record<string, string> {
+  const next = { ...filters }
+  for (const [key, values] of Object.entries(filterValues)) {
+    if (values.length > 0) next[key] = values.join(',')
+  }
+  return next
+}
+
+/** Apply text filters and checked OR sets to a sorted row list. */
+export function applyTableFilters(
+  rows: Array<Record<string, unknown>>,
+  columns: IrisTableColumn[],
+  textFilters: Record<string, string>,
+  filterValues: IrisTableFilterValues,
+): Array<Record<string, unknown>> {
+  const active = Object.entries(textFilters).filter(([, value]) => value != null && value !== '')
+  const checked = Object.entries(filterValues).filter(([, values]) => values.length > 0)
+  if (active.length === 0 && checked.length === 0) return rows
+  return rows.filter(
+    (row) =>
+      active.every(([key, value]) => {
+        const col = columns.find((column) => column.key === key)
+        if (!col) return true
+        const raw = getCellValue(row, col)
+        if (col.filterMethod) return col.filterMethod(raw, row, value)
+        return String(raw ?? '')
+          .toLowerCase()
+          .includes(value.toLowerCase())
+      }) &&
+      checked.every(([key, values]) => {
+        const col = columns.find((column) => column.key === key)
+        if (!col) return true
+        return values.includes(String(getCellValue(row, col) ?? ''))
+      }),
+  )
 }
 
 export function clampWidth(col: IrisTableColumn, w: number): number {
@@ -117,6 +223,69 @@ export function createSortComparator(
   const sorter =
     column.sorter ?? ((a, b) => compareValues(getValue(a, column), getValue(b, column)))
   return (a, b) => sorter(a, b) * dir
+}
+
+export interface SpanPlan {
+  occupied: Set<string>
+  spans: Map<string, { rowspan: number; colspan: number }>
+}
+
+/** Build the complete span occupancy map once per reactive render pass. */
+export function buildSpanPlan(
+  rowCount: number,
+  colCount: number,
+  method: (params: {
+    rowIndex: number
+    columnIndex: number
+  }) => { rowspan?: number; colspan?: number } | null | undefined,
+): SpanPlan {
+  const occupied = new Set<string>()
+  const spans = new Map<string, { rowspan: number; colspan: number }>()
+  for (let r = 0; r < rowCount; r += 1) {
+    for (let c = 0; c < colCount; c += 1) {
+      const key = `${r}:${c}`
+      if (occupied.has(key)) continue
+      const span = method({ rowIndex: r, columnIndex: c })
+      const rowspan = span?.rowspan ?? 1
+      const colspan = span?.colspan ?? 1
+      if (rowspan > 1 || colspan > 1) {
+        spans.set(key, { rowspan, colspan })
+        for (let rr = 1; rr < rowspan; rr += 1) occupied.add(`${r + rr}:${c}`)
+        for (let cc = 1; cc < colspan; cc += 1) occupied.add(`${r}:${c + cc}`)
+      }
+    }
+  }
+  return { occupied, spans }
+}
+
+/** Ordered multi-column comparator shared by all Svelte table consumers. */
+export function createMultiSortComparator(
+  list: IrisTableSortState[],
+  leafCols: IrisTableColumn[],
+  getValue: (row: Record<string, unknown>, col: IrisTableColumn) => unknown,
+): ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null {
+  if (list.length === 0) return null
+  const colMap = new Map(leafCols.map((c) => [c.key, c]))
+  const chain: Array<{
+    dir: number
+    sorter: (a: Record<string, unknown>, b: Record<string, unknown>) => number
+  }> = []
+  for (const s of list) {
+    const col = colMap.get(s.key)
+    if (!col) continue
+    chain.push({
+      dir: s.direction === 'asc' ? 1 : -1,
+      sorter: col.sorter ?? ((a, b) => compareValues(getValue(a, col), getValue(b, col))),
+    })
+  }
+  if (chain.length === 0) return null
+  return (a, b) => {
+    for (const step of chain) {
+      const cmp = step.sorter(a, b)
+      if (cmp !== 0) return cmp * step.dir
+    }
+    return 0
+  }
 }
 
 export function computeVisibleColSet(

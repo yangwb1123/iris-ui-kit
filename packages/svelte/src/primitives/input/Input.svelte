@@ -26,6 +26,7 @@
     size = 'md',
     type = 'text',
     invalid = false,
+    readonly = false,
     ariaDescribedby,
     prefix,
     suffix,
@@ -52,11 +53,11 @@
       display: 'inline-flex',
       'align-items': 'center',
       gap: 'var(--iris-space-xs, 8px)',
-      background: 'var(--iris-background)',
+      background: readonly ? 'var(--iris-surface)' : 'var(--iris-background)',
       color: 'var(--iris-foreground)',
       border: `1px solid ${borderColor}`,
       'border-radius': 'var(--iris-radius-md, 6px)',
-      cursor: rest.disabled ? 'not-allowed' : 'text',
+      cursor: rest.disabled ? 'not-allowed' : readonly ? 'default' : 'text',
       opacity: rest.disabled ? 0.6 : 1,
       transition: 'border-color 120ms ease, box-shadow 120ms ease',
       'box-shadow': focused
@@ -81,7 +82,7 @@
 <label
   data-iris-input
   data-iris-input-size={size}
-  data-state={isInvalid ? 'invalid' : focused ? 'focused' : 'idle'}
+  data-state={isInvalid ? 'invalid' : focused ? 'focused' : readonly ? 'readonly' : 'idle'}
   style={mergeStyle(wrapperStyle, style)}
 >
   {#if prefix}
@@ -95,6 +96,7 @@
     {...rest}
     id={controlId}
     {type}
+    {readonly}
     aria-invalid={isInvalid ? 'true' : undefined}
     aria-describedby={describedBy}
     style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: inherit; font-family: inherit; font-size: inherit; padding: 0"

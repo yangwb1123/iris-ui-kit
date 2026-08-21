@@ -40,6 +40,7 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
     'ariaDescribedby',
     'prefix',
     'suffix',
+    'readOnly',
     'style',
     'id',
   ])
@@ -58,16 +59,18 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
     <label
       data-iris-input=""
       data-iris-input-size={local.size}
-      data-state={invalid() ? 'invalid' : focused() ? 'focused' : 'idle'}
+      data-state={
+        invalid() ? 'invalid' : focused() ? 'focused' : local.readOnly ? 'readonly' : 'idle'
+      }
       style={{
         display: 'inline-flex',
         'align-items': 'center',
         gap: 'var(--iris-space-xs, 8px)',
-        background: 'var(--iris-background)',
+        background: local.readOnly ? 'var(--iris-surface)' : 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         border: `1px solid ${borderColor()}`,
         'border-radius': 'var(--iris-radius-md, 6px)',
-        cursor: rest.disabled ? 'not-allowed' : 'text',
+        cursor: rest.disabled ? 'not-allowed' : local.readOnly ? 'default' : 'text',
         opacity: rest.disabled ? 0.6 : 1,
         transition: 'border-color 120ms ease, box-shadow 120ms ease',
         'box-shadow': focused()
@@ -91,6 +94,7 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
         {...rest}
         id={controlId()}
         type={local.type}
+        readOnly={local.readOnly}
         aria-invalid={invalid() ? 'true' : undefined}
         aria-describedby={describedBy()}
         style={{

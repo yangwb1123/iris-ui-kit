@@ -1,9 +1,32 @@
+import type {
+  TableNamedView,
+  TableTab,
+  TableViewConfig,
+  TableViewSnapshot,
+} from '@iris-ui-kit/core'
+
 export type IrisTableSortDirection = 'asc' | 'desc'
+
+/** Table row-density preset. */
+export type IrisTableDensity = 'comfortable' | 'compact' | 'cozy'
+
+/** Clipboard range-copy options. Invalid runtime formats fall back to TSV. */
+export interface IrisTableClipConfig {
+  copy?: boolean
+  paste?: boolean
+  copyFormat?: 'tsv' | 'csv' | 'html'
+  copyWithFormat?: boolean
+}
 
 export interface IrisTableSortState {
   key: string
   direction: IrisTableSortDirection
 }
+
+export type IrisTableViewConfig = TableViewConfig
+export type IrisTableViewSnapshot = TableViewSnapshot
+export type IrisTableNamedView = TableNamedView<IrisTableViewSnapshot>
+export type IrisTableTab = TableTab
 
 export type IrisTableEditor = 'text' | 'number'
 
@@ -23,6 +46,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string
   dataIndex?: keyof Row | string
+  /** Format the masked display value; copyWithFormat uses this string. */
+  formatter?: (value: unknown, row: Row) => unknown
+  /** Mask the display/copy value before the formatter. */
+  mask?: 'sensitive' | ((value: unknown) => string)
+  /** Copy/export the raw value instead of the masked value (formatter copy remains masked). */
+  exportRaw?: boolean
   sortable?: boolean
   /** Custom client-side filter (vxe filter-method parity). Return true to keep the row. Overrides the default case-insensitive substring match. */
   filterMethod?: (value: unknown, row: Row, filterValue: string) => boolean
@@ -209,6 +238,8 @@ export interface IrisTableToolbarConfig {
   onRefresh?: () => void
   /** Fired by the export button (vxe toolbar export parity). */
   onExport?: () => void
+  /** Fired with parsed CSV rows by the import button. */
+  onImport?: (rows: Array<Record<string, unknown>>) => void
   /** Custom action buttons rendered after the built-ins (vxe toolbar buttons parity). */
   buttons?: IrisTableToolbarButton[]
   /** Batch action rendered while rows are selected (vxe toolbar batch parity). */
@@ -295,6 +326,20 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   clearSort: () => void
   /** Clear every filter channel (vxe clearFilter parity): text filters + checked sets. */
   clearFilter: () => void
+  /** Remove rows by row-key without issuing a query; missing keys are no-ops. */
+  removeRows: (keys: Array<string | number>) => void
+  /** Snapshot (copy) of the currently filtered + sorted body rows. */
+  getFilteredData: () => Row[]
+  /** Serialize the current filtered/sorted row view using visible leaf columns. */
+  exportCurrentViewCsv: () => string
+  /** Serialize the current view plus named bare row sets as CSV segments. */
+  exportMultiCsv: () => string
+  /** Compare two exported-state JSON strings; never throws on invalid input. */
+  compareStates: (a: string, b: string) => string
+  /** Scroll the rendered row with `key` into view; missing/virtualized rows are no-ops. */
+  scrollToRow: (key: string | number) => void
+  /** Scroll and transiently highlight the rendered row with `key`; the target clears after 2s. */
+  goToRow: (key: string | number) => void
 }
 
 import type { JSX } from 'solid-js'

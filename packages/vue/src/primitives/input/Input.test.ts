@@ -32,6 +32,16 @@ describe('IrisInput', () => {
     expect(input.attributes('aria-invalid')).toBe('true')
   })
 
+  it('forwards readonly and exposes a readonly surface state', () => {
+    const wrapper = mount(IrisInput, { props: { readonly: true } })
+    const input = wrapper.find('input')
+    expect((input.element as HTMLInputElement).readOnly).toBe(true)
+    expect(wrapper.find('[data-iris-input]').attributes('data-state')).toBe('readonly')
+    expect(wrapper.find('[data-iris-input]').attributes('style')).toContain(
+      'background: var(--iris-surface)',
+    )
+  })
+
   it('renders prefix and suffix slots', () => {
     const wrapper = mount(IrisInput, {
       slots: {

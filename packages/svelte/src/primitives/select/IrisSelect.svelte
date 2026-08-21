@@ -12,6 +12,9 @@
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
   import type { Placement } from '@iris-ui-kit/core'
+  import { SELECT_LISTBOX_MAX_HEIGHT, SELECT_ROW_HEIGHT, SELECT_SIZE_MAP } from './select-constants'
+  import { createSelectElementAction } from './select-actions'
+  import SelectOptions from './SelectOptions.svelte'
 
   export interface IrisSelectItem<T = unknown> {
     label?: string
@@ -25,6 +28,7 @@
     items: IrisSelectItem[]
     value?: unknown
     defaultValue?: unknown
+    multiple?: boolean
     placeholder?: string
     size?: IrisSelectSize
     disabled?: boolean
@@ -80,7 +84,13 @@
   let listboxEl = $state<HTMLUListElement | undefined>(undefined)
 
   const selectedValues = $derived<string[]>(
-    multiple ? (Array.isArray(value) ? (value as string[]) : value !== undefined ? [value as string] : []) : [],
+    multiple
+      ? Array.isArray(value)
+        ? (value as string[])
+        : value !== undefined
+          ? [value as string]
+          : []
+      : [],
   )
   const selectedItem = $derived(items.find((item) => item.value === currentValue) ?? null)
   const triggerLabel = $derived(
@@ -96,28 +106,7 @@
         : (placeholder ?? t('select.placeholder')),
   )
 
-  const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> =
-    {
-      sm: {
-        padding:
-          'var(--iris-space-xxs, 4px) var(--iris-space-xl, 24px) var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-        fontSize: 'var(--iris-font-size-xs, 12px)',
-        minHeight: '28px',
-      },
-      md: {
-        padding:
-          'var(--iris-padding-sm, 6px) var(--iris-space-xl, 24px) var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
-        fontSize: 'var(--iris-font-size-md, 14px)',
-        minHeight: '34px',
-      },
-      lg: {
-        padding:
-          'var(--iris-space-xs, 8px) var(--iris-space-2xl, 32px) var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
-        fontSize: 'var(--iris-font-size-lg, 16px)',
-        minHeight: '40px',
-      },
-    }
-  const sz = $derived(SIZE_MAP[size])
+  const sz = $derived(SELECT_SIZE_MAP[size])
 
   const floating = useFloating({
     anchor: () => triggerEl,
@@ -135,22 +124,12 @@
     },
   })
 
-  function setTrigger(node: HTMLElement): { destroy: () => void } {
+  const setTrigger = createSelectElementAction((node) => {
     triggerEl = node
-    return {
-      destroy: () => {
-        triggerEl = undefined
-      },
-    }
-  }
-  function setContent(node: HTMLElement): { destroy: () => void } {
+  })
+  const setContent = createSelectElementAction((node) => {
     contentEl = node
-    return {
-      destroy: () => {
-        contentEl = undefined
-      },
-    }
-  }
+  })
 
   function handleToggle(): void {
     if (!disabled) open = !open
@@ -189,10 +168,6 @@
   // One controller per mount, built lazily in the first effect; reactive
   // inputs are read live through closures so the instance (scroll offset +
   // keyed cache) survives re-renders.
-  const LISTBOX_MAX_HEIGHT = 240
-  // Fixed per-option row height (px) — option padding 6+6 + 14px line ≈ 32px
-  // plus the 4px inter-row gap; estimate, never measured (combobox approach).
-  const ROW_HEIGHT = 36
   let virtualizer: Virtualizer | null = $state(null)
   let unsub: (() => void) | null = null
   let vstate = $state<VirtualizerState>({
@@ -209,9 +184,9 @@
     if (!virtualizer) {
       virtualizer = createVirtualizer({
         count: 0,
-        estimateSize: () => ROW_HEIGHT,
+        estimateSize: () => SELECT_ROW_HEIGHT,
         getItemKey: (i) => String(items[i]?.value ?? i),
-        viewportSize: LISTBOX_MAX_HEIGHT,
+        viewportSize: SELECT_LISTBOX_MAX_HEIGHT,
         buffer: 4,
       })
       vstate = virtualizer.getState()
@@ -223,7 +198,7 @@
     virtualizer.setCount(items.length)
     const el = listboxEl
     if (el) {
-      const max = Math.max(0, virtualizer.totalSize() - LISTBOX_MAX_HEIGHT)
+      const max = Math.max(0, virtualizer.totalSize() - SELECT_LISTBOX_MAX_HEIGHT)
       if (el.scrollTop > max) el.scrollTop = max
     }
   })
@@ -297,8 +272,8 @@
     const el = listboxEl
     if (!el) return
     const top = el.scrollTop
-    const start = index * ROW_HEIGHT
-    if (start >= top && start + ROW_HEIGHT <= top + LISTBOX_MAX_HEIGHT) return
+    const start = index * SELECT_ROW_HEIGHT
+    if (start >= top && start + SELECT_ROW_HEIGHT <= top + SELECT_LISTBOX_MAX_HEIGHT) return
     el.scrollTop = virtualizer.scrollToIndex(index, start < top ? 'start' : 'end')
   }
 
@@ -402,117 +377,18 @@
     }}
     style="{floating.floatingStyles}; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: var(--iris-shadow-lg); min-width: 180px; list-style: none; margin: 0; z-index: 1000; max-height: 240px; overflow-y: auto"
   >
-    {#if items.length === 0}
-      <li
-        data-iris-select-empty=""
-        style="padding: var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px); color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px); text-align: center; list-style: none"
-      >
-        {t('select.empty')}
-      </li>
-    {:else if virtual && virtualizer}
-      {@const list = items}
-      {@const row = ROW_HEIGHT}
-      <li
-        role="presentation"
-        aria-hidden="true"
-        data-iris-select-spacer
-        data-iris-select-spacer-type="top"
-        style="height: {vstate.offsetBefore}px"
-      ></li>
-      {#each vstate.items as item (item.key)}
-        {@const opt = list[item.index]}
-        {#if opt}
-          <li
-            role="option"
-            aria-selected={multiple ? selectedValues.includes(opt.value as string) : opt.value === currentValue ? 'true' : 'false'}
-            aria-disabled={opt.disabled ? 'true' : undefined}
-            aria-setsize={list.length}
-            aria-posinset={item.index + 1}
-            data-iris-select-option
-            data-iris-select-option-index={item.index}
-            onclick={() => selectItem(opt)}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                selectItem(opt)
-              }
-            }}
-            tabindex={opt.disabled ? -1 : 0}
-            style="display: flex; align-items: center; gap: var(--iris-gap-sm, 6px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled
-              ? 'not-allowed'
-              : 'pointer'}; color: {opt.disabled
-              ? 'var(--iris-muted)'
-              : 'var(--iris-foreground)'}; background: {opt.value === currentValue
-              ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-              : 'transparent'}; font-weight: {opt.value === currentValue ? '600' : '400'}"
-          >
-            <span style="flex: 1; min-width: 0">{opt.label ?? String(opt.value)}</span>
-            {#if opt.value === currentValue}
-              <svg
-                aria-hidden="true"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--iris-primary)"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            {/if}
-          </li>
-        {/if}
-      {/each}
-      <li
-        role="presentation"
-        aria-hidden="true"
-        data-iris-select-spacer
-        data-iris-select-spacer-type="bottom"
-        style="height: {vstate.totalSize - vstate.offsetBefore - vstate.items.length * row}px"
-      ></li>
-    {:else}
-      {#each items as item}
-        <li
-          role="option"
-          aria-selected={item.value === currentValue ? 'true' : 'false'}
-          aria-disabled={item.disabled ? 'true' : undefined}
-          data-iris-select-option
-          onclick={() => selectItem(item)}
-          onkeydown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              selectItem(item)
-            }
-          }}
-          tabindex={item.disabled ? -1 : 0}
-          style="display: flex; align-items: center; gap: var(--iris-gap-sm, 6px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {item.disabled
-            ? 'not-allowed'
-            : 'pointer'}; color: {item.disabled
-            ? 'var(--iris-muted)'
-            : 'var(--iris-foreground)'}; background: {item.value === currentValue
-            ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-            : 'transparent'}; font-weight: {item.value === currentValue ? '600' : '400'}"
-        >
-          <span style="flex: 1; min-width: 0">{item.label ?? String(item.value)}</span>
-          {#if item.value === currentValue}
-            <svg
-              aria-hidden="true"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--iris-primary)"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          {/if}
-        </li>
-      {/each}
-    {/if}
+    <SelectOptions
+      {items}
+      {currentValue}
+      {multiple}
+      {selectedValues}
+      {virtual}
+      virtualizerReady={virtualizer !== null}
+      {vstate}
+      rowHeight={SELECT_ROW_HEIGHT}
+      fontSize={sz.fontSize}
+      emptyLabel={t('select.empty')}
+      {selectItem}
+    />
   </ul>
 {/if}

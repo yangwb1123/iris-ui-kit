@@ -1,17 +1,27 @@
 import type { Snippet } from 'svelte'
 import type {
   IrisTableCellEditEvent,
+  IrisTableClipConfig,
   IrisTableColumn,
+  IrisTableColumnDrag,
   IrisTableColumnWidths,
+  IrisTableContextMenuConfig,
+  IrisTableEditConfig,
+  IrisTableFilterValues,
   IrisTableFormConfig,
+  IrisTableHandle,
   IrisTablePagerConfig,
   IrisTableProxyConfig,
+  IrisTableRowDrag,
   IrisTableSeqMethodParams,
   IrisTableSortState,
+  IrisTableDensity,
   IrisTableSpan,
   IrisTableSpanMethodParams,
   IrisTableToolbarConfig,
   IrisTableVirtualOptions,
+  IrisTableTab,
+  IrisTableViewConfig,
 } from './types'
 
 /** Public input surface for the Svelte table adapter. */
@@ -21,6 +31,8 @@ export interface IrisTableProps {
   data?: Array<Record<string, unknown>>
   rowKey?: string
   selectable?: 'none' | 'single' | 'multi'
+  /** Inline edit behavior; row mode opens all editable cells in a row. */
+  editConfig?: IrisTableEditConfig
   selection?: Array<string | number>
   defaultSelection?: Array<string | number>
   sort?: IrisTableSortState | null
@@ -52,6 +64,14 @@ export interface IrisTableProps {
    * filter text; rows filtered with substring, case-insensitive matching
    * ('' entries ignored). Combines with `formConfig` values when both exist. */
   filters?: Record<string, string>
+  /** Fired when an imperative filter clear replaces the controlled text map. */
+  onFiltersChange?: (next: Record<string, string>) => void
+  /** Per-column checkbox filter sets (OR within a column, AND across columns). */
+  filterValues?: IrisTableFilterValues
+  /** Fired when a checkbox filter panel is applied or cleared. */
+  onFilterValuesChange?: (next: IrisTableFilterValues) => void
+  /** Right-click menu for body leaf cells. */
+  contextMenu?: IrisTableContextMenuConfig
   /** Search form (vxe-grid formConfig parity). */
   formConfig?: IrisTableFormConfig
   /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */
@@ -64,13 +84,58 @@ export interface IrisTableProps {
   pagerConfig?: IrisTablePagerConfig
   striped?: boolean
   bordered?: boolean
+  /** Row-density preset; invalid runtime values fail closed to comfortable. */
+  density?: IrisTableDensity
+  /** Show the local density cycle button in the table toolbar. */
+  densityToggle?: boolean
+  /** Show a live formatter preview while an editor is open. */
+  editPreview?: boolean
+  /** Highlight committed cells matching the active inline draft. */
+  pattern?: boolean
+  /** Alias for pattern feedback. */
+  patternFill?: boolean
+  /** Named snapshots available in the table toolbar. */
+  views?: IrisTableViewConfig
+  /** Controlled active named view notification. */
+  onActiveViewChange?: (key: string | null) => void
+  /** Optional tab strip; tab clicks apply listed view names in order. */
+  tableTabs?: IrisTableTab[]
+  /** Show a draggable boundary for the leading left-pinned columns. */
+  pinnedDrag?: boolean
+  /** Called for each column whose pin side changes. */
+  onColumnPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
+  /** Called once after a pinned-boundary commit. */
+  onPinnedCountChange?: (count: number) => void
+  /** Below 480px, greedily hide the lowest-priority top-level columns until
+   * the natural width fits; pinned columns survive. */
+  responsive?: boolean
+  /** Extra bare row sets appended as named CSV segments by the imperative handle. */
+  exportNames?: Array<{
+    key: string
+    ref: () => Array<Record<string, unknown>>
+  }>
+  /** Infer leaf-column value kinds from the first non-empty data arrival and
+   * fill only missing alignment defaults. Disabled by default. */
+  autoDetectTypes?: boolean
   loading?: boolean
   error?: boolean
+  /** Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS. */
+  printable?: boolean
+  /** Show a confirmation preview before the toolbar CSV import callback. */
+  importPreview?: boolean
   emptyState?: Snippet
   loadingState?: Snippet
   errorState?: Snippet
   /** Fired by the built-in Retry button in the error state row. */
   onRetry?: () => void
+  /** Row drag-sort; the callback receives the reordered live row list. */
+  rowDrag?: IrisTableRowDrag
+  /** Column drag-sort; grouped header cells remain non-draggable. */
+  columnDrag?: IrisTableColumnDrag
+  /** Fired after an internal row reorder. */
+  onDataChange?: (rows: Array<Record<string, unknown>>) => void
+  /** Imperative proxy/view handle (vxe loadData/reloadData/commitProxy parity). */
+  tableRef?: { current: IrisTableHandle | null }
   virtualScroll?: IrisTableVirtualOptions
   /** Render only horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean
@@ -88,6 +153,8 @@ export interface IrisTableProps {
   getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
   keyboardNavigation?: boolean
   cellRange?: boolean
+  /** Range clipboard copy; copyWithFormat uses column formatter output. */
+  clipConfig?: IrisTableClipConfig
   onUpdateSelection?: (value: Array<string | number>) => void
   onUpdateSort?: (value: IrisTableSortState | null) => void
   onRowClick?: (row: Record<string, unknown>, index: number) => void

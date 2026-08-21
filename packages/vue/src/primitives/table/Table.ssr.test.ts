@@ -39,4 +39,36 @@ describe('IrisTable SSR (proxyConfig, batch X)', () => {
     expect(html).not.toContain('data-iris-table-row="loading"')
     expect(typeof document).toBe('undefined')
   })
+
+  it('keeps non-empty remote filters in the initial params without querying during SSR', async () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 1, name: 'Alice' }], total: 1 }))
+    const app = createSSRApp({
+      render: () =>
+        h(IrisTable, {
+          columns,
+          data: [],
+          rowKey: 'id',
+          filters: { name: 'Alice' },
+          proxyConfig: { query, remoteFilter: true },
+        }),
+    })
+    const html = await renderToString(app)
+    expect(query).not.toHaveBeenCalled()
+    expect(html).toContain('data-iris-table-row="empty"')
+    expect(html).not.toContain('data-iris-table-row="loading"')
+  })
+
+  it('emits the printable root marker during SSR without running browser-only work', async () => {
+    const app = createSSRApp({
+      render: () =>
+        h(IrisTable, {
+          columns,
+          data: [{ id: 1, name: 'Alpha' }],
+          rowKey: 'id',
+          printable: true,
+        }),
+    })
+    const html = await renderToString(app)
+    expect(html).toContain('data-printable="true"')
+  })
 })

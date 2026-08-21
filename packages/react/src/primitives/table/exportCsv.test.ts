@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { exportCsv } from './exportCsv'
+import { exportCsv, parseCsv } from './exportCsv'
 import type { IrisTableColumn } from './types'
 
 interface Row extends Record<string, unknown> {
@@ -29,6 +29,16 @@ describe('exportCsv — formula-injection neutralization (OWASP)', () => {
 
   it('leaves ordinary text untouched', () => {
     expect(exportCsv([{ v: 'Ann' }], cols)).toBe('V\nAnn')
+  })
+})
+
+describe('parseCsv', () => {
+  it('round-trips quoted commas, quotes, and embedded newlines', () => {
+    expect(parseCsv('Name,Note\nAda,"a,b"\nBob,"line 1\nline 2"')).toEqual([
+      ['Name', 'Note'],
+      ['Ada', 'a,b'],
+      ['Bob', 'line 1\nline 2'],
+    ])
   })
 })
 

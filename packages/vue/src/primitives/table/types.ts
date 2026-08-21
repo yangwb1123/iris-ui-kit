@@ -1,9 +1,32 @@
+import type {
+  TableNamedView,
+  TableTab,
+  TableViewConfig,
+  TableViewSnapshot,
+} from '@iris-ui-kit/core'
+
 export type IrisTableSortDirection = 'asc' | 'desc'
+
+/** Table row-density preset. */
+export type IrisTableDensity = 'comfortable' | 'compact' | 'cozy'
+
+/** Clipboard range-copy options. Invalid runtime formats fall back to TSV. */
+export interface IrisTableClipConfig {
+  copy?: boolean
+  paste?: boolean
+  copyFormat?: 'tsv' | 'csv' | 'html'
+  copyWithFormat?: boolean
+}
 
 export interface IrisTableSortState {
   key: string
   direction: IrisTableSortDirection
 }
+
+export type IrisTableViewConfig = TableViewConfig
+export type IrisTableViewSnapshot = TableViewSnapshot
+export type IrisTableNamedView = TableNamedView<IrisTableViewSnapshot>
+export type IrisTableTab = TableTab
 
 /** Params delivered to {@link IrisTableProxyConfig.query} (vxe proxyConfig parity). */
 export interface IrisTableProxyQueryParams {
@@ -92,6 +115,8 @@ export interface IrisTableToolbarConfig {
   onRefresh?: () => void
   /** Fired by the export button (vxe toolbar export parity). */
   onExport?: () => void
+  /** Fired with parsed CSV rows by the import button. */
+  onImport?: (rows: Array<Record<string, unknown>>) => void
   /** Custom action buttons rendered after the built-ins. */
   buttons?: IrisTableToolbarButton[]
   /** Batch action rendered while `selectable === 'multi'` and rows are selected. */
@@ -149,6 +174,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   title: string
   /** Path inside the row to read the default cell value from. Defaults to `key`. */
   dataIndex?: keyof Row | string
+  /** Format the masked display value; copyWithFormat uses this string. */
+  formatter?: (value: unknown, row: Row) => unknown
+  /** Mask the display/copy value before the formatter. */
+  mask?: 'sensitive' | ((value: unknown) => string)
+  /** Copy/export the raw value instead of the masked value (formatter copy remains masked). */
+  exportRaw?: boolean
   /** Allow sorting by this column. */
   sortable?: boolean
   /** Show a header filter trigger + checkbox panel (vxe filterConfig parity). Filtering OR-matches the raw `String(value)` against the checked set. */
@@ -282,4 +313,18 @@ export interface IrisTableExpose<Row = Record<string, unknown>> {
   commitProxy: (overrides: Partial<IrisTableProxyQueryParams>) => void
   /** Proxy state snapshot: page/pageSize/total; null without a proxy (vxe getProxyInfo parity). */
   getProxyInfo: () => IrisTableProxyInfo | null
+  /** Remove rows by row-key without issuing a query; missing keys are no-ops. */
+  removeRows: (keys: Array<string | number>) => void
+  /** Snapshot (copy) of the currently filtered + sorted body rows. */
+  getFilteredData: () => Row[]
+  /** Serialize the current filtered/sorted row view using visible leaf columns. */
+  exportCurrentViewCsv: () => string
+  /** Serialize the current view plus named bare row sets as CSV segments. */
+  exportMultiCsv: () => string
+  /** Compare two exported-state JSON strings; never throws on invalid input. */
+  compareStates: (a: string, b: string) => string
+  /** Scroll the rendered row with `key` into view; missing/virtualized rows are no-ops. */
+  scrollToRow: (key: string | number) => void
+  /** Scroll and transiently highlight the rendered row with `key`; the target clears after 2s. */
+  goToRow: (key: string | number) => void
 }

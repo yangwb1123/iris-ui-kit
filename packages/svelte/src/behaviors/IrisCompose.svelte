@@ -26,52 +26,50 @@
     children: import('svelte').Snippet
   } = $props()
 
-  const features: Partial<Record<ComposableFeature, unknown>> = {
+  const features = $derived<Partial<Record<ComposableFeature, unknown>>>({
     resizable,
     movable,
     sortable,
     clickOutside,
     hotkey,
-  }
+  })
   const active = $derived(composeFeatures(features))
-
-
 </script>
 
-  {#snippet wrapLayer(i: number, content: import('svelte').Snippet)}
-    {#if i >= active.length}
-      {@render content()}
-    {:else}
-      {@const feature = active[i]}
-      {#if feature === 'hotkey'}
-        <IrisHotkey
-          shortcut={(hotkey as { shortcut: string | string[] }).shortcut}
-          onTrigger={(hotkey as { onTrigger: (e: KeyboardEvent) => void }).onTrigger}
-        >
-          {@render wrapLayer(i + 1, content)}
-        </IrisHotkey>
-      {:else if feature === 'clickOutside'}
-        <IrisClickOutside {...(clickOutside as object)}>
-          {@render wrapLayer(i + 1, content)}
-        </IrisClickOutside>
-      {:else if feature === 'sortable'}
-        <IrisSortable
-          items={(sortable as { items: unknown[] }).items}
-          onReorder={(sortable as { onReorder: (next: unknown[]) => void }).onReorder}
-        >
-          {@render wrapLayer(i + 1, content)}
-        </IrisSortable>
-      {:else if feature === 'movable'}
-        <IrisMovable {...(movable as object)}>
-          {@render wrapLayer(i + 1, content)}
-        </IrisMovable>
-      {:else if feature === 'resizable'}
-        <IrisResizable {...(resizable as object)}>
-          {@render wrapLayer(i + 1, content)}
-        </IrisResizable>
-      {/if}
+{#snippet wrapLayer(i: number, content: import('svelte').Snippet)}
+  {#if i >= active.length}
+    {@render content()}
+  {:else}
+    {@const feature = active[i]}
+    {#if feature === 'hotkey'}
+      <IrisHotkey
+        shortcut={(hotkey as { shortcut: string | string[] }).shortcut}
+        onTrigger={(hotkey as { onTrigger: (e: KeyboardEvent) => void }).onTrigger}
+      >
+        {@render wrapLayer(i + 1, content)}
+      </IrisHotkey>
+    {:else if feature === 'clickOutside'}
+      <IrisClickOutside {...clickOutside as object}>
+        {@render wrapLayer(i + 1, content)}
+      </IrisClickOutside>
+    {:else if feature === 'sortable'}
+      <IrisSortable
+        items={(sortable as { items: unknown[] }).items}
+        onReorder={(sortable as { onReorder: (next: unknown[]) => void }).onReorder}
+      >
+        {@render wrapLayer(i + 1, content)}
+      </IrisSortable>
+    {:else if feature === 'movable'}
+      <IrisMovable {...movable as object}>
+        {@render wrapLayer(i + 1, content)}
+      </IrisMovable>
+    {:else if feature === 'resizable'}
+      <IrisResizable {...resizable as object}>
+        {@render wrapLayer(i + 1, content)}
+      </IrisResizable>
     {/if}
-  {/snippet}
+  {/if}
+{/snippet}
 
 {#if !hasComposableFeatures(features)}
   {@render children()}

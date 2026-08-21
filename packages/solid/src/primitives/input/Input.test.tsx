@@ -27,6 +27,15 @@ describe('@iris-ui-kit/solid IrisInput', () => {
     expect(label.getAttribute('style')).toContain('opacity: 0.6')
   })
 
+  it('readonly forwards native state and uses readonly surface', () => {
+    const { container } = render(() => <IrisInput readOnly />)
+    const input = container.querySelector('input')!
+    const label = container.querySelector('[data-iris-input]') as HTMLElement
+    expect(input.readOnly).toBe(true)
+    expect(label.getAttribute('data-state')).toBe('readonly')
+    expect(label.getAttribute('style')).toContain('background: var(--iris-surface)')
+  })
+
   it('invalid sets aria-invalid + data-state="invalid"', () => {
     const { container } = render(() => <IrisInput invalid />)
     expect(container.querySelector('input')!.getAttribute('aria-invalid')).toBe('true')

@@ -145,6 +145,20 @@ describe('@iris-ui-kit/core computeResponsiveColumns (batch CY)', () => {
     ).toBe(pinnedOnly)
   })
 
+  it('fails closed when a column width is non-finite or negative', () => {
+    const cols: Col[] = [
+      { key: 'a', width: 100 },
+      { key: 'b', width: 100 },
+    ]
+    for (const invalid of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      expect(
+        computeResponsiveColumns(cols, 200, {
+          widthOf: (col) => (col.key === 'b' ? invalid : col.width!),
+        }),
+      ).toBe(cols)
+    }
+  })
+
   it('exposes the documented 480px threshold constant', () => {
     expect(RESPONSIVE_NARROW_WIDTH).toBe(480)
   })

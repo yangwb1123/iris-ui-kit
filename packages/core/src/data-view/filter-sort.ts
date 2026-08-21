@@ -47,7 +47,8 @@ function matchBetween(value: unknown, range: unknown): boolean {
   return compareValues(value, range[0]) >= 0 && compareValues(value, range[1]) <= 0
 }
 
-function matchesRule(value: unknown, rule: FilterRule): boolean {
+/** Whether a single cell value satisfies a typed filter rule. */
+export function matchesRule(value: unknown, rule: FilterRule): boolean {
   switch (rule.operator) {
     case 'eq':
       return compareValues(value, rule.value) === 0

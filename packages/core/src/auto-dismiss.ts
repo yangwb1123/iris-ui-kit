@@ -37,6 +37,93 @@ export interface AutoDismiss {
   cancel(): void
 }
 
+interface AutoDismissClock {
+  remaining: number
+  runningSince: number
+}
+
+function createAutoDismissMachine(scheduler: Scheduler, onDismiss: () => void): AutoDismissMachine {
+  return createMachine<AutoDismissState, Record<string, never>, AutoDismissEvent>({
+    initial: 'idle',
+    context: {},
+    scheduler,
+    states: {
+      idle: { on: { START: { target: 'running' } } },
+      running: {
+        on: {
+          PAUSE: { target: 'paused' },
+          CANCEL: { target: 'idle' },
+          TIMEOUT: { target: 'done' },
+        },
+      },
+      paused: {
+        on: { RESUME: { target: 'running' }, CANCEL: { target: 'idle' } },
+      },
+      done: { entry: [() => onDismiss()] },
+    },
+  })
+}
+
+interface AutoDismissTimer {
+  isArmed(): boolean
+  clear(): void
+  arm(ms: number): void
+}
+
+function createAutoDismissTimer(
+  scheduler: Scheduler,
+  machine: AutoDismissMachine,
+): AutoDismissTimer {
+  let timer: unknown = null
+  return {
+    isArmed: () => timer !== null,
+    clear() {
+      if (timer === null) return
+      scheduler.clearTimeout(timer)
+      timer = null
+    },
+    arm(ms) {
+      this.clear()
+      timer = scheduler.setTimeout(() => {
+        timer = null
+        machine.send({ type: 'TIMEOUT' })
+      }, ms)
+    },
+  }
+}
+
+function createAutoDismissControls(
+  machine: AutoDismissMachine,
+  timer: AutoDismissTimer,
+  clock: AutoDismissClock,
+  scheduler: Scheduler,
+  duration: number,
+  never: boolean,
+): Pick<AutoDismiss, 'start' | 'pause' | 'resume' | 'cancel'> {
+  const now = (): number => scheduler.now?.() ?? Date.now()
+  return {
+    start() {
+      if (never) return
+      clock.remaining = duration
+      machine.send({ type: 'START' })
+    },
+    pause() {
+      if (machine.store.getState().value !== 'running') return
+      clock.remaining = Math.max(0, clock.remaining - (now() - clock.runningSince))
+      machine.send({ type: 'PAUSE' })
+    },
+    resume() {
+      if (machine.store.getState().value !== 'paused') return
+      machine.send({ type: 'RESUME' })
+    },
+    cancel() {
+      timer.clear()
+      machine.send({ type: 'CANCEL' })
+      machine.stop()
+    },
+  }
+}
+
 /**
  * A single timed dismiss built on the promoted statechart's `after` delayed
  * transitions + injectable `Scheduler` — the timing PRIMITIVE behind Toast
@@ -75,108 +162,34 @@ export function createAutoDismiss(options: AutoDismissOptions): AutoDismiss {
 
   // Remaining ms to count down on the next entry into `running`. Begins as the
   // full duration; PAUSE decrements it by the elapsed slice.
-  let remaining = duration
-  // Timestamp (clock) of the last entry into `running`; used to compute elapsed.
-  let runningSince = 0
-
-  const machine = createMachine<AutoDismissState, Record<string, never>, AutoDismissEvent>({
-    initial: 'idle',
-    context: {},
-    scheduler,
-    states: {
-      idle: {
-        on: { START: { target: 'running' } },
-      },
-      running: {
-        on: {
-          PAUSE: { target: 'paused' },
-          CANCEL: { target: 'idle' },
-          // TIMEOUT is the synthetic event we send from the after-timer; routing
-          // it through `send` (rather than a direct `after.target`) lets us run
-          // the onDismiss side-effect in one place via the `done` entry.
-          TIMEOUT: { target: 'done' },
-        },
-      },
-      paused: {
-        on: {
-          RESUME: { target: 'running' },
-          CANCEL: { target: 'idle' },
-        },
-      },
-      done: {
-        // Terminal. Entry fires the dismiss callback exactly once.
-        entry: [() => onDismiss()],
-      },
-    },
-  })
+  const clock: AutoDismissClock = { remaining: duration, runningSince: 0 }
+  const machine = createAutoDismissMachine(scheduler, onDismiss)
 
   // We can't key the `after` map by a *dynamic* remaining value in static config,
   // so we drive the running timer ourselves off the same injectable scheduler and
   // feed its expiry back through the machine as a TIMEOUT event. This keeps a
   // single source of truth (the machine) for state while honouring the
   // pause-preserves-elapsed contract.
-  let timer: unknown = null
-  const clearTimer = (): void => {
-    if (timer !== null) {
-      scheduler.clearTimeout(timer)
-      timer = null
-    }
-  }
-  const armTimer = (ms: number): void => {
-    clearTimer()
-    timer = scheduler.setTimeout(() => {
-      timer = null
-      machine.send({ type: 'TIMEOUT' })
-    }, ms)
-  }
+  const timer = createAutoDismissTimer(scheduler, machine)
 
   // React to every state change: on entering `running` arm the remaining timer,
   // on leaving `running` cancel it (and capture elapsed on PAUSE).
   machine.store.subscribe(() => {
     const value = machine.store.getState().value
     if (value === 'running') {
-      if (timer === null) {
-        runningSince = now()
-        armTimer(remaining)
+      if (!timer.isArmed()) {
+        clock.runningSince = now()
+        timer.arm(clock.remaining)
       }
     } else {
-      clearTimer()
+      timer.clear()
     }
   })
-
-  function start(): void {
-    if (never) return // never arm; park in idle (persistent)
-    remaining = duration
-    machine.send({ type: 'START' })
-  }
-
-  function pause(): void {
-    if (machine.store.getState().value !== 'running') return
-    // Capture how much of `remaining` is left before the transition cancels the
-    // timer (the store subscriber will clear it on leaving `running`).
-    const elapsed = now() - runningSince
-    remaining = Math.max(0, remaining - elapsed)
-    machine.send({ type: 'PAUSE' })
-  }
-
-  function resume(): void {
-    if (machine.store.getState().value !== 'paused') return
-    machine.send({ type: 'RESUME' })
-  }
-
-  function cancel(): void {
-    clearTimer()
-    machine.send({ type: 'CANCEL' })
-    machine.stop()
-  }
 
   return {
     machine,
     state: () => machine.store.getState().value,
-    start,
-    pause,
-    resume,
-    cancel,
+    ...createAutoDismissControls(machine, timer, clock, scheduler, duration, never),
   }
 }
 

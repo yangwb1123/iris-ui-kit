@@ -53,6 +53,17 @@ export function toCsv(
   return body ? `${header}\n${body}` : header
 }
 
+/** Serialize a bare referenced row set by its own enumerable schema. The
+ * first row's key order becomes the header; an empty set has no segment body. */
+export function toCsvRows(rows: readonly Record<string, unknown>[]): string {
+  if (rows.length === 0) return ''
+  const keys = Object.keys(rows[0])
+  return toCsv(
+    rows,
+    keys.map((key) => ({ key, title: key })),
+  )
+}
+
 /**
  * Serialize rows to a JSON string — an array of objects keyed by each column's
  * `key`, values read via `dataIndex`. The portable, re-importable export format

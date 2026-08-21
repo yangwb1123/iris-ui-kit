@@ -71,6 +71,12 @@ export interface SortableController {
   isOver(id: string): boolean
 }
 
+interface PendingSortablePress {
+  id: string
+  x: number
+  y: number
+}
+
 /**
  * Squared distance from `point` to the center of `rect`. Avoids a `sqrt` — the
  * ordering is identical to true distance, which is all `closestCenter` needs.
@@ -105,6 +111,70 @@ export function closestCenter(point: SortablePoint, targets: SortableRect[]): st
   return best
 }
 
+function setSortableOver(store: Store<SortableState>, id: string | null): void {
+  store.setState((prev) =>
+    prev.activeId === null || prev.overId === id ? prev : { ...prev, overId: id },
+  )
+}
+
+function resetSortable(
+  store: Store<SortableState>,
+  pending: { value: PendingSortablePress | null },
+): void {
+  pending.value = null
+  const { activeId, overId } = store.getState()
+  if (activeId === null && overId === null) return
+  store.setState({ activeId: null, overId: null })
+}
+
+function tryStartSortable(
+  store: Store<SortableState>,
+  pending: { value: PendingSortablePress | null },
+  x: number,
+  y: number,
+  threshold: number,
+): boolean {
+  const press = pending.value
+  if (!press) return false
+  if (Math.abs(x - press.x) < threshold && Math.abs(y - press.y) < threshold) return false
+  pending.value = null
+  store.setState({ activeId: press.id, overId: null })
+  return true
+}
+
+function createSortableController(
+  store: Store<SortableState>,
+  pending: { value: PendingSortablePress | null },
+): SortableController {
+  return {
+    getState: () => store.getState(),
+    subscribe: (cb) => store.subscribe(cb),
+    start(id) {
+      pending.value = null
+      store.setState({ activeId: id, overId: null })
+    },
+    press(id, x, y) {
+      pending.value = { id, x, y }
+    },
+    isPending: () => pending.value !== null,
+    tryStart: (x, y, threshold = 4) => tryStartSortable(store, pending, x, y, threshold),
+    over: (id) => setSortableOver(store, id),
+    moveOver(point, targets) {
+      const id = closestCenter(point, targets)
+      setSortableOver(store, id)
+      return id
+    },
+    end() {
+      const { activeId, overId } = store.getState()
+      resetSortable(store, pending)
+      return { activeId, overId }
+    },
+    cancel: () => resetSortable(store, pending),
+    isActive: (id) => store.getState().activeId === id,
+    isOver: (id) => store.getState().overId === id,
+  }
+}
+
 /**
  * Framework-agnostic drag-to-reorder controller. Pairs with each adapter's
  * pointer-based `useDrag` primitive to give kanban / dashboard / pro-table a
@@ -124,71 +194,6 @@ export function createSortable(): SortableController {
   })
 
   // Pending press lives OUTSIDE the store so a press / tap never re-renders.
-  let pending: { id: string; x: number; y: number } | null = null
-
-  const setOver = (id: string | null): void => {
-    store.setState((prev) =>
-      prev.activeId === null || prev.overId === id ? prev : { ...prev, overId: id },
-    )
-  }
-
-  // Reset to idle WITHOUT notifying when already idle (avoids a redundant
-  // re-render when a tap or cancelled press resolves with no active drag).
-  const reset = (): void => {
-    pending = null
-    const { activeId, overId } = store.getState()
-    if (activeId === null && overId === null) return
-    store.setState({ activeId: null, overId: null })
-  }
-
-  return {
-    getState: () => store.getState(),
-    subscribe: (cb) => store.subscribe(cb),
-
-    start(id) {
-      pending = null
-      store.setState({ activeId: id, overId: null })
-    },
-
-    press(id, x, y) {
-      pending = { id, x, y }
-    },
-
-    isPending() {
-      return pending !== null
-    },
-
-    tryStart(x, y, threshold = 4) {
-      if (!pending) return false
-      if (Math.abs(x - pending.x) < threshold && Math.abs(y - pending.y) < threshold) return false
-      const id = pending.id
-      pending = null
-      store.setState({ activeId: id, overId: null })
-      return true
-    },
-
-    over: setOver,
-
-    moveOver(point, targets) {
-      const id = closestCenter(point, targets)
-      setOver(id)
-      return id
-    },
-
-    end() {
-      const { activeId, overId } = store.getState()
-      reset()
-      return { activeId, overId }
-    },
-
-    cancel: reset,
-
-    isActive(id) {
-      return store.getState().activeId === id
-    },
-
-    isOver(id) {
-      return store.getState().overId === id
-    },
-  }
+  const pending: { value: PendingSortablePress | null } = { value: null }
+  return createSortableController(store, pending)
 }

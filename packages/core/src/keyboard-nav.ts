@@ -122,280 +122,292 @@ const firstOrFallback = (count: number, isEnabled: (i: number) => boolean): numb
   return f >= 0 ? f : -1
 }
 
+interface KeyboardNavState {
+  loop: boolean
+  orientation: 'vertical' | 'horizontal'
+  tree: boolean
+  labels?: readonly string[]
+  typeaheadTimeout: number
+  isExpanded?: (index: number) => boolean
+  hasChildren?: (index: number) => boolean
+  isEnabled: (index: number) => boolean
+  count: number
+  rawIndex: number
+  store: Store<number>
+  typeaheadBuffer: string
+  typeaheadTimer?: ReturnType<typeof setTimeout>
+}
+
+interface KeyboardNavOperations {
+  getIndex(): number
+  focus(index: number): void
+  move(delta: number): void
+  goFirst(): void
+  goLast(): void
+  reset(count?: number): void
+}
+
+interface KeyboardNavKeyHandlers {
+  handleKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction
+  handleClosedKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction
+}
+
+function createKeyboardNavState(config: KeyboardNavConfig): KeyboardNavState {
+  const isEnabled = config.isEnabled ?? (() => true)
+  const count = Math.max(0, config.count)
+  const initial =
+    config.initialIndex !== undefined && isEnabled(config.initialIndex)
+      ? config.initialIndex
+      : firstOrFallback(count, isEnabled)
+  return {
+    loop: config.loop ?? true,
+    orientation: config.orientation ?? 'vertical',
+    tree: config.tree ?? false,
+    labels: config.labels,
+    typeaheadTimeout: config.typeaheadTimeout ?? 500,
+    isExpanded: config.isExpanded,
+    hasChildren: config.hasChildren,
+    isEnabled,
+    count,
+    rawIndex: clamp(initial, count),
+    store: createStore<number>(clamp(initial, count)),
+    typeaheadBuffer: '',
+  }
+}
+
+function keyboardSafeIndex(state: KeyboardNavState): number {
+  return clamp(state.rawIndex, state.count)
+}
+
+function clearKeyboardTypeahead(state: KeyboardNavState): void {
+  state.typeaheadBuffer = ''
+  if (state.typeaheadTimer) clearTimeout(state.typeaheadTimer)
+  state.typeaheadTimer = undefined
+}
+
+function emitKeyboardIndex(state: KeyboardNavState, value: number): void {
+  const index = clamp(value, state.count)
+  state.rawIndex = index
+  state.store.setState(index)
+}
+
+function handleKeyboardTypeahead(
+  state: KeyboardNavState,
+  key: string,
+  current: number,
+): KeyboardNavAction {
+  const lower = key.toLowerCase()
+  const last = state.typeaheadBuffer[state.typeaheadBuffer.length - 1]
+  state.typeaheadBuffer = last === lower ? lower : state.typeaheadBuffer + lower
+  if (state.typeaheadTimer) clearTimeout(state.typeaheadTimer)
+  state.typeaheadTimer = setTimeout(() => clearKeyboardTypeahead(state), state.typeaheadTimeout)
+  const match = matchTypeahead(
+    state.labels!,
+    state.typeaheadBuffer,
+    current,
+    (i) => !state.isEnabled(i),
+  )
+  if (match < 0) return { type: 'noop' }
+  emitKeyboardIndex(state, match)
+  return { type: 'typeahead', target: match }
+}
+
+function keyboardTypeaheadActive(state: KeyboardNavState, key: string): boolean {
+  return !!(state.labels && state.labels.length > 0 && key.length === 1 && key !== ' ')
+}
+
+function createKeyboardNavOperations(state: KeyboardNavState): KeyboardNavOperations {
+  return {
+    getIndex: () => keyboardSafeIndex(state),
+    focus: (index) => emitKeyboardIndex(state, index),
+    move(delta) {
+      const current = keyboardSafeIndex(state)
+      if (current < 0) return
+      const next = nextEnabledIndex(current, delta, state.count, state.isEnabled, state.loop)
+      if (next >= 0 && next !== current) emitKeyboardIndex(state, next)
+    },
+    goFirst() {
+      const first = firstOrFallback(state.count, state.isEnabled)
+      if (first >= 0) emitKeyboardIndex(state, first)
+    },
+    goLast() {
+      if (state.count <= 0) return
+      const last = lastEnabledIndex(state.count, state.isEnabled)
+      if (last >= 0) emitKeyboardIndex(state, last)
+    },
+    reset(count) {
+      if (count !== undefined) state.count = Math.max(0, count)
+      const current = keyboardSafeIndex(state)
+      if (current < 0 || !state.isEnabled(current)) {
+        emitKeyboardIndex(state, firstOrFallback(state.count, state.isEnabled))
+      }
+    },
+  }
+}
+
+function handleKeyboardArrowDown(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  current: number,
+): KeyboardNavAction {
+  if (current < 0) return { type: 'noop' }
+  if (state.orientation !== 'vertical') return { type: 'next' }
+  operations.move(1)
+  const next = operations.getIndex()
+  return next !== current ? { type: 'focus', target: next } : { type: 'noop' }
+}
+
+function handleKeyboardArrowUp(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  current: number,
+): KeyboardNavAction {
+  if (current < 0) return { type: 'noop' }
+  if (state.orientation !== 'vertical') return { type: 'previous' }
+  operations.move(-1)
+  const next = operations.getIndex()
+  return next !== current ? { type: 'focus', target: next } : { type: 'noop' }
+}
+
+function handleKeyboardArrowLeft(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  current: number,
+): KeyboardNavAction {
+  if (state.tree) {
+    if (current >= 0 && state.hasChildren?.(current) && state.isExpanded?.(current)) {
+      return { type: 'collapse', target: current }
+    }
+    return { type: 'go-to-parent' }
+  }
+  if (current < 0) return { type: 'noop' }
+  if (state.orientation !== 'horizontal') return { type: 'previous' }
+  operations.move(-1)
+  const next = operations.getIndex()
+  return next !== current ? { type: 'focus', target: next } : { type: 'noop' }
+}
+
+function handleKeyboardArrowRight(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  current: number,
+): KeyboardNavAction {
+  if (state.tree) {
+    if (current >= 0 && state.hasChildren?.(current) && !state.isExpanded?.(current)) {
+      return { type: 'expand', target: current }
+    }
+    if (current >= 0 && !state.hasChildren?.(current)) return { type: 'go-to-parent' }
+    return { type: 'focus', target: current }
+  }
+  if (current < 0) return { type: 'noop' }
+  if (state.orientation !== 'horizontal') return { type: 'next' }
+  operations.move(1)
+  const next = operations.getIndex()
+  return next !== current ? { type: 'focus', target: next } : { type: 'noop' }
+}
+
+function handleKeyboardOpenKey(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  event: { key: string; preventDefault(): void },
+): KeyboardNavAction {
+  const current = operations.getIndex()
+  const { key } = event
+  if (keyboardTypeaheadActive(state, key)) {
+    event.preventDefault()
+    return handleKeyboardTypeahead(state, key, current)
+  }
+  if (key === ' ') {
+    event.preventDefault()
+    return current >= 0 ? { type: 'select', target: current } : { type: 'noop' }
+  }
+  const actions: Record<string, () => KeyboardNavAction> = {
+    ArrowDown: () => handleKeyboardArrowDown(state, operations, current),
+    ArrowUp: () => handleKeyboardArrowUp(state, operations, current),
+    ArrowLeft: () => handleKeyboardArrowLeft(state, operations, current),
+    ArrowRight: () => handleKeyboardArrowRight(state, operations, current),
+    Enter: () => (current >= 0 ? { type: 'select', target: current } : { type: 'noop' }),
+    Home: () => {
+      if (state.count <= 0) return { type: 'noop' }
+      operations.goFirst()
+      const next = operations.getIndex()
+      return next !== current ? { type: 'focus', target: next } : { type: 'noop' }
+    },
+    End: () => {
+      if (state.count <= 0) return { type: 'noop' }
+      operations.goLast()
+      const next = operations.getIndex()
+      return next !== current ? { type: 'focus', target: next } : { type: 'noop' }
+    },
+    Escape: () => ({ type: 'escape' }),
+  }
+  const action = actions[key]
+  if (!action) return { type: 'noop' }
+  event.preventDefault()
+  return action()
+}
+
+function handleKeyboardClosedKey(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  event: { key: string; preventDefault(): void },
+): KeyboardNavAction {
+  const current = operations.getIndex()
+  if (keyboardTypeaheadActive(state, event.key)) {
+    event.preventDefault()
+    const match = handleKeyboardTypeahead(state, event.key, current)
+    return match.type === 'typeahead' ? { type: 'open', target: match.target } : { type: 'open' }
+  }
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    return { type: 'open' }
+  }
+  return { type: 'noop' }
+}
+
+function createKeyboardNavKeyHandlers(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+): KeyboardNavKeyHandlers {
+  return {
+    handleKeyDown: (event) => handleKeyboardOpenKey(state, operations, event),
+    handleClosedKeyDown: (event) => handleKeyboardClosedKey(state, operations, event),
+  }
+}
+
+function createKeyboardNavController(
+  state: KeyboardNavState,
+  operations: KeyboardNavOperations,
+  handlers: KeyboardNavKeyHandlers,
+): KeyboardNavController {
+  return {
+    get store() {
+      return state.store
+    },
+    get index() {
+      return operations.getIndex()
+    },
+    get count() {
+      return state.count
+    },
+    focus: operations.focus,
+    move: operations.move,
+    goFirst: operations.goFirst,
+    goLast: operations.goLast,
+    reset: operations.reset,
+    handleKeyDown: handlers.handleKeyDown,
+    handleClosedKeyDown: handlers.handleClosedKeyDown,
+  }
+}
+
 // ─── Implementation ─────────────────────────────────────────────────────────
 
 export function createKeyboardNav(config: KeyboardNavConfig): KeyboardNavController {
-  const {
-    loop = true,
-    orientation = 'vertical',
-    tree = false,
-    labels,
-    typeaheadTimeout = 500,
-    isExpanded,
-    hasChildren,
-  } = config
-
-  // ── Internal state ──────────────────────────────────────────────────────
-  let _count = Math.max(0, config.count)
-  const _isEnabled = config.isEnabled ?? (() => true)
-
-  // Validate explicit initialIndex against isEnabled; fall back to first enabled
-  let rawIndex: number
-  if (config.initialIndex !== undefined) {
-    rawIndex = _isEnabled(config.initialIndex)
-      ? config.initialIndex
-      : firstOrFallback(_count, _isEnabled)
-  } else {
-    rawIndex = firstOrFallback(_count, _isEnabled)
-  }
-
-  const store = createStore<number>(clamp(rawIndex, _count))
-
-  // Typeahead buffer
-  let typeaheadBuffer = ''
-  let typeaheadTimer: ReturnType<typeof setTimeout> | undefined
-
-  const clearTypeahead = (): void => {
-    typeaheadBuffer = ''
-    if (typeaheadTimer) clearTimeout(typeaheadTimer)
-    typeaheadTimer = undefined
-  }
-
-  // Write clamped value and notify subscribers
-  const emit = (v: number): void => {
-    const clamped = clamp(v, _count)
-    rawIndex = clamped
-    store.setState(clamped)
-  }
-
-  // Current active index (clamped)
-  const safeIndex = (): number => clamp(rawIndex, _count)
-
-  // ── Extracted key handlers ─────────────────────────────────────────────
-
-  /** Handle typeahead (printable character) input. */
-  const handleTypeahead = (key: string, cur: number): KeyboardNavAction => {
-    const lastChar = typeaheadBuffer[typeaheadBuffer.length - 1]
-    if (lastChar === key.toLowerCase()) {
-      typeaheadBuffer = key.toLowerCase()
-    } else {
-      typeaheadBuffer += key.toLowerCase()
-    }
-    if (typeaheadTimer) clearTimeout(typeaheadTimer)
-    typeaheadTimer = setTimeout(clearTypeahead, typeaheadTimeout)
-    const match = matchTypeahead(labels!, typeaheadBuffer, cur, (i) => !_isEnabled(i))
-    if (match >= 0) {
-      emit(match)
-      return { type: 'typeahead', target: match }
-    }
-    return { type: 'noop' }
-  }
-
-  /** ArrowDown: next item in vertical orientation, otherwise 'next' action. */
-  const handleArrowDown = (cur: number): KeyboardNavAction => {
-    if (cur < 0) return { type: 'noop' }
-    if (orientation === 'vertical') {
-      controller.move(1)
-      const next = controller.index
-      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-    }
-    return { type: 'next' }
-  }
-
-  /** ArrowUp: previous item in vertical orientation, otherwise 'previous' action. */
-  const handleArrowUp = (cur: number): KeyboardNavAction => {
-    if (cur < 0) return { type: 'noop' }
-    if (orientation === 'vertical') {
-      controller.move(-1)
-      const next = controller.index
-      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-    }
-    return { type: 'previous' }
-  }
-
-  /** ArrowLeft: collapse (tree) / navigate previous (horizontal) / 'previous' action. */
-  const handleArrowLeft = (cur: number): KeyboardNavAction => {
-    if (tree) {
-      if (cur >= 0 && hasChildren?.(cur) && isExpanded?.(cur)) {
-        return { type: 'collapse', target: cur }
-      }
-      return { type: 'go-to-parent' }
-    }
-    if (cur < 0) return { type: 'noop' }
-    if (orientation === 'horizontal') {
-      controller.move(-1)
-      const next = controller.index
-      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-    }
-    return { type: 'previous' }
-  }
-
-  /** ArrowRight: expand (tree) / navigate next (horizontal) / 'next' action. */
-  const handleArrowRight = (cur: number): KeyboardNavAction => {
-    if (tree) {
-      if (cur >= 0 && hasChildren?.(cur) && !isExpanded?.(cur)) {
-        return { type: 'expand', target: cur }
-      }
-      if (cur >= 0 && !hasChildren?.(cur)) {
-        return { type: 'go-to-parent' }
-      }
-      return { type: 'focus', target: cur }
-    }
-    if (cur < 0) return { type: 'noop' }
-    if (orientation === 'horizontal') {
-      controller.move(1)
-      const next = controller.index
-      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-    }
-    return { type: 'next' }
-  }
-
-  /** Enter: select the current item. */
-  const handleEnter = (cur: number): KeyboardNavAction => {
-    if (cur >= 0) return { type: 'select', target: cur }
-    return { type: 'noop' }
-  }
-
-  /** Home: jump to the first enabled item. */
-  const handleHome = (cur: number): KeyboardNavAction => {
-    if (_count <= 0) return { type: 'noop' }
-    controller.goFirst()
-    const next = controller.index
-    return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-  }
-
-  /** End: jump to the last enabled item. */
-  const handleEnd = (cur: number): KeyboardNavAction => {
-    if (_count <= 0) return { type: 'noop' }
-    controller.goLast()
-    const next = controller.index
-    return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-  }
-
-  /** Escape: close / dismiss. */
-  const handleEscape = (): KeyboardNavAction => ({ type: 'escape' })
-
-  /** True when typeahead is active (labels provided and key is a printable char). */
-  const isTypeaheadActive = (key: string): boolean =>
-    !!(labels && labels.length > 0 && key.length === 1 && key !== ' ')
-
-  // ── Public API ──────────────────────────────────────────────────────────
-
-  const controller: KeyboardNavController = {
-    get store() {
-      return store
-    },
-    get index() {
-      return safeIndex()
-    },
-    get count() {
-      return _count
-    },
-
-    focus(index: number) {
-      emit(index)
-    },
-
-    move(delta: number) {
-      const cur = safeIndex()
-      if (cur < 0) return
-      const next = nextEnabledIndex(cur, delta, _count, _isEnabled, loop)
-      if (next >= 0 && next !== cur) emit(next)
-    },
-
-    goFirst() {
-      const first = firstOrFallback(_count, _isEnabled)
-      if (first >= 0) emit(first)
-    },
-
-    goLast() {
-      if (_count <= 0) return
-      const last = lastEnabledIndex(_count, _isEnabled)
-      if (last >= 0) emit(last)
-    },
-
-    reset(count?: number) {
-      if (count !== undefined) _count = Math.max(0, count)
-      const cur = safeIndex()
-      if (cur < 0 || !_isEnabled(cur)) {
-        const first = firstOrFallback(_count, _isEnabled)
-        emit(first)
-      }
-    },
-
-    handleKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction {
-      const cur = safeIndex()
-      const { key } = event
-
-      // ── Typeahead: printable character when labels are configured ───────
-      if (isTypeaheadActive(key)) {
-        event.preventDefault()
-        return handleTypeahead(key, cur)
-      }
-
-      // ── Space → select ─────────────────────────────────────────────────
-      if (key === ' ') {
-        event.preventDefault()
-        return cur >= 0 ? { type: 'select', target: cur } : { type: 'noop' }
-      }
-
-      // ── Navigation keys ─────────────────────────────────────────────────
-      switch (key) {
-        case 'ArrowDown':
-          event.preventDefault()
-          return handleArrowDown(cur)
-        case 'ArrowUp':
-          event.preventDefault()
-          return handleArrowUp(cur)
-        case 'ArrowLeft':
-          event.preventDefault()
-          return handleArrowLeft(cur)
-        case 'ArrowRight':
-          event.preventDefault()
-          return handleArrowRight(cur)
-        case 'Enter':
-          event.preventDefault()
-          return handleEnter(cur)
-        case 'Home':
-          event.preventDefault()
-          return handleHome(cur)
-        case 'End':
-          event.preventDefault()
-          return handleEnd(cur)
-        case 'Escape':
-          event.preventDefault()
-          return handleEscape()
-        default:
-          return { type: 'noop' }
-      }
-    },
-
-    handleClosedKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction {
-      const cur = safeIndex()
-      const { key } = event
-
-      // Typeahead on the closed trigger: same buffer + match semantics as the
-      // open listbox (REQ-2); a match is emitted to the store before returning.
-      if (isTypeaheadActive(key)) {
-        event.preventDefault()
-        const match = handleTypeahead(key, cur)
-        return match.type === 'typeahead'
-          ? { type: 'open', target: match.target }
-          : { type: 'open' }
-      }
-
-      if (key === 'ArrowDown') {
-        event.preventDefault()
-        // Index deliberately untouched — the adapter's open-reset anchors focus
-        // to the selected/first-enabled item.
-        return { type: 'open' }
-      }
-
-      // NO preventDefault: Space/Enter must keep activating the native button
-      // (click-toggle) — a regression invisible to jsdom keydown tests.
-      return { type: 'noop' }
-    },
-  }
-
-  return controller
+  const state = createKeyboardNavState(config)
+  const operations = createKeyboardNavOperations(state)
+  return createKeyboardNavController(
+    state,
+    operations,
+    createKeyboardNavKeyHandlers(state, operations),
+  )
 }

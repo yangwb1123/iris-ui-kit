@@ -69,7 +69,10 @@ export function rangeStats<Row>(
     const column = columns[c]
     if (!column) continue
     let count = 0
-    const nums: number[] = []
+    let numericCount = 0
+    let sum = 0
+    let min = Infinity
+    let max = -Infinity
     for (let r = rowStart; r <= rowEnd; r += 1) {
       const row = rows[r]
       if (row === undefined) continue
@@ -77,16 +80,20 @@ export function rangeStats<Row>(
       if (raw == null) continue // null/undefined are not data points
       count += 1
       const v = Number(raw)
-      if (Number.isFinite(v)) nums.push(v)
+      if (Number.isFinite(v)) {
+        numericCount += 1
+        sum += v
+        if (v < min) min = v
+        if (v > max) max = v
+      }
     }
-    const hasNumeric = nums.length > 0
-    const sum = hasNumeric ? nums.reduce((a, b) => a + b, 0) : null
+    const hasNumeric = numericCount > 0
     out[column.key] = {
       count,
-      sum,
-      avg: hasNumeric ? sum! / nums.length : null,
-      min: hasNumeric ? Math.min(...nums) : null,
-      max: hasNumeric ? Math.max(...nums) : null,
+      sum: hasNumeric ? sum : null,
+      avg: hasNumeric ? sum / numericCount : null,
+      min: hasNumeric ? min : null,
+      max: hasNumeric ? max : null,
     }
   }
   return out

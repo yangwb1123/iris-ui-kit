@@ -74,6 +74,67 @@ export interface GridNavOptions {
   pageSize?: number
 }
 
+function scanGridRow(
+  current: GridCell,
+  row: number,
+  fromCol: number,
+  step: number,
+  colCount: number,
+  isEnabled: (cell: GridCell) => boolean,
+  loop: boolean,
+): GridCell {
+  let col = fromCol
+  for (let i = 0; i < colCount; i += 1) {
+    col += step
+    if (col < 0) {
+      if (!loop) break
+      col = colCount - 1
+    } else if (col >= colCount) {
+      if (!loop) break
+      col = 0
+    }
+    if (isEnabled({ row, col })) return { row, col }
+  }
+  return current
+}
+
+function scanGridColumn(
+  current: GridCell,
+  col: number,
+  fromRow: number,
+  step: number,
+  rowCount: number,
+  isEnabled: (cell: GridCell) => boolean,
+): GridCell {
+  let row = fromRow
+  for (let i = 0; i < rowCount; i += 1) {
+    row += step
+    if (row < 0 || row >= rowCount) break
+    if (isEnabled({ row, col })) return { row, col }
+  }
+  return current
+}
+
+function nearestEnabledInRow(
+  current: GridCell,
+  row: number,
+  col: number,
+  colCount: number,
+  isEnabled: (cell: GridCell) => boolean,
+): GridCell {
+  const inCol = (candidate: number): boolean => candidate >= 0 && candidate < colCount
+  if (isEnabled({ row, col })) return { row, col }
+  for (let distance = 1; distance < colCount; distance += 1) {
+    if (inCol(col - distance) && isEnabled({ row, col: col - distance })) {
+      return { row, col: col - distance }
+    }
+    if (inCol(col + distance) && isEnabled({ row, col: col + distance })) {
+      return { row, col: col + distance }
+    }
+  }
+  return current
+}
+
 /**
  * Framework-agnostic 2D roving-focus math — the C-layer material behind grid
  * keyboard navigation (`role="grid"` Table/DataGrid). Given the focused cell and
@@ -91,63 +152,37 @@ export function nextGridCell(
 ): GridCell {
   const { rowCount, colCount, isEnabled = () => true, loop = false, pageSize = 1 } = options
   if (rowCount <= 0 || colCount <= 0) return current
-  const inRow = (r: number): boolean => r >= 0 && r < rowCount
-  const inCol = (c: number): boolean => c >= 0 && c < colCount
   const clampRow = (r: number): number => Math.max(0, Math.min(rowCount - 1, r))
-
-  // Vary the column within `row`, skipping disabled, optionally wrapping.
-  const scanRow = (row: number, fromCol: number, step: number): GridCell => {
-    let c = fromCol
-    for (let i = 0; i < colCount; i += 1) {
-      c += step
-      if (c < 0) {
-        if (!loop) break
-        c = colCount - 1
-      } else if (c >= colCount) {
-        if (!loop) break
-        c = 0
-      }
-      if (isEnabled({ row, col: c })) return { row, col: c }
-    }
-    return current
-  }
-  // Vary the row within `col`, skipping disabled (no wrap across the top/bottom).
-  const scanCol = (col: number, fromRow: number, step: number): GridCell => {
-    let r = fromRow
-    for (let i = 0; i < rowCount; i += 1) {
-      r += step
-      if (!inRow(r)) break
-      if (isEnabled({ row: r, col })) return { row: r, col }
-    }
-    return current
-  }
-  // Nearest enabled cell in `row`, searching outward from `col`.
-  const nearestInRow = (row: number, col: number): GridCell => {
-    if (isEnabled({ row, col })) return { row, col }
-    for (let d = 1; d < colCount; d += 1) {
-      if (inCol(col - d) && isEnabled({ row, col: col - d })) return { row, col: col - d }
-      if (inCol(col + d) && isEnabled({ row, col: col + d })) return { row, col: col + d }
-    }
-    return current
-  }
 
   switch (key) {
     case 'ArrowLeft':
-      return scanRow(current.row, current.col, -1)
+      return scanGridRow(current, current.row, current.col, -1, colCount, isEnabled, loop)
     case 'ArrowRight':
-      return scanRow(current.row, current.col, 1)
+      return scanGridRow(current, current.row, current.col, 1, colCount, isEnabled, loop)
     case 'ArrowUp':
-      return scanCol(current.col, current.row, -1)
+      return scanGridColumn(current, current.col, current.row, -1, rowCount, isEnabled)
     case 'ArrowDown':
-      return scanCol(current.col, current.row, 1)
+      return scanGridColumn(current, current.col, current.row, 1, rowCount, isEnabled)
     case 'Home':
-      return nearestInRow(current.row, 0)
+      return nearestEnabledInRow(current, current.row, 0, colCount, isEnabled)
     case 'End':
-      return nearestInRow(current.row, colCount - 1)
+      return nearestEnabledInRow(current, current.row, colCount - 1, colCount, isEnabled)
     case 'PageUp':
-      return nearestInRow(clampRow(current.row - pageSize), current.col)
+      return nearestEnabledInRow(
+        current,
+        clampRow(current.row - pageSize),
+        current.col,
+        colCount,
+        isEnabled,
+      )
     case 'PageDown':
-      return nearestInRow(clampRow(current.row + pageSize), current.col)
+      return nearestEnabledInRow(
+        current,
+        clampRow(current.row + pageSize),
+        current.col,
+        colCount,
+        isEnabled,
+      )
   }
 }
 

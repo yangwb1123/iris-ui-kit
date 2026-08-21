@@ -82,4 +82,30 @@ describe('@iris-ui-kit/core rangeStats (batch AJ, iris 独有)', () => {
     const stats = rangeStats(rows, columns, range({ row: 2, col: 1 }, { row: 2, col: 1 }))
     expect(stats.age).toEqual({ count: 1, sum: 28, avg: 28, min: 28, max: 28 })
   })
+
+  it('scans large ranges without spreading into Math.min/Math.max', () => {
+    const largeRows = Array.from({ length: 200_000 }, (_, i) => ({ value: i }))
+    const largeColumns = [{ key: 'value', getValue: (row: { value: number }) => row.value }]
+    const stats = rangeStats(
+      largeRows,
+      largeColumns,
+      range({ row: 0, col: 0 }, { row: largeRows.length - 1, col: 0 }),
+    )
+    expect(stats.value).toEqual({
+      count: largeRows.length,
+      sum: (largeRows.length * (largeRows.length - 1)) / 2,
+      avg: (largeRows.length - 1) / 2,
+      min: 0,
+      max: largeRows.length - 1,
+    })
+  })
+
+  it('treats Infinity as a non-numeric value', () => {
+    const stats = rangeStats(
+      [{ value: Infinity }, { value: -Infinity }, { value: 3 }],
+      [{ key: 'value', getValue: (row: { value: number }) => row.value }],
+      range({ row: 0, col: 0 }, { row: 2, col: 0 }),
+    )
+    expect(stats.value).toEqual({ count: 3, sum: 3, avg: 3, min: 3, max: 3 })
+  })
 })

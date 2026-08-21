@@ -1,5 +1,6 @@
 import { createDataSource } from './data-source'
 import { derived, type Store } from './store'
+import type { DataSourceController } from './data-source/types'
 import type { SortState } from './data-view'
 
 /**
@@ -124,24 +125,24 @@ function paramsEqual(a: RemoteTableParams, b: RemoteTableParams): boolean {
   return filtersEqual(a.filters, b.filters)
 }
 
-export function createRemoteTableSource<Row>(
-  options: RemoteTableSourceOptions<Row>,
-): RemoteTableSource<Row> {
-  // Per-field `??` (not spread): an explicitly-`undefined` initialParams field
-  // falls back to the default instead of seeding `undefined` into the engine
-  // (which would NaN paging / break `Object.keys(filters)`).
-  const initial: RemoteTableParams = {
-    page: options.initialParams?.page ?? 1,
-    pageSize: options.initialParams?.pageSize ?? 10,
-    sort: options.initialParams?.sort ?? null,
-    sorts: options.initialParams?.sorts,
-    filters: normalizeFilters(options.initialParams?.filters ?? {}),
+function createInitialRemoteTableParams(
+  initialParams: Partial<RemoteTableParams> | undefined,
+): RemoteTableParams {
+  // Per-field `??` (not spread): an explicitly-`undefined` field falls back
+  // to the default instead of seeding invalid paging/filter state.
+  return {
+    page: initialParams?.page ?? 1,
+    pageSize: initialParams?.pageSize ?? 10,
+    sort: initialParams?.sort ?? null,
+    sorts: initialParams?.sorts,
+    filters: normalizeFilters(initialParams?.filters ?? {}),
   }
+}
 
-  // The unified data engine does the paging / token / latest-wins work; this
-  // controller is a projection onto the remote-table contract. `immediate:
-  // false` so no request fires during construction — `autoLoad` is honored
-  // explicitly below (the React bridge kicks the load from an effect instead).
+function createRemoteTableDataSource<Row>(
+  options: RemoteTableSourceOptions<Row>,
+  initial: RemoteTableParams,
+): DataSourceController<Row> {
   const ds = createDataSource<Row>({
     fetcher: ({ page, pageSize, sort, filters, multiSort }) =>
       options.query({
@@ -149,112 +150,122 @@ export function createRemoteTableSource<Row>(
         pageSize,
         sort,
         filters,
-        // The `sorts` channel only exists in multi mode (the engine nulls the
-        // single `sort` there), so single-mode queries stay byte-identical.
+        // The `sorts` channel only exists in multi mode; single-mode queries
+        // stay byte-identical.
         ...(multiSort.length > 0 ? { sorts: multiSort } : {}),
       }),
     pageSize: initial.pageSize,
     immediate: false,
   })
-  // Seed the initial params without triggering a request (autoLoad: false
-  // must not query on creation).
-  ds.store.setState((s) => ({
-    ...s,
+  ds.store.setState((state) => ({
+    ...state,
     page: initial.page,
-    // Multi mode maps into the engine's multiSort slot (which nulls the
-    // single sort — the two channels are mutually exclusive, vxe parity).
     sort: initial.sorts !== undefined ? null : initial.sort,
-    multiSort: initial.sorts ?? s.multiSort,
+    multiSort: initial.sorts ?? state.multiSort,
     filters: initial.filters,
   }))
+  return ds
+}
 
-  const store: Store<RemoteTableSourceState<Row>> = derived([ds.store], (s) => ({
-    data: s.rows,
-    total: s.total,
-    loading: s.loading,
-    error: toError(s.error),
+function createRemoteTableStore<Row>(
+  ds: DataSourceController<Row>,
+): Store<RemoteTableSourceState<Row>> {
+  return derived([ds.store], (state) => ({
+    data: state.rows,
+    total: state.total,
+    loading: state.loading,
+    error: toError(state.error),
     params: {
-      page: s.page,
-      pageSize: s.pageSize,
-      sort: s.sort,
-      filters: s.filters,
-      ...(s.multiSort.length > 0 ? { sorts: s.multiSort } : {}),
+      page: state.page,
+      pageSize: state.pageSize,
+      sort: state.sort,
+      filters: state.filters,
+      ...(state.multiSort.length > 0 ? { sorts: state.multiSort } : {}),
     },
   }))
+}
 
-  const applyParams = (partial: Partial<RemoteTableParams>): boolean => {
-    const s = ds.store.getState()
-    const currentSorts: SortState[] | undefined = s.multiSort.length > 0 ? s.multiSort : undefined
+function createRemoteTableParamApplier<Row>(
+  ds: DataSourceController<Row>,
+): (partial: Partial<RemoteTableParams>) => boolean {
+  return (partial) => {
+    const state = ds.store.getState()
+    const currentSorts: SortState[] | undefined =
+      state.multiSort.length > 0 ? state.multiSort : undefined
     const merged: RemoteTableParams = {
-      page: partial.page ?? s.page,
-      pageSize: partial.pageSize ?? s.pageSize,
-      sort: partial.sort !== undefined ? partial.sort : s.sort,
+      page: partial.page ?? state.page,
+      pageSize: partial.pageSize ?? state.pageSize,
+      sort: partial.sort !== undefined ? partial.sort : state.sort,
       sorts: partial.sorts !== undefined ? partial.sorts : currentSorts,
-      filters: partial.filters !== undefined ? normalizeFilters(partial.filters) : s.filters,
+      filters: partial.filters !== undefined ? normalizeFilters(partial.filters) : state.filters,
     }
-    // vxe behavior: a sort/filter VALUE change resets the page to 1. Compare
-    // by value (not key presence) so a controlled `sort`/`filters` prop with
-    // fresh object identity each render never spuriously resets an active
-    // page or re-queries (e.g. an inline `sort={{ key, direction }}` literal).
-    const sortChanged = partial.sort !== undefined && !sortEqual(s.sort, partial.sort)
+    // vxe behavior: value changes reset the page. Compare by value so fresh
+    // controlled object identities do not spuriously reset or re-query.
+    const sortChanged = partial.sort !== undefined && !sortEqual(state.sort, partial.sort)
     const sortsChanged = partial.sorts !== undefined && !sortsEqual(currentSorts, partial.sorts)
-    const filtersChanged = partial.filters !== undefined && !filtersEqual(s.filters, merged.filters)
+    const filtersChanged =
+      partial.filters !== undefined && !filtersEqual(state.filters, merged.filters)
     if (sortChanged || sortsChanged || filtersChanged) merged.page = 1
     const current: RemoteTableParams = {
-      page: s.page,
-      pageSize: s.pageSize,
-      sort: s.sort,
+      page: state.page,
+      pageSize: state.pageSize,
+      sort: state.sort,
       sorts: currentSorts,
-      filters: s.filters,
+      filters: state.filters,
     }
     if (paramsEqual(current, merged)) return false
-    // sorts (multi mode) maps into the engine's multiSort slot (which nulls
-    // the single sort); single mode keeps writing the `sort` field, so the
-    // two channels stay mutually exclusive (vxe sort-config.multiple parity).
-    ds.store.setState((st) => ({
-      ...st,
+    ds.store.setState((next) => ({
+      ...next,
       page: merged.page,
       pageSize: merged.pageSize,
       sort: merged.sorts !== undefined ? null : merged.sort,
-      multiSort: merged.sorts ?? st.multiSort,
+      multiSort: merged.sorts ?? next.multiSort,
       filters: merged.filters,
     }))
     return true
   }
+}
 
-  /**
-   * Load the current page, then recover when the server reports a total that
-   * no longer covers the current page (rows deleted server-side): jump back
-   * to the last valid page so the pager and the query never diverge (the
-   * stale page would otherwise show zero rows and stay unrecoverable).
-   */
-  async function loadClamped(): Promise<void> {
+async function loadClamped<Row>(ds: DataSourceController<Row>): Promise<void> {
+  await ds.load()
+  const state = ds.store.getState()
+  const maxPage = Math.max(1, Math.ceil(state.total / state.pageSize))
+  if (state.total > 0 && state.error == null && !state.loading && state.page > maxPage) {
+    ds.store.setState((next) => ({ ...next, page: maxPage }))
     await ds.load()
-    const s = ds.store.getState()
-    const maxPage = Math.max(1, Math.ceil(s.total / s.pageSize))
-    if (s.total > 0 && s.error == null && !s.loading && s.page > maxPage) {
-      ds.store.setState((st) => ({ ...st, page: maxPage }))
-      await ds.load()
-    }
   }
+}
 
-  const controller: RemoteTableSource<Row> = {
+function createRemoteTableController<Row>(
+  ds: DataSourceController<Row>,
+  store: Store<RemoteTableSourceState<Row>>,
+  applyParams: (partial: Partial<RemoteTableParams>) => boolean,
+): RemoteTableSource<Row> {
+  const load = (): Promise<void> => loadClamped(ds)
+  return {
     getState: store.getState,
     subscribe: store.subscribe,
     async request(partial) {
-      if (partial) {
-        if (!applyParams(partial)) return
-      }
-      return loadClamped()
+      if (partial && !applyParams(partial)) return
+      return load()
     },
-    refetch: () => loadClamped(),
+    refetch: load,
     setParams(partial) {
       if (!applyParams(partial)) return false
-      void loadClamped()
+      void load()
       return true
     },
     destroy: () => ds.destroy(),
   }
+}
+
+export function createRemoteTableSource<Row>(
+  options: RemoteTableSourceOptions<Row>,
+): RemoteTableSource<Row> {
+  const initial = createInitialRemoteTableParams(options.initialParams)
+  const ds = createRemoteTableDataSource(options, initial)
+  const store = createRemoteTableStore(ds)
+  const controller = createRemoteTableController(ds, store, createRemoteTableParamApplier(ds))
 
   // autoLoad parity: fire the first request on creation unless disabled (the
   // React bridge passes false and kicks the load from an effect instead).

@@ -1,37 +1,19 @@
-/**
- * Form types for Iris UI form engine.
- *
- * This is the type-only entry point. No runtime logic — keeps type
- * declarations separated from implementation so consumers can import
- * types without pulling in the full engine.
- */
 import type { Store } from '../store'
+import { formatPath, type Path } from '../path'
 
-/** @internal Canonical segment for a path expression. */
+export type FormValues = Record<string, unknown>
+export type Key<V> = keyof V & string
 export type PathSegment = string | number
 
-/** Record-like values object (flat or deeply nested). */
-export type FormValues = Record<string, unknown>
-
-export type Key<V> = keyof V & string
-
-/**
- * A field reference: a flat top-level key OR a nested path string
- * (`address.city`, `items[2].sku`) / a parsed segment array. Widening `Key<V>`
- * to also accept a `Path` keeps existing `keyof V` call-sites type-checking
- * while opening up nested binding.
- */
+/** Flat keys and nested path references accepted by the form store. */
 export type FieldPath<V> = Key<V> | (string & {}) | readonly PathSegment[]
 
-/** Keys of `V` whose value is an array (the targets of the `array*` helpers). */
 export type ArrayKey<V> = { [K in Key<V>]: V[K] extends readonly unknown[] ? K : never }[Key<V>]
-/** The element type of an array field value. */
 export type ArrayElement<T> = T extends readonly (infer U)[] ? U : never
 
-export type FieldErrors<_V extends FormValues> = Record<string, string | undefined>
-export type FieldFlags<_V extends FormValues> = Record<string, boolean | undefined>
+export type FieldErrors<V extends FormValues> = Partial<Record<Key<V> | (string & {}), string>>
+export type FieldFlags<V extends FormValues> = Partial<Record<Key<V> | (string & {}), boolean>>
 
-/** Returns an error message, or `undefined` when the value is valid. */
 export type Validator<V extends FormValues> = (
   value: V[Key<V>],
   values: V,
@@ -46,14 +28,11 @@ export interface FormState<V extends FormValues> {
   dirty: FieldFlags<V>
   isSubmitting: boolean
   isValidating: boolean
-  /** Per-field flag: true while that field's (async) validator is in flight. */
   validating: FieldFlags<V>
   submitCount: number
-  /** Active step index (0-based) when the form is configured with `steps`. */
   currentStep: number
 }
 
-/** One step of a multi-step (wizard) form: the fields it owns. */
 export interface FormStep<V extends FormValues> {
   id?: string
   fields: Key<V>[]
@@ -65,11 +44,14 @@ export interface FormConfig<V extends FormValues> {
   validate?: (values: V) => FieldErrors<V> | Promise<FieldErrors<V>>
   validateOnChange?: boolean
   validateOnBlur?: boolean
+  validateOnMount?: boolean
   validationDebounceMs?: number
+  setFieldValueDebounceMs?: number
   dependencies?: Partial<Record<Key<V>, Key<V>[]>>
   steps?: FormStep<V>[]
   parse?: (values: V) => V
   transform?: (values: V) => V
+  maxHistory?: number
   onSubmit?: (values: V) => void | Promise<void>
 }
 
@@ -99,15 +81,22 @@ export interface FormStore<V extends FormValues> {
   handleSubmit(): Promise<void>
   reset(nextInitialValues?: V): void
   isValid(): boolean
+  isDirty(): boolean
+  getDirtyFields(): Key<V>[]
+  undo(): void
+  redo(): void
+  canUndo(): boolean
+  canRedo(): boolean
+  serialize(opts?: { includeTouched?: boolean; exclude?: (keyof V)[] }): {
+    values: Partial<V>
+    touched?: FieldFlags<V>
+  }
+  hydrate(draft: { values: Partial<V>; touched?: FieldFlags<V> }): void
 }
 
-/** The root form state key when used in contexts / providers. */
 export const FORM_STORE_KEY = 'form'
 
-/**
- * Returns the canonical string key under which a field's per-field state is stored.
- * A flat key ("email") returns itself; a nested path (["items", 2, "sku"]) returns "items.2.sku".
- */
+/** Canonical key for per-field state maps. */
 export function pathKey(ref: FieldPath<unknown>): string {
-  return Array.isArray(ref) ? ref.join('.') : String(ref)
+  return formatPath(ref as Path)
 }

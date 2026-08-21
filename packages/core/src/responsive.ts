@@ -38,11 +38,71 @@ export interface ComputeResponsiveColumnsOptions {
 
 /** Natural width of a (possibly grouped) top-level column: the resolved leaf
  * width for a leaf; the sum of its descendants for a group. */
-function naturalWidthOf(col: ResponsiveColumn, widthOf: (col: ResponsiveColumn) => number): number {
+function naturalWidthOf(
+  col: ResponsiveColumn,
+  widthOf: (col: ResponsiveColumn) => number,
+): number | null {
   if (col.children && col.children.length > 0) {
-    return col.children.reduce((sum, child) => sum + naturalWidthOf(child, widthOf), 0)
+    let total = 0
+    for (const child of col.children) {
+      const width = naturalWidthOf(child, widthOf)
+      if (width === null) return null
+      total += width
+    }
+    return total
   }
-  return widthOf(col)
+  const width = widthOf(col)
+  // A broken measurement must never turn the fit budget into NaN/Infinity or
+  // make the algorithm hide arbitrary columns.  Returning null lets the
+  // caller preserve the original column list (fail-closed).
+  return Number.isFinite(width) && width >= 0 ? width : null
+}
+
+interface ResponsiveMeasurement {
+  total: number
+  freeCount: number
+  naturalWidths: number[]
+}
+
+function measureResponsiveColumns(
+  columns: readonly ResponsiveColumn[],
+  widthOf: (col: ResponsiveColumn) => number,
+  isPinned: (col: ResponsiveColumn) => boolean,
+): ResponsiveMeasurement | null {
+  let total = 0
+  let freeCount = 0
+  const naturalWidths: number[] = []
+  for (const col of columns) {
+    const width = naturalWidthOf(col, widthOf)
+    if (width === null) return null
+    naturalWidths.push(width)
+    total += width
+    if (!isPinned(col)) freeCount += 1
+  }
+  return { total, freeCount, naturalWidths }
+}
+
+function hideResponsiveTail(
+  columns: readonly ResponsiveColumn[],
+  containerWidth: number,
+  floor: number,
+  isPinned: (col: ResponsiveColumn) => boolean,
+  measurement: ResponsiveMeasurement,
+): boolean[] {
+  const kept = new Array<boolean>(columns.length).fill(true)
+  let { total, freeCount } = measurement
+  for (let i = columns.length - 1; i >= 0 && total > containerWidth; i -= 1) {
+    const col = columns[i]!
+    if (isPinned(col) || freeCount <= floor) continue
+    kept[i] = false
+    freeCount -= 1
+    total -= measurement.naturalWidths[i]!
+  }
+  return kept
+}
+
+function hasResponsiveHiddenColumns(kept: readonly boolean[]): boolean {
+  return kept.some((value) => !value)
 }
 
 /**
@@ -77,32 +137,9 @@ export function computeResponsiveColumns<C extends ResponsiveColumn>(
   } = options
   if (containerWidth <= 0 || containerWidth >= narrowWidth) return columns
   if (columns.length === 0) return columns
-
-  let total = 0
-  let freeCount = 0
-  for (const col of columns) {
-    total += naturalWidthOf(col, widthOf)
-    if (!isPinned(col)) freeCount += 1
-  }
-  const kept = new Array<boolean>(columns.length).fill(true)
-
-  for (let i = columns.length - 1; i >= 0; i -= 1) {
-    if (total <= containerWidth) break
-    const col = columns[i]!
-    if (isPinned(col)) continue
-    if (freeCount <= floor) break
-    kept[i] = false
-    freeCount -= 1
-    total -= naturalWidthOf(col, widthOf)
-  }
-
-  let changed = false
-  for (let i = 0; i < kept.length; i += 1) {
-    if (!kept[i]) {
-      changed = true
-      break
-    }
-  }
-  if (!changed) return columns
+  const measurement = measureResponsiveColumns(columns, widthOf, isPinned)
+  if (measurement === null || measurement.total <= containerWidth) return columns
+  const kept = hideResponsiveTail(columns, containerWidth, floor, isPinned, measurement)
+  if (!hasResponsiveHiddenColumns(kept)) return columns
   return columns.filter((_, i) => kept[i]!)
 }

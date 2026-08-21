@@ -41,6 +41,27 @@ export interface CellRangeController {
   getRange(): CellRange | null
 }
 
+function normalizeRange(anchor: CellAddress | null, active: CellAddress | null): CellRange | null {
+  if (!anchor || !active) return null
+  return {
+    start: {
+      row: Math.min(anchor.row, active.row),
+      col: Math.min(anchor.col, active.col),
+    },
+    end: {
+      row: Math.max(anchor.row, active.row),
+      col: Math.max(anchor.col, active.col),
+    },
+  }
+}
+
+function containsCell(range: CellRange | null, row: number, col: number): boolean {
+  if (!range) return false
+  return (
+    row >= range.start.row && row <= range.end.row && col >= range.start.col && col <= range.end.col
+  )
+}
+
 /**
  * Framework-agnostic cell-range selection controller. Powers the "Excel-style"
  * rectangular cell-range in IrisTable across React / Vue / Solid / Svelte.
@@ -57,17 +78,7 @@ export function createCellRange(): CellRangeController {
 
   const getRange = (): CellRange | null => {
     const { anchor, active } = store.getState()
-    if (!anchor || !active) return null
-    return {
-      start: {
-        row: Math.min(anchor.row, active.row),
-        col: Math.min(anchor.col, active.col),
-      },
-      end: {
-        row: Math.max(anchor.row, active.row),
-        col: Math.max(anchor.col, active.col),
-      },
-    }
+    return normalizeRange(anchor, active)
   }
 
   return {
@@ -93,14 +104,7 @@ export function createCellRange(): CellRangeController {
     },
 
     isInRange(row, col) {
-      const range = getRange()
-      if (!range) return false
-      return (
-        row >= range.start.row &&
-        row <= range.end.row &&
-        col >= range.start.col &&
-        col <= range.end.col
-      )
+      return containsCell(getRange(), row, col)
     },
 
     getRange,

@@ -83,6 +83,54 @@ function isEmpty(value: unknown): boolean {
   return false
 }
 
+function validateUniqueRule<Row>(
+  rule: EditRule<Row>,
+  value: unknown,
+  row: Row,
+  context?: EditRuleContext<Row>,
+): string | null {
+  if (!rule.unique || !context || context.columnKey === undefined || context.rows.length === 0) {
+    return null
+  }
+  const current = String(value)
+  for (const other of context.rows) {
+    if (other === row) continue
+    const otherValue = (other as Record<string, unknown>)[context.columnKey]
+    if (isEmpty(otherValue)) continue
+    if (String(otherValue) === current) return rule.message ?? DEFAULT_MESSAGES.unique
+  }
+  return null
+}
+
+function validateRuleType<Row>(rule: EditRule<Row>, value: unknown): string | null {
+  if (rule.type === 'number' && typeof value !== 'number')
+    return rule.message ?? DEFAULT_MESSAGES.type
+  if (rule.type === 'string' && typeof value !== 'string')
+    return rule.message ?? DEFAULT_MESSAGES.type
+  if (rule.type === 'array' && !Array.isArray(value)) return rule.message ?? DEFAULT_MESSAGES.type
+  return null
+}
+
+function validateRuleBounds<Row>(rule: EditRule<Row>, value: unknown): string | null {
+  const len = typeof value === 'string' || Array.isArray(value) ? value.length : undefined
+  if (rule.min !== undefined) {
+    const n = typeof value === 'number' ? value : len
+    if (n === undefined || n < rule.min) return rule.message ?? DEFAULT_MESSAGES.min
+  }
+  if (rule.max !== undefined) {
+    const n = typeof value === 'number' ? value : len
+    if (n === undefined || n > rule.max) return rule.message ?? DEFAULT_MESSAGES.max
+  }
+  return null
+}
+
+function validateRulePattern<Row>(rule: EditRule<Row>, value: unknown): string | null {
+  const pattern = rule.pattern ?? rule.regexp
+  if (pattern === undefined) return null
+  const re = pattern instanceof RegExp ? pattern : new RegExp(pattern)
+  return re.test(String(value)) ? null : (rule.message ?? DEFAULT_MESSAGES.pattern)
+}
+
 function validateRule<Row>(
   rule: EditRule<Row>,
   value: unknown,
@@ -93,43 +141,14 @@ function validateRule<Row>(
     return rule.message ?? DEFAULT_MESSAGES.required
   }
   if (!isEmpty(value)) {
-    if (rule.type === 'number' && typeof value !== 'number') {
-      return rule.message ?? DEFAULT_MESSAGES.type
-    }
-    if (rule.type === 'string' && typeof value !== 'string') {
-      return rule.message ?? DEFAULT_MESSAGES.type
-    }
-    if (rule.type === 'array' && !Array.isArray(value)) {
-      return rule.message ?? DEFAULT_MESSAGES.type
-    }
-    const len = typeof value === 'string' || Array.isArray(value) ? value.length : undefined
-    if (rule.min !== undefined) {
-      const n = typeof value === 'number' ? value : len
-      if (n === undefined || n < rule.min) return rule.message ?? DEFAULT_MESSAGES.min
-    }
-    if (rule.max !== undefined) {
-      const n = typeof value === 'number' ? value : len
-      if (n === undefined || n > rule.max) return rule.message ?? DEFAULT_MESSAGES.max
-    }
-    const pattern = rule.pattern ?? rule.regexp
-    if (pattern !== undefined) {
-      const re = pattern instanceof RegExp ? pattern : new RegExp(pattern)
-      if (!re.test(String(value))) return rule.message ?? DEFAULT_MESSAGES.pattern
-    }
-    // Unique (batch AK): String comparison against the context rows' same
-    // column, skipping the editing row by reference identity; empty values on
-    // either side are exempt. No context (or no rows / no columnKey) → skip.
-    if (rule.unique && context && context.columnKey !== undefined && context.rows.length > 0) {
-      const current = String(value)
-      for (const other of context.rows) {
-        if (other === row) continue
-        const otherValue = (other as Record<string, unknown>)[context.columnKey]
-        if (isEmpty(otherValue)) continue
-        if (String(otherValue) === current) {
-          return rule.message ?? DEFAULT_MESSAGES.unique
-        }
-      }
-    }
+    const typeMessage = validateRuleType(rule, value)
+    if (typeMessage) return typeMessage
+    const boundsMessage = validateRuleBounds(rule, value)
+    if (boundsMessage) return boundsMessage
+    const patternMessage = validateRulePattern(rule, value)
+    if (patternMessage) return patternMessage
+    const uniqueMessage = validateUniqueRule(rule, value, row, context)
+    if (uniqueMessage) return uniqueMessage
   }
   if (rule.validator) {
     // Validator handles its own emptiness semantics; run it regardless.

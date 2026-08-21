@@ -132,6 +132,17 @@ describe('parseTableQuery — sort clause', () => {
     const r = parse('sort by name sideways', FIELDS)
     expect(r.error).not.toBeNull()
   })
+
+  it('rejects a dangling or repeated boolean separator', () => {
+    expect(parse('role = Test or', FIELDS).error).not.toBeNull()
+    expect(parse('and role = Test', FIELDS).error).not.toBeNull()
+    expect(parse('age > 25 and and role = Test', FIELDS).error).not.toBeNull()
+  })
+
+  it('rejects nested or trailing syntax after an in-list', () => {
+    expect(parse('role in (a) in (b)', FIELDS).error).not.toBeNull()
+    expect(parse('role in (a,)', FIELDS).error).not.toBeNull()
+  })
 })
 
 describe('parseTableQuery — AND / OR', () => {

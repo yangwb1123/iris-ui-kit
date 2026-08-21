@@ -129,6 +129,7 @@ export {
 export {
   toSpreadsheetXml,
   toCsv,
+  toCsvRows,
   toJson,
   toHtml,
   parseCsv,
@@ -136,6 +137,22 @@ export {
   type SpreadsheetXmlOptions,
   type TableHtmlOptions,
 } from './table-export'
+export { rowsFromCsv, previewColumnsFromRows } from './table-import'
+export { compareStates } from './state-compare'
+export {
+  readTableViews,
+  writeTableViews,
+  uniqueTableTabs,
+  TABLE_VIEWS_DEFAULT_KEY,
+  TABLE_VIEWS_SAVE_ITEM,
+  type TableViewStorage,
+  type TableViewSort,
+  type TableViewSnapshot,
+  type TableViewConfig,
+  type TableNamedView,
+  type TableTab,
+} from './table-views'
+export { leftPinnedCount, pinnedCountFromBudget, type PinnedColumnLike } from './pinned-drag'
 export {
   setFileSaveHandler,
   getFileSaveHandler,
@@ -190,6 +207,16 @@ export {
 } from './value-distribution'
 export { matchConditionalStyles, type ConditionalStyleRule } from './conditional-styles'
 export { maskValue, type MaskKind } from './mask'
+export {
+  applyTableMask,
+  resolveTableValue,
+  serializeTableRange,
+  tableDisplayText,
+  writeClipboardText,
+  type TableClipboardColumn,
+  type TableClipboardRange,
+  type TableCopyFormat,
+} from './table-clipboard'
 export { detectAutoLink } from './auto-link'
 export { splitSearchHits } from './search-highlight'
 export {
@@ -378,7 +405,13 @@ export {
   type RemoteTableParams,
 } from './remote-table'
 export { buildFormValues, mergeFormFilters, seedFormValues } from './table-form'
-export { insertRowInList, removeRowFromList, updateRowInList, cloneRowInList } from './table-rows'
+export {
+  insertRowInList,
+  removeRowFromList,
+  removeRowsFromList,
+  updateRowInList,
+  cloneRowInList,
+} from './table-rows'
 export {
   createTabsNav,
   isClosable,
@@ -439,41 +472,4 @@ export {
   type NormalizedTableKeymap,
 } from './keymap'
 
-// --- Data & resilience foundation primitives (2026-07-16) ---
-export * from './disposable'
-export * from './query-cache'
-export * from './realtime'
-export * from './outbox'
-export * from './event-bus'
-export * from './circuit-breaker'
-export * from './rate-limiter'
-export * from './resilient-fetcher'
-export {
-  composeFeatures,
-  hasComposableFeatures,
-  COMPOSE_ORDER,
-  type ComposableFeature,
-} from './compose'
-export {
-  validateEditRules,
-  validateEditRulesAsync,
-  type EditRule,
-  type EditRuleContext,
-  type EditRules,
-} from './edit-rules'
-export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'
-export {
-  createAuditLog,
-  type AuditLog,
-  type AuditLogEntry,
-  type AuditLogOptions,
-  type AuditLogType,
-} from './audit-log'
-export {
-  createVersionHistory,
-  type VersionHistory,
-  type VersionHistoryEntry,
-  type VersionHistoryOptions,
-} from './version-history'
-export { createPerfStats, nowMs, type PerfSample, type PerfStats } from './perf-stats'
-export { setCellValue } from './cell-edit'
+export * from './resilience-exports'

@@ -106,55 +106,65 @@ export function fuzzyScore(text: string, query: string): number | null {
 
 const isEnabled = (c: Command): boolean => (c.enabled ? c.enabled() : true)
 
+function unregisterCommand(store: Store<CommandRegistryState>, id: string): void {
+  store.setState((state) => ({ commands: state.commands.filter((command) => command.id !== id) }))
+}
+
+function registerCommand(store: Store<CommandRegistryState>, command: Command): () => void {
+  store.setState((state) => ({
+    commands: [...state.commands.filter((item) => item.id !== command.id), command],
+  }))
+  return () => unregisterCommand(store, command.id)
+}
+
+function registerManyCommands(store: Store<CommandRegistryState>, commands: Command[]): () => void {
+  const ids = new Set(commands.map((command) => command.id))
+  store.setState((state) => ({
+    commands: [...state.commands.filter((command) => !ids.has(command.id)), ...commands],
+  }))
+  return () =>
+    store.setState((state) => ({
+      commands: state.commands.filter((command) => !ids.has(command.id)),
+    }))
+}
+
+function searchCommands(
+  store: Store<CommandRegistryState>,
+  query: string,
+  limit: number,
+): CommandHit[] {
+  const hits: CommandHit[] = []
+  for (const command of store.getState().commands.filter(isEnabled)) {
+    const haystack = `${command.title} ${command.keywords ?? ''} ${command.group ?? ''}`
+    const score = fuzzyScore(haystack, query)
+    if (score !== null) hits.push({ command, score })
+  }
+  hits.sort((a, b) => b.score - a.score || a.command.title.localeCompare(b.command.title))
+  return hits.slice(0, limit)
+}
+
+async function runCommand(
+  store: Store<CommandRegistryState>,
+  id: string,
+  args?: Record<string, unknown>,
+): Promise<void> {
+  const command = store.getState().commands.find((item) => item.id === id)
+  if (command && isEnabled(command)) await command.run(args)
+}
+
 export function createCommandRegistry(): CommandRegistry {
   const store = createStore<CommandRegistryState>({ commands: [] })
-
-  const unregister = (id: string): void =>
-    store.setState((s) => ({ commands: s.commands.filter((c) => c.id !== id) }))
-
-  const register = (command: Command): (() => void) => {
-    store.setState((s) => ({
-      commands: [...s.commands.filter((c) => c.id !== command.id), command],
-    }))
-    return () => unregister(command.id)
-  }
 
   return {
     store,
     getState: store.getState,
     subscribe: store.subscribe,
-    register,
-    registerMany(commands) {
-      // Batch into one emit, return a single unregister.
-      store.setState((s) => {
-        const ids = new Set(commands.map((c) => c.id))
-        return { commands: [...s.commands.filter((c) => !ids.has(c.id)), ...commands] }
-      })
-      return () =>
-        store.setState((s) => {
-          const ids = new Set(commands.map((c) => c.id))
-          return { commands: s.commands.filter((c) => !ids.has(c.id)) }
-        })
-    },
-    unregister,
+    register: (command) => registerCommand(store, command),
+    registerMany: (commands) => registerManyCommands(store, commands),
+    unregister: (id) => unregisterCommand(store, id),
     list: () => store.getState().commands.filter(isEnabled),
-
-    search(query, limit = 20) {
-      const enabled = store.getState().commands.filter(isEnabled)
-      const hits: CommandHit[] = []
-      for (const command of enabled) {
-        const haystack = `${command.title} ${command.keywords ?? ''} ${command.group ?? ''}`
-        const score = fuzzyScore(haystack, query)
-        if (score !== null) hits.push({ command, score })
-      }
-      hits.sort((a, b) => b.score - a.score || a.command.title.localeCompare(b.command.title))
-      return hits.slice(0, limit)
-    },
-
-    async run(id, args) {
-      const command = store.getState().commands.find((c) => c.id === id)
-      if (command && isEnabled(command)) await command.run(args)
-    },
+    search: (query, limit = 20) => searchCommands(store, query, limit),
+    run: (id, args) => runCommand(store, id, args),
   }
 }
 

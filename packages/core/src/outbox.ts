@@ -77,8 +77,59 @@ function memoryStorage<M>(): OutboxStorage<M> {
   }
 }
 
+function persistOutbox<M>(
+  items: OutboxItem<M>[],
+  storage: OutboxStorage<M>,
+  listeners: Set<(items: OutboxItem<M>[]) => void>,
+): void {
+  storage.save(items)
+  const snapshot = items.map((item) => ({ ...item }))
+  for (const listener of listeners) listener(snapshot)
+}
+
+async function runOutboxFlush<M>(
+  getItems: () => OutboxItem<M>[],
+  setItems: (items: OutboxItem<M>[]) => void,
+  execute: (payload: M) => Promise<void>,
+  maxAttempts: number,
+  persist: () => void,
+): Promise<number> {
+  let delivered = 0
+  for (;;) {
+    const items = getItems()
+    const next = items.find((item) => item.status === 'pending')
+    if (!next) break
+    try {
+      await execute(next.payload)
+      setItems(items.filter((item) => item.id !== next.id))
+      delivered += 1
+      persist()
+    } catch (err) {
+      next.attempts += 1
+      next.error = err instanceof Error ? err.message : String(err)
+      if (next.attempts >= maxAttempts) {
+        next.status = 'failed'
+        persist()
+        continue
+      }
+      persist()
+      break
+    }
+  }
+  return delivered
+}
+
+function createOutboxFlush<M>(
+  getItems: () => OutboxItem<M>[],
+  setItems: (items: OutboxItem<M>[]) => void,
+  execute: (payload: M) => Promise<void>,
+  maxAttempts: number,
+  persist: () => void,
+): () => Promise<number> {
+  return () => runOutboxFlush(getItems, setItems, execute, maxAttempts, persist)
+}
+
 export function createOutbox<M>(options: OutboxOptions<M>): Outbox<M> {
-  const { execute } = options
   const storage = options.storage ?? memoryStorage<M>()
   const maxAttempts = options.maxAttempts ?? Infinity
   const genId = options.generateId ?? (() => generateId('mut'))
@@ -87,37 +138,14 @@ export function createOutbox<M>(options: OutboxOptions<M>): Outbox<M> {
   const listeners = new Set<(items: OutboxItem<M>[]) => void>()
   let flushing: Promise<number> | undefined
 
-  const persist = (): void => {
-    storage.save(items)
-    const snap = items.map((i) => ({ ...i }))
-    for (const l of listeners) l(snap)
-  }
-
-  const runFlush = async (): Promise<number> => {
-    let delivered = 0
-    // Re-scan from the front each iteration: delivery mutates the queue.
-    for (;;) {
-      const next = items.find((i) => i.status === 'pending')
-      if (!next) break
-      try {
-        await execute(next.payload)
-        items = items.filter((i) => i.id !== next.id)
-        delivered += 1
-        persist()
-      } catch (err) {
-        next.attempts += 1
-        next.error = err instanceof Error ? err.message : String(err)
-        if (next.attempts >= maxAttempts) {
-          next.status = 'failed' // skip it and let flushing continue
-          persist()
-          continue
-        }
-        persist()
-        break // preserve order: don't deliver later items past a failing one
-      }
-    }
-    return delivered
-  }
+  const persist = (): void => persistOutbox(items, storage, listeners)
+  const runFlush = createOutboxFlush(
+    () => items,
+    (next) => (items = next),
+    options.execute,
+    maxAttempts,
+    () => persistOutbox(items, storage, listeners),
+  )
 
   return {
     enqueue(payload) {

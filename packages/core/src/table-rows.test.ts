@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { cloneRowInList, insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
+import {
+  cloneRowInList,
+  insertRowInList,
+  removeRowFromList,
+  removeRowsFromList,
+  updateRowInList,
+} from './table-rows'
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -80,6 +86,22 @@ describe('removeRowFromList', () => {
 
   it('handles an empty list', () => {
     expect(removeRowFromList([], 'id', 1)).toEqual([])
+  })
+})
+
+describe('removeRowsFromList', () => {
+  it('removes present keys, skips missing keys, and reports only actual removals', () => {
+    const rows = [{ id: 1 }, { id: 2 }, { id: 3 }]
+    const result = removeRowsFromList(rows, 'id', [2, 99, 3])
+    expect(result.rows).toEqual([{ id: 1 }])
+    expect(result.removedKeys).toEqual(new Set([2, 3]))
+  })
+
+  it('returns the original row reference when every key is missing', () => {
+    const rows = [{ id: 1 }]
+    const result = removeRowsFromList(rows, 'id', [9])
+    expect(result.rows).toBe(rows)
+    expect(result.removedKeys.size).toBe(0)
   })
 })
 

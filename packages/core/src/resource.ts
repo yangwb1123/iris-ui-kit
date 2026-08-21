@@ -1,5 +1,5 @@
 import { derived, type Store } from './store'
-import { createDataSource } from './data-source'
+import { createDataSource, type DataSourceState } from './data-source'
 import { type SelectionModel } from './selection'
 import { filterSort, paginate, type SortState, type DataViewColumn } from './data-view'
 import type { ResilientFetcherOptions } from './resilient-fetcher'
@@ -95,6 +95,20 @@ export interface ResourceController<T> {
   destroy(): void
 }
 
+function projectResourceState<T>(state: DataSourceState<T>): ResourceState<T> {
+  return {
+    rows: state.rows,
+    total: state.total,
+    page: state.page,
+    pageSize: state.pageSize,
+    sort: state.sort,
+    filters: state.filters,
+    loading: state.loading,
+    error: state.error,
+    selectedKeys: state.selectedKeys,
+  }
+}
+
 export function createResourceController<T>(
   config: ResourceControllerConfig<T>,
 ): ResourceController<T> {
@@ -115,17 +129,7 @@ export function createResourceController<T>(
   // no double-emit hop, and source subscription is reference-counted (attaches
   // only while observed). `ds.store` outlives a derived detach, so a StrictMode
   // remount that re-subscribes re-projects correctly.
-  const store: Store<ResourceState<T>> = derived([ds.store], (s) => ({
-    rows: s.rows,
-    total: s.total,
-    page: s.page,
-    pageSize: s.pageSize,
-    sort: s.sort,
-    filters: s.filters,
-    loading: s.loading,
-    error: s.error,
-    selectedKeys: s.selectedKeys,
-  }))
+  const store: Store<ResourceState<T>> = derived([ds.store], projectResourceState)
 
   const controller: ResourceController<T> = {
     store,

@@ -44,12 +44,18 @@ export interface TreeSelectionModel<K extends SelectionKey = string> {
   getCheckedLeaves(): K[]
 }
 
-export function createTreeSelection<K extends SelectionKey = string>(
-  config: TreeSelectionConfig<K>,
-): TreeSelectionModel<K> {
-  const { nodes } = config
+interface TreeSelectionIndex<K extends SelectionKey> {
+  childrenOf: Map<K, K[]>
+  nodeOf: Map<K, TreeSelectionNode<K>>
+  isLeaf(key: K): boolean
+  isDisabled(key: K): boolean
+  enabledLeavesUnder(key: K): K[]
+  affectedLeaves(key: K): K[]
+}
 
-  // Adjacency built once: children per key, and the node record per key.
+function createTreeSelectionIndex<K extends SelectionKey>(
+  nodes: TreeSelectionNode<K>[],
+): TreeSelectionIndex<K> {
   const childrenOf = new Map<K, K[]>()
   const nodeOf = new Map<K, TreeSelectionNode<K>>()
   for (const node of nodes) {
@@ -77,37 +83,38 @@ export function createTreeSelection<K extends SelectionKey = string>(
     return out
   }
 
-  // Checked-leaf set is the source of truth; branch checked/indeterminate are
-  // DERIVED from their leaves, so the tree can never hold an inconsistent state.
-  const selection = createSelectionModel<K>({ mode: 'multiple' })
-
-  // A branch's checked/indeterminate state is derived from its NON-disabled
-  // leaves only, consistent with the cascade (which also skips disabled leaves)
-  // so a disabled leaf can never block its parent from reaching `checked`.
   const enabledLeavesUnder = (key: K): K[] =>
-    descendants(key).filter((k) => isLeaf(k) && !isDisabled(k))
-
-  const isChecked = (key: K): boolean => {
-    if (isLeaf(key)) return selection.isSelected(key)
-    const leaves = enabledLeavesUnder(key)
-    return leaves.length > 0 && leaves.every((k) => selection.isSelected(k))
-  }
-  const isIndeterminate = (key: K): boolean => {
-    if (isLeaf(key)) return false
-    const leaves = enabledLeavesUnder(key)
-    const checked = leaves.filter((k) => selection.isSelected(k)).length
-    return checked > 0 && checked < leaves.length
-  }
-
-  /** Leaves under `key` (or `key` itself if it is a leaf), skipping disabled. */
-  function affectedLeaves(key: K): K[] {
+    descendants(key).filter((candidate) => isLeaf(candidate) && !isDisabled(candidate))
+  const affectedLeaves = (key: K): K[] => {
     if (isDisabled(key)) return []
     if (isLeaf(key)) return [key]
     return enabledLeavesUnder(key)
   }
 
-  function setChecked(key: K, checked: boolean): void {
-    const leaves = affectedLeaves(key)
+  return { childrenOf, nodeOf, isLeaf, isDisabled, enabledLeavesUnder, affectedLeaves }
+}
+
+function createTreeSelectionState<K extends SelectionKey>(
+  index: TreeSelectionIndex<K>,
+  selection: SelectionModel<K>,
+): {
+  isChecked(key: K): boolean
+  isIndeterminate(key: K): boolean
+  setChecked(key: K, checked: boolean): void
+} {
+  const isChecked = (key: K): boolean => {
+    if (index.isLeaf(key)) return selection.isSelected(key)
+    const leaves = index.enabledLeavesUnder(key)
+    return leaves.length > 0 && leaves.every((leaf) => selection.isSelected(leaf))
+  }
+  const isIndeterminate = (key: K): boolean => {
+    if (index.isLeaf(key)) return false
+    const leaves = index.enabledLeavesUnder(key)
+    const checked = leaves.filter((leaf) => selection.isSelected(leaf)).length
+    return checked > 0 && checked < leaves.length
+  }
+  const setChecked = (key: K, checked: boolean): void => {
+    const leaves = index.affectedLeaves(key)
     if (leaves.length === 0) return
     const next = new Set<K>(selection.get())
     for (const leaf of leaves) {
@@ -116,38 +123,60 @@ export function createTreeSelection<K extends SelectionKey = string>(
     }
     selection.set([...next])
   }
+  return { isChecked, isIndeterminate, setChecked }
+}
 
+function createTreeSelectionApi<K extends SelectionKey>(
+  nodes: TreeSelectionNode<K>[],
+  index: TreeSelectionIndex<K>,
+  selection: SelectionModel<K>,
+  onChange: ((keys: K[]) => void) | undefined,
+): TreeSelectionModel<K> {
+  const state = createTreeSelectionState(index, selection)
+  const notify = (): void => onChange?.(api.getChecked())
   const api: TreeSelectionModel<K> = {
     selection,
-    isChecked,
-    isIndeterminate,
+    isChecked: state.isChecked,
+    isIndeterminate: state.isIndeterminate,
     toggle(key) {
-      // Toggle relative to the node's current resolved checked state.
-      setChecked(key, !isChecked(key))
-      config.onChange?.(api.getChecked())
+      state.setChecked(key, !state.isChecked(key))
+      notify()
     },
     check(key) {
-      setChecked(key, true)
-      config.onChange?.(api.getChecked())
+      state.setChecked(key, true)
+      notify()
     },
     uncheck(key) {
-      setChecked(key, false)
-      config.onChange?.(api.getChecked())
+      state.setChecked(key, false)
+      notify()
     },
     getCheckedLeaves: () => selection.get(),
     getChecked: () => {
-      // Checked leaves plus any branch whose leaves are all checked.
       const result = new Set<K>(selection.get())
       for (const node of nodes) {
-        if (!isLeaf(node.key) && isChecked(node.key)) result.add(node.key)
+        if (!index.isLeaf(node.key) && state.isChecked(node.key)) result.add(node.key)
       }
       return [...result]
     },
   }
+  return api
+}
+
+export function createTreeSelection<K extends SelectionKey = string>(
+  config: TreeSelectionConfig<K>,
+): TreeSelectionModel<K> {
+  const { nodes } = config
+
+  // Checked-leaf set is the source of truth; branch checked/indeterminate are
+  // DERIVED from their leaves, so the tree can never hold an inconsistent state.
+  const selection = createSelectionModel<K>({ mode: 'multiple' })
+  const index = createTreeSelectionIndex(nodes)
+  const api = createTreeSelectionApi(nodes, index, selection, config.onChange)
 
   // Reconcile the initial selection through the cascade so seeds are consistent.
   if (config.defaultChecked && config.defaultChecked.length > 0) {
-    for (const key of config.defaultChecked) setChecked(key, true)
+    const state = createTreeSelectionState(index, selection)
+    for (const key of config.defaultChecked) state.setChecked(key, true)
   }
 
   return api

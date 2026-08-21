@@ -85,6 +85,24 @@ export function removeRowFromList<Row extends Record<string, unknown>>(
   return rows.filter((_, i) => i !== index)
 }
 
+/** Remove every matching key in one immutable pass; missing keys are no-ops. */
+export function removeRowsFromList<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  rowKeyField: string,
+  keys: readonly (string | number)[],
+): { rows: Row[]; removedKeys: Set<string | number> } {
+  let next = rows as Row[]
+  const removedKeys = new Set<string | number>()
+  for (const key of keys) {
+    const candidate = removeRowFromList(next, rowKeyField, key)
+    if (candidate !== next) {
+      removedKeys.add(key)
+      next = candidate
+    }
+  }
+  return { rows: next, removedKeys }
+}
+
 /**
  * Replace the row with `key` by a shallow merge of `patch` (vxe-grid setRow
  * parity): `{ ...row, ...patch }`. Other rows keep object identity; returns

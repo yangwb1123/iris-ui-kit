@@ -22,6 +22,60 @@ interface Entry {
   once: boolean
 }
 
+type EventRegistry<Events extends Record<string, unknown>> = Map<keyof Events, Set<Entry>>
+
+function removeEntry<Events extends Record<string, unknown>>(
+  registry: EventRegistry<Events>,
+  type: keyof Events,
+  entry: Entry,
+): void {
+  const entries = registry.get(type)
+  if (!entries) return
+  entries.delete(entry)
+  if (entries.size === 0) registry.delete(type)
+}
+
+function addEntry<Events extends Record<string, unknown>, K extends keyof Events>(
+  registry: EventRegistry<Events>,
+  type: K,
+  handler: (payload: Events[K]) => void,
+  once: boolean,
+): () => void {
+  const entry: Entry = { handler: handler as Handler<unknown>, once }
+  let entries = registry.get(type)
+  if (!entries) {
+    entries = new Set<Entry>()
+    registry.set(type, entries)
+  }
+  entries.add(entry)
+  return () => removeEntry(registry, type, entry)
+}
+
+function emitEntries<Events extends Record<string, unknown>, K extends keyof Events>(
+  registry: EventRegistry<Events>,
+  type: K,
+  payload: Events[K],
+): void {
+  const entries = registry.get(type)
+  if (!entries) return
+  const snapshot = [...entries]
+  let firstError: unknown
+  let hasError = false
+  for (const entry of snapshot) {
+    if (!entries.has(entry)) continue
+    if (entry.once) removeEntry(registry, type, entry)
+    try {
+      entry.handler(payload)
+    } catch (err) {
+      if (!hasError) {
+        hasError = true
+        firstError = err
+      }
+    }
+  }
+  if (hasError) throw firstError
+}
+
 export interface EventBus<Events extends Record<string, unknown>> {
   /** Subscribe; returns an unsubscribe fn. */
   on<K extends keyof Events>(type: K, handler: (payload: Events[K]) => void): () => void
@@ -45,37 +99,14 @@ export interface EventBus<Events extends Record<string, unknown>> {
 export function createEventBus<Events extends Record<string, unknown>>(): EventBus<Events> {
   // One Set of entries per event name; empty Sets are pruned so listenerCount
   // and clear stay accurate without a stale-key leak.
-  const registry = new Map<keyof Events, Set<Entry>>()
-
-  const remove = (type: keyof Events, entry: Entry): void => {
-    const entries = registry.get(type)
-    if (!entries) return
-    entries.delete(entry)
-    if (entries.size === 0) registry.delete(type)
-  }
-
-  const add = <K extends keyof Events>(
-    type: K,
-    handler: (payload: Events[K]) => void,
-    once: boolean,
-  ): (() => void) => {
-    const entry: Entry = { handler: handler as Handler<unknown>, once }
-    let entries = registry.get(type)
-    if (!entries) {
-      entries = new Set<Entry>()
-      registry.set(type, entries)
-    }
-    entries.add(entry)
-    // Idempotent unsubscribe: safe to call more than once.
-    return () => remove(type, entry)
-  }
+  const registry: EventRegistry<Events> = new Map()
 
   return {
     on(type, handler) {
-      return add(type, handler, false)
+      return addEntry(registry, type, handler, false)
     },
     once(type, handler) {
-      return add(type, handler, true)
+      return addEntry(registry, type, handler, true)
     },
     off(type, handler) {
       const entries = registry.get(type)
@@ -87,27 +118,7 @@ export function createEventBus<Events extends Record<string, unknown>>(): EventB
       if (entries.size === 0) registry.delete(type)
     },
     emit(type, payload) {
-      const entries = registry.get(type)
-      if (!entries) return
-      // Iterate a snapshot so subscribing/unsubscribing during dispatch cannot
-      // corrupt this loop: newly-added entries are absent from the snapshot, and
-      // removed entries are skipped via the live-membership check below.
-      const snapshot = [...entries]
-      let firstError: unknown
-      let hasError = false
-      for (const entry of snapshot) {
-        if (!entries.has(entry)) continue
-        if (entry.once) remove(type, entry)
-        try {
-          entry.handler(payload)
-        } catch (err) {
-          if (!hasError) {
-            hasError = true
-            firstError = err
-          }
-        }
-      }
-      if (hasError) throw firstError
+      emitEntries(registry, type, payload)
     },
     clear(type) {
       if (type === undefined) {

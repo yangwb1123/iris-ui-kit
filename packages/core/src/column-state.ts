@@ -71,94 +71,114 @@ export interface ColumnStateManager {
   subscribe(fn: (snap: ColumnStateSnapshot) => void): () => void
 }
 
-export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
-  const initialOrder = columns.map((c) => c.key)
-  const initialWidths: Record<string, number> = {}
-  for (const c of columns) {
-    if (c.width !== undefined) initialWidths[c.key] = c.width
-  }
-  const initialHidden = columns.filter((c) => c.hidden).map((c) => c.key)
-  const initialPinned: Record<string, 'left' | 'right'> = {}
-  for (const c of columns) {
-    if (c.pinned) initialPinned[c.key] = c.pinned
-  }
+interface ColumnStoreState {
+  order: string[]
+  widths: Record<string, number>
+  hidden: Set<string>
+  pinned: Record<string, 'left' | 'right'>
+}
 
-  const store = createStore({
-    order: [...initialOrder],
-    widths: { ...initialWidths },
-    hidden: new Set(initialHidden),
-    pinned: { ...initialPinned },
+interface InitialColumnState {
+  state: ColumnStoreState
+  byKey: Map<string, ColumnDef>
+}
+
+function createInitialColumnState(columns: ColumnDef[]): InitialColumnState {
+  const order = columns.map((column) => column.key)
+  const widths: Record<string, number> = {}
+  const hidden = new Set<string>()
+  const pinned: Record<string, 'left' | 'right'> = {}
+  for (const column of columns) {
+    if (column.width !== undefined) widths[column.key] = column.width
+    if (column.hidden) hidden.add(column.key)
+    if (column.pinned) pinned[column.key] = column.pinned
+  }
+  return {
+    state: { order, widths, hidden, pinned },
+    byKey: new Map(columns.map((column) => [column.key, column])),
+  }
+}
+
+function copyColumnState(state: ColumnStoreState): ColumnStoreState {
+  return {
+    order: [...state.order],
+    widths: { ...state.widths },
+    hidden: new Set(state.hidden),
+    pinned: { ...state.pinned },
+  }
+}
+
+function reorderColumn(
+  store: ReturnType<typeof createStore<ColumnStoreState>>,
+  from: number,
+  to: number,
+): void {
+  const order = [...store.getState().order]
+  const [moved] = order.splice(from, 1)
+  order.splice(to, 0, moved)
+  store.setState((state) => ({ ...state, order }))
+}
+
+function setColumnVisibility(
+  store: ReturnType<typeof createStore<ColumnStoreState>>,
+  key: string,
+  visible: boolean,
+): void {
+  store.setState((state) => {
+    const hidden = new Set(state.hidden)
+    if (visible) hidden.delete(key)
+    else hidden.add(key)
+    return { ...state, hidden }
   })
+}
 
-  const byKey = new Map(columns.map((c) => [c.key, c]))
+function setColumnPinned(
+  store: ReturnType<typeof createStore<ColumnStoreState>>,
+  key: string,
+  side: 'left' | 'right' | null,
+): void {
+  store.setState((state) => {
+    const pinned = { ...state.pinned }
+    if (side) pinned[key] = side
+    else delete pinned[key]
+    return { ...state, pinned }
+  })
+}
+
+function columnsInOrder(
+  store: ReturnType<typeof createStore<ColumnStoreState>>,
+  byKey: Map<string, ColumnDef>,
+  visibleOnly: boolean,
+): ColumnDef[] {
+  const { order, hidden } = store.getState()
+  return order
+    .filter((key) => !visibleOnly || !hidden.has(key))
+    .map((key) => byKey.get(key)!)
+    .filter(Boolean)
+}
+
+export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
+  const initial = createInitialColumnState(columns)
+  const store = createStore<ColumnStoreState>(copyColumnState(initial.state))
+  const { byKey } = initial
 
   const api: ColumnStateManager = {
     order: () => store.getState().order,
-    setOrder: (keys) => {
-      store.setState((s) => ({ ...s, order: keys }))
-    },
-    reorder: (from, to) => {
-      const order = [...store.getState().order]
-      const [moved] = order.splice(from, 1)
-      order.splice(to, 0, moved)
-      store.setState((s) => ({ ...s, order }))
-    },
+    setOrder: (keys) => store.setState((state) => ({ ...state, order: keys })),
+    reorder: (from, to) => reorderColumn(store, from, to),
     getWidth: (key) => store.getState().widths[key] ?? byKey.get(key)?.width,
-    setWidth: (key, width) => {
-      store.setState((s) => ({ ...s, widths: { ...s.widths, [key]: width } }))
-    },
+    setWidth: (key, width) =>
+      store.setState((state) => ({ ...state, widths: { ...state.widths, [key]: width } })),
     isVisible: (key) => !store.getState().hidden.has(key),
-    toggleColumn: (key) => {
-      store.setState((s) => {
-        const next = new Set(s.hidden)
-        if (next.has(key)) next.delete(key)
-        else next.add(key)
-        return { ...s, hidden: next }
-      })
-    },
-    hide: (key) => {
-      store.setState((s) => {
-        const next = new Set(s.hidden)
-        next.add(key)
-        return { ...s, hidden: next }
-      })
-    },
-    show: (key) => {
-      store.setState((s) => {
-        const next = new Set(s.hidden)
-        next.delete(key)
-        return { ...s, hidden: next }
-      })
-    },
+    toggleColumn: (key) => setColumnVisibility(store, key, !api.isVisible(key)),
+    hide: (key) => setColumnVisibility(store, key, false),
+    show: (key) => setColumnVisibility(store, key, true),
     getPinned: (key) => store.getState().pinned[key] ?? null,
-    setPinned: (key, side) => {
-      store.setState((s) => {
-        const pinned = { ...s.pinned }
-        if (side) pinned[key] = side
-        else delete pinned[key]
-        return { ...s, pinned }
-      })
-    },
-    visibleColumns: () => {
-      const { order, hidden } = store.getState()
-      return order
-        .filter((k) => !hidden.has(k))
-        .map((k) => byKey.get(k)!)
-        .filter(Boolean)
-    },
-    allColumns: () => {
-      return store
-        .getState()
-        .order.map((k) => byKey.get(k)!)
-        .filter(Boolean)
-    },
+    setPinned: (key, side) => setColumnPinned(store, key, side),
+    visibleColumns: () => columnsInOrder(store, byKey, true),
+    allColumns: () => columnsInOrder(store, byKey, false),
     reset: () => {
-      store.setState({
-        order: [...initialOrder],
-        widths: { ...initialWidths },
-        hidden: new Set(initialHidden),
-        pinned: { ...initialPinned },
-      })
+      store.setState(copyColumnState(initial.state))
     },
     subscribe: (fn) =>
       store.subscribe((s) =>

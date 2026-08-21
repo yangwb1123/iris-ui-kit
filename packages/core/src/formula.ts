@@ -136,6 +136,57 @@ function resolveTableField(
   return (first as Record<string, unknown>)[field]
 }
 
+function addSubOperator(token: FormulaToken): '+' | '-' | null {
+  return token.type === 'op' && (token.value === '+' || token.value === '-') ? token.value : null
+}
+
+function mulDivOperator(token: FormulaToken): '*' | '/' | '%' | null {
+  return token.type === 'op' && (token.value === '*' || token.value === '/' || token.value === '%')
+    ? token.value
+    : null
+}
+
+function applyAddSub(left: unknown, right: unknown, op: '+' | '-'): unknown {
+  if (typeof left === 'string' || typeof right === 'string') {
+    return op === '-' ? ERROR : String(left ?? '') + String(right ?? '')
+  }
+  const na = toNumber(left)
+  const nb = toNumber(right)
+  if (na === ERROR || nb === ERROR) return ERROR
+  const result = op === '+' ? na + nb : na - nb
+  return Number.isFinite(result) ? result : ERROR
+}
+
+function applyMulDiv(left: unknown, right: unknown, op: '*' | '/' | '%'): unknown {
+  const na = toNumber(left)
+  const nb = toNumber(right)
+  if (na === ERROR || nb === ERROR) return ERROR
+  if ((op === '/' || op === '%') && nb === 0) return ERROR
+  const result = op === '*' ? na * nb : op === '/' ? na / nb : na % nb
+  return Number.isFinite(result) ? result : ERROR
+}
+
+function aggregateNumeric(args: unknown[], mode: 'sum' | 'avg' | 'min' | 'max'): unknown {
+  if ((mode === 'avg' || mode === 'min' || mode === 'max') && args.length === 0) return ERROR
+  let result = mode === 'min' ? Infinity : mode === 'max' ? -Infinity : 0
+  for (const arg of args) {
+    const number = toNumber(arg)
+    if (number === ERROR) return ERROR
+    if (mode === 'min') result = Math.min(result, number)
+    else if (mode === 'max') result = Math.max(result, number)
+    else result += number
+  }
+  return mode === 'avg' ? result / args.length : result
+}
+
+function evaluateAggregate(name: string, args: unknown[]): unknown {
+  if (name === 'COUNT') return args.filter((arg) => arg != null).length
+  if (name === 'SUM') return aggregateNumeric(args, 'sum')
+  if (name === 'AVG') return aggregateNumeric(args, 'avg')
+  if (name === 'MIN') return aggregateNumeric(args, 'min')
+  return aggregateNumeric(args, 'max')
+}
+
 class FormulaParser {
   private pos = 0
   private readonly tokens: FormulaToken[]
@@ -164,23 +215,13 @@ class FormulaParser {
     let left = this.parseMulDiv(level)
     if (left === ERROR) return ERROR
     for (;;) {
-      const t = this.peek()
-      if (t.type !== 'op' || (t.value !== '+' && t.value !== '-')) return left
+      const op = addSubOperator(this.peek())
+      if (op === null) return left
       this.next()
       const right = this.parseMulDiv(level)
       if (right === ERROR) return ERROR
-      const op = t.value
-      // `+` with either side a string concatenates (nullish → ''), else numeric.
-      if (typeof left === 'string' || typeof right === 'string') {
-        if (op === '-') return ERROR
-        left = String(left ?? '') + String(right ?? '')
-      } else {
-        const na = toNumber(left)
-        const nb = toNumber(right)
-        if (na === ERROR || nb === ERROR) return ERROR
-        left = op === '+' ? na + nb : na - nb
-        if (!Number.isFinite(left as number)) return ERROR
-      }
+      left = applyAddSub(left, right, op)
+      if (left === ERROR) return ERROR
     }
   }
 
@@ -189,18 +230,13 @@ class FormulaParser {
     let left = this.parsePrimary(level)
     if (left === ERROR) return ERROR
     for (;;) {
-      const t = this.peek()
-      if (t.type !== 'op' || (t.value !== '*' && t.value !== '/' && t.value !== '%')) return left
+      const op = mulDivOperator(this.peek())
+      if (op === null) return left
       this.next()
       const right = this.parsePrimary(level)
       if (right === ERROR) return ERROR
-      const na = toNumber(left)
-      const nb = toNumber(right)
-      if (na === ERROR || nb === ERROR) return ERROR
-      if ((t.value === '/' || t.value === '%') && nb === 0) return ERROR
-      const r = t.value === '*' ? na * nb : t.value === '/' ? na / nb : na % nb
-      if (!Number.isFinite(r)) return ERROR
-      left = r
+      left = applyMulDiv(left, right, op)
+      if (left === ERROR) return ERROR
     }
   }
 
@@ -241,7 +277,7 @@ class FormulaParser {
     return ERROR
   }
 
-  private callFunction(name: string, level: number): unknown {
+  private parseFunctionArgs(level: number): unknown[] | typeof ERROR {
     this.next() // consume '('
     const args: unknown[] = []
     if (this.peek().type !== 'rparen') {
@@ -258,54 +294,12 @@ class FormulaParser {
     }
     if (this.peek().type !== 'rparen') return ERROR
     this.next()
+    return args
+  }
 
-    switch (name) {
-      case 'SUM': {
-        let sum = 0
-        for (const a of args) {
-          const n = toNumber(a)
-          if (n === ERROR) return ERROR
-          sum += n
-        }
-        return sum
-      }
-      case 'AVG': {
-        if (args.length === 0) return ERROR
-        let sum = 0
-        for (const a of args) {
-          const n = toNumber(a)
-          if (n === ERROR) return ERROR
-          sum += n
-        }
-        return sum / args.length
-      }
-      case 'MIN': {
-        if (args.length === 0) return ERROR
-        let min = Infinity
-        for (const a of args) {
-          const n = toNumber(a)
-          if (n === ERROR) return ERROR
-          if (n < min) min = n
-        }
-        return min
-      }
-      case 'MAX': {
-        if (args.length === 0) return ERROR
-        let max = -Infinity
-        for (const a of args) {
-          const n = toNumber(a)
-          if (n === ERROR) return ERROR
-          if (n > max) max = n
-        }
-        return max
-      }
-      default: {
-        // COUNT: arguments evaluating to a non-null value (nullish skipped).
-        let count = 0
-        for (const a of args) if (a != null) count += 1
-        return count
-      }
-    }
+  private callFunction(name: string, level: number): unknown {
+    const args = this.parseFunctionArgs(level)
+    return args === ERROR ? ERROR : evaluateAggregate(name, args)
   }
 }
 

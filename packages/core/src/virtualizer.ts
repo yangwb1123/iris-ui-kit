@@ -136,97 +136,146 @@ export interface Virtualizer {
  * pixel offset. This is what makes `measure` and the per-scroll window cheap at
  * 100k rows instead of an O(n) cumulative-offset rebuild.
  */
-function createSizeTree(count: number, sizeAt: (index: number) => number) {
-  let n = count
-  let sizes = new Array<number>(n)
-  // 1-indexed Fenwick array; tree[i] covers sizes[i-lowbit(i) .. i-1].
-  let tree = new Array<number>(n + 1).fill(0)
+interface SizeTree {
+  prefix(index: number): number
+  set(index: number, size: number): boolean
+  lowerBound(target: number): number
+  sizeOf(index: number): number
+  total(): number
+  reset(count: number): void
+  readonly count: number
+  snapshotSizes(): number[]
+}
 
-  const build = (): void => {
-    sizes = new Array<number>(n)
-    tree = new Array<number>(n + 1).fill(0)
-    for (let i = 0; i < n; i++) {
-      const s = Math.max(0, sizeAt(i))
-      sizes[i] = s
-      tree[i + 1] += s
+class FenwickSizeTree implements SizeTree {
+  private n: number
+  private sizes: number[]
+  private tree: number[]
+
+  constructor(
+    private readonly sizeAt: (index: number) => number,
+    count: number,
+  ) {
+    this.n = count
+    this.sizes = []
+    this.tree = []
+    this.build()
+  }
+
+  private build(): void {
+    this.sizes = new Array<number>(this.n)
+    this.tree = new Array<number>(this.n + 1).fill(0)
+    for (let i = 0; i < this.n; i++) {
+      const size = Math.max(0, this.sizeAt(i))
+      this.sizes[i] = size
+      this.tree[i + 1] += size
       const parent = i + 1 + ((i + 1) & -(i + 1) || 0)
-      if (parent <= n) tree[parent] += tree[i + 1]
+      if (parent <= this.n) this.tree[parent] += this.tree[i + 1]
     }
   }
-  build()
 
-  /** Sum of sizes[0 .. i-1] = pixel offset of item `i`. */
-  const prefix = (i: number): number => {
+  prefix(index: number): number {
     let sum = 0
-    let x = i
-    while (x > 0) {
-      sum += tree[x]
-      x -= x & -x
-    }
+    for (let cursor = index; cursor > 0; cursor -= cursor & -cursor) sum += this.tree[cursor]
     return sum
   }
 
-  /** Set item `i`'s size, patching the tree by the delta. O(log n). */
-  const set = (i: number, size: number): boolean => {
-    if (i < 0 || i >= n) return false
+  set(index: number, size: number): boolean {
+    if (index < 0 || index >= this.n) return false
     const next = Math.max(0, size)
-    const delta = next - sizes[i]
+    const delta = next - this.sizes[index]
     if (delta === 0) return false
-    sizes[i] = next
-    let x = i + 1
-    while (x <= n) {
-      tree[x] += delta
-      x += x & -x
+    this.sizes[index] = next
+    for (let cursor = index + 1; cursor <= this.n; cursor += cursor & -cursor) {
+      this.tree[cursor] += delta
     }
     return true
   }
 
-  /**
-   * Largest index whose cumulative top is <= `target` (the item containing the
-   * pixel offset). Binary-lifting over the tree — O(log n), no array scan.
-   */
-  const lowerBound = (target: number): number => {
+  lowerBound(target: number): number {
     let pos = 0
     let remaining = target
-    let pw = 1
-    while (pw * 2 <= n) pw *= 2
-    for (; pw > 0; pw >>= 1) {
-      if (pos + pw <= n && tree[pos + pw] <= remaining) {
-        pos += pw
-        remaining -= tree[pos]
+    let power = 1
+    while (power * 2 <= this.n) power *= 2
+    for (; power > 0; power >>= 1) {
+      if (pos + power <= this.n && this.tree[pos + power] <= remaining) {
+        pos += power
+        remaining -= this.tree[pos]
       }
     }
-    return pos // number of whole items before `target` → index containing it
+    return pos
   }
 
-  return {
-    prefix,
-    set,
-    lowerBound,
-    sizeOf: (i: number): number => sizes[i] ?? 0,
-    total: (): number => prefix(n),
-    reset: (nextCount: number): void => {
-      n = nextCount
-      build()
-    },
-    get count(): number {
-      return n
-    },
-    /** Snapshot the current sizes array (for diagnostics). */
-    snapshotSizes: (): number[] => [...sizes],
+  sizeOf(index: number): number {
+    return this.sizes[index] ?? 0
+  }
+
+  total(): number {
+    return this.prefix(this.n)
+  }
+
+  reset(count: number): void {
+    this.n = count
+    this.build()
+  }
+
+  get count(): number {
+    return this.n
+  }
+
+  snapshotSizes(): number[] {
+    return [...this.sizes]
   }
 }
 
-export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
-  let count = Math.max(0, config.count)
-  let viewportSize = Math.max(0, config.viewportSize ?? 0)
-  let scrollOffset = Math.max(0, config.scrollOffset ?? 0)
-  const buffer = Math.max(0, Math.floor(config.buffer ?? 0))
+function createSizeTree(count: number, sizeAt: (index: number) => number): SizeTree {
+  return new FenwickSizeTree(sizeAt, count)
+}
 
-  // Dev-mode warning when getItemKey is not provided (default index-as-key).
-  const hasExplicitKey = config.getItemKey !== undefined
+interface VirtualizerRuntime {
+  count: number
+  viewportSize: number
+  scrollOffset: number
+  buffer: number
+  hasExplicitKey: boolean
+  keyOf: (index: number) => string | number
+  estimate: (index: number) => number
+  measured: Map<string | number, number>
+  tree: SizeTree
+  store: Store<VirtualizerState>
+  computeWindow(): VirtualizerState
+  sync(): void
+  clampScroll(offset: number): number
+}
+
+function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState {
+  const { count, tree, viewportSize, scrollOffset, buffer, keyOf } = runtime
+  if (count <= 0) return { items: [], offsetBefore: 0, totalSize: 0, startIndex: 0, endIndex: -1 }
+  const total = tree.total()
+  const maxScroll = Math.max(0, total - viewportSize)
+  const top = Math.max(0, Math.min(scrollOffset, maxScroll))
+  const first = Math.min(tree.lowerBound(top), count - 1)
+  let last = first
+  const bottom = top + viewportSize
+  while (last < count - 1 && tree.prefix(last + 1) < bottom) last += 1
+  const startIndex = Math.max(0, first - buffer)
+  const endIndex = Math.min(count - 1, last + buffer)
+  const items: VirtualItem[] = []
+  for (let index = startIndex; index <= endIndex; index++) {
+    items.push({
+      index,
+      key: keyOf(index),
+      start: tree.prefix(index),
+      size: tree.sizeOf(index),
+    })
+  }
+  return { items, offsetBefore: tree.prefix(startIndex), totalSize: total, startIndex, endIndex }
+}
+
+function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime {
+  const count = Math.max(0, config.count)
   const keyOf = config.getItemKey ?? ((index: number) => index)
-
+  const hasExplicitKey = config.getItemKey !== undefined
   if (process.env.NODE_ENV === 'development' && !hasExplicitKey && count > 0) {
     console.warn(
       '[iris-ui] createVirtualizer: no getItemKey provided — using index as key. ' +
@@ -234,138 +283,158 @@ export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
         'Provide a stable getItemKey for dynamic data lists.',
     )
   }
-
   const estimate =
     typeof config.estimateSize === 'function'
       ? config.estimateSize
       : (_index: number) => config.estimateSize as number
-
-  // Measured sizes are keyed (not positional), so they follow a row through
-  // reorder/filtering. `sizeAt` is what the size tree reads per position.
   const measured = new Map<string | number, number>()
-  const sizeAt = (index: number): number => {
-    const m = measured.get(keyOf(index))
-    return m !== undefined ? m : Math.max(0, estimate(index))
+  const tree = createSizeTree(count, (index) => {
+    const measuredSize = measured.get(keyOf(index))
+    return measuredSize !== undefined ? measuredSize : Math.max(0, estimate(index))
+  })
+  const runtime = {} as VirtualizerRuntime
+  runtime.count = count
+  runtime.viewportSize = Math.max(0, config.viewportSize ?? 0)
+  runtime.scrollOffset = Math.max(0, config.scrollOffset ?? 0)
+  runtime.buffer = Math.max(0, Math.floor(config.buffer ?? 0))
+  runtime.hasExplicitKey = hasExplicitKey
+  runtime.keyOf = keyOf
+  runtime.estimate = estimate
+  runtime.measured = measured
+  runtime.tree = tree
+  runtime.computeWindow = () => computeVirtualizerWindow(runtime)
+  runtime.store = createStore(runtime.computeWindow())
+  runtime.sync = () => runtime.store.setState(runtime.computeWindow())
+  runtime.clampScroll = (offset) =>
+    Math.max(0, Math.min(offset, Math.max(0, runtime.tree.total() - runtime.viewportSize)))
+  return runtime
+}
+
+function setVirtualizerScroll(runtime: VirtualizerRuntime, offset: number): void {
+  const next = runtime.clampScroll(offset)
+  if (next === runtime.scrollOffset) return
+  runtime.scrollOffset = next
+  runtime.sync()
+}
+
+function setVirtualizerViewport(runtime: VirtualizerRuntime, size: number): void {
+  const next = Math.max(0, size)
+  if (next === runtime.viewportSize) return
+  runtime.viewportSize = next
+  runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
+function setVirtualizerCount(runtime: VirtualizerRuntime, next: number): void {
+  runtime.count = Math.max(0, next)
+  runtime.tree.reset(runtime.count)
+  runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
+function replaceVirtualizerData(runtime: VirtualizerRuntime, next: number): void {
+  runtime.count = Math.max(0, next)
+  runtime.measured.clear()
+  runtime.tree.reset(runtime.count)
+  runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
+function measureVirtualizerItem(runtime: VirtualizerRuntime, index: number, size: number): void {
+  if (index < 0 || index >= runtime.count) return
+  runtime.measured.set(runtime.keyOf(index), Math.max(0, size))
+  if (!runtime.tree.set(index, size)) return
+  runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
+function remeasureVirtualizer(runtime: VirtualizerRuntime): void {
+  runtime.measured.clear()
+  runtime.tree.reset(runtime.count)
+  runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
+function scrollVirtualizerToIndex(
+  runtime: VirtualizerRuntime,
+  index: number,
+  align: 'start' | 'center' | 'end',
+): number {
+  if (runtime.count <= 0) return 0
+  const targetIndex = Math.max(0, Math.min(index, runtime.count - 1))
+  const start = runtime.tree.prefix(targetIndex)
+  const size = runtime.tree.sizeOf(targetIndex)
+  const target =
+    align === 'center'
+      ? start - (runtime.viewportSize - size) / 2
+      : align === 'end'
+        ? start - runtime.viewportSize + size
+        : start
+  const next = runtime.clampScroll(target)
+  runtime.scrollOffset = next
+  runtime.sync()
+  return next
+}
+
+function scrollVirtualizerToOffset(runtime: VirtualizerRuntime, offset: number): number {
+  const next = runtime.clampScroll(offset)
+  runtime.scrollOffset = next
+  runtime.sync()
+  return next
+}
+
+function createVirtualizerViewportApi(
+  runtime: VirtualizerRuntime,
+): Pick<
+  Virtualizer,
+  | 'store'
+  | 'getState'
+  | 'subscribe'
+  | 'setScroll'
+  | 'setViewportSize'
+  | 'scrollToIndex'
+  | 'scrollToOffset'
+  | 'totalSize'
+> {
+  return {
+    store: runtime.store,
+    getState: runtime.store.getState,
+    subscribe: runtime.store.subscribe,
+    setScroll: (offset) => setVirtualizerScroll(runtime, offset),
+    setViewportSize: (size) => setVirtualizerViewport(runtime, size),
+    scrollToIndex: (index, align = 'start') => scrollVirtualizerToIndex(runtime, index, align),
+    scrollToOffset: (offset) => scrollVirtualizerToOffset(runtime, offset),
+    totalSize: () => runtime.tree.total(),
   }
+}
 
-  const tree = createSizeTree(count, sizeAt)
-
-  const computeWindow = (): VirtualizerState => {
-    if (count <= 0) return { items: [], offsetBefore: 0, totalSize: 0, startIndex: 0, endIndex: -1 }
-    const total = tree.total()
-    const maxScroll = Math.max(0, total - viewportSize)
-    const top = Math.max(0, Math.min(scrollOffset, maxScroll))
-    const first = Math.min(tree.lowerBound(top), count - 1)
-    // Walk to the last item whose top is above the viewport's bottom edge.
-    let last = first
-    const bottom = top + viewportSize
-    while (last < count - 1 && tree.prefix(last + 1) < bottom) last += 1
-    const startIndex = Math.max(0, first - buffer)
-    const endIndex = Math.min(count - 1, last + buffer)
-    const items: VirtualItem[] = []
-    for (let i = startIndex; i <= endIndex; i++) {
-      items.push({ index: i, key: keyOf(i), start: tree.prefix(i), size: tree.sizeOf(i) })
-    }
-    return { items, offsetBefore: tree.prefix(startIndex), totalSize: total, startIndex, endIndex }
-  }
-
-  const store = createStore<VirtualizerState>(computeWindow())
-  const sync = (): void => store.setState(computeWindow())
-
-  const clampScroll = (offset: number): number => {
-    const maxScroll = Math.max(0, tree.total() - viewportSize)
-    return Math.max(0, Math.min(offset, maxScroll))
-  }
-
-  const virtualizer: Virtualizer = {
-    store,
-    getState: store.getState,
-    subscribe: store.subscribe,
-    setScroll(offset) {
-      const next = clampScroll(offset)
-      if (next === scrollOffset) return
-      scrollOffset = next
-      sync()
-    },
-    setViewportSize(size) {
-      const next = Math.max(0, size)
-      if (next === viewportSize) return
-      viewportSize = next
-      scrollOffset = clampScroll(scrollOffset)
-      sync()
-    },
-    setCount(next) {
-      const n = Math.max(0, next)
-      if (n === count) {
-        // same count, possibly reordered: re-seat measured sizes onto positions.
-        tree.reset(n)
-      } else {
-        count = n
-        tree.reset(n)
-      }
-      scrollOffset = clampScroll(scrollOffset)
-      sync()
-    },
-    replaceData(next) {
-      const n = Math.max(0, next)
-      count = n
-      measured.clear()
-      tree.reset(n)
-      scrollOffset = clampScroll(scrollOffset)
-      sync()
-    },
-    measure(index, size) {
-      if (index < 0 || index >= count) return
-      measured.set(keyOf(index), Math.max(0, size))
-      if (tree.set(index, size)) {
-        // a size change can shift the clamped scroll bound; re-clamp then emit.
-        scrollOffset = clampScroll(scrollOffset)
-        sync()
-      }
-    },
-    remeasure() {
-      measured.clear()
-      tree.reset(count)
-      scrollOffset = clampScroll(scrollOffset)
-      sync()
-    },
-    scrollToIndex(index, align = 'start') {
-      if (count <= 0) return 0
-      const i = Math.max(0, Math.min(index, count - 1))
-      const start = tree.prefix(i)
-      const size = tree.sizeOf(i)
-      let target = start
-      if (align === 'center') target = start - (viewportSize - size) / 2
-      else if (align === 'end') target = start - viewportSize + size
-      const next = clampScroll(target)
-      scrollOffset = next
-      sync()
-      return next
-    },
-    scrollToOffset(offset) {
-      const next = clampScroll(offset)
-      scrollOffset = next
-      sync()
-      return next
-    },
-    totalSize: () => tree.total(),
-
-    // Dev-only diagnostic for cache skew
-    ...(process.env.NODE_ENV === 'development'
+function createVirtualizerDataApi(
+  runtime: VirtualizerRuntime,
+): Pick<Virtualizer, 'setCount' | 'replaceData' | 'measure' | 'remeasure' | 'detectCacheSkew'> {
+  const diagnostics =
+    process.env.NODE_ENV === 'development'
       ? {
-          detectCacheSkew(): string | null {
-            if (!hasExplicitKey && count > 0) {
-              return (
-                'Virtualizer is using index-as-key (no getItemKey provided). ' +
+          detectCacheSkew: (): string | null =>
+            !runtime.hasExplicitKey && runtime.count > 0
+              ? 'Virtualizer is using index-as-key (no getItemKey provided). ' +
                 'Item insertion/deletion will cause measured sizes to map to wrong positions. ' +
                 'Provide a stable getItemKey for dynamic data.'
-              )
-            }
-            return null
-          },
+              : null,
         }
-      : {}),
+      : {}
+  return {
+    setCount: (count) => setVirtualizerCount(runtime, count),
+    replaceData: (count) => replaceVirtualizerData(runtime, count),
+    measure: (index, size) => measureVirtualizerItem(runtime, index, size),
+    remeasure: () => remeasureVirtualizer(runtime),
+    ...diagnostics,
   }
+}
 
-  return virtualizer
+function createVirtualizerApi(runtime: VirtualizerRuntime): Virtualizer {
+  return { ...createVirtualizerViewportApi(runtime), ...createVirtualizerDataApi(runtime) }
+}
+
+export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
+  return createVirtualizerApi(createVirtualizerRuntime(config))
 }

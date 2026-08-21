@@ -36,6 +36,20 @@ function isDisposable(value: Disposeable): value is Disposable {
   )
 }
 
+function teardownOf(child: Disposeable): Teardown {
+  return isDisposable(child) ? () => child.destroy() : child
+}
+
+function runTeardowns(entries: Teardown[], errors: unknown[]): void {
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    try {
+      entries[i]!()
+    } catch (err) {
+      errors.push(err)
+    }
+  }
+}
+
 /**
  * A scope that owns child teardowns / {@link Disposable}s and releases them in
  * reverse (LIFO) registration order when {@link destroy} is called — the order
@@ -76,14 +90,6 @@ export function createDisposableScope(): DisposableScope {
   const entries: Teardown[] = []
   let disposed = false
 
-  const runTeardown = (fn: Teardown, errors: unknown[]): void => {
-    try {
-      fn()
-    } catch (err) {
-      errors.push(err)
-    }
-  }
-
   const self: DisposableScope = {
     get disposed() {
       return disposed
@@ -92,7 +98,7 @@ export function createDisposableScope(): DisposableScope {
       return entries.length
     },
     add(child) {
-      const teardown: Teardown = isDisposable(child) ? () => child.destroy() : child
+      const teardown = teardownOf(child)
       if (disposed) {
         // Already torn down — release immediately rather than retaining a leak.
         teardown()
@@ -117,7 +123,7 @@ export function createDisposableScope(): DisposableScope {
       disposed = true
       const errors: unknown[] = []
       // LIFO: unwind in reverse acquisition order.
-      for (let i = entries.length - 1; i >= 0; i -= 1) runTeardown(entries[i]!, errors)
+      runTeardowns(entries, errors)
       entries.length = 0
       if (errors.length > 0) throw errors[0]
     },

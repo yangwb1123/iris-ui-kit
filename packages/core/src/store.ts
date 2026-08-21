@@ -49,33 +49,56 @@ export interface Store<T> extends ReadonlyStore<T> {
   batch<R>(fn: () => R): R
 }
 
+type StoreListener<T> = (state: T) => void
+
+function notifyStoreListeners<T>(listeners: Set<StoreListener<T>>, state: T): void {
+  // Snapshot before notifying so subscribe/unsubscribe DURING a notify is
+  // well-defined: listeners present at emit-start are notified (ones added
+  // mid-emit are not), and a listener removed mid-emit is skipped.
+  for (const listener of [...listeners]) {
+    if (listeners.has(listener)) listener(state)
+  }
+}
+
+function subscribeStoreListener<T>(
+  listeners: Set<StoreListener<T>>,
+  listener: StoreListener<T>,
+): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+function subscribeStoreSlice<T, U>(
+  getState: () => T,
+  subscribe: (listener: StoreListener<T>) => () => void,
+  selector: (state: T) => U,
+  listener: (value: U) => void,
+  equals: (a: U, b: U) => boolean,
+): () => void {
+  let last = selector(getState())
+  return subscribe((state) => {
+    const next = selector(state)
+    if (!equals(last, next)) {
+      last = next
+      listener(next)
+    }
+  })
+}
+
 export function createStore<T>(initial: T): Store<T> {
   let state = initial
-  const listeners = new Set<(state: T) => void>()
+  const listeners = new Set<StoreListener<T>>()
   let batchDepth = 0
   let pendingFlush = false
-
-  const notify = (): void => {
-    // Snapshot before notifying so subscribe/unsubscribe DURING a notify is
-    // well-defined: listeners present at emit-start are notified (ones added
-    // mid-emit are not), and a listener removed mid-emit (e.g. by an earlier
-    // listener tearing down a sibling) is skipped rather than called stale.
-    for (const listener of [...listeners]) {
-      if (listeners.has(listener)) listener(state)
-    }
-  }
-
-  const subscribe = (listener: (state: T) => void): (() => void) => {
-    listeners.add(listener)
-    return () => {
-      listeners.delete(listener)
-    }
-  }
+  const getState = (): T => state
+  const notify = (): void => notifyStoreListeners(listeners, state)
+  const subscribe = (listener: StoreListener<T>): (() => void) =>
+    subscribeStoreListener(listeners, listener)
 
   return {
-    getState() {
-      return state
-    },
+    getState,
     setState(updater) {
       const next = typeof updater === 'function' ? (updater as (prev: T) => T)(state) : updater
       if (Object.is(next, state)) return
@@ -105,14 +128,7 @@ export function createStore<T>(initial: T): Store<T> {
       listener: (value: U) => void,
       equals: (a: U, b: U) => boolean = Object.is,
     ): () => void {
-      let last = selector(state)
-      return subscribe((s) => {
-        const next = selector(s)
-        if (!equals(last, next)) {
-          last = next
-          listener(next)
-        }
-      })
+      return subscribeStoreSlice(getState, subscribe, selector, listener, equals)
     },
   }
 }

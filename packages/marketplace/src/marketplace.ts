@@ -126,159 +126,167 @@ function resolveUrl(base: string, reference: string): string {
   return resolved.toString()
 }
 
-export function createRuntimeMarketplace(config: RuntimeMarketplaceConfig): RuntimeMarketplace {
-  const fetcher = config.fetch ?? globalThis.fetch
-  const storage = config.storage ?? memoryMarketplaceStorage()
-  const teardowns = new Map<string, () => void>()
-  const store = createStore<RuntimeMarketplaceState>({
-    status: 'idle',
-    entries: [],
-    installed: [],
-  })
+class RuntimeMarketplaceEngine {
+  readonly marketplace: RuntimeMarketplace
 
-  const persist = async (): Promise<void> => storage.save(store.getState().installed)
+  constructor(config: RuntimeMarketplaceConfig) {
+    const fetcher = config.fetch ?? globalThis.fetch
+    const storage = config.storage ?? memoryMarketplaceStorage()
+    const teardowns = new Map<string, () => void>()
+    const store = createStore<RuntimeMarketplaceState>({
+      status: 'idle',
+      entries: [],
+      installed: [],
+    })
 
-  const applyPayload = async (
-    payload: RuntimeRegistryPayload,
-    installedAt = new Date().toISOString(),
-  ): Promise<InstalledRuntimeResource> => {
-    validatePayloadData(payload)
-    const previous = store.getState().installed.find((item) => item.name === payload.name)
-    const previousTeardown = teardowns.get(payload.name)
-    previousTeardown?.()
-    teardowns.delete(payload.name)
-    let teardown: void | (() => void)
-    try {
-      teardown = await config.installers?.[payload.type]?.(payload)
-    } catch (error) {
-      if (previous && previousTeardown) {
-        try {
-          const restored = await config.installers?.[previous.type]?.(previous.payload)
-          if (restored) teardowns.set(previous.name, restored)
-        } catch (rollbackError) {
-          throw new AggregateError(
-            [error, rollbackError],
-            `Unable to install or restore marketplace resource "${payload.name}"`,
-          )
-        }
-      }
-      throw error
-    }
-    if (teardown) teardowns.set(payload.name, teardown)
-    const resource: InstalledRuntimeResource = {
-      name: payload.name,
-      type: payload.type,
-      version: payload.version,
-      installedAt,
-      payload,
-    }
-    store.setState((state) => ({
-      ...state,
-      installed: [...state.installed.filter((item) => item.name !== payload.name), resource],
-    }))
-    return resource
-  }
+    const persist = async (): Promise<void> => storage.save(store.getState().installed)
 
-  const marketplace: RuntimeMarketplace = {
-    store,
-    getState: store.getState,
-    subscribe: store.subscribe,
-
-    async loadCatalog() {
-      if (!fetcher) throw new Error('No fetch implementation is available')
-      store.setState((state) => ({ ...state, status: 'loading', error: undefined }))
+    const applyPayload = async (
+      payload: RuntimeRegistryPayload,
+      installedAt = new Date().toISOString(),
+    ): Promise<InstalledRuntimeResource> => {
+      validatePayloadData(payload)
+      const previous = store.getState().installed.find((item) => item.name === payload.name)
+      const previousTeardown = teardowns.get(payload.name)
+      previousTeardown?.()
+      teardowns.delete(payload.name)
+      let teardown: void | (() => void)
       try {
-        const response = await fetcher(config.manifestUrl)
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        const manifest = parseManifest((await response.json()) as unknown)
-        store.setState((state) => ({
-          ...state,
-          status: 'ready',
-          entries: manifest.resources,
-          error: undefined,
-        }))
-        return manifest.resources
+        teardown = await config.installers?.[payload.type]?.(payload)
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        store.setState((state) => ({ ...state, status: 'error', error: message }))
+        if (previous && previousTeardown) {
+          try {
+            const restored = await config.installers?.[previous.type]?.(previous.payload)
+            if (restored) teardowns.set(previous.name, restored)
+          } catch (rollbackError) {
+            throw new AggregateError(
+              [error, rollbackError],
+              `Unable to install or restore marketplace resource "${payload.name}"`,
+            )
+          }
+        }
         throw error
       }
-    },
-
-    list: () => store.getState().entries,
-
-    search(query) {
-      const normalized = query.trim().toLowerCase()
-      if (!normalized) return marketplace.list()
-      return marketplace
-        .list()
-        .filter((entry) =>
-          [entry.name, entry.description ?? '', ...(entry.tags ?? [])]
-            .join(' ')
-            .toLowerCase()
-            .includes(normalized),
-        )
-    },
-
-    async install(name) {
-      if (!fetcher) throw new Error('No fetch implementation is available')
-      if (marketplace.list().length === 0) await marketplace.loadCatalog()
-      const entry = marketplace.list().find((candidate) => candidate.name === name)
-      if (!entry) throw new Error(`Marketplace has no resource named "${name}"`)
-      const response = await fetcher(resolveUrl(config.manifestUrl, entry.url))
-      if (!response.ok) throw new Error(`Unable to fetch ${name}: HTTP ${response.status}`)
-      const text = await response.text()
-      if (entry.integrity) {
-        const actual = await sha256Text(text)
-        if (!actual || actual !== entry.integrity)
-          throw new Error(`Integrity check failed for ${name}`)
+      if (teardown) teardowns.set(payload.name, teardown)
+      const resource: InstalledRuntimeResource = {
+        name: payload.name,
+        type: payload.type,
+        version: payload.version,
+        installedAt,
+        payload,
       }
-      const payload = parseRuntimeRegistryPayload(JSON.parse(text) as unknown)
-      if (
-        payload.name !== entry.name ||
-        payload.type !== entry.type ||
-        payload.version !== entry.version
-      ) {
-        throw new Error(`Marketplace payload identity mismatch for ${name}`)
-      }
-      const resource = await applyPayload(payload)
-      await persist()
-      return resource
-    },
-
-    async installPayload(rawPayload) {
-      const payload = parseRuntimeRegistryPayload(rawPayload)
-      const resource = await applyPayload(payload)
-      await persist()
-      return resource
-    },
-
-    async uninstall(name) {
-      const installed = store.getState().installed
-      if (!installed.some((item) => item.name === name)) return false
-      teardowns.get(name)?.()
-      teardowns.delete(name)
       store.setState((state) => ({
         ...state,
-        installed: state.installed.filter((item) => item.name !== name),
+        installed: [...state.installed.filter((item) => item.name !== payload.name), resource],
       }))
-      await persist()
-      return true
-    },
+      return resource
+    }
 
-    async hydrate() {
-      const resources = await storage.load()
-      for (const resource of resources) {
-        await applyPayload(resource.payload, resource.installedAt)
-      }
-    },
+    const marketplace: RuntimeMarketplace = {
+      store,
+      getState: store.getState,
+      subscribe: store.subscribe,
 
-    get: (name) => store.getState().installed.find((item) => item.name === name),
+      async loadCatalog() {
+        if (!fetcher) throw new Error('No fetch implementation is available')
+        store.setState((state) => ({ ...state, status: 'loading', error: undefined }))
+        try {
+          const response = await fetcher(config.manifestUrl)
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const manifest = parseManifest((await response.json()) as unknown)
+          store.setState((state) => ({
+            ...state,
+            status: 'ready',
+            entries: manifest.resources,
+            error: undefined,
+          }))
+          return manifest.resources
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          store.setState((state) => ({ ...state, status: 'error', error: message }))
+          throw error
+        }
+      },
 
-    destroy() {
-      for (const teardown of [...teardowns.values()].reverse()) teardown()
-      teardowns.clear()
-    },
+      list: () => store.getState().entries,
+
+      search(query) {
+        const normalized = query.trim().toLowerCase()
+        if (!normalized) return marketplace.list()
+        return marketplace
+          .list()
+          .filter((entry) =>
+            [entry.name, entry.description ?? '', ...(entry.tags ?? [])]
+              .join(' ')
+              .toLowerCase()
+              .includes(normalized),
+          )
+      },
+
+      async install(name) {
+        if (!fetcher) throw new Error('No fetch implementation is available')
+        if (marketplace.list().length === 0) await marketplace.loadCatalog()
+        const entry = marketplace.list().find((candidate) => candidate.name === name)
+        if (!entry) throw new Error(`Marketplace has no resource named "${name}"`)
+        const response = await fetcher(resolveUrl(config.manifestUrl, entry.url))
+        if (!response.ok) throw new Error(`Unable to fetch ${name}: HTTP ${response.status}`)
+        const text = await response.text()
+        if (entry.integrity) {
+          const actual = await sha256Text(text)
+          if (!actual || actual !== entry.integrity)
+            throw new Error(`Integrity check failed for ${name}`)
+        }
+        const payload = parseRuntimeRegistryPayload(JSON.parse(text) as unknown)
+        if (
+          payload.name !== entry.name ||
+          payload.type !== entry.type ||
+          payload.version !== entry.version
+        ) {
+          throw new Error(`Marketplace payload identity mismatch for ${name}`)
+        }
+        const resource = await applyPayload(payload)
+        await persist()
+        return resource
+      },
+
+      async installPayload(rawPayload) {
+        const payload = parseRuntimeRegistryPayload(rawPayload)
+        const resource = await applyPayload(payload)
+        await persist()
+        return resource
+      },
+
+      async uninstall(name) {
+        const installed = store.getState().installed
+        if (!installed.some((item) => item.name === name)) return false
+        teardowns.get(name)?.()
+        teardowns.delete(name)
+        store.setState((state) => ({
+          ...state,
+          installed: state.installed.filter((item) => item.name !== name),
+        }))
+        await persist()
+        return true
+      },
+
+      async hydrate() {
+        const resources = await storage.load()
+        for (const resource of resources) {
+          await applyPayload(resource.payload, resource.installedAt)
+        }
+      },
+
+      get: (name) => store.getState().installed.find((item) => item.name === name),
+
+      destroy() {
+        for (const teardown of [...teardowns.values()].reverse()) teardown()
+        teardowns.clear()
+      },
+    }
+    this.marketplace = marketplace
   }
-  return marketplace
+}
+
+export function createRuntimeMarketplace(config: RuntimeMarketplaceConfig): RuntimeMarketplace {
+  return new RuntimeMarketplaceEngine(config).marketplace
 }

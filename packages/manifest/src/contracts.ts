@@ -195,6 +195,40 @@ function parseVueProps(body: string, aliases: Map<string, string>): ManifestProp
   return props
 }
 
+/** Resolve a runtime props object imported into `defineComponent` (for
+ * example `props: tableProps`). Keeping extraction source-driven lets Vue
+ * adapters split large runtime declarations without making the manifest lose
+ * their native required/optional contract.
+ */
+function importedVueProps(
+  file: string,
+  componentText: string,
+  componentBody: string,
+  aliases: Map<string, string>,
+): ManifestProp[] {
+  const reference = /\bprops\s*:\s*([A-Za-z_$][\w$]*)/.exec(componentBody)?.[1]
+  if (!reference) return []
+  const importPath = new RegExp(
+    `import\\s*\\{[\\s\\S]*?\\b${reference}\\b[\\s\\S]*?\\}\\s*from\\s*['"]([^'"]+)['"]`,
+  ).exec(componentText)?.[1]
+  if (!importPath || !importPath.startsWith('.')) return []
+  const base = resolve(dirname(file), importPath)
+  const candidates = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    join(base, 'index.ts'),
+    join(base, 'index.tsx'),
+  ]
+  const sourceFile = candidates.find((candidate) => existsSync(candidate))
+  if (!sourceFile) return []
+  const source = readFileSync(sourceFile, 'utf8')
+  const declaration = new RegExp(`(?:export\\s+)?const\\s+${reference}\\s*=\\s*\\{`).exec(source)
+  if (!declaration) return []
+  const object = interfaceBody(source, declaration.index! + declaration[0].length - 1)
+  return parseVueProps(object, aliases)
+}
+
 function parseObjectKeys(body: string): string[] {
   const keys: string[] = []
   for (const raw of splitTopLevel(body)) {
@@ -217,7 +251,9 @@ function extractVueContracts(repoRoot: string, result: ContractMap): void {
       )) {
         const name = match[1]
         const body = interfaceBody(text, match.index! + match[0].length - 1)
-        const props = parseVueProps(objectPropertyBody(body, 'props'), aliases)
+        const inlineProps = parseVueProps(objectPropertyBody(body, 'props'), aliases)
+        const props =
+          inlineProps.length > 0 ? inlineProps : importedVueProps(file, text, body, aliases)
         const events = parseObjectKeys(objectPropertyBody(body, 'emits'))
         const slots = [
           ...body.matchAll(/\bslots\.([A-Za-z_$][\w$]*)/g),

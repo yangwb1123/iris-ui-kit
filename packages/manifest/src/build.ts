@@ -82,6 +82,22 @@ const LAYER_2_MODULES = new Set([
   'virtual-scroll',
 ])
 
+const PART_SUFFIXES = new Set([
+  'Trigger',
+  'Content',
+  'Title',
+  'Description',
+  'Close',
+  'Item',
+  'Separator',
+  'Sub',
+  'List',
+  'Menu',
+  'Step',
+  'Field',
+  'Panel',
+])
+
 /** Central, deterministic component → architecture-layer mapping. */
 export function componentLayer(
   group: ManifestComponent['group'],
@@ -99,6 +115,85 @@ export function componentLayer(
   return 'layer-1'
 }
 
+function buildManifestComponents(raw: RawDiscovery): ManifestComponent[] {
+  return raw.components
+    .map((component) => {
+      const frameworks = [...component.frameworks].sort()
+      const importFrom: ManifestComponent['importFrom'] = {}
+      for (const framework of frameworks) {
+        importFrom[framework] = component.plugin
+          ? `${component.plugin}/${framework}`
+          : IMPORT_PATH[framework]
+      }
+      return {
+        name: component.name,
+        group: component.group,
+        layer: componentLayer(component.group, component.module, component.name),
+        module: component.module,
+        frameworks,
+        importFrom,
+        plugin: component.plugin,
+        ...(component.description ? { description: component.description } : {}),
+        ...(component.example ? { example: component.example } : {}),
+        props: component.props,
+        ...(component.frameworkContracts
+          ? { frameworkContracts: component.frameworkContracts }
+          : {}),
+        ...(component.events && component.events.length > 0 ? { events: component.events } : {}),
+        ...(component.slots && component.slots.length > 0 ? { slots: component.slots } : {}),
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function addManifestComponentMetadata(components: ManifestComponent[]): void {
+  const names = components.map((component) => component.name)
+  for (const component of components) {
+    const subComponents = names.filter(
+      (name) =>
+        name.startsWith(component.name) && PART_SUFFIXES.has(name.slice(component.name.length)),
+    )
+    if (subComponents.length > 0) component.subComponents = subComponents
+    component.quality = {
+      propCount: component.props?.length ?? 0,
+      eventCount: component.events?.length ?? 0,
+    }
+  }
+}
+
+function summarizeManifestGroups(components: ManifestComponent[]): ManifestGroupSummary[] {
+  const byGroup = new Map<string, string[]>()
+  for (const component of components) {
+    const names = byGroup.get(component.group) ?? []
+    names.push(component.name)
+    byGroup.set(component.group, names)
+  }
+  return [...byGroup.entries()]
+    .map(([group, names]) => ({
+      group: group as ManifestComponent['group'],
+      count: names.length,
+      components: names,
+    }))
+    .sort((a, b) => a.group.localeCompare(b.group))
+}
+
+function manifestFrameworkStats(components: ManifestComponent[]): {
+  full: number
+  byFramework: Record<Framework, number>
+} {
+  const byFramework = Object.fromEntries(
+    ALL_FRAMEWORKS.map((framework) => [
+      framework,
+      components.filter((component) => component.frameworks.includes(framework)).length,
+    ]),
+  ) as Record<Framework, number>
+  return {
+    full: components.filter((component) => component.frameworks.length === ALL_FRAMEWORKS.length)
+      .length,
+    byFramework,
+  }
+}
+
 /**
  * Assemble the public manifest from raw discovery data. Pure and
  * deterministic: same input always yields byte-identical output (components
@@ -106,84 +201,10 @@ export function componentLayer(
  * control.
  */
 export function buildManifest(raw: RawDiscovery): IrisManifest {
-  const components: ManifestComponent[] = raw.components
-    .map((c) => {
-      const frameworks = [...c.frameworks].sort()
-      const importFrom: ManifestComponent['importFrom'] = {}
-      // Plugin components import from the plugin's per-framework sub-path
-      // (`@iris-ui-kit/plugin-x/react`); core components from the adapter package.
-      for (const fw of frameworks) importFrom[fw] = c.plugin ? `${c.plugin}/${fw}` : IMPORT_PATH[fw]
-      return {
-        name: c.name,
-        group: c.group,
-        layer: componentLayer(c.group, c.module, c.name),
-        module: c.module,
-        frameworks,
-        importFrom,
-        plugin: c.plugin,
-        ...(c.description ? { description: c.description } : {}),
-        ...(c.example ? { example: c.example } : {}),
-        props: c.props,
-        ...(c.frameworkContracts ? { frameworkContracts: c.frameworkContracts } : {}),
-        ...(c.events && c.events.length > 0 ? { events: c.events } : {}),
-        ...(c.slots && c.slots.length > 0 ? { slots: c.slots } : {}),
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name))
-
-  // Compound sub-components: a part is `Iris<Root><Part>` where Part is one of
-  // the compound-component naming words. The suffix allow-list excludes
-  // distinct-component lookalikes that merely share a prefix (IrisProgressCircle,
-  // IrisTreeSelect, IrisRadioGroup, IrisFormBuilder) from being mistaken for parts.
-  const PART_SUFFIXES = new Set([
-    'Trigger',
-    'Content',
-    'Title',
-    'Description',
-    'Close',
-    'Item',
-    'Separator',
-    'Sub',
-    'List',
-    'Menu',
-    'Step',
-    'Field',
-    'Panel',
-  ])
-  const names = components.map((c) => c.name)
-  for (const c of components) {
-    const subs = names.filter(
-      (n) => n.startsWith(c.name) && PART_SUFFIXES.has(n.slice(c.name.length)),
-    )
-    if (subs.length > 0) c.subComponents = subs
-
-    // Quality metadata: component-level badges derived from source analysis.
-    const props = c.props ?? []
-    const events = c.events ?? []
-    c.quality = {
-      propCount: props.length,
-      eventCount: events.length,
-    }
-  }
-
-  const byGroup = new Map<string, string[]>()
-  for (const c of components) {
-    const list = byGroup.get(c.group) ?? []
-    list.push(c.name)
-    byGroup.set(c.group, list)
-  }
-  const groups: ManifestGroupSummary[] = [...byGroup.entries()]
-    .map(([group, comps]) => ({
-      group: group as ManifestComponent['group'],
-      count: comps.length,
-      components: comps,
-    }))
-    .sort((a, b) => a.group.localeCompare(b.group))
-
-  const byFramework = Object.fromEntries(
-    ALL_FRAMEWORKS.map((fw) => [fw, components.filter((c) => c.frameworks.includes(fw)).length]),
-  ) as Record<Framework, number>
-  const full = components.filter((c) => c.frameworks.length === ALL_FRAMEWORKS.length).length
+  const components = buildManifestComponents(raw)
+  addManifestComponentMetadata(components)
+  const groups = summarizeManifestGroups(components)
+  const { full, byFramework } = manifestFrameworkStats(components)
 
   return {
     schema: 'iris-ui/manifest@1',

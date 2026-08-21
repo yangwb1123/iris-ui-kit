@@ -1,6 +1,20 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Framework, ManifestProp } from './schema'
+import {
+  extractDefaults,
+  extractTypeAliases,
+  resolveEnumValues,
+  typeAliasBody,
+} from './props-utils'
+
+export {
+  extractTypeAliases,
+  literalDefault,
+  resolveEnumValues,
+  splitTopLevel,
+  typeAliasBody,
+} from './props-utils'
 
 /**
  * Extract each component's typed prop contract from its `Iris<Name>Props`
@@ -18,7 +32,7 @@ import type { Framework, ManifestProp } from './schema'
  */
 
 /** Match `export interface Iris<Name>Props<...> ... {` capturing the base name. */
-const PROPS_INTERFACE_RE = /export\s+interface\s+(Iris[A-Za-z0-9]+)Props\b[^{]*\{/g
+const PROPS_INTERFACE_RE = /export\s+interface\s+(Iris[A-Za-z0-9]+)Props\b([^{}]*)\{/g
 const PROPS_TYPE_ALIAS_RE = /export\s+type\s+(Iris[A-Za-z0-9]+)Props\b[^=]*=/g
 const NAMED_PROPS_INTERFACE_RE = /(?:export\s+)?interface\s+(Iris[A-Za-z0-9]+Props)\b[^{]*\{/g
 
@@ -107,58 +121,14 @@ export function parsePropsBody(body: string): ManifestProp[] {
       pendingDoc = undefined
     }
 
-    // Track brace depth so a multi-line nested object type doesn't yield members.
+    // Track all TypeScript delimiters so multi-line callback/tuple/object
+    // types don't leak their parameter names into the parent contract.
     for (const ch of line) {
-      if (ch === '{') depth += 1
-      else if (ch === '}') depth = Math.max(0, depth - 1)
+      if ('{[('.includes(ch)) depth += 1
+      else if ('}])'.includes(ch)) depth = Math.max(0, depth - 1)
     }
   }
   return props
-}
-
-/**
- * Read a possibly multi-line type-alias RHS. TypeScript permits aliases without
- * semicolons, so a following declaration at top level is also a terminator.
- */
-function aliasNestingDelta(ch: string): number {
-  if (ch === '{' || ch === '[' || ch === '(') return 1
-  if (ch === '}' || ch === ']' || ch === ')') return -1
-  return 0
-}
-
-function startsFollowingDeclaration(text: string, index: number): boolean {
-  const next = text.slice(index).trimStart()
-  return (
-    /^(?:(?:export|declare)\s+)?(?:interface|type|const|let|function|class|enum)\b/.test(next) ||
-    next.startsWith('import ') ||
-    next.startsWith('/**')
-  )
-}
-
-function typeAliasBody(text: string, start: number): string {
-  let depth = 0
-  let quote: "'" | '"' | '`' | undefined
-
-  for (let i = start; i < text.length; i += 1) {
-    const ch = text[i]
-    if (quote) {
-      if (ch === '\\') i += 1
-      else if (ch === quote) quote = undefined
-      continue
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      quote = ch
-      continue
-    }
-    depth += aliasNestingDelta(ch)
-    if (ch === ';' && depth === 0) {
-      return text.slice(start, i).trim()
-    }
-    if (ch === '\n' && depth === 0 && startsFollowingDeclaration(text, i + 1)) {
-      return text.slice(start, i).trim()
-    }
-  }
-  return text.slice(start).trim()
 }
 
 /** Every local Iris*Props interface, including helper union branches. */
@@ -169,6 +139,53 @@ function namedPropsInterfaces(text: string): Map<string, ManifestProp[]> {
     result.set(match[1], parsePropsBody(interfaceBody(text, open)))
   }
   return result
+}
+
+interface PropsInterfaceDefinition {
+  props: ManifestProp[]
+  extendsNames: string[]
+}
+
+/** Collect custom `Iris*Props` interfaces so public wrapper interfaces can
+ * inherit their explicit fields across the split source files. Native DOM
+ * bases (React.HTMLAttributes, JSX.HTMLAttributes, etc.) are intentionally
+ * ignored; only Iris-owned contracts belong in the machine-readable manifest.
+ */
+function propsInterfaceDefinitions(files: string[]): Map<string, PropsInterfaceDefinition> {
+  const definitions = new Map<string, PropsInterfaceDefinition>()
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+    for (const match of text.matchAll(PROPS_INTERFACE_RE)) {
+      const name = `${match[1]}Props`
+      const open = match.index! + match[0].length - 1
+      const heritage = match[2] ?? ''
+      if (!definitions.has(name)) {
+        definitions.set(name, {
+          props: parsePropsBody(interfaceBody(text, open)),
+          extendsNames: [...heritage.matchAll(/\b(Iris[A-Za-z0-9]+Props)\b/g)].map((m) => m[1]),
+        })
+      }
+    }
+  }
+  return definitions
+}
+
+function resolveInterfaceProps(
+  name: string,
+  definitions: Map<string, PropsInterfaceDefinition>,
+  visiting = new Set<string>(),
+): ManifestProp[] {
+  const definition = definitions.get(name)
+  if (!definition || visiting.has(name)) return []
+  const nextVisiting = new Set(visiting).add(name)
+  const merged = new Map<string, ManifestProp>()
+  for (const prop of definition.props) mergeProp(merged, prop)
+  for (const base of definition.extendsNames) {
+    for (const prop of resolveInterfaceProps(base, definitions, nextVisiting)) {
+      mergeProp(merged, prop)
+    }
+  }
+  return [...merged.values()]
 }
 
 function mergeProp(target: Map<string, ManifestProp>, prop: ManifestProp): void {
@@ -209,168 +226,11 @@ function propsFromTypeAlias(
   return [...merged.values()]
 }
 
-/** Match `(export) type X = <rhs>` — captures the alias name + its RHS,
- * terminated by a `;` OR end-of-line (TS allows omitting the semicolon). */
-const TYPE_ALIAS_RE = /(?:export\s+)?type\s+([A-Za-z0-9_]+)\s*=\s*([^;\n]+);?/g
-
-/** Scan source roots for string-literal-union type aliases (name → raw RHS). */
-export function extractTypeAliases(srcRoots: string[]): Map<string, string> {
-  const aliases = new Map<string, string>()
-  for (const root of srcRoots) {
-    if (!existsSync(root)) continue
-    for (const file of walkTs(root)) {
-      const text = readFileSync(file, 'utf8')
-      for (const m of text.matchAll(TYPE_ALIAS_RE)) {
-        const name = m[1]
-        if (!aliases.has(name)) aliases.set(name, m[2].replace(/\s+/g, ' ').trim())
-      }
-    }
-  }
-  return aliases
-}
-
-/**
- * Resolve a type expression to its string-literal members, following type
- * aliases (e.g. `IrisButtonVariant` → `Variant` → `'solid' | 'outline' | …`).
- * Returns the values only when EVERY union member is a string literal;
- * otherwise undefined (a partial/non-enumerable type isn't enumerated).
- */
-export function resolveEnumValues(
-  type: string,
-  aliases: Map<string, string>,
-  depth = 5,
-): string[] | undefined {
-  const t = type.trim()
-  if (t === '') return undefined
-
-  // A union (or single) of string literals: split on top-level `|`.
-  const parts = t.split('|').map((p) => p.trim())
-  if (parts.every((p) => /^'[^']*'$/.test(p))) {
-    return parts.map((p) => p.slice(1, -1))
-  }
-
-  // A bare identifier that's a known alias → resolve its RHS.
-  if (depth > 0 && /^[A-Za-z0-9_]+$/.test(t) && aliases.has(t)) {
-    return resolveEnumValues(aliases.get(t)!, aliases, depth - 1)
-  }
-  return undefined
-}
-
-/**
- * Split a destructuring body on top-level commas (respecting `{}`/`[]`/`()`
- * nesting). Block/line comments are skipped entirely — a JSDoc above a prop
- * may contain commas or braces (e.g. `(1, 5, 10, 15, 30)`) that must not be
- * treated as entry separators, and string literals are respected so a comma
- * inside a default value stays put. A trailing comma yields a final empty
- * entry (callers skip it via their per-entry parsing).
- */
-export function splitTopLevel(body: string): string[] {
-  const parts: string[] = []
-  let depth = 0
-  let start = 0
-  let i = 0
-  while (i < body.length) {
-    const ch = body[i]
-    const next = body[i + 1]
-    if (ch === '/' && next === '*') {
-      i = skipBlockComment(body, i)
-      continue
-    }
-    if (ch === '/' && next === '/') {
-      i = skipLineComment(body, i)
-      continue
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      i = skipQuoted(body, i, ch)
-      continue
-    }
-    const nextDepth = bracketDepth(ch, depth)
-    if (nextDepth !== depth) depth = nextDepth
-    else if (ch === ',' && depth === 0) {
-      parts.push(body.slice(start, i))
-      start = i + 1
-    }
-    i += 1
-  }
-  parts.push(body.slice(start))
-  return parts
-}
-
-/** Return the updated nesting depth for a `{}`/`[]`/`()` character. */
-function bracketDepth(ch: string, depth: number): number {
-  if (ch === '{' || ch === '[' || ch === '(') return depth + 1
-  if (ch === '}' || ch === ']' || ch === ')') return depth - 1
-  return depth
-}
-
-/** Advance past a `/* … *\/` comment (or to end of body when unterminated). */
-function skipBlockComment(body: string, i: number): number {
-  const end = body.indexOf('*/', i + 2)
-  return end < 0 ? body.length : end + 2
-}
-
-/** Advance past a `// …` comment. */
-function skipLineComment(body: string, i: number): number {
-  const end = body.indexOf('\n', i + 2)
-  return end < 0 ? body.length : end
-}
-
-/** Advance past a quoted string literal (respecting backslash escapes). */
-function skipQuoted(body: string, i: number, quote: string): number {
-  let j = i + 1
-  while (j < body.length) {
-    if (body[j] === '\\') j += 2
-    else if (body[j] === quote) return j + 1
-    else j += 1
-  }
-  return j
-}
-
-/** A literal default (`'x'` / `"x"` / number / boolean) → its serialized form, else undefined. */
-export function literalDefault(expr: string): string | undefined {
-  const v = expr.trim()
-  if (/^'[^']*'$/.test(v) || /^"[^"]*"$/.test(v)) return v.slice(1, -1)
-  if (/^-?\d+(?:\.\d+)?$/.test(v)) return v
-  if (v === 'true' || v === 'false') return v
-  return undefined
-}
-
 /**
  * Parse `name = literal` defaults from a component's destructured first
  * parameter — covers both `export function IrisX({ … })` and
  * `forwardRef(function IrisX({ … }, ref))`. Only literal defaults are captured.
  */
-function extractDefaults(text: string, componentName: string): Map<string, string> {
-  const defaults = new Map<string, string>()
-  const fn = new RegExp(`function\\s+${componentName}\\b`).exec(text)
-  if (!fn) return defaults
-  const paren = text.indexOf('(', fn.index)
-  const open = paren < 0 ? -1 : text.indexOf('{', paren)
-  if (open < 0) return defaults
-  let depth = 0
-  let end = -1
-  for (let i = open; i < text.length; i += 1) {
-    if (text[i] === '{') depth += 1
-    else if (text[i] === '}') {
-      depth -= 1
-      if (depth === 0) {
-        end = i
-        break
-      }
-    }
-  }
-  if (end < 0) return defaults
-  for (const part of splitTopLevel(text.slice(open + 1, end))) {
-    const eq = part.indexOf('=')
-    if (eq < 0) continue
-    const name = part.slice(0, eq).trim()
-    if (!/^[A-Za-z_]\w*$/.test(name)) continue
-    const def = literalDefault(part.slice(eq + 1))
-    if (def !== undefined) defaults.set(name, def)
-  }
-  return defaults
-}
-
 const SLOT_TYPE_RE = /ReactNode|ReactElement|JSX\.Element|VNode|Snippet/
 
 /**
@@ -397,15 +257,15 @@ function scanSrcRoot(
   aliases: Map<string, string>,
 ): void {
   if (!existsSync(srcRoot)) return
-  for (const file of walkTs(srcRoot)) {
+  const files = walkTs(srcRoot)
+  const interfaceDefinitions = propsInterfaceDefinitions(files)
+  for (const file of files) {
     const text = readFileSync(file, 'utf8')
     const localInterfaces = namedPropsInterfaces(text)
     for (const match of text.matchAll(PROPS_INTERFACE_RE)) {
       const name = match[1]
       if (result.has(name)) continue // first declaration wins
-      const open = match.index! + match[0].length - 1 // index of the `{`
-      const body = interfaceBody(text, open)
-      const props = parsePropsBody(body)
+      const props = resolveInterfaceProps(`${name}Props`, interfaceDefinitions)
       const defaults = extractDefaults(text, name)
       for (const prop of props) {
         const values = resolveEnumValues(prop.type, aliases)

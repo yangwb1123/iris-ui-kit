@@ -1,13 +1,7 @@
-import { createSignal, onCleanup, For, type JSX } from 'solid-js'
-import {
-  createCalendar,
-  buildMonthMatrix,
-  formatMonthYear,
-  getWeekdayNames,
-  formatLocalISO,
-  type CalendarConfig,
-  type CalendarEvent,
-} from '../core'
+import { createSignal, onCleanup, type JSX } from 'solid-js'
+import { createCalendar, formatMonthYear, formatLocalISO, type CalendarConfig } from '../core'
+import { CalendarGrid } from './calendar-grid'
+import { CalendarHeader } from './calendar-header'
 
 export type { CalendarEvent, CalendarConfig, CalendarState, CalendarStore } from '../core'
 
@@ -31,6 +25,7 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
   onCleanup(store.subscribe(setCalendarState))
 
   const today = formatLocalISO(new Date())
+  const monthLabel = () => formatMonthYear(new Date(calendarState().year, calendarState().month, 1))
 
   return (
     <div
@@ -38,155 +33,13 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
       class={props.class}
       style={{ 'font-family': 'inherit', ...(props.style as Record<string, string>) }}
     >
-      {/* Header */}
-      <div
-        data-iris-event-cal-header=""
-        style={{
-          display: 'flex',
-          'align-items': 'center',
-          'justify-content': 'space-between',
-          'margin-bottom': '8px',
-        }}
-      >
-        <button
-          data-iris-event-cal-prev=""
-          aria-label="Previous month"
-          onClick={() => store.prevMonth()}
-          style={{ cursor: 'pointer', background: 'none', border: 'none', 'font-size': '1.2em' }}
-        >
-          ‹
-        </button>
-        <span data-iris-event-cal-title="" style={{ 'font-weight': '600' }}>
-          {formatMonthYear(new Date(calendarState().year, calendarState().month, 1))}
-        </span>
-        <button
-          data-iris-event-cal-next=""
-          aria-label="Next month"
-          onClick={() => store.nextMonth()}
-          style={{ cursor: 'pointer', background: 'none', border: 'none', 'font-size': '1.2em' }}
-        >
-          ›
-        </button>
-      </div>
-
-      {/* 7-column grid */}
-      <div
-        data-iris-event-cal-grid=""
-        style={{
-          display: 'grid',
-          'grid-template-columns': 'repeat(7, 1fr)',
-          gap: 'var(--iris-cal-grid-gap, var(--iris-space-xxs, 4px))',
-        }}
-      >
-        {/* Weekday headers */}
-        <For each={getWeekdayNames(0)}>
-          {(name) => (
-            <div
-              data-iris-event-cal-weekday=""
-              style={{
-                'text-align': 'center',
-                'font-weight': '600',
-                'font-size': '0.75em',
-                padding: '4px 0',
-                color: 'var(--iris-muted, #64748b)',
-              }}
-            >
-              {name}
-            </div>
-          )}
-        </For>
-
-        {/* Day cells */}
-        <For
-          each={buildMonthMatrix(
-            new Date(calendarState().year, calendarState().month, 1),
-            0,
-          ).flat()}
-        >
-          {(date) => {
-            const iso = formatLocalISO(date)
-            const isCurrentMonth = date.getMonth() === calendarState().month
-            const isToday = iso === today
-            const dayEvents = () =>
-              calendarState().events.filter((e: CalendarEvent) => e.date === iso)
-
-            return (
-              <div
-                data-iris-event-cal-day={iso}
-                style={{
-                  'min-height': '64px',
-                  padding: '4px',
-                  border: '1px solid var(--iris-border, #e2e8f0)',
-                  'border-radius': '4px',
-                  cursor: isCurrentMonth ? 'pointer' : 'default',
-                  opacity: isCurrentMonth ? '1' : '0.4',
-                  background: 'transparent',
-                  display: 'flex',
-                  'flex-direction': 'column',
-                  gap: 'var(--iris-space-xxs, 4px)',
-                }}
-                onClick={() => {
-                  if (isCurrentMonth) props.config.onDateClick?.(iso)
-                }}
-              >
-                {/* Day number */}
-                <span
-                  data-iris-event-cal-day-num=""
-                  style={{
-                    'align-self': 'flex-start',
-                    'font-size': '0.8em',
-                    'font-weight': isToday ? '700' : '400',
-                    background: isToday
-                      ? 'var(--iris-cal-today-bg, var(--iris-primary, #6366f1))'
-                      : 'transparent',
-                    color: isToday ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
-                    'border-radius': isToday ? '50%' : '0',
-                    width: '22px',
-                    height: '22px',
-                    display: 'flex',
-                    'align-items': 'center',
-                    'justify-content': 'center',
-                  }}
-                >
-                  {date.getDate()}
-                </span>
-
-                {/* Event chips */}
-                <For each={dayEvents()}>
-                  {(event) => (
-                    <span
-                      data-iris-event-cal-chip={event.id}
-                      title={event.title}
-                      style={{
-                        'font-size': '0.7em',
-                        background: event.color
-                          ? event.color
-                          : 'var(--iris-cal-event-bg, rgba(99,102,241,0.15))',
-                        color: event.color
-                          ? 'var(--iris-on-color, #ffffff)'
-                          : 'var(--iris-primary, #6366f1)',
-                        'border-radius': '4px',
-                        padding: 'var(--iris-space-xxs, 4px) 4px',
-                        overflow: 'hidden',
-                        'white-space': 'nowrap',
-                        'text-overflow': 'ellipsis',
-                        cursor: 'pointer',
-                        display: 'block',
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        props.config.onEventClick?.(event)
-                      }}
-                    >
-                      {event.title}
-                    </span>
-                  )}
-                </For>
-              </div>
-            )
-          }}
-        </For>
-      </div>
+      <CalendarHeader monthLabel={monthLabel} store={store} />
+      <CalendarGrid
+        state={calendarState}
+        today={today}
+        onDateClick={props.config.onDateClick}
+        onEventClick={props.config.onEventClick}
+      />
     </div>
   )
 }

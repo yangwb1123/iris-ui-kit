@@ -139,6 +139,33 @@ interface ProjectionContext {
   direction: ChartDirection
 }
 
+function projectSeriesPoint(
+  item: ChartSeries,
+  categoryIndex: number,
+  value: number,
+  context: ProjectionContext,
+  colorToken: string,
+  color: string,
+): { point: Point; tooltip: ChartTooltipItem } {
+  const point: Point = {
+    x: scaleCategory(categoryIndex, context.count, context.box, context.direction),
+    y: scaleY(value, context.domain, context.box),
+  }
+  const tooltip: ChartTooltipItem = {
+    id: `${item.id}:${categoryIndex}`,
+    label: item.label || item.id,
+    colorToken,
+    color,
+    value,
+    formattedValue: formattedNumber(value),
+    categoryIndex,
+    categoryLabel: categoryLabel(context.categories, categoryIndex),
+    seriesId: item.id,
+    seriesLabel: item.label || item.id,
+  }
+  return { point, tooltip }
+}
+
 function projectSeries(
   item: ChartSeries,
   seriesIndex: number,
@@ -155,22 +182,14 @@ function projectSeries(
       startsSegment = true
       return
     }
-    const point: Point = {
-      x: scaleCategory(categoryIndex, context.count, context.box, context.direction),
-      y: scaleY(value, context.domain, context.box),
-    }
-    const tooltip: ChartTooltipItem = {
-      id: `${item.id}:${categoryIndex}`,
-      label: item.label || item.id,
+    const { point, tooltip } = projectSeriesPoint(
+      item,
+      categoryIndex,
+      value,
+      context,
       colorToken,
       color,
-      value,
-      formattedValue: formattedNumber(value),
-      categoryIndex,
-      categoryLabel: categoryLabel(context.categories, categoryIndex),
-      seriesId: item.id,
-      seriesLabel: item.label || item.id,
-    }
+    )
     points.push({
       ...point,
       id: tooltip.id,

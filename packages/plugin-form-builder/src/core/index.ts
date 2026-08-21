@@ -204,91 +204,100 @@ export function validateArrayFields(
 }
 
 /** Compile a {@link FormSchema} into a live {@link FormBuilder}. */
-export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig = {}): FormBuilder {
-  const labelOf = (field: FieldSpec): string => field.label ?? humanize(field.name)
-  const isVisible = (field: FieldSpec, values: FormValues): boolean =>
-    field.when ? field.when(values) : true
+class FormBuilderEngine {
+  readonly builder: FormBuilder
 
-  const initialValues: FormValues = {}
-  const validators: Record<string, (value: unknown, values: FormValues) => string | undefined> = {}
+  constructor(schema: FormSchema, config: FormBuilderConfig = {}) {
+    const labelOf = (field: FieldSpec): string => field.label ?? humanize(field.name)
+    const isVisible = (field: FieldSpec, values: FormValues): boolean =>
+      field.when ? field.when(values) : true
 
-  /** Recursively compile validators for a field and its sub-fields (arrays).
-   *  Uses "[]" pattern keys (e.g. "tags[].name") which the core form engine
-   *  expands to "tags[0].name", "tags[1].name", etc. at validation time. */
-  function compileValidators(field: FieldSpec, prefix: string): void {
-    const fullKey = prefix ? `${prefix}.${field.name}` : field.name
-    const label = field.label ?? humanize(field.name)
+    const initialValues: FormValues = {}
+    const validators: Record<string, (value: unknown, values: FormValues) => string | undefined> =
+      {}
 
-    if (field.required) {
-      const isMissing =
-        field.type === 'array'
-          ? (value: unknown) => !Array.isArray(value) || value.length === 0
-          : (value: unknown) => isEmpty(value)
-      validators[fullKey] = (value: unknown, values: FormValues) =>
-        isVisible(field, values) && isMissing(value) ? `${label} is required` : undefined
-    }
+    /** Recursively compile validators for a field and its sub-fields (arrays).
+     *  Uses "[]" pattern keys (e.g. "tags[].name") which the core form engine
+     *  expands to "tags[0].name", "tags[1].name", etc. at validation time. */
+    function compileValidators(field: FieldSpec, prefix: string): void {
+      const fullKey = prefix ? `${prefix}.${field.name}` : field.name
+      const label = field.label ?? humanize(field.name)
 
-    // Array sub-fields: compile validators with "[]" pattern so the core
-    // engine expands them for each row at validation time.
-    if (field.type === 'array' && field.fields) {
-      const arrayPrefix = prefix ? `${prefix}.${field.name}` : field.name
-      for (const sub of field.fields) {
-        // Use "tags[].name" pattern — core will expand to "tags[0].name" etc.
-        compileValidators(sub, `${arrayPrefix}[]`)
+      if (field.required) {
+        const isMissing =
+          field.type === 'array'
+            ? (value: unknown) => !Array.isArray(value) || value.length === 0
+            : (value: unknown) => isEmpty(value)
+        validators[fullKey] = (value: unknown, values: FormValues) =>
+          isVisible(field, values) && isMissing(value) ? `${label} is required` : undefined
+      }
+
+      // Array sub-fields: compile validators with "[]" pattern so the core
+      // engine expands them for each row at validation time.
+      if (field.type === 'array' && field.fields) {
+        const arrayPrefix = prefix ? `${prefix}.${field.name}` : field.name
+        for (const sub of field.fields) {
+          // Use "tags[].name" pattern — core will expand to "tags[0].name" etc.
+          compileValidators(sub, `${arrayPrefix}[]`)
+        }
       }
     }
-  }
 
-  for (const field of schema.fields) {
-    // Array (repeater) fields seed to an EMPTY array — no auto-seeded first row;
-    // rows are added explicitly via the renderer's "Add" button.
-    initialValues[field.name] = seedValue(field) as FormValues[string]
-    compileValidators(field, '')
-  }
+    for (const field of schema.fields) {
+      // Array (repeater) fields seed to an EMPTY array — no auto-seeded first row;
+      // rows are added explicitly via the renderer's "Add" button.
+      initialValues[field.name] = seedValue(field) as FormValues[string]
+      compileValidators(field, '')
+    }
 
-  const form = createFormStore<FormValues>({
-    initialValues,
-    validators,
-    validateOnChange: config.validateOnChange ?? true,
-    onSubmit: config.onSubmit,
-    parse: config.parse,
-    transform: config.transform,
-    dependencies: config.dependencies,
-    validate: async (values) => ({
-      ...validateArrayFields(schema.fields, values),
-      ...(config.validate ? await config.validate(values) : {}),
-    }),
-    ...(schema.steps ? { steps: schema.steps } : {}),
-  })
-
-  const stepCount = form.stepCount()
-
-  const stepFields = (state: FormState<FormValues>): FieldSpec[] => {
-    const step = schema.steps?.[state.currentStep]
-    const stepNames = step ? new Set(step.fields) : null
-    return schema.fields.filter((f) => {
-      if (stepNames && !stepNames.has(f.name)) return false
-      return isVisible(f, state.values)
+    const form = createFormStore<FormValues>({
+      initialValues,
+      validators,
+      validateOnChange: config.validateOnChange ?? true,
+      onSubmit: config.onSubmit,
+      parse: config.parse,
+      transform: config.transform,
+      dependencies: config.dependencies,
+      validate: async (values) => ({
+        ...validateArrayFields(schema.fields, values),
+        ...(config.validate ? await config.validate(values) : {}),
+      }),
+      ...(schema.steps ? { steps: schema.steps } : {}),
     })
-  }
 
-  const isLastStep = (state: FormState<FormValues>): boolean =>
-    !schema.steps || state.currentStep >= stepCount - 1
+    const stepCount = form.stepCount()
 
-  return {
-    form,
-    fields: schema.fields,
-    submitLabel: schema.submitLabel ?? 'Submit',
-    labelOf,
-    isVisible,
-    visibleFields: (values) => schema.fields.filter((f) => isVisible(f, values)),
-    stepCount,
-    nextStepLabel: schema.nextStepLabel ?? 'Next',
-    stepFields,
-    isLastStep,
-    nextStep: () => form.nextStep(),
-    prevStep: () => form.prevStep(),
+    const stepFields = (state: FormState<FormValues>): FieldSpec[] => {
+      const step = schema.steps?.[state.currentStep]
+      const stepNames = step ? new Set(step.fields) : null
+      return schema.fields.filter((f) => {
+        if (stepNames && !stepNames.has(f.name)) return false
+        return isVisible(f, state.values)
+      })
+    }
+
+    const isLastStep = (state: FormState<FormValues>): boolean =>
+      !schema.steps || state.currentStep >= stepCount - 1
+
+    this.builder = {
+      form,
+      fields: schema.fields,
+      submitLabel: schema.submitLabel ?? 'Submit',
+      labelOf,
+      isVisible,
+      visibleFields: (values) => schema.fields.filter((f) => isVisible(f, values)),
+      stepCount,
+      nextStepLabel: schema.nextStepLabel ?? 'Next',
+      stepFields,
+      isLastStep,
+      nextStep: () => form.nextStep(),
+      prevStep: () => form.prevStep(),
+    }
   }
+}
+
+export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig = {}): FormBuilder {
+  return new FormBuilderEngine(schema, config).builder
 }
 
 /** CSS custom properties the form builder reads; overridable by the host theme. */

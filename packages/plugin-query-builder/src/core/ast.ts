@@ -18,66 +18,72 @@ import {
 
 const FILTER_OPERATORS = Object.keys(operatorLabels) as FilterOperator[]
 
+interface QueryNormalizationContext {
+  columns: readonly QueryColumn[]
+  seen: Set<string>
+}
+
+function normalizeQueryRule(value: unknown, context: QueryNormalizationContext): QueryRuleNode {
+  const source = isRecord(value) ? value : {}
+  const fallbackColumn = context.columns[0]
+  const key = typeof source.key === 'string' ? source.key : (fallbackColumn?.key ?? '')
+  const column = context.columns.find((candidate) => candidate.key === key)
+  const fallbackOperator = column
+    ? operatorsByType[column.type][0]
+    : fallbackColumn
+      ? operatorsByType[fallbackColumn.type][0]
+      : 'eq'
+  const operator =
+    typeof source.operator === 'string' &&
+    FILTER_OPERATORS.includes(source.operator as FilterOperator)
+      ? (source.operator as FilterOperator)
+      : fallbackOperator
+  return {
+    type: 'rule',
+    id: claimQueryId(source.id, 'query-rule', context.seen),
+    key,
+    operator,
+    value:
+      typeof source.value === 'string'
+        ? source.value
+        : source.value == null
+          ? ''
+          : String(source.value),
+  }
+}
+
+function normalizeQueryGroup(
+  value: unknown,
+  depth: number,
+  context: QueryNormalizationContext,
+): QueryGroup {
+  const source = isRecord(value) ? value : {}
+  const id = claimQueryId(source.id, 'query-group', context.seen)
+  const combinator: QueryCombinator = source.combinator === 'or' ? 'or' : 'and'
+  const rawChildren = Array.isArray(source.children) ? source.children : []
+  const children =
+    depth >= MAX_QUERY_DEPTH
+      ? []
+      : rawChildren.map((child) =>
+          isRecord(child) && (child.type === 'group' || Array.isArray(child.children))
+            ? normalizeQueryGroup(child, depth + 1, context)
+            : normalizeQueryRule(child, context),
+        )
+  return { type: 'group', id, combinator, children }
+}
+
 /**
  * Normalize unknown/deserialized input into a bounded recursive AST. Safe,
  * unique IDs are preserved; missing, duplicate, and unsafe IDs are replaced.
  */
 export function normalizeQuery(input: unknown, columns: readonly QueryColumn[]): QueryGroup {
-  const seen = new Set<string>()
-  const columnFor = (key: string): QueryColumn | undefined =>
-    columns.find((column) => column.key === key)
-
-  const normalizeRule = (value: unknown): QueryRuleNode => {
-    const source = isRecord(value) ? value : {}
-    const fallbackColumn = columns[0]
-    const key = typeof source.key === 'string' ? source.key : (fallbackColumn?.key ?? '')
-    const column = columnFor(key)
-    const fallbackOperator = column
-      ? operatorsByType[column.type][0]
-      : fallbackColumn
-        ? operatorsByType[fallbackColumn.type][0]
-        : 'eq'
-    const operator =
-      typeof source.operator === 'string' &&
-      FILTER_OPERATORS.includes(source.operator as FilterOperator)
-        ? (source.operator as FilterOperator)
-        : fallbackOperator
-    return {
-      type: 'rule',
-      id: claimQueryId(source.id, 'query-rule', seen),
-      key,
-      operator,
-      value:
-        typeof source.value === 'string'
-          ? source.value
-          : source.value == null
-            ? ''
-            : String(source.value),
-    }
-  }
-
-  const normalizeGroup = (value: unknown, depth: number): QueryGroup => {
-    const source = isRecord(value) ? value : {}
-    const id = claimQueryId(source.id, 'query-group', seen)
-    const combinator: QueryCombinator = source.combinator === 'or' ? 'or' : 'and'
-    const rawChildren = Array.isArray(source.children) ? source.children : []
-    const children =
-      depth >= MAX_QUERY_DEPTH
-        ? []
-        : rawChildren.map((child) =>
-            isRecord(child) && (child.type === 'group' || Array.isArray(child.children))
-              ? normalizeGroup(child, depth + 1)
-              : normalizeRule(child),
-          )
-    return { type: 'group', id, combinator, children }
-  }
-
+  const context: QueryNormalizationContext = { columns, seen: new Set<string>() }
   const rootInput = Array.isArray(input)
     ? { type: 'group', combinator: 'and', children: input }
     : isRecord(input) && (input.type === 'group' || Array.isArray(input.children))
       ? input
       : { type: 'group', combinator: 'and', children: [] }
-  return normalizeGroup(rootInput, 0)
+  return normalizeQueryGroup(rootInput, 0, context)
 }
 
 function splitValue(value: string): string[] {

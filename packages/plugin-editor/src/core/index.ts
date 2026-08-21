@@ -111,57 +111,65 @@ export interface EditorHandle {
  * Create a CodeMirror 6 editor mounted in `options.parent`. Language and
  * read-only are held in Compartments so they can be reconfigured live.
  */
-export function createEditor(options: CreateEditorOptions): EditorHandle {
-  const languageComp = new Compartment()
-  const readOnlyComp = new Compartment()
-  const tabSizeComp = new Compartment()
+class EditorEngine {
+  readonly handle: EditorHandle
 
-  const onChange = options.onChange
-  const updateListener = onChange
-    ? EditorView.updateListener.of((update) => {
-        if (update.docChanged) onChange(update.state.doc.toString())
-      })
-    : []
+  constructor(options: CreateEditorOptions) {
+    const languageComp = new Compartment()
+    const readOnlyComp = new Compartment()
+    const tabSizeComp = new Compartment()
 
-  const state = EditorState.create({
-    doc: options.doc ?? '',
-    extensions: [
-      ...baseExtensions(options.completions ?? true),
-      languageComp.of(languageExtension(options.language ?? 'plain')),
-      tabSizeComp.of(EditorState.tabSize.of(normalizeTabSize(options.tabSize))),
-      readOnlyComp.of(
-        EditorState.readOnly.of(options.base !== undefined || (options.readOnly ?? false)),
-      ),
-      ...(options.base ? [diffViewPlugin(options.base)] : []),
-      updateListener,
-    ],
-  })
+    const onChange = options.onChange
+    const updateListener = onChange
+      ? EditorView.updateListener.of((update) => {
+          if (update.docChanged) onChange(update.state.doc.toString())
+        })
+      : []
 
-  const view = new EditorView({ state, parent: options.parent })
+    const state = EditorState.create({
+      doc: options.doc ?? '',
+      extensions: [
+        ...baseExtensions(options.completions ?? true),
+        languageComp.of(languageExtension(options.language ?? 'plain')),
+        tabSizeComp.of(EditorState.tabSize.of(normalizeTabSize(options.tabSize))),
+        readOnlyComp.of(
+          EditorState.readOnly.of(options.base !== undefined || (options.readOnly ?? false)),
+        ),
+        ...(options.base ? [diffViewPlugin(options.base)] : []),
+        updateListener,
+      ],
+    })
 
-  return {
-    view,
-    getValue: () => view.state.doc.toString(),
-    setValue(value) {
-      const current = view.state.doc.toString()
-      if (current === value) return
-      view.dispatch({ changes: { from: 0, to: current.length, insert: value } })
-    },
-    setLanguage(language) {
-      view.dispatch({ effects: languageComp.reconfigure(languageExtension(language)) })
-    },
-    setTabSize(tabSize) {
-      view.dispatch({
-        effects: tabSizeComp.reconfigure(EditorState.tabSize.of(normalizeTabSize(tabSize))),
-      })
-    },
-    setReadOnly(readOnly) {
-      view.dispatch({ effects: readOnlyComp.reconfigure(EditorState.readOnly.of(readOnly)) })
-    },
-    destroy() {
-      view.destroy()
-    },
+    const view = new EditorView({ state, parent: options.parent })
+
+    this.handle = {
+      view,
+      getValue: () => view.state.doc.toString(),
+      setValue(value) {
+        const current = view.state.doc.toString()
+        if (current === value) return
+        view.dispatch({ changes: { from: 0, to: current.length, insert: value } })
+      },
+      setLanguage(language) {
+        view.dispatch({ effects: languageComp.reconfigure(languageExtension(language)) })
+      },
+      setTabSize(tabSize) {
+        view.dispatch({
+          effects: tabSizeComp.reconfigure(EditorState.tabSize.of(normalizeTabSize(tabSize))),
+        })
+      },
+      setReadOnly(readOnly) {
+        view.dispatch({ effects: readOnlyComp.reconfigure(EditorState.readOnly.of(readOnly)) })
+      },
+      destroy() {
+        view.destroy()
+      },
+    }
   }
+}
+
+export function createEditor(options: CreateEditorOptions): EditorHandle {
+  return new EditorEngine(options).handle
 }
 
 /** Shared editor preferences, exposed via `usePluginStore('editor')`. */

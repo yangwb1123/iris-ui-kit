@@ -1,5 +1,6 @@
-import { createSignal, onCleanup, For, Show, type JSX } from 'solid-js'
+import { createSignal, onCleanup, type JSX } from 'solid-js'
 import type { NotificationCenter } from '../core'
+import { NotificationHeader, NotificationList, type NotificationCopy } from './notification-parts'
 
 export type {
   NotificationCenter,
@@ -34,15 +35,11 @@ export interface IrisNotificationCenterProps {
   class?: string
 }
 
-/**
- * Notification-center panel for Solid: a header (title + unread badge + mark-all
- * / clear) over a list of notifications (click to mark read, × to dismiss). All
- * state lives in the {@link NotificationCenter}; the host wraps this in a popover
- * / drawer behind a bell icon.
- */
+/** Notification-center panel over the shared NotificationCenter store. */
 export function IrisNotificationCenter(props: IrisNotificationCenterProps): JSX.Element {
-  const center = props.center
-  const p = () => ({
+  const [state, setState] = createSignal(props.center.getState())
+  onCleanup(props.center.subscribe(setState))
+  const copy = (): NotificationCopy => ({
     title: props.title ?? 'Notifications',
     emptyText: props.emptyText ?? 'No notifications',
     dismissLabel: props.dismissLabel ?? 'Dismiss',
@@ -50,66 +47,12 @@ export function IrisNotificationCenter(props: IrisNotificationCenterProps): JSX.
     markAllReadLabel: props.markAllReadLabel ?? 'Mark all read',
     clearLabel: props.clearLabel ?? 'Clear',
   })
-  const [state, setState] = createSignal(center.getState())
-  onCleanup(center.subscribe(setState))
-  const unread = () => state().items.filter((n) => !n.read).length
+  const unread = () => state().items.filter((notification) => !notification.read).length
 
   return (
     <div data-iris-notifications="" class={props.class}>
-      <div data-iris-notifications-header="">
-        <span data-iris-notifications-title="">{props.title ?? 'Notifications'}</span>
-        <Show when={unread() > 0}>
-          <span
-            data-iris-notifications-badge=""
-            aria-label={p().unreadLabel.replace('{n}', String(unread()))}
-          >
-            {unread()}
-          </span>
-        </Show>
-        <button
-          type="button"
-          data-iris-notifications-mark-all=""
-          onClick={() => center.markAllRead()}
-        >
-          {p().markAllReadLabel}
-        </button>
-        <button type="button" data-iris-notifications-clear="" onClick={() => center.clear()}>
-          {p().clearLabel}
-        </button>
-      </div>
-      <Show
-        when={state().items.length > 0}
-        fallback={
-          <div data-iris-notifications-empty="">{props.emptyText ?? 'No notifications'}</div>
-        }
-      >
-        <ul data-iris-notifications-list="" role="list">
-          <For each={state().items}>
-            {(n) => (
-              <li data-iris-notification="" data-tone={n.tone} data-read={n.read ? '' : undefined}>
-                <button
-                  type="button"
-                  data-iris-notification-body=""
-                  onClick={() => center.markRead(n.id)}
-                >
-                  <span data-iris-notification-title="">{n.title}</span>
-                  <Show when={n.description}>
-                    <span data-iris-notification-desc="">{n.description}</span>
-                  </Show>
-                </button>
-                <button
-                  type="button"
-                  data-iris-notification-dismiss=""
-                  aria-label={p().dismissLabel}
-                  onClick={() => center.dismiss(n.id)}
-                >
-                  ×
-                </button>
-              </li>
-            )}
-          </For>
-        </ul>
-      </Show>
+      <NotificationHeader center={props.center} copy={copy} unread={unread} />
+      <NotificationList center={props.center} state={state} copy={copy} />
     </div>
   )
 }

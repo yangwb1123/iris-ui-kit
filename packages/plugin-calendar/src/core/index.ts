@@ -5,6 +5,7 @@ import {
   formatMonthYear,
   getWeekdayNames,
   formatLocalISO,
+  type Store,
 } from '@iris-ui-kit/core'
 
 /**
@@ -53,57 +54,15 @@ export interface CalendarStore {
   eventsForDate(date: string): CalendarEvent[]
 }
 
-/** Create a live CalendarStore from a config. */
-export function createCalendar(config: CalendarConfig): CalendarStore {
-  const now = new Date()
-  const initialYear = config.initialYear ?? now.getFullYear()
-  const initialMonth = config.initialMonth ?? now.getMonth()
-
-  const store = createStore<CalendarState>({
-    year: initialYear,
-    month: initialMonth,
-    events: (config.events ?? []).map((e) => ({ ...e })),
-  })
-
-  const prevMonth = (): void => {
-    const { year, month } = store.getState()
-    if (month === 0) {
-      store.setState({ ...store.getState(), year: year - 1, month: 11 })
-    } else {
-      store.setState({ ...store.getState(), month: month - 1 })
-    }
-  }
-
-  const nextMonth = (): void => {
-    const { year, month } = store.getState()
-    if (month === 11) {
-      store.setState({ ...store.getState(), year: year + 1, month: 0 })
-    } else {
-      store.setState({ ...store.getState(), month: month + 1 })
-    }
-  }
-
-  const goToMonth = (year: number, month: number): void => {
-    store.setState({ ...store.getState(), year, month })
-  }
-
-  const addEvent = (event: CalendarEvent): void => {
-    const { events } = store.getState()
-    if (events.some((e) => e.id === event.id)) return // duplicate id
-    store.setState({ ...store.getState(), events: [...events, { ...event }] })
-  }
-
-  const removeEvent = (id: string): void => {
-    const { events } = store.getState()
-    const next = events.filter((e) => e.id !== id)
-    if (next.length === events.length) return // not found — no-op
-    store.setState({ ...store.getState(), events: next })
-  }
-
-  const eventsForDate = (date: string): CalendarEvent[] => {
-    return store.getState().events.filter((e) => e.date === date)
-  }
-
+function createCalendarApi(
+  store: Store<CalendarState>,
+  prevMonth: () => void,
+  nextMonth: () => void,
+  goToMonth: (year: number, month: number) => void,
+  addEvent: (event: CalendarEvent) => void,
+  removeEvent: (id: string) => void,
+  eventsForDate: (date: string) => CalendarEvent[],
+): CalendarStore {
   return {
     getState: store.getState.bind(store),
     subscribe: store.subscribe.bind(store),
@@ -114,6 +73,76 @@ export function createCalendar(config: CalendarConfig): CalendarStore {
     removeEvent,
     eventsForDate,
   }
+}
+
+/** Create a live CalendarStore from a config. */
+class CalendarStoreEngine {
+  readonly store: CalendarStore
+
+  constructor(config: CalendarConfig) {
+    const now = new Date()
+    const initialYear = config.initialYear ?? now.getFullYear()
+    const initialMonth = config.initialMonth ?? now.getMonth()
+
+    const store = createStore<CalendarState>({
+      year: initialYear,
+      month: initialMonth,
+      events: (config.events ?? []).map((e) => ({ ...e })),
+    })
+
+    const prevMonth = (): void => {
+      const { year, month } = store.getState()
+      if (month === 0) {
+        store.setState({ ...store.getState(), year: year - 1, month: 11 })
+      } else {
+        store.setState({ ...store.getState(), month: month - 1 })
+      }
+    }
+
+    const nextMonth = (): void => {
+      const { year, month } = store.getState()
+      if (month === 11) {
+        store.setState({ ...store.getState(), year: year + 1, month: 0 })
+      } else {
+        store.setState({ ...store.getState(), month: month + 1 })
+      }
+    }
+
+    const goToMonth = (year: number, month: number): void => {
+      store.setState({ ...store.getState(), year, month })
+    }
+
+    const addEvent = (event: CalendarEvent): void => {
+      const { events } = store.getState()
+      if (events.some((e) => e.id === event.id)) return // duplicate id
+      store.setState({ ...store.getState(), events: [...events, { ...event }] })
+    }
+
+    const removeEvent = (id: string): void => {
+      const { events } = store.getState()
+      const next = events.filter((e) => e.id !== id)
+      if (next.length === events.length) return // not found — no-op
+      store.setState({ ...store.getState(), events: next })
+    }
+
+    const eventsForDate = (date: string): CalendarEvent[] => {
+      return store.getState().events.filter((e) => e.date === date)
+    }
+
+    this.store = createCalendarApi(
+      store,
+      prevMonth,
+      nextMonth,
+      goToMonth,
+      addEvent,
+      removeEvent,
+      eventsForDate,
+    )
+  }
+}
+
+export function createCalendar(config: CalendarConfig): CalendarStore {
+  return new CalendarStoreEngine(config).store
 }
 
 /** CSS custom properties the event calendar reads; overridable by the host theme. */

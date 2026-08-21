@@ -41,154 +41,176 @@ export interface SkinEngine {
   errors(): SkinError[]
 }
 
-export function createSkinEngine(config: SkinEngineConfig): SkinEngine {
-  const registry = createSkinRegistry([...builtinSkins, ...(config.skins ?? [])])
-  const storage = config.storage
-  let catalog = config.catalog
-  let mode: SkinMode = config.mode ?? 'fixed'
-  let activeId = storage?.get() ?? config.default
-  let patchOverlay: SkinPatch | null = null
-  let stopWatch: (() => void) | null = null
-  const errorLog: SkinError[] = []
+interface SkinEngineState {
+  config: SkinEngineConfig
+  registry: SkinRegistry
+  storage?: SkinStorage
+  catalog?: SkinCatalog
+  mode: SkinMode
+  activeId: string
+  patchOverlay: SkinPatch | null
+  stopWatch: (() => void) | null
+  errorLog: SkinError[]
+  store: Store<ResolvedSkin>
+}
 
-  function record(e: unknown): void {
-    if (e instanceof SkinResolutionError) errorLog.push(e.error)
-    else errorLog.push(skinError('validate', String(e)))
+function recordSkinError(state: SkinEngineState, error: unknown): void {
+  if (error instanceof SkinResolutionError) state.errorLog.push(error.error)
+  else state.errorLog.push(skinError('validate', String(error)))
+}
+
+function applySkinOverlay(state: SkinEngineState, base: ResolvedSkin): ResolvedSkin {
+  const patch = state.patchOverlay
+  if (!patch || (!patch.tokens && !patch.custom)) return base
+  const theme = {
+    ...base.theme,
+    colors: { ...base.theme.colors },
+    spacing: { ...base.theme.spacing },
+    radii: { ...base.theme.radii },
   }
-
-  function applyOverlay(base: ResolvedSkin): ResolvedSkin {
-    if (!patchOverlay || (!patchOverlay.tokens && !patchOverlay.custom)) return base
-    const theme = {
-      ...base.theme,
-      colors: { ...base.theme.colors },
-      spacing: { ...base.theme.spacing },
-      radii: { ...base.theme.radii },
-    }
-    if (patchOverlay.tokens) {
-      for (const [k, v] of Object.entries(patchOverlay.tokens)) {
-        if (k in theme.colors && typeof v === 'string') {
-          ;(theme.colors as Record<string, string>)[k] = v
-        } else if (k in theme.spacing && typeof v === 'number') {
-          ;(theme.spacing as Record<string, number>)[k] = v
-        } else if (k in theme.radii && typeof v === 'number') {
-          ;(theme.radii as Record<string, number>)[k] = v
-        }
+  if (patch.tokens) {
+    for (const [key, value] of Object.entries(patch.tokens)) {
+      if (key in theme.colors && typeof value === 'string') {
+        ;(theme.colors as Record<string, string>)[key] = value
+      } else if (key in theme.spacing && typeof value === 'number') {
+        ;(theme.spacing as Record<string, number>)[key] = value
+      } else if (key in theme.radii && typeof value === 'number') {
+        ;(theme.radii as Record<string, number>)[key] = value
       }
     }
-    const custom = { ...base.custom, ...(patchOverlay.custom ?? {}) }
-    return { ...base, theme, custom }
   }
+  return { ...base, theme, custom: { ...base.custom, ...(patch.custom ?? {}) } }
+}
 
-  function remapForMode(id: string): string {
-    if (mode !== 'system') return id
-    const scheme = getColorScheme()
-    const variants = registry.get(id)?.variants
-    if (variants) return scheme === 'dark' ? (variants.dark ?? id) : (variants.light ?? id)
-    return scheme === 'dark' ? 'dark' : 'light'
-  }
+function remapSkinId(state: SkinEngineState, id: string): string {
+  if (state.mode !== 'system') return id
+  const scheme = getColorScheme()
+  const variants = state.registry.get(id)?.variants
+  if (variants) return scheme === 'dark' ? (variants.dark ?? id) : (variants.light ?? id)
+  return scheme === 'dark' ? 'dark' : 'light'
+}
 
-  /** Resolve id, applying system-variant remap + live-edit overlay; fall back safely. */
-  function compute(id: string): ResolvedSkin {
-    const target = remapForMode(id)
+/** Resolve id, applying system-variant remap + live-edit overlay; fall back safely. */
+function computeSkin(state: SkinEngineState, id: string): ResolvedSkin {
+  const target = remapSkinId(state, id)
+  try {
+    return applySkinOverlay(state, state.registry.resolve(target))
+  } catch (error) {
+    recordSkinError(state, error)
     try {
-      return applyOverlay(registry.resolve(target))
-    } catch (e) {
-      record(e)
-      try {
-        return applyOverlay(registry.resolve(config.default))
-      } catch (e2) {
-        record(e2)
-        return applyOverlay(registry.resolve('light'))
-      }
+      return applySkinOverlay(state, state.registry.resolve(state.config.default))
+    } catch (fallbackError) {
+      recordSkinError(state, fallbackError)
+      return applySkinOverlay(state, state.registry.resolve('light'))
     }
   }
+}
 
-  const store = createStore<ResolvedSkin>(compute(activeId))
+function commitSkin(state: SkinEngineState, id: string): void {
+  state.activeId = id
+  state.store.setState(computeSkin(state, id))
+}
 
-  function commit(id: string): void {
-    activeId = id
-    store.setState(compute(id))
-  }
-  function refresh(): void {
-    store.setState(compute(activeId))
-  }
-  function startWatch(): void {
-    if (stopWatch) return
-    stopWatch = watchColorScheme(() => refresh())
-  }
-  function endWatch(): void {
-    stopWatch?.()
-    stopWatch = null
-  }
-  if (mode === 'system') startWatch()
+function refreshSkin(state: SkinEngineState): void {
+  state.store.setState(computeSkin(state, state.activeId))
+}
 
-  const engine: SkinEngine = {
-    store,
-    registry,
-    current: () => store.getState(),
-    availableSkins: () => registry.list(),
+function startSkinWatch(state: SkinEngineState): void {
+  if (state.stopWatch) return
+  state.stopWatch = watchColorScheme(() => refreshSkin(state))
+}
+
+function endSkinWatch(state: SkinEngineState): void {
+  state.stopWatch?.()
+  state.stopWatch = null
+}
+
+function registerSkin(state: SkinEngineState, skin: Skin): ResolvedSkin {
+  const errors = state.registry.register(skin)
+  if (errors.length) {
+    state.errorLog.push(...errors)
+    throw new SkinResolutionError(errors[0])
+  }
+  state.storage?.set(skin.id)
+  commitSkin(state, skin.id)
+  return state.store.getState()
+}
+
+async function loadSkinIntoEngine(
+  state: SkinEngineState,
+  source: string | Skin,
+): Promise<ResolvedSkin> {
+  try {
+    return registerSkin(state, await loadSkinSource(source))
+  } catch (error) {
+    recordSkinError(state, error)
+    throw error
+  }
+}
+
+async function loadCatalogSkinIntoEngine(
+  state: SkinEngineState,
+  id: string,
+): Promise<ResolvedSkin> {
+  if (!state.catalog) throw new SkinResolutionError(skinError('catalog', 'no catalog attached'))
+  try {
+    return registerSkin(state, await state.catalog.fetchSkin(id))
+  } catch (error) {
+    recordSkinError(state, error)
+    throw error
+  }
+}
+
+export function createSkinEngine(config: SkinEngineConfig): SkinEngine {
+  const state = {
+    config,
+    registry: createSkinRegistry([...builtinSkins, ...(config.skins ?? [])]),
+    storage: config.storage,
+    catalog: config.catalog,
+    mode: config.mode ?? 'fixed',
+    activeId: config.storage?.get() ?? config.default,
+    patchOverlay: null,
+    stopWatch: null,
+    errorLog: [],
+  } as unknown as SkinEngineState
+  state.store = createStore<ResolvedSkin>(computeSkin(state, state.activeId))
+  if (state.mode === 'system') startSkinWatch(state)
+
+  return {
+    store: state.store,
+    registry: state.registry,
+    current: () => state.store.getState(),
+    availableSkins: () => state.registry.list(),
     setSkin(id) {
-      storage?.set(id)
-      commit(id)
+      state.storage?.set(id)
+      commitSkin(state, id)
     },
-    async loadSkin(source) {
-      try {
-        const skin = await loadSkinSource(source)
-        const errs = registry.register(skin)
-        if (errs.length) {
-          errorLog.push(...errs)
-          throw new SkinResolutionError(errs[0])
-        }
-        storage?.set(skin.id)
-        commit(skin.id)
-        return store.getState()
-      } catch (e) {
-        record(e)
-        throw e
-      }
-    },
-    async useFromCatalog(id) {
-      if (!catalog) throw new SkinResolutionError(skinError('catalog', 'no catalog attached'))
-      try {
-        const skin = await catalog.fetchSkin(id)
-        const errs = registry.register(skin)
-        if (errs.length) {
-          errorLog.push(...errs)
-          throw new SkinResolutionError(errs[0])
-        }
-        storage?.set(skin.id)
-        commit(skin.id)
-        return store.getState()
-      } catch (e) {
-        record(e)
-        throw e
-      }
-    },
-    attachCatalog(c) {
-      catalog = c
+    loadSkin: (source) => loadSkinIntoEngine(state, source),
+    useFromCatalog: (id) => loadCatalogSkinIntoEngine(state, id),
+    attachCatalog: (catalog) => {
+      state.catalog = catalog
     },
     setMode(next) {
-      mode = next
-      if (next === 'system') startWatch()
-      else endWatch()
-      refresh()
+      state.mode = next
+      if (next === 'system') startSkinWatch(state)
+      else endSkinWatch(state)
+      refreshSkin(state)
     },
-    getMode: () => mode,
-    getActiveId: () => activeId,
+    getMode: () => state.mode,
+    getActiveId: () => state.activeId,
     patch(overrides) {
-      patchOverlay = {
-        tokens: { ...(patchOverlay?.tokens ?? {}), ...(overrides.tokens ?? {}) },
-        custom: { ...(patchOverlay?.custom ?? {}), ...(overrides.custom ?? {}) },
+      state.patchOverlay = {
+        tokens: { ...(state.patchOverlay?.tokens ?? {}), ...(overrides.tokens ?? {}) },
+        custom: { ...(state.patchOverlay?.custom ?? {}), ...(overrides.custom ?? {}) },
       }
-      refresh()
+      refreshSkin(state)
     },
     resetPatch() {
-      patchOverlay = null
-      refresh()
+      state.patchOverlay = null
+      refreshSkin(state)
     },
-    subscribe: (l) => store.subscribe(l),
-    destroy: () => endWatch(),
-    errors: () => [...errorLog],
+    subscribe: (listener) => state.store.subscribe(listener),
+    destroy: () => endSkinWatch(state),
+    errors: () => [...state.errorLog],
   }
-  return engine
 }

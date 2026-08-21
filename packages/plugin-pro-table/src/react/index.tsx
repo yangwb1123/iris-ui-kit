@@ -11,6 +11,7 @@ import {
   type ProTableViewOptions,
 } from '../core'
 import { useColumnViewport } from './useColumnViewport'
+import { ProTableFilterChips, ProTableFooter } from './table-chrome'
 const SBG = 'var(--iris-pro-table-selected-bg, var(--iris-surface-selected, #eef2ff))'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
@@ -431,71 +432,8 @@ export function IrisProTable<Row extends Record<string, unknown>>({
       ) : (
         tableContent
       )}
-      {(() => {
-        const activeFilters = Object.keys(state.filters).filter((k) => state.filters[k])
-        if (activeFilters.length === 0) return null
-        const colByKey = new Map(state.columns.map((c) => [c.key, c]))
-        return (
-          <div
-            data-iris-filter-chips=""
-            style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', padding: '0.25rem 0' }}
-          >
-            {activeFilters.map((k) => {
-              const col = colByKey.get(k)
-              const title = col?.title ?? k
-              return (
-                <span
-                  key={k}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-                    background: 'var(--iris-pro-table-chip-bg)',
-                    borderRadius: '9999px',
-                  }}
-                >
-                  {title}: &ldquo;{state.filters[k]}&rdquo;
-                  <button
-                    type="button"
-                    aria-label={`Clear filter ${title}`}
-                    onClick={() => store.setFilter(k, '')}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                  >
-                    ×
-                  </button>
-                </span>
-              )
-            })}
-            <button
-              type="button"
-              onClick={() => store.clearFilters()}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Clear all ×
-            </button>
-          </div>
-        )
-      })()}
-      <div data-iris-pro-table-footer="">
-        <button
-          type="button"
-          disabled={state.page <= 1}
-          onClick={() => store.setPage(state.page - 1)}
-        >
-          {proTableLabel(labels, 'prev')}
-        </button>
-        <span data-iris-pro-table-page="">
-          {state.page} / {store.pageCount()}
-        </span>
-        <button
-          type="button"
-          disabled={state.page >= store.pageCount()}
-          onClick={() => store.setPage(state.page + 1)}
-        >
-          {proTableLabel(labels, 'next')}
-        </button>
-      </div>
+      <ProTableFilterChips state={state} store={store} />
+      <ProTableFooter state={state} store={store} labels={labels} />
     </div>
   )
 }

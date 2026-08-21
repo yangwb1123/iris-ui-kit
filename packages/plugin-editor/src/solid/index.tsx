@@ -1,12 +1,7 @@
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { createSignal, onCleanup } from 'solid-js'
 import { usePluginStore } from '@iris-ui-kit/solid/provider'
-import {
-  createEditor,
-  resolveEditorSettings,
-  type EditorHandle,
-  type EditorLanguage,
-  type EditorSettingsStore,
-} from '../core'
+import { resolveEditorSettings, type EditorLanguage, type EditorSettingsStore } from '../core'
+import { EditorSurface } from './editor-surface'
 
 export {
   createEditorPlugin,
@@ -29,10 +24,7 @@ export interface IrisCodeEditorProps {
   class?: string
 }
 
-/**
- * CodeMirror 6 code editor for SolidJS. Mounts {@link createEditor} once and
- * reconciles reactive props via `createEffect`.
- */
+/** CodeMirror 6 code editor for SolidJS over the shared editor core. */
 export function IrisCodeEditor(props: IrisCodeEditorProps) {
   let settingsStore: EditorSettingsStore | undefined
   try {
@@ -43,51 +35,20 @@ export function IrisCodeEditor(props: IrisCodeEditorProps) {
   }
   const [settings, setSettings] = createSignal(settingsStore?.getState() ?? resolveEditorSettings())
   if (settingsStore) onCleanup(settingsStore.subscribe(setSettings))
+
   const activeLanguage = () => props.language ?? settings().defaultLanguage
   const activeTabSize = () => props.tabSize ?? settings().tabSize
 
-  let host: HTMLDivElement | undefined
-  let handle: EditorHandle | null = null
-
-  onMount(() => {
-    if (!host) return
-    handle = createEditor({
-      parent: host,
-      doc: props.value ?? props.defaultValue ?? '',
-      language: activeLanguage(),
-      tabSize: activeTabSize(),
-      readOnly: props.readOnly ?? false,
-      completions: props.completions,
-      base: props.base,
-      onChange: (v) => props.onChange?.(v),
-    })
-  })
-
-  onCleanup(() => {
-    handle?.destroy()
-    handle = null
-  })
-
-  createEffect(() => {
-    const v = props.value
-    if (v !== undefined && handle && handle.getValue() !== v) handle.setValue(v)
-  })
-  createEffect(() => {
-    if (handle) handle.setLanguage(activeLanguage())
-  })
-  createEffect(() => {
-    if (handle) handle.setTabSize(activeTabSize())
-  })
-  createEffect(() => {
-    if (handle) handle.setReadOnly(props.readOnly ?? false)
-  })
-
   return (
-    <div
-      ref={host}
-      data-iris-code-editor=""
-      data-language={activeLanguage()}
-      data-tab-size={activeTabSize()}
+    <EditorSurface
+      value={props.value}
+      defaultValue={props.defaultValue}
+      language={activeLanguage}
+      tabSize={activeTabSize}
+      readOnly={() => props.readOnly ?? false}
+      completions={props.completions}
+      base={props.base}
+      onChange={props.onChange}
       class={props.class}
     />
   )

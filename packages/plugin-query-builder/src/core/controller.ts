@@ -104,108 +104,116 @@ function initialQuery(config: FilterBuilderConfig): QueryGroupInput {
  * Create the framework-independent recursive query controller. The legacy flat
  * rule API remains available as a root-rule projection.
  */
-export function createFilterBuilder(config: FilterBuilderConfig): FilterBuilder {
-  const columns = config.columns
-  const columnFor = (key: string): QueryColumn | undefined =>
-    columns.find((column) => column.key === key)
-  const operatorsFor = (key: string): FilterOperator[] => {
-    const column = columnFor(key)
-    return column ? operatorsByType[column.type] : []
-  }
-  const store = createStore<FilterBuilderState>(
-    stateWithRoot(normalizeQuery(initialQuery(config), columns)),
-  )
-  const setRoot = (update: (root: QueryGroup) => QueryGroup): void => {
-    store.setState((state) => stateWithRoot(update(state.root)))
-  }
-  const makeRule = (): QueryRuleNode =>
-    createDefaultQueryRule(columns, collectQueryIds(store.getState().root))
-  const makeGroup = (combinator: QueryCombinator): QueryGroup => ({
-    type: 'group',
-    id: freshQueryId('query-group', collectQueryIds(store.getState().root)),
-    combinator,
-    children: [],
-  })
+class FilterBuilderEngine {
+  readonly builder: FilterBuilder
 
-  const builder: FilterBuilder = {
-    store,
-    getState: store.getState,
-    subscribe: store.subscribe,
-    columns,
-    operatorsFor,
-    columnFor,
-    addRule(groupId) {
-      const rule = makeRule()
-      setRoot((root) => {
-        const [next, found] = appendToGroup(root, groupId ?? root.id, rule)
-        return found ? next : { ...root, children: [...root.children, rule] }
-      })
-      return rule.id
-    },
-    addGroup(parentGroupId, combinator = 'and') {
-      const group = makeGroup(combinator)
-      setRoot((root) => {
-        const [next, found] = appendToGroup(root, parentGroupId ?? root.id, group)
-        return found ? next : { ...root, children: [...root.children, group] }
-      })
-      return group.id
-    },
-    removeRule(id) {
-      setRoot((root) => removeNode(root, id, 'rule'))
-    },
-    removeGroup(id) {
-      setRoot((root) => (root.id === id ? root : removeNode(root, id, 'group')))
-    },
-    updateRule(id, patch) {
-      setRoot((root) =>
-        mapRule(root, id, (rule) => {
-          const next = { ...rule, ...patch }
-          if (patch.key !== undefined && patch.operator === undefined) {
-            const operators = operatorsFor(patch.key)
-            if (!operators.includes(next.operator)) next.operator = operators[0] ?? 'eq'
-          }
-          return next
-        }),
-      )
-    },
-    updateGroup(id, patch) {
-      setRoot((root) =>
-        mapGroup(root, id, (group) => ({
-          ...group,
-          combinator: patch.combinator ?? group.combinator,
-        })),
-      )
-    },
-    replaceQuery(query) {
-      store.setState(stateWithRoot(normalizeQuery(query, columns)))
-    },
-    clear() {
-      setRoot((root) => ({ ...root, children: [] }))
-    },
-    validate() {
-      return validateQuery(store.getState().root, columns)
-    },
-    toQuery() {
-      return compileQuery(store.getState().root, columns)
-    },
-    serialize() {
-      return serializeQuery(store.getState().root)
-    },
-    matches(row, getValue) {
-      return matchesQuery(row, builder.toQuery(), getValue)
-    },
-    filter(rows, getValue) {
-      return filterByQuery(rows, builder.toQuery(), getValue)
-    },
-    toFilterRules() {
-      const leaves: FilterRule[] = []
-      const visit = (node: CompiledQueryNode): void => {
-        if (node.type === 'group') node.children.forEach(visit)
-        else leaves.push({ key: node.key, operator: node.operator, value: node.value })
-      }
-      visit(builder.toQuery())
-      return leaves
-    },
+  constructor(config: FilterBuilderConfig) {
+    const columns = config.columns
+    const columnFor = (key: string): QueryColumn | undefined =>
+      columns.find((column) => column.key === key)
+    const operatorsFor = (key: string): FilterOperator[] => {
+      const column = columnFor(key)
+      return column ? operatorsByType[column.type] : []
+    }
+    const store = createStore<FilterBuilderState>(
+      stateWithRoot(normalizeQuery(initialQuery(config), columns)),
+    )
+    const setRoot = (update: (root: QueryGroup) => QueryGroup): void => {
+      store.setState((state) => stateWithRoot(update(state.root)))
+    }
+    const makeRule = (): QueryRuleNode =>
+      createDefaultQueryRule(columns, collectQueryIds(store.getState().root))
+    const makeGroup = (combinator: QueryCombinator): QueryGroup => ({
+      type: 'group',
+      id: freshQueryId('query-group', collectQueryIds(store.getState().root)),
+      combinator,
+      children: [],
+    })
+
+    const builder: FilterBuilder = {
+      store,
+      getState: store.getState,
+      subscribe: store.subscribe,
+      columns,
+      operatorsFor,
+      columnFor,
+      addRule(groupId) {
+        const rule = makeRule()
+        setRoot((root) => {
+          const [next, found] = appendToGroup(root, groupId ?? root.id, rule)
+          return found ? next : { ...root, children: [...root.children, rule] }
+        })
+        return rule.id
+      },
+      addGroup(parentGroupId, combinator = 'and') {
+        const group = makeGroup(combinator)
+        setRoot((root) => {
+          const [next, found] = appendToGroup(root, parentGroupId ?? root.id, group)
+          return found ? next : { ...root, children: [...root.children, group] }
+        })
+        return group.id
+      },
+      removeRule(id) {
+        setRoot((root) => removeNode(root, id, 'rule'))
+      },
+      removeGroup(id) {
+        setRoot((root) => (root.id === id ? root : removeNode(root, id, 'group')))
+      },
+      updateRule(id, patch) {
+        setRoot((root) =>
+          mapRule(root, id, (rule) => {
+            const next = { ...rule, ...patch }
+            if (patch.key !== undefined && patch.operator === undefined) {
+              const operators = operatorsFor(patch.key)
+              if (!operators.includes(next.operator)) next.operator = operators[0] ?? 'eq'
+            }
+            return next
+          }),
+        )
+      },
+      updateGroup(id, patch) {
+        setRoot((root) =>
+          mapGroup(root, id, (group) => ({
+            ...group,
+            combinator: patch.combinator ?? group.combinator,
+          })),
+        )
+      },
+      replaceQuery(query) {
+        store.setState(stateWithRoot(normalizeQuery(query, columns)))
+      },
+      clear() {
+        setRoot((root) => ({ ...root, children: [] }))
+      },
+      validate() {
+        return validateQuery(store.getState().root, columns)
+      },
+      toQuery() {
+        return compileQuery(store.getState().root, columns)
+      },
+      serialize() {
+        return serializeQuery(store.getState().root)
+      },
+      matches(row, getValue) {
+        return matchesQuery(row, builder.toQuery(), getValue)
+      },
+      filter(rows, getValue) {
+        return filterByQuery(rows, builder.toQuery(), getValue)
+      },
+      toFilterRules() {
+        const leaves: FilterRule[] = []
+        const visit = (node: CompiledQueryNode): void => {
+          if (node.type === 'group') node.children.forEach(visit)
+          else leaves.push({ key: node.key, operator: node.operator, value: node.value })
+        }
+        visit(builder.toQuery())
+        return leaves
+      },
+    }
+    this.builder = builder
   }
-  return builder
+}
+
+export function createFilterBuilder(config: FilterBuilderConfig): FilterBuilder {
+  return new FilterBuilderEngine(config).builder
 }

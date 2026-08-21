@@ -98,6 +98,17 @@ function validateColumn(column: AdminColumn, path: string): AdminSchemaIssue[] {
   return issues
 }
 
+function validateDataPageColumns(page: AdminDataPage, path: string): AdminSchemaIssue[] {
+  const issues = duplicateIssues(
+    page.columns.map((column) => column.key),
+    `${path}.columns`,
+  )
+  page.columns.forEach((column, columnIndex) => {
+    issues.push(...validateColumn(column, `${path}.columns[${columnIndex}]`))
+  })
+  return issues
+}
+
 function validateDataPage(page: AdminDataPage, index: number): AdminSchemaIssue[] {
   const path = `pages[${index}]`
   const issues: AdminSchemaIssue[] = []
@@ -120,15 +131,7 @@ function validateDataPage(page: AdminDataPage, index: number): AdminSchemaIssue[
       message: 'pageSize must be a positive integer.',
     })
   }
-  issues.push(
-    ...duplicateIssues(
-      page.columns.map((column) => column.key),
-      `${path}.columns`,
-    ),
-  )
-  page.columns.forEach((column, columnIndex) => {
-    issues.push(...validateColumn(column, `${path}.columns[${columnIndex}]`))
-  })
+  issues.push(...validateDataPageColumns(page, path))
   const hasServerMutations =
     page.fetcher && (page.editable || Object.values(page.mutations ?? {}).some(Boolean))
   if (hasServerMutations && !page.rowKey) {
@@ -150,6 +153,82 @@ function validateDataPage(page: AdminDataPage, index: number): AdminSchemaIssue[
   return issues
 }
 
+function collectAdminPageKeys(pages: readonly unknown[]): string[] {
+  return pages
+    .filter(
+      (page): page is Record<string, unknown> =>
+        isObject(page) && typeof page.key === 'string' && Boolean(page.key.trim()),
+    )
+    .map((page) => page.key as string)
+}
+
+function validateAdminDataPageCandidate(
+  candidate: Record<string, unknown>,
+  index: number,
+  issues: AdminSchemaIssue[],
+): void {
+  if (!Array.isArray(candidate.columns)) {
+    issues.push({
+      path: `pages[${index}].columns`,
+      code: 'invalid-schema',
+      severity: 'error',
+      message: 'Data pages require a columns array.',
+    })
+    return
+  }
+  if (candidate.actions !== undefined && !Array.isArray(candidate.actions)) {
+    issues.push({
+      path: `pages[${index}].actions`,
+      code: 'invalid-schema',
+      severity: 'error',
+      message: 'Page actions must be an array.',
+    })
+    return
+  }
+  const validColumns = candidate.columns.every(
+    (column) =>
+      isObject(column) && typeof column.key === 'string' && typeof column.title === 'string',
+  )
+  const validActions =
+    candidate.actions === undefined ||
+    candidate.actions.every(
+      (action) =>
+        isObject(action) && typeof action.key === 'string' && typeof action.label === 'string',
+    )
+  if (!validColumns || !validActions) {
+    issues.push({
+      path: `pages[${index}]`,
+      code: 'invalid-schema',
+      severity: 'error',
+      message: 'Columns and actions require string key/title or key/label values.',
+    })
+    return
+  }
+  issues.push(...validateDataPage(candidate as unknown as AdminDataPage, index))
+}
+
+function validateAdminPageCandidate(
+  candidate: unknown,
+  index: number,
+  issues: AdminSchemaIssue[],
+): void {
+  if (
+    !isObject(candidate) ||
+    typeof candidate.key !== 'string' ||
+    !candidate.key.trim() ||
+    (candidate.type !== 'data' && candidate.type !== 'custom')
+  ) {
+    issues.push({
+      path: `pages[${index}]`,
+      code: 'invalid-schema',
+      severity: 'error',
+      message: 'Each page requires a key and a valid type.',
+    })
+    return
+  }
+  if (candidate.type === 'data') validateAdminDataPageCandidate(candidate, index, issues)
+}
+
 /** Validate unknown input without throwing; warnings do not block normalization. */
 export function validateAdminSchema(input: unknown): AdminSchemaIssue[] {
   if (!isObject(input) || !Array.isArray(input.nav) || !Array.isArray(input.pages)) {
@@ -165,69 +244,9 @@ export function validateAdminSchema(input: unknown): AdminSchemaIssue[] {
   const issues: AdminSchemaIssue[] = []
   const leafKeys = inspectNav(input.nav, issues)
   const pages = input.pages as unknown[]
-  const pageKeys = pages
-    .filter(
-      (page): page is Record<string, unknown> =>
-        isObject(page) && typeof page.key === 'string' && Boolean(page.key.trim()),
-    )
-    .map((page) => page.key as string)
+  const pageKeys = collectAdminPageKeys(pages)
   issues.push(...duplicateIssues(pageKeys, 'pages'))
-  pages.forEach((candidate, index) => {
-    if (
-      !isObject(candidate) ||
-      typeof candidate.key !== 'string' ||
-      !candidate.key.trim() ||
-      (candidate.type !== 'data' && candidate.type !== 'custom')
-    ) {
-      issues.push({
-        path: `pages[${index}]`,
-        code: 'invalid-schema',
-        severity: 'error',
-        message: 'Each page requires a key and a valid type.',
-      })
-      return
-    }
-    if (candidate.type === 'data') {
-      if (!Array.isArray(candidate.columns)) {
-        issues.push({
-          path: `pages[${index}].columns`,
-          code: 'invalid-schema',
-          severity: 'error',
-          message: 'Data pages require a columns array.',
-        })
-        return
-      }
-      if (candidate.actions !== undefined && !Array.isArray(candidate.actions)) {
-        issues.push({
-          path: `pages[${index}].actions`,
-          code: 'invalid-schema',
-          severity: 'error',
-          message: 'Page actions must be an array.',
-        })
-        return
-      }
-      const validColumns = candidate.columns.every(
-        (column) =>
-          isObject(column) && typeof column.key === 'string' && typeof column.title === 'string',
-      )
-      const validActions =
-        candidate.actions === undefined ||
-        candidate.actions.every(
-          (action) =>
-            isObject(action) && typeof action.key === 'string' && typeof action.label === 'string',
-        )
-      if (!validColumns || !validActions) {
-        issues.push({
-          path: `pages[${index}]`,
-          code: 'invalid-schema',
-          severity: 'error',
-          message: 'Columns and actions require string key/title or key/label values.',
-        })
-        return
-      }
-      issues.push(...validateDataPage(candidate as unknown as AdminDataPage, index))
-    }
-  })
+  pages.forEach((candidate, index) => validateAdminPageCandidate(candidate, index, issues))
   const configuredPages = new Set(pageKeys)
   leafKeys.forEach((key) => {
     if (!configuredPages.has(key)) {

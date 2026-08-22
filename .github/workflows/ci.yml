@@ -77,9 +77,8 @@ jobs:
       - name: RSC directive
         run: pnpm check:rsc
 
-
       - name: Test
-        run: pnpm test
+        run: pnpm turbo run test --concurrency=4
 
       - name: Browser E2E (four CMS frameworks) + visual regression
         run: |

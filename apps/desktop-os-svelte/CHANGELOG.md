@@ -1,5 +1,13 @@
 # desktop-os-svelte
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [dda2643]
+- Updated dependencies [dda2643]
+  - @iris-ui-kit/svelte@0.2.3
+
 ## 0.0.3
 
 ### Patch Changes

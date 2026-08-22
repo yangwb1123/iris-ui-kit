@@ -22,8 +22,8 @@ command -v pkg-config >/dev/null 2>&1 || skip "pkg-config not installed"
 if [ "$mode" = "build" ] || [ ! -f "$here/frontend/dist/react/index.html" ]; then "$here/populate-dist.sh" >/dev/null; fi
 cd "$here"
 case "$mode" in
-  build) go build -tags webkit2_41 -o /dev/null . ;;
-  test)  go test -tags webkit2_41 ./... ;;
+  build) go build -buildvcs=false -tags webkit2_41 -o /dev/null . ;;
+  test)  go test -buildvcs=false -tags webkit2_41 ./... ;;
   *) echo "unknown mode: $mode" >&2; exit 1 ;;
 esac
 echo "[desktop-wails] $mode OK"

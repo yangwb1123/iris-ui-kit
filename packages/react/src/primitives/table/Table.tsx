@@ -146,6 +146,7 @@ import {
 } from './table-value-helpers'
 import { mergeFilterValues, mergeQueryIntoFilters, nextRowMajorCell } from './table-query-helpers'
 import { buildComparisonCsv } from './comparison-export'
+import { buildAnnotationsCsv } from './annotation-export'
 import { useTableProxy } from './useTableProxy'
 import { useTableColumns } from './useTableColumns'
 import { TableGroupHeader, type TableGroupHeaderEntry } from './group-header'
@@ -3697,39 +3698,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
         ],
       )
     },
-    // Batch DU (iris 独有): export the ANNOTATED CELLS as CSV — spec-literal
-    // 3 columns rowKey,column,annotation, one line per noted body cell in
-    // bodyData order (the same row order as the view). Notes resolve through
-    // the SAME cellNoteState path as the cell render (dynamic cellNote wins
-    // over the static annotations map — render/export consistency), hidden
-    // columns excluded via viewColumnsRef (leaf display columns), keyless
-    // rows fall back to the row index (rowKeyOf parity). Serializer = core
-    // toCsv (RFC-4180 quoting + OWASP formula neutralization — annotation
-    // text is untrusted data). Fail-closed: exportAnnotations off → '' ; on
-    // but no notes on the current body → '' (spec-literal 无批注返回空 — the
-    // two states are indistinguishable, mirroring exportSelectionCsv).
-    exportAnnotationsCsv: () => {
-      if (!exportAnnotationsRef.current) return ''
-      const notes: Array<{
-        rowKey: string | number
-        column: string
-        annotation: string
-      }> = []
-      const viewCols = viewColumnsRef.current
-      bodyDataRef.current.forEach((row, i) => {
-        const k = rowKeyOf(row, i)
-        for (const col of viewCols) {
-          const noteInfo = cellNoteState(annotationsRef.current, cellNoteRef.current, row, col, k)
-          if (noteInfo.note) notes.push({ rowKey: k, column: col.key, annotation: noteInfo.note })
-        }
-      })
-      if (notes.length === 0) return ''
-      return toCsv(notes, [
-        { key: 'rowKey', title: 'rowKey' },
-        { key: 'column', title: 'column' },
-        { key: 'annotation', title: 'annotation' },
-      ])
-    },
+    exportAnnotationsCsv: () =>
+      buildAnnotationsCsv({
+        enabled: exportAnnotationsRef.current,
+        rows: bodyDataRef.current,
+        columns: viewColumnsRef.current,
+        rowKeyOf,
+        annotations: annotationsRef.current,
+        cellNote: cellNoteRef.current,
+      }),
     // Batch BZ (iris 独有): export the FULL view state as JSON — the 9 spec
     // blocks (sort / filters / filterValues / columnVisibility / columnOrder /
     // columnWidths / pageSize / expandedKeys / query) captured by the SAME

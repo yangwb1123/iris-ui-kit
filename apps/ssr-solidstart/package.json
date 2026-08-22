@@ -1,6 +1,6 @@
 {
   "name": "ssr-solidstart",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "type": "module",
   "description": "SolidStart file-routed SSR reference app for @iris-ui-kit/solid",

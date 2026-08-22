@@ -1,5 +1,11 @@
 # @iris-ui-kit/plugin-form-builder
 
+## 2.0.2
+
+### Patch Changes
+
+- fix(plugins): accept compatible pre-1.0 framework adapter versions without forcing major plugin releases
+
 ## 2.0.1
 
 ### Patch Changes

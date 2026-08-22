@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-form-builder",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Schema-driven form builder plugin for Iris UI: IrisFormBuilder renders a form from a declarative schema for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",
@@ -47,10 +47,10 @@
     "@iris-ui-kit/core": "workspace:*"
   },
   "peerDependencies": {
-    "@iris-ui-kit/react": "workspace:*",
-    "@iris-ui-kit/solid": "workspace:*",
-    "@iris-ui-kit/svelte": "workspace:*",
-    "@iris-ui-kit/vue": "workspace:*",
+    "@iris-ui-kit/react": ">=0.2.0 <1",
+    "@iris-ui-kit/solid": ">=0.2.0 <1",
+    "@iris-ui-kit/svelte": ">=0.2.0 <1",
+    "@iris-ui-kit/vue": ">=0.2.0 <1",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "vue": "^3.5.0",

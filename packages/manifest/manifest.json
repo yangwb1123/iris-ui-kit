@@ -36706,7 +36706,8 @@
         {
           "name": "rowDragBetween",
           "type": "TableTypes.IrisTableRowDragBetweenTarget<Row>[]",
-          "optional": true
+          "optional": true,
+          "description": "Batch DQ (iris 独有): drop a dragged row on an external element whose `data-iris-drop-zone` value matches `key`; the parent owns the zone DOM."
         },
         {
           "name": "editConfig",
@@ -37897,7 +37898,8 @@
             {
               "name": "rowDragBetween",
               "type": "TableTypes.IrisTableRowDragBetweenTarget<Row>[]",
-              "optional": true
+              "optional": true,
+              "description": "Batch DQ (iris 独有): drop a dragged row on an external element whose `data-iris-drop-zone` value matches `key`; the parent owns the zone DOM."
             },
             {
               "name": "editConfig",
@@ -38624,6 +38626,7 @@
             "IrisTableProps",
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
+            "IrisTableRowDragBetweenTarget",
             "IrisTableRowExpandable",
             "IrisTableScrollParams",
             "IrisTableScrollbarConfig",

@@ -1,39 +1,29 @@
-✅ **Gate PASS complete** for 批 DP (表格滚动条增强, iris 独有). Review verdict was **PASS** (4 LOW/INFO, no blockers). Feature skeleton shipped at `61ec5418`; DP commit `107bf8af` closed the real gap — hover color was previously a no-op (`primary → primary`, baseline observation ①) — plus a default-off negative assertion (observation ③).
+Gate stage complete for 批 DP（表格滚动条增强）. Verdict was **PASS** (4 LOW/INFO, no blockers).
 
-## Gate results
+## 执行结果
 
-| Check                                                                  | Result                                                                                                                                   |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Full repo gate (`turbo run test typecheck lint build --concurrency=2`) | **180/180 tasks successful** (135 cached)                                                                                                |
-| `pnpm audit:security`                                                  | **0 known vulnerabilities**                                                                                                              |
-| `pnpm gen:manifest` + `check:manifest`                                 | **up to date** — regenerated, 155 components × 4 frameworks, 86 tokens, zero diff (`scrollbarThumb` already in props flow, no new types) |
-| `git diff --check` + commit hooks                                      | Clean; filesize/budget hooks pass                                                                                                        |
+| 门禁项                                                                 | 结果                                                  |
+| ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| Review verdict                                                         | **PASS**                                              |
+| Full repo gate (`turbo run test typecheck lint build --concurrency=2`) | **180/180 tasks** (135 cached, 1m41s)                 |
+| `pnpm audit:security`                                                  | **0 vulnerabilities**                                 |
+| `gen:manifest` + `check:manifest`                                      | **up to date** — 155×4 / 86 tokens，重新生成后零 diff |
+| `git diff --check` / commit hooks                                      | clean · filesize + 变更预算 5 files / 0 core lines ✓  |
 
-## Final test counts
+## 最终测试计数
 
-| Suite                                                     | Files | Tests       |
-| --------------------------------------------------------- | ----- | ----------- |
-| react (incl. DP 14/14 in `batch-dl-dt.test.tsx`)          | 246   | **2819**    |
-| core                                                      | 104   | **1597**    |
-| DP suite `batch-dl-dt.test.tsx` (2 DP cases incl. on/off) | —     | **14/14**   |
-| turbo tasks                                               | —     | **180/180** |
+| Suite                                                                | Files | Tests       |
+| -------------------------------------------------------------------- | ----- | ----------- |
+| react（含 DP `batch-dl-dt.test.tsx` **14/14**，开态注入 + 关态负向） | 246   | **2819**    |
+| core（零变更）                                                       | 104   | **1597**    |
+| turbo                                                                | —     | **180/180** |
 
-## Spec compliance (review-verified)
+## 文档更新（`docs/vxe-grid-comparison.md` iris 独有 节）
 
-- `scrollbarThumb?: boolean` opt-in default **false** (`props/advanced.ts:198`), root marker absent when off (`Table.tsx:8070`)
-- CSS: 8×8px thin thumb + `--iris-radius-sm` radius + Firefox `scrollbar-color` (`table-css.ts:153-175` — sole runtime injection source)
-- **Hover is a real enhancement**: rest `color-mix(in srgb, var(--iris-primary) 60%, transparent)` → `:hover` full `var(--iris-primary)` (baseline observation ① no-op fixed)
-- Covers root container + `[data-iris-virtual-scroll]` (VirtualScroll.tsx:361 real attribute)
-- Constraints: core untouched (framework-free), react only, additive only, zero hardcoded colors, no dist/tgz
-
-## Docs updated
-
-- `docs/vxe-grid-comparison.md` (iris 独有 section) — added 批 DP row (`scrollbarThumb` token thumb: 8×8px + radius-sm + Firefox scrollbar-color; rest→hover `color-mix over --iris-primary`; root + virtual-scroll coverage; off → zero root marker byte-locked; observation ② twin-copy de-sync left to a future single-source refactor) + appended 构建状态 summary
-- `docs/vxe-grid/batch-dp-gate.md` — rewritten as the real gate report (DO precedent)
-- `docs/vxe-grid/DECISIONS.md` — gate record appended
+- 新增 **批 DP 行**：`scrollbarThumb` opt-in 默认 off（`props/advanced.ts:198`、关态零根标记 `Table.tsx:8070`）→ `table-css.ts:153-175` 8×8px 细条 + radius-sm 圆角 + Firefox `scrollbar-color`，hover 真实现（rest `color-mix` primary 60% → hover 全量 primary，观察① no-op 修复），覆盖根 + `[data-iris-virtual-scroll]` 双滚动面，core/三框架零改动，观察②孪生副本留待单源化
+- 构建状态段追加 批 DP 摘要
+- `batch-dp-gate.md` 重写为真实 gate 报告（DO 先例）；`DECISIONS.md` 追加 gate 记录
 
 ## Commit
 
-**`<this commit>`** `feat(table): grid 批 DP——表格滚动条增强（iris 独有）`
-
-Working tree clean after commit; review findings LOW/INFO tracked in `batch-dp-review.md` — nothing blocking.
+**`fb183262`** `feat(table): grid 批 DP——表格滚动条增强（iris 独有）` — 5 files, +118/−20。工作树干净（0 未跟踪/未暂存）。

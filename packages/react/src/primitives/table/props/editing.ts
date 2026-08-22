@@ -81,8 +81,7 @@ export interface IrisTableEditingProps<
     /** Reorder callback — receives the reordered row array (parent owns data). */
     onReorder: (rows: Row[]) => void
   }
-  /** Batch DQ (iris 独有): drop a dragged row on an external element whose
-   * `data-iris-drop-zone` value matches `key`; the parent owns the zone DOM. */
+  /** Batch DQ (iris 独有): drop a dragged row on an external element whose `data-iris-drop-zone` value matches `key`; the parent owns the zone DOM. */
   rowDragBetween?: TableTypes.IrisTableRowDragBetweenTarget<Row>[]
   /** Inline-edit configuration (vxe-grid editConfig parity). */
   editConfig?: {

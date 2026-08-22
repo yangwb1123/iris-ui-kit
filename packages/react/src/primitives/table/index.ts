@@ -25,6 +25,7 @@ export {
   type IrisTableVirtualOptions,
   type IrisTableRenderDetail,
   type IrisTableRowExpandable,
+  type IrisTableRowDragBetweenTarget,
   type IrisTableSortDirection,
   type IrisTableSortState,
   type IrisTableFormField,

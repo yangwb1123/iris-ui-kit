@@ -272,6 +272,107 @@ describe('IrisTable batches DL–DT', () => {
     })
   })
 
+  it('DQ ignores a zone whose key does not match any rowDragBetween target', () => {
+    const onDrop = vi.fn()
+    const onReorder = vi.fn()
+    const { container } = render(
+      <>
+        <IrisTable
+          columns={columns}
+          data={rows}
+          rowKey="id"
+          rowDrag={{ onReorder }}
+          rowDragBetween={[{ key: 'archive', onDrop }]}
+        />
+        <div data-iris-drop-zone="trash" />
+      </>,
+    )
+    const zone = container.querySelector('[data-iris-drop-zone="trash"]')!
+    const originalElementFromPoint = document.elementFromPoint
+    const elementFromPoint = vi.fn(() => zone)
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: elementFromPoint,
+    })
+    const handle = container.querySelector('[data-iris-table-cell="__drag"]')!
+    const root = container.querySelector('[data-iris-table]')!
+    act(() => dispatchPointer(handle, 'pointerdown', { button: 0, clientX: 10, clientY: 10 }))
+    act(() => dispatchPointer(root, 'pointermove', { clientX: 20, clientY: 20 }))
+    act(() => dispatchPointer(window, 'pointerup', { clientX: 30, clientY: 30 }))
+    expect(onDrop).not.toHaveBeenCalled()
+    expect(onReorder).not.toHaveBeenCalled()
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: originalElementFromPoint,
+    })
+  })
+
+  it('DQ fires onDrop exactly once and never reorders through onReorder', () => {
+    const onDrop = vi.fn()
+    const onReorder = vi.fn()
+    const { container } = render(
+      <>
+        <IrisTable
+          columns={columns}
+          data={rows}
+          rowKey="id"
+          rowDrag={{ onReorder }}
+          rowDragBetween={[{ key: 'archive', onDrop }]}
+        />
+        <div data-iris-drop-zone="archive" />
+      </>,
+    )
+    const zone = container.querySelector('[data-iris-drop-zone="archive"]')!
+    const originalElementFromPoint = document.elementFromPoint
+    const elementFromPoint = vi.fn(() => zone)
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: elementFromPoint,
+    })
+    const handle = container.querySelector('[data-iris-table-cell="__drag"]')!
+    const root = container.querySelector('[data-iris-table]')!
+    act(() => dispatchPointer(handle, 'pointerdown', { button: 0, clientX: 10, clientY: 10 }))
+    act(() => dispatchPointer(root, 'pointermove', { clientX: 20, clientY: 20 }))
+    act(() => dispatchPointer(window, 'pointerup', { clientX: 30, clientY: 30 }))
+    expect(onDrop).toHaveBeenCalledTimes(1)
+    expect(onDrop).toHaveBeenCalledWith(rows[0])
+    expect(onReorder).not.toHaveBeenCalled()
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: originalElementFromPoint,
+    })
+  })
+
+  it('DQ stays table-internal when elementFromPoint is unavailable', () => {
+    const onDrop = vi.fn()
+    const onReorder = vi.fn()
+    const { container } = render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        rowDrag={{ onReorder }}
+        rowDragBetween={[{ key: 'archive', onDrop }]}
+      />,
+    )
+    const originalElementFromPoint = document.elementFromPoint
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: undefined,
+    })
+    const handle = container.querySelector('[data-iris-table-cell="__drag"]')!
+    const root = container.querySelector('[data-iris-table]')!
+    act(() => dispatchPointer(handle, 'pointerdown', { button: 0, clientX: 10, clientY: 10 }))
+    act(() => dispatchPointer(root, 'pointermove', { clientX: 20, clientY: 20 }))
+    act(() => dispatchPointer(window, 'pointerup', { clientX: 30, clientY: 30 }))
+    expect(onDrop).not.toHaveBeenCalled()
+    expect(onReorder).not.toHaveBeenCalled()
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: originalElementFromPoint,
+    })
+  })
+
   it('DR starts editing on a configured key while retaining F2', () => {
     render(
       <IrisTable

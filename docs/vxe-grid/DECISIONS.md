@@ -2914,3 +2914,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dp-gate.md [ok]: Gate PASS complete for 批 DP 表格滚动条增强: turbo 180/180 (135 cached) · audit 0 · gen:manifest+check:manifest up to date (155×4/86 tokens, zero diff) · react 246 files/2819 (batch-dl-dt 14/14) · core 104 files/1597 · typecheck clean · lint 0 errors. Comparison doc updated (批 DP row in iris 独有 section + 构建状态 summary); batch-dp-gate.md rewritten as real gate report; commit follows
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-gate.md
+
+## 2026-08-22 04:01:49 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dp-gate.md [ok]: 执行结果: | 门禁项 | 结果 |; 最终测试计数: | Suite | Files | Tests |; 文档更新（`docs/vxe-grid-comparison.md` iris 独有 节）: - 新增 **批 DP 行**：`scrollbarThumb` opt-in 默认 off（`props/advanced.ts:198`、关态零根标记 `Table.tsx:8070`）→ `table-css.ts:153-175` ; Commit: **`fb183262`** `feat(table): grid 批 DP——表格滚动条增强（iris 独有）` — 5 files, +118/−20。工作树干净（0 未跟踪/未暂存）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-gate.md
+
+## 2026-08-22 04:08:41 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-baseline.md [ok]: Baseline summary — 批 DQ：行拖拽跨表（iris 独有）: **Exact design** — spec（`rowDragBetween?: Array<{ key: string; onDrop: (row: Row) => void }>`，拖到表格外 `data-iris-drop-zone
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-baseline.md
+
+## 2026-08-22 04:12:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-baseline.md [ok]: 批 DQ implement——spec 已在 `61ec5418` 随 DL–DT 批次落地，本批次补观察② 三条缺失测试（key 不匹配负向 / 命中 zone 不触发 onReorder 组合 / elementFromPoint 缺失防御分支）+ 观察③ manifest 卫生：`rowDragBetween` JSDoc 单行化（两记录 description 可提取）+ barrel 显式补 `type IrisTableRowDragBetweenTarget` 出口（llms types 清单补齐）。batch-dl-dt 17/17 · react 2822/2822 · core 1597/1597 · typecheck ✓ · lint 0 errors · spec 0 violations · gen:manifest 155×4/86 tokens 重新生成 + check:manifest up to date。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-adapt.md

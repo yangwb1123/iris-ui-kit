@@ -7,6 +7,7 @@ interface DiscoveryDocument {
   issuer: string
   authorization_endpoint: string
   token_endpoint: string
+  end_session_endpoint?: string
   code_challenge_methods_supported?: string[]
 }
 
@@ -33,6 +34,7 @@ interface TokenResponse {
 
 export interface OidcSession {
   accessToken: string
+  idToken?: string
   expiresAt: number
   returnTo: string
   scope: string[]
@@ -135,8 +137,8 @@ export class OidcClient {
     this.storage.setItem(this.pendingKey(), JSON.stringify(pending))
 
     const authorization = requireSafeEndpoint(
-      this.config.snaplinkAuthorizationEndpoint ?? discovery.authorization_endpoint,
-      'Snaplink authorization endpoint',
+      this.config.snaplinkHostedLoginUrl,
+      'Snaplink hosted login URL',
     )
     authorization.searchParams.set('client_id', this.config.snaplinkClientId)
     authorization.searchParams.set('response_type', 'code')
@@ -162,6 +164,19 @@ export class OidcClient {
   clear(): void {
     this.storage.removeItem(this.pendingKey())
     this.exchange = undefined
+  }
+
+  async logout(idToken?: string): Promise<void> {
+    this.clear()
+    const discovery = await this.getDiscovery()
+    if (!discovery.end_session_endpoint) {
+      throw new OidcError('Snaplink 未声明退出端点')
+    }
+    const endpoint = requireSafeEndpoint(discovery.end_session_endpoint, 'Snaplink logout endpoint')
+    endpoint.searchParams.set('client_id', this.config.snaplinkClientId)
+    endpoint.searchParams.set('post_logout_redirect_uri', this.config.redirectUri)
+    if (idToken) endpoint.searchParams.set('id_token_hint', idToken)
+    this.navigate(endpoint.toString())
   }
 
   private pendingKey(): string {
@@ -225,6 +240,7 @@ export class OidcClient {
     const lifetime = Math.max(30, Number(token.expires_in ?? 300))
     return {
       accessToken: token.access_token!,
+      idToken: token.id_token,
       expiresAt: this.now() + lifetime * 1000,
       returnTo: pending.returnTo,
       scope: token.scope?.split(/\s+/).filter(Boolean) ?? this.config.snaplinkScopes,

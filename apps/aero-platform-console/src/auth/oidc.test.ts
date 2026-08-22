@@ -4,6 +4,7 @@ import { OidcClient } from './oidc'
 
 const config: PlatformConfig = {
   snaplinkIssuer: 'https://identity.example.test',
+  snaplinkHostedLoginUrl: 'https://identity.example.test/login/',
   snaplinkClientId: 'aero-account-console',
   snaplinkResource: 'aero-id',
   snaplinkScopes: ['openid', 'profile', 'account:read'],
@@ -15,6 +16,7 @@ const discovery = {
   issuer: config.snaplinkIssuer,
   authorization_endpoint: `${config.snaplinkIssuer}/auth/login`,
   token_endpoint: `${config.snaplinkIssuer}/token`,
+  end_session_endpoint: `${config.snaplinkIssuer}/end_session`,
   code_challenge_methods_supported: ['S256'],
 }
 
@@ -27,7 +29,7 @@ describe('OidcClient', () => {
 
     const target = new URL(await client.prepareLogin('#/profile'))
 
-    expect(target.origin + target.pathname).toBe(discovery.authorization_endpoint)
+    expect(target.origin + target.pathname).toBe(config.snaplinkHostedLoginUrl)
     expect(target.searchParams.get('client_id')).toBe(config.snaplinkClientId)
     expect(target.searchParams.get('resource')).toBe('aero-id')
     expect(target.searchParams.get('code_challenge_method')).toBe('S256')
@@ -52,6 +54,7 @@ describe('OidcClient', () => {
       return new Response(
         JSON.stringify({
           access_token: 'access-token-must-stay-in-memory',
+          id_token: 'id-token-must-stay-in-memory',
           token_type: 'Bearer',
           expires_in: 300,
           scope: 'openid profile account:read',
@@ -78,6 +81,7 @@ describe('OidcClient', () => {
     expect(second).toBe(first)
     expect(session.returnTo).toBe('#/connections')
     expect(session.accessToken).toBe('access-token-must-stay-in-memory')
+    expect(session.idToken).toBe('id-token-must-stay-in-memory')
     expect(sessionStorage.length).toBe(0)
     expect(replaceUrl).toHaveBeenCalledWith(config.redirectUri)
     expect(fetcher).toHaveBeenCalledTimes(2)
@@ -93,5 +97,19 @@ describe('OidcClient', () => {
     ).rejects.toThrow('state 校验失败')
     expect(fetcher).toHaveBeenCalledTimes(1)
     expect(sessionStorage.length).toBe(0)
+  })
+
+  it('navigates to the discovered RP-initiated logout endpoint', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(discovery), { status: 200 }))
+    const navigate = vi.fn()
+    const client = new OidcClient(config, { fetch: fetcher as typeof fetch, navigate })
+
+    await client.logout('signed-id-token')
+
+    const target = new URL(navigate.mock.calls[0][0])
+    expect(target.origin + target.pathname).toBe(discovery.end_session_endpoint)
+    expect(target.searchParams.get('client_id')).toBe(config.snaplinkClientId)
+    expect(target.searchParams.get('id_token_hint')).toBe('signed-id-token')
+    expect(target.searchParams.get('post_logout_redirect_uri')).toBe(config.redirectUri)
   })
 })

@@ -2,7 +2,7 @@
 
 interface AeroPlatformRuntimeConfig {
   snaplinkIssuer?: string
-  snaplinkAuthorizationEndpoint?: string
+  snaplinkHostedLoginUrl?: string
   snaplinkClientId?: string
   snaplinkResource?: string
   snaplinkScopes?: string[]

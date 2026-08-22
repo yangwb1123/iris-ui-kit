@@ -66,6 +66,34 @@ describe('AeroIdClient', () => {
     expect(requested.searchParams.get('consistency')).toBe('eventual')
   })
 
+  it('adapts the shipped activity snapshot envelope', async () => {
+    const fetcher = vi.fn(async () =>
+      json({
+        data: {
+          snapshots: [
+            {
+              dataset: 'aero-im.activity_summary',
+              data: {
+                events: [{ event_id: 'event-1', event_type: 'message.sent' }],
+                next_cursor: 'event-1',
+              },
+            },
+          ],
+        },
+      }),
+    )
+    const client = new AeroIdClient(
+      'https://accounts.example.test/v1',
+      () => 'token',
+      fetcher as typeof fetch,
+    )
+
+    await expect(client.listActivity()).resolves.toEqual({
+      items: [{ event_id: 'event-1', event_type: 'message.sent' }],
+      nextCursor: 'event-1',
+    })
+  })
+
   it('preserves stable API error metadata without exposing the bearer token', async () => {
     const fetcher = vi.fn(async () =>
       json(

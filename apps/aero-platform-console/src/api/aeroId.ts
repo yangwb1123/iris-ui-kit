@@ -45,6 +45,18 @@ function pageOf(data: JsonRecord, field: string): PageData<JsonRecord> {
   }
 }
 
+function activityPage(data: JsonRecord): PageData<JsonRecord> {
+  if (Array.isArray(data.events)) return pageOf(data, 'events')
+  const snapshot = records(data.snapshots).find(
+    (item) => item.dataset === 'aero-im.activity_summary',
+  )
+  const projected = isRecord(snapshot?.data) ? snapshot.data : {}
+  return {
+    items: records(projected.events ?? projected.items),
+    nextCursor: typeof projected.next_cursor === 'string' ? projected.next_cursor : undefined,
+  }
+}
+
 export class AeroIdClient {
   private writeEpoch?: string
 
@@ -97,9 +109,8 @@ export class AeroIdClient {
   }
 
   async listActivity(cursor?: string): Promise<PageData<JsonRecord>> {
-    return pageOf(
+    return activityPage(
       dataOf(await this.request('GET', '/me/activity', { query: { cursor, limit: 50 } })),
-      'events',
     )
   }
 

@@ -88,7 +88,7 @@ export function Shell({ config }: { config: PlatformConfig }): React.ReactElemen
             <IrisIcon name={dark ? 'sun' : 'moon'} size={16} />
           </IrisButton>
           <IrisAvatar name="Aero User" size={32} />
-          <IrisButton variant="ghost" size="sm" onClick={auth.logout}>
+          <IrisButton variant="ghost" size="sm" onClick={() => void auth.logout()}>
             退出
           </IrisButton>
         </div>

@@ -1,6 +1,6 @@
 export interface PlatformConfig {
   snaplinkIssuer: string
-  snaplinkAuthorizationEndpoint?: string
+  snaplinkHostedLoginUrl: string
   snaplinkClientId: string
   snaplinkResource: string
   snaplinkScopes: string[]
@@ -55,6 +55,11 @@ export function loadPlatformConfig(): PlatformConfig {
     runtime.snaplinkClientId,
     import.meta.env.VITE_SNAPLINK_CLIENT_ID,
   )
+  const snaplinkHostedLoginUrl = requiredValue(
+    'snaplinkHostedLoginUrl',
+    runtime.snaplinkHostedLoginUrl,
+    import.meta.env.VITE_SNAPLINK_HOSTED_LOGIN_URL,
+  )
   const aeroIdApiBase = requiredValue(
     'aeroIdApiBase',
     runtime.aeroIdApiBase,
@@ -64,12 +69,7 @@ export function loadPlatformConfig(): PlatformConfig {
   const defaultRedirect = `${window.location.origin}${window.location.pathname}`
   return {
     snaplinkIssuer: trimSlash(snaplinkIssuer),
-    snaplinkAuthorizationEndpoint: optionalUrl(
-      firstValue(
-        runtime.snaplinkAuthorizationEndpoint,
-        import.meta.env.VITE_SNAPLINK_AUTHORIZATION_ENDPOINT,
-      ),
-    ),
+    snaplinkHostedLoginUrl: trimSlash(snaplinkHostedLoginUrl),
     snaplinkClientId,
     snaplinkResource: firstValue(
       runtime.snaplinkResource,

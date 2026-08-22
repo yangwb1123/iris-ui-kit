@@ -9,7 +9,7 @@ interface AuthContextValue {
   session?: OidcSession
   error?: string
   login(): Promise<void>
-  logout(): void
+  logout(): Promise<void>
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -71,11 +71,16 @@ export function AuthProvider({
         setError(undefined)
         await client.beginLogin(window.location.hash || '#/overview')
       },
-      logout: () => {
-        client.clear()
+      logout: async () => {
+        const idToken = session?.idToken
         setSession(undefined)
         setError(undefined)
         setStatus('anonymous')
+        try {
+          await client.logout(idToken)
+        } catch (reason) {
+          setError(reason instanceof Error ? reason.message : '退出失败')
+        }
       },
     }),
     [client, error, session, status],

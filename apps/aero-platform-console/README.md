@@ -4,6 +4,7 @@
 
 - 通过 Snaplink Authorization Code + PKCE（S256）登录；
 - 在浏览器内存中持有短期 access token，不写入 localStorage/sessionStorage；
+- 退出时调用 discovery 声明的 `end_session_endpoint`，销毁 Snaplink 会话后回跳；
 - 调用 aero-id `/v1/me`、Profile、来源、成员关系、活动、同步/导出任务和 Operation API；
 - 明确展示 partial、stale、unavailable 和 unknown 状态；
 - 使用独立链接进入 Audit Governance、Aero IM 和 Aero Vault 控制台，不跨 audience 转发 token。
@@ -28,9 +29,9 @@ Snaplink 当前把 `tenant_id` 从 client 绑定写入 access token，而 aero-i
 tenant claim。因此每个租户应注册独立 client（或使用独立域名/运行配置选择对应 client_id），不能
 用一个无租户 client 给所有租户签发 token。
 
-Snaplink 的 `authorization_endpoint` 必须在部署入口上呈现 hosted login UI。如果 API 与
-hosted login 分离，通过运行配置的 `snaplinkAuthorizationEndpoint` 指向 Snaplink Console
-登录入口；Token endpoint 始终来自 OIDC discovery。
+Snaplink discovery 的 `authorization_endpoint` 是 `/auth/login` JSON API，不是可导航的
+登录页面。`snaplinkHostedLoginUrl` 必须指向单独部署的 Hosted Login UI（例如 Snaplink
+Console 的 `/login/`）；Token endpoint 始终来自 OIDC discovery。
 
 ## 运行配置
 
@@ -39,7 +40,7 @@ hosted login 分离，通过运行配置的 `snaplinkAuthorizationEndpoint` 指�
 ```js
 window.__AERO_PLATFORM_CONFIG__ = {
   snaplinkIssuer: 'https://identity.example.com',
-  snaplinkAuthorizationEndpoint: 'https://identity.example.com/auth/login',
+  snaplinkHostedLoginUrl: 'https://identity.example.com/login/',
   snaplinkClientId: 'aero-account-console',
   snaplinkResource: 'aero-id',
   snaplinkScopes: [

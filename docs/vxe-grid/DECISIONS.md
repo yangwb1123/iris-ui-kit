@@ -3219,3 +3219,48 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-eb-gate.md [ok]: Review verdict: `batch-eb-review.md` = **PASS** (1 LOW non-blocking + 2 INFO; no fixes required). Full gate: turbo **184/184** (55 cached) · audit:security **0** · audit:tokens exit 0 · iris-ui-spec **0 violations / 1547 files** · gen:manifest + check:manifest ✅ (206 props / 33 events / 155×4 / 86 tokens, nil diff). Final counts: core **106 files / 1641/1641** · react **255 files / 2968/2968** (batch-eb 21/21, 499 lines ≤500). Comparison doc 批 EB row added; LOW finding (columnStatsTop closed-panel sort) accepted non-blocking; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW/DX/DY/DZ/EA precedent).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eb-gate.md
+
+## 2026-08-22 14:05:50 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ee-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ee-baseline.md
+
+## 2026-08-22 14:09:01 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ef-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ef-baseline.md
+
+## 2026-08-22 14:10:50 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-eg-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eg-baseline.md
+
+## 2026-08-22 14:12:41 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-eh-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eh-baseline.md
+
+## 2026-08-22 14:14:29 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ei-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ei-baseline.md
+
+## 2026-08-22 14:20:15 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ej-baseline.md [ok]: 核查事实（全部逐行实测）: - HEAD `c58f7175`（批 ED 已合入）。`persistState` **仅存在于 react**：vue/solid/svelte/core 零命中——本批是首次跨框架同步。; 设计要点: `persistState?: { storage?; key?; include? }` 纯 LOADS/SAVES 协调器，对 react AG 逐字对齐、runes 化：顶层一次性解析（SSR 窗口守卫）→ 代理创建 effect 内; 文件地图（7 项）: `types.ts` +3 型 · `props.ts` +1 单行 prop（:152 后）· **NEW** `table-persist.svelte.ts` · `IrisTable.svelte` 4 触点 + 2 effect ; 测试计划（~19 例）: 规格先行：①挂载经回调恢复（sort+filters+widths 原值 + DOM 反映）②变更整包保存 ③**挂载提交永不复写存储** ④`storage:false` ⑤坏 JSON ⑥非纯对象 ⑦include 双向 ⑧自定义 ke
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ej-baseline.md
+
+## 2026-08-22 14:32:45 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ej-adapt.md [ok]: 批 EJ 完成报告: **SPEC**: svelte IrisTable 状态持久化 `persistState?: { storage?; key?; include? }`（sort/filters/columnVisibility/columnOrder; 文件变更（8 源/测试 + 文档 + manifest）: | 文件 | 变更 |; 验证结果（全绿）: | 门 | 结果 |; Fiat（baseline 决定、已落实）: - **F1**：spec 六块中 columnVisibility/columnOrder 在 svelte 无 change 通道 → 恒惰性（永不收集/永不回放，测试 ⑭ 断言而非跳过）; 剩余: - vue/solid 的 persistState 对齐仍待后续批（本次仅 svelte）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ej-adapt.md
+
+## 2026-08-22 14:38:23 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ej-review.md [ok]: 结论：**FAIL**（单阻塞项 + 4 条低危）: **核查过程**：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ej-review.md
+
+## 2026-08-22 14:47:24 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ej-gate.md [ok]: Review FAIL（单阻塞项 W2）→ 修复后 PASS: - **W2 阻塞已修**：`persist-state-harness.svelte` prettier 格式收口（`{columns}`/`{sort}`/`{filters}` 简写 + `query?` 单行 + EOF 换行，仅测试 harness、零行为变更）→ `format:check` 全仓零失败; - **全门禁实测**：turbo **184/184**（0 cached）· audit:security **0** · audit:tokens exit 0 · gen:manifest + check:manifest ✅（155×4、svelte persistState native、unavailable 0、nil diff）· core 零框架 import ✓; - **最终计数**：core **104 files/1597** · react **257 files/3012** · vue **165 files/1573** · solid **142 files/1013+38 hydration** · svelte **146 files/988+35 hydration=1023**（persist-state **19/19** = jsdom 18 + SSR 1）；W3 低危按审查接受（失败闭合方向/applySort 写内部态/baseline F1 惰性/注释措辞）；comparison 批 EJ 行 gate 注已补；提交仅含 EJ 批次自身文件（并行 aero-platform-console 工作树改动未动，DV/DW/…/ED 先例）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ej-gate.md

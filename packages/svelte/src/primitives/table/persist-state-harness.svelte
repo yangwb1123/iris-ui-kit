@@ -24,9 +24,7 @@
     onFiltersChange?: (next: Record<string, string>) => void
     onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
     onPageChange?: (page: number, pageSize: number) => void
-    query?: (
-      params: unknown,
-    ) => Promise<{ rows: Array<Record<string, unknown>>; total: number }>
+    query?: (params: unknown) => Promise<{ rows: Array<Record<string, unknown>>; total: number }>
     pageSize?: number
     remoteSort?: boolean
     remoteFilter?: boolean
@@ -55,16 +53,16 @@
 </script>
 
 <IrisTable
-  columns={columns}
+  {columns}
   data={hasProxy ? undefined : rows}
   rowKey="id"
   persistState={persist}
-  sort={sort}
+  {sort}
   onUpdateSort={(next) => {
     sort = next
     onSortChange?.(next)
   }}
-  filters={filters}
+  {filters}
   onFiltersChange={(next) => {
     filters = next
     onFiltersChange?.(next)

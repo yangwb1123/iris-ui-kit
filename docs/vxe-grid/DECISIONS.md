@@ -3124,3 +3124,23 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dx-gate.md [ok]: Verdict: **PASS** — review 5 findings all LOW non-blocking (sticky `y` flag position-0 anchored、flag 白名单任意、字面量 `/…/` 被劫持无提示、reDoS 无防护、regexp 模式死 toLowerCase)，fix 建议记录待后续批。Source changes already committed at adapt stage `43bade0f` (Table.tsx +24 / clipboard-display-helpers.tsx +53 / batch-dx.test.tsx 253 行 18 测试)。Gates: turbo **184/184** (126 cached) · audit:security **0** · iris-ui-spec all **0 violations / 1546 files** · gen:manifest + check:manifest ✅ (nil diff — 155×4 / 86 tokens / 202 props / 33 events unchanged)。Final count (fresh): react **251 files / 2890/2890** (DX 18/18) · core **106 files / 1641/1641**。Comparison doc 批 DX row added `feat(table): grid 批 DX——fnr 正则替换（iris 独有）`; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW precedent).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dx-gate.md
+
+## 2026-08-22 08:59:10 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dx-gate.md [ok]: Review verdict: `batch-dx-review.md` = **PASS** — all verification green. 5 findings all **LOW/non-blocking** (sticky `y` flag, arbitrar; Full gate: | Gate | Result |; Final test counts (fresh): - **core**: 106 files — **1641/1641** ✅ (unchanged); Commit: **`39638487eb1114e0703789b7db3640558f675543`** — `feat(table): grid 批 DX——fnr 正则替换（iris 独有）`, 6 files (+117, docs only:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dx-gate.md
+
+## 2026-08-22 09:16:29 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dy-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dy-baseline.md
+
+## 2026-08-22 09:32:14 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dy-adapt.md [ok]: Report: **Files changed (4 source + 1 test + manifest + adapt doc):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dy-adapt.md
+
+## 2026-08-22 09:38:24 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dy-review.md [ok]: Verification results (all against HEAD `01f9ab26`): | Check | Result |; Checklist: - **Spec correctness** — matches the baseline design: two-phase machine (diff vs. committed map, mount-hidden never anim; Findings (all LOW/INFO, non-blocking): 1. **LOW** — totals container (`Table.tsx:8531`) lacks `role="row"`, so its grid-template transition doesn't fire; track
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dy-review.md

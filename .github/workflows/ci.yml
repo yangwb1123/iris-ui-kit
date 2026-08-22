@@ -78,7 +78,7 @@ jobs:
         run: pnpm check:rsc
 
       - name: Test
-        run: pnpm turbo run test --concurrency=4
+        run: pnpm turbo run test --concurrency=2
 
       - name: Browser E2E (four CMS frameworks) + visual regression
         run: |

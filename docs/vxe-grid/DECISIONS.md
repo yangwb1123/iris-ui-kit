@@ -2899,3 +2899,18 @@ generated output, and `git diff --check` passed.
 
 - task 批 DP 表格滚动条增强（iris 独有）：验证 baseline 锚定全部在位（advanced.ts:198 prop · Table.tsx:286/8070 解构+标记 · table-css.ts 注入源），补 spec 要求的 hover 色增强真实现（rest `color-mix(in srgb, var(--iris-primary) 60%, transparent)` → hover 全量 `--iris-primary`，纯 token），补默认关态负向断言；batch-dl-dt 14/14 · core 104/1597 · react 246/2819 · typecheck ✓ · lint 0 errors（2 既有 complexity warning）· spec 扫描 1535 文件 0 violations · gen:manifest 155×4/86 tokens 无 diff
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-baseline.md
+
+## 2026-08-22 03:51:47 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dp-adapt.md [ok]: 批 DP：表格滚动条增强 — 完成报告: Baseline 锚定全部验证在位（feature 骨架已于 `61ec5418` adapter 对齐提交交付），本批次**补齐 spec 中唯一真实缺口**：hover 色增强此前是 no-op（`primary → primary`，; 结论: Baseline 锚定全部验证在位（feature 骨架已于 `61ec5418` adapter 对齐提交交付），本批次**补齐 spec 中唯一真实缺口**：hover 色增强此前是 no-op（`primary → primary`，; Files changed（commit `107bf8af`）: | 文件 | 变更 |; Tests added: +1 用例（默认关态负向，观察③），DP 现 2 用例；测试文件 ~328 行 ≤500 ✓; Verification counts: - **core test**: 104 files / **1597** pass ✓（core 零变更，框架无关铁律未触及）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-adapt.md
+
+## 2026-08-22 03:55:49 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dp-review.md [ok]: 结论：**PASS**（4 条 LOW/INFO，无阻塞）: - DP 专项 `batch-dl-dt.test.tsx` **14/14**（含开态注入 + 关态负向 2 用例）; 实测验证（独立重跑全部通过）: - DP 专项 `batch-dl-dt.test.tsx` **14/14**（含开态注入 + 关态负向 2 用例）; Spec 逐项核对（全部满足）: - `scrollbarThumb?: boolean` opt-in 默认 false（`props/advanced.ts:198`）、根标记关态不输出（`Table.tsx:8070`）; Findings（均不阻塞）: 1. **LOW** `batch-dl-dt.test.tsx:225-237`：断言了 hover 选择器与 rest color-mix，但未断言 hover 背景为全量 primary 及顺序——hover 若回退为与 rest 相
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-review.md
+
+## 2026-08-22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dp-gate.md [ok]: Gate PASS complete for 批 DP 表格滚动条增强: turbo 180/180 (135 cached) · audit 0 · gen:manifest+check:manifest up to date (155×4/86 tokens, zero diff) · react 246 files/2819 (batch-dl-dt 14/14) · core 104 files/1597 · typecheck clean · lint 0 errors. Comparison doc updated (批 DP row in iris 独有 section + 构建状态 summary); batch-dp-gate.md rewritten as real gate report; commit follows
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-gate.md

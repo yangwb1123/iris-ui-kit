@@ -96,6 +96,31 @@ describe('IrisTable batches DL–DT', () => {
     ).toBe('n=3 · avg=2.57')
   })
 
+  it('DN shows stats on numeric leaf headers inside a grouped header (never on the group row)', () => {
+    const grouped: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name' },
+      {
+        key: 'info',
+        title: 'Info',
+        children: [
+          { key: 'city', title: 'City' },
+          { key: 'amount', title: 'Amount' },
+        ],
+      },
+    ]
+    render(<IrisTable columns={grouped} data={rows} rowKey="id" headerStats />)
+    expect(
+      document.querySelector('[data-iris-table-header="info"] [data-iris-header-stats]'),
+    ).toBeNull()
+    expect(
+      document.querySelector('[data-iris-table-header="city"] [data-iris-header-stats]'),
+    ).toBeNull()
+    expect(
+      document.querySelector('[data-iris-table-header="amount"] [data-iris-header-stats]')
+        ?.textContent,
+    ).toBe('n=3 · avg=2.57')
+  })
+
   it('DO applies numeric formatting to the selected region through one write-back', () => {
     const onDataChange = vi.fn()
     render(

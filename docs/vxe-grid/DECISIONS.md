@@ -2829,3 +2829,13 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dm-review.md [ok]: 审查摘要: 批次 DM（表格状态自动保存）是"验证式 adapt"——功能在 `61ec5418` 已交付，本批提交 `ef13c225` 只补了 manifest 卫生（barrel 导出 `IrisTableAutoSaveStateConfig`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-review.md
+
+## 2026-08-22 03:09:14 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-gate.md [ok]: Verdict: `batch-dm-review.md` → **PASS**（验证式 adapt：功能已在 `61ec5418` 交付，`ef13c225` 补 manifest 卫生；本轮 gate 确认全绿）; Gate results: - **Full repo gate** — `corepack pnpm turbo run test typecheck lint build --concurrency=2` → *_180/180 tasks successful_; Docs updated（`docs/vxe-grid-comparison.md`，iris 独有 section）: - **新增 批 DM 行**：`autoSaveState` 定时整包快照——`props/editing.ts:286` 紧邻 `persistState`、类型 `{ intervalMs?, storage?, key? }` 于 ; Commit: - **Hash:** `473bcbc29cfddc8b08612e0fac18558064d1f027`; Final test counts: | Suite | Files | Tests |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-gate.md
+
+## 2026-08-22 03:12:02 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dn-baseline.md [ok]: Baseline summary — 批 DN：列头统计（iris 独有）: **Exact design** — spec `headerStats?: boolean`（数值列表头小统计 count/avg，muted 小字，逐列表头内嵌，与列汇总条区分）verified as fully shipped at
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-baseline.md

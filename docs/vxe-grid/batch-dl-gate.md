@@ -1,51 +1,36 @@
-# 批 DL Gate — PASS
+**PASS path complete.** Review verdict was PASS; gate ran green end-to-end.
 
-Review `batch-dl-review.md` is **PASS** (verdict: no functional or
-gate-blocking defects; 3 non-blocking findings). The DL implementation exposes
-`patternFill?: boolean` — an additive alias for the batch DH `pattern`
-editing-consistency hint — gated at `Table.tsx:1813-1814`
-(`(pattern || patternFill) && editingTarget !== null`), resolved per cell via
-`patternHintStyle` (`clipboard-display-helpers.tsx`), rendered as
-`data-iris-input-hint` + `var(--iris-input-hint, …)` longhand `background-image`
-(`Table.tsx:6167/6219/6360`). Prop declared on the named `IrisTableEditingProps`
-(`props/editing.ts:147`), default `false`.
+## Gate report
 
-## Full repo gate
+**Full repo gate** — `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2`
 
-`env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2`
+- **180/180 tasks successful** (174 cached) — test/typecheck/lint/build all green
 
-- **180/180 tasks successful** (174 cached)
+**Audit** — `pnpm audit` → **0 known vulnerabilities**
 
-## Audit & manifest
+**Manifest** — `pnpm gen:manifest` + `pnpm check:manifest` → regenerated, **up to date** (`patternFill` ×5 in manifest.json + all 4 frameworks in llms.txt; vue/solid/svelte are real source logic, no `unavailable` placeholders)
 
-- `pnpm audit` → **No known vulnerabilities** ✅
-- `pnpm gen:manifest` + `pnpm check:manifest` → regenerated, **up to date** ✅
-  (`patternFill` ×5 in manifest.json + all 4 frameworks in llms.txt; react
-  propCount 192→199 incl. later DM–DT increments; eventCount 32 unchanged;
-  manifest parity is real source logic in vue/solid/svelte — no `unavailable`
-  placeholders)
+**Docs updated**
 
-## Documentation
-
-- `docs/vxe-grid-comparison.md`: new **批 DL** row in the iris 独有 section
-  (`patternFill` alias, same gate/single-throat as 批 DH, off-zero-byte),
-  appended **批 DL** to the 构建状态 summary line, refined the DL row in the
-  批 DL–DT 当前实现记录 table
-- `docs/vxe-grid/DECISIONS.md`: appended the spec-correction + acceptance
-  criteria record (review medium finding: the original DL spec that mentioned
-  reusing `rangeFill`'s entry was replaced by a delivery summary during the
-  implement re-run — delivered contract is the `pattern` alias) + this gate
-  record
+- `docs/vxe-grid-comparison.md` — new **批 DL** row in the iris 独有 section (`patternFill` alias of 批 DH `pattern`, same single-throat gate `(pattern || patternFill) && editingTarget !== null`, off-zero-byte), appended 批 DL to the 构建状态 summary line, refined the DL row in 批 DL–DT 当前实现记录
+- `docs/vxe-grid/batch-dl-gate.md` — rewritten as the real gate report (supersedes provisional record)
+- `docs/vxe-grid/DECISIONS.md` — appended the **spec-correction + acceptance-criteria record** (review medium finding #1: original spec's `rangeFill` wording vs delivered `pattern` alias) + the gate record
+- Prettier + `git diff --check` clean (lint-staged hook re-verified: filesize/budget ✅)
 
 ## Commit
 
-Message: `feat(table): grid 批 DL——单元格图案填充（iris 独有）`
+- **Hash:** `b20865644a13339305500eaba6141c0bdeb4ef39`
+- **Message:** `feat(table): grid 批 DL——单元格图案填充（iris 独有）`
+- 5 files, +122/−28; working tree clean
 
 ## Final test counts
 
-- **react:** 2815 passed (246 files, incl. 22 DL tests: `pattern-fill` 12 +
-  `batch-dl-dt` 10)
-- **core:** 1597 passed (104 files)
-- **vue:** 1573 passed (165 files) · **solid:** 1013 + 38 hydration (142) ·
-  **svelte:** 969 + 35 hydration (144)
-- **turbo:** 180/180 tasks · **audit:** 0 vulnerabilities
+| Suite                                                     | Files | Tests                |
+| --------------------------------------------------------- | ----- | -------------------- |
+| react (incl. 22 DL: `pattern-fill` 12 + `batch-dl-dt` 10) | 246   | **2815**             |
+| core                                                      | 104   | **1597**             |
+| vue                                                       | 165   | 1573                 |
+| solid                                                     | 142   | 1013 (+38 hydration) |
+| svelte                                                    | 144   | 969 (+35 hydration)  |
+| turbo tasks                                               | —     | **180/180**          |
+| audit                                                     | —     | **0** vulns          |

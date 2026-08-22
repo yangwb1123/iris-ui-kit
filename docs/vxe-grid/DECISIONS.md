@@ -2809,3 +2809,23 @@ generated output, and `git diff --check` passed.
 - gate: turbo **180/180**（--concurrency=2，174 cached）· react 246 files/**2815**（含 DL 22 测试：pattern-fill 12 + batch-dl-dt 10）· core 104 files/**1597** · vue 165 files/1573 · solid 142 files/1013+38 hydration · svelte 144 files/969+35 hydration · `pnpm audit` **0** vulns · gen:manifest + check:manifest **up to date** · typecheck/lint/build 全绿
 - docs: vxe-grid-comparison.md iris 独有节新增 批 DL 行 + 构建状态行追加 + DL–DT 记录表措辞订正；batch-dl-gate.md 重写为真实 gate 报告
 - commit: `feat(table): grid 批 DL——单元格图案填充（iris 独有）`
+
+## 2026-08-22 02:44:43 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dl-gate.md [ok]: Gate report: **Full repo gate** — `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency; Commit: - **Hash:** `b20865644a13339305500eaba6141c0bdeb4ef39`; Final test counts: | Suite | Files | Tests |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-gate.md
+
+## 2026-08-22 02:50:38 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-baseline.md [ok]: What's in the baseline (all anchors verified against current code at HEAD `b2086564`): **Exact design** — the revised spec `autoSaveState?: { intervalMs?: number }` is already fully shipped at HEAD (added in
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-baseline.md
+
+## 2026-08-22 02:54:18 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-adapt.md [ok]: 批 DM — 表格状态自动保存（iris 独有）: The feature was already fully shipped at HEAD (within `61ec5418`), and the baseline recorded it as verified design. This; Outcome: The feature was already fully shipped at HEAD (within `61ec5418`), and the baseline recorded it as verified design. This; Files changed (this run): | File | Change |; Tests: Existing `packages/react/src/primitives/table/test/batch-dl-dt.test.tsx` (231 lines ≤ 500) covers the spec-mandated pair; Verify results (all after the barrel edit): - core: 104 files / **1597 tests** ✓
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-adapt.md
+
+## 2026-08-22 02:57:12 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-review.md [ok]: 审查摘要: 批次 DM（表格状态自动保存）是"验证式 adapt"——功能在 `61ec5418` 已交付，本批提交 `ef13c225` 只补了 manifest 卫生（barrel 导出 `IrisTableAutoSaveStateConfig`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-review.md

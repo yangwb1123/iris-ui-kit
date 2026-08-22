@@ -3074,3 +3074,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md [ok]: Verdict: `batch-dv-review.md` = **FAIL** → fixes applied at gate → re-verified **PASS** ✅. Review #1 (medium) + #2 (low) = one defect hidden by a weak test; #3–#5 (info) documented, no action.: **(#1)** fully-uncontrolled table (`urlState` on, zero owning callbacks) destroyed a seeded `_table` deep link at mount — empty payload serialized to null → `writeUrlTableState(null)` deleted the param. Fixed: URL write effect now gates on `ownsChannel = (multiSort ? onMultiSortChange : onSortChange) || onFiltersChange || onFilterValuesChange || (proxy && proxyConfig?.onPageChange)` and skips the write entirely when nothing is owned (persistState precedent verbatim — "Nothing the parent owns → nothing to write"); "empties remove `_table`" kept for channel-owning tables that are currently empty. **(#2)** the "uncontrolled inert in BOTH directions" test was vacuous (`before` captured post-render after mount already stripped the param). Fixed: `before` captured pre-render + explicit seed-survival assertions across mount and internal sort flip — verified the test FAILS against pre-fix Table.tsx (`?keep=1`) and passes with the fix. Gates re-run: turbo **188/188** tasks (106 cached) · audit **0** · gen:manifest zero diff · check:manifest up to date. Final count (fresh): react **249 files / 2855/2855** (DV 13/13 + SSR 5/5) · core **106 files / 1641/1641**. Comparison doc 批 DV row updated with the review-gate fix. Environment note: first gate attempt hit desktop-os-vue#build on a stale registry `@iris-ui-kit/core@0.2.1` in node_modules (committed lock says `workspace:* link:../core`) — repaired node_modules only (git-invisible); unrelated grid-refactor working-tree changes left uncommitted and untouched.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md
+
+## 2026-08-22 08:03:34 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md [ok]: Verdict: FAIL → fixed → PASS ✅: `batch-dv-review.md` found **#1 medium** (fully-uncontrolled table destroys a seeded `_table` deep link at mount) + **#2; Fixes applied (small + localized, exactly as recommended): 1. **`Table.tsx` URL write effect** — added `ownsChannel` gate (`(multiSort ? onMultiSortChange : onSortChange) || onFil; Full gate (re-run): | Gate | Result |; Final test counts (fresh runs): - **react**: 249 files — **2855/2855** ✅ (batch-dv 13/13 jsdom + SSR 5/5 node); Commit: **`e671b85c`** (`e671b85c7915b10f37373e986881f25f51860a18`) — `feat(table): grid 批 DV——URL 状态深链（iris 独有）`, 6 files (2 so
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md
+
+## 2026-08-22 08:08:42 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dw-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dw-baseline.md
+
+## 2026-08-22 08:22:39 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dw-adapt.md [ok]: Report: **Files changed (6 source/test + 2 generated):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dw-adapt.md
+
+## 2026-08-22 08:28:26 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dw-review.md [ok]: Verdict: **FAIL**: **Verification runs (all green)**: core test 1641 ✓ · react test 2870 ✓ · react typecheck ✓ · react lint 0 errors (2 pre
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dw-review.md
+
+## 2026-08-22 08:40:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dw-gate.md [ok]: Verdict: FAIL → fixed → PASS ✅: review #1 MEDIUM (spec-correctness: JSDoc claimed "snapshot restores and expandAll fire no bus event", but expansion.merge(set)/expansion.set (expandAll seed :4633 + expandedKeys snapshot/URL restore :1579) go through createExpansion's unconditional onChange → expanded-rows-change on mount/restore — black-box jsdom confirmed) + #2 LOW (IrisTableEvent union unused: emitTableEvent typed string) + #3 INFO (record drift). Fixes: **(#1)** contract corrected in props/layout.ts + types/event.ts — expansion family mirrors shared onExpandedRowsChange channel (EVERY model commit fires expanded-rows-change: user toggles, expandAll seeding, persistState/view expandedKeys restores; restore still gates on onExpandedRowsChange + expandable table) + **2 pinning tests** (expandAll seed ['1','2'] key-order; persistState expandedKeys ['2'] restore fires exactly one event) — batch-dw.test.tsx 17/17 (475 lines ≤500). **(#2)** funnel typed to the union: `emitTableEvent = <K extends IrisTableEvent<Row>['type']>(type: K, detail: Extract<IrisTableEvent<Row>, { type: K }>['detail'])` — all 19 sites typecheck, typo'd event type now fails typecheck. **(#3)** baseline "13-type"→"14-type"; adapt "18/15/402"→"19/17/475" + corrected design note. Gates re-run: turbo **184/184** tasks (126 cached) · audit **0** · gen:manifest + check:manifest ✅ (regenerated onTableEvent description) · check:pack-install ✅ 27/27 (review's stale-dist note closed — rebuilt dist now carries onTableEvent). Final count (fresh): react **250 files / 2872/2872** (DW 17/17) · core **106 files / 1641/1641**. Comparison doc 批 DW row added; concurrent grid-refactor working-tree changes left uncommitted and untouched.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dw-gate.md

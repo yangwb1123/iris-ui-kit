@@ -6,8 +6,14 @@ import type { IrisTableEditClosedParams, IrisTableEditStartParams } from './foot
  * bus): the `type` names one of the closed event families; `detail` carries
  * the SAME params the matching dedicated callback receives (reference-
  * identical `row`/`column`). Events fire AFTER the dedicated callback — the
- * bus is a bridge, not a behavior. Controllable proxy `sort` updates,
- * snapshot restores and `expandAll` fire no bus event.
+ * bus is a bridge, not a behavior. Controllable proxy `sort` updates (a
+ * parent-driven `sort`/`multiSortState` prop change — not a user click) fire
+ * no event. The expansion family mirrors the shared `onExpandedRowsChange`
+ * channel: EVERY model commit fires `expanded-rows-change` — user toggles,
+ * `expandAll` seeding, and `persistState`/view `expandedKeys` restores all
+ * replay through the expansion model's `onChange` (a restore still needs
+ * `onExpandedRowsChange` + an expandable table — the same gate as the
+ * dedicated callback).
  */
 export type IrisTableEvent<Row = Record<string, unknown>> =
   | { type: 'cell-click'; detail: IrisTableCellClickParams<Row> }

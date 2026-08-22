@@ -221,6 +221,7 @@ import type {
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableContextMenuParams,
+  IrisTableEvent,
   IrisTablePresenceEntry,
   IrisTableSortDirection,
   IrisTableFilterValues,
@@ -600,7 +601,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // AFTER each dedicated callback — a bridge, not a behavior.
   const onTableEventRef = React.useRef(onTableEvent)
   onTableEventRef.current = onTableEvent
-  const emitTableEvent = (type: string, detail: unknown): void => {
+  const emitTableEvent = <K extends IrisTableEvent<Row>['type']>(
+    type: K,
+    detail: Extract<IrisTableEvent<Row>, { type: K }>['detail'],
+  ): void => {
     onTableEventRef.current?.({ type, detail })
   }
   // Batch BN (iris 独有): ONE throat for per-row heights — `rowHeight` wins

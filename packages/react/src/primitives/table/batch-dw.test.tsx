@@ -383,6 +383,57 @@ describe('@iris-ui-kit/react IrisTable onTableEvent (batch DW, iris 独有)', ()
     expect((keysEvent!.detail as { expandedKeys: string[] }).expandedKeys).toEqual(['2'])
   })
 
+  it('expandAll seeding fires expanded-rows-change (the shared model channel, even without onExpandedRowsChange)', () => {
+    const events: EventCapture[] = []
+    const treeRows = [
+      { id: 1, name: 'Root A', children: [{ id: 11, name: 'Child A1' }] },
+      { id: 2, name: 'Root B', children: [{ id: 21, name: 'Child B1' }] },
+    ]
+    render(
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={treeRows}
+        rowKey="id"
+        getSubRows={(r) => (r as { children?: unknown[] }).children}
+        expandAll
+        onTableEvent={bus(events)}
+      />,
+    )
+    // The one-shot seed merges every parent key through the expansion model's
+    // commit → the shared channel fires exactly one event on mount.
+    expect(events.map((e) => e.type)).toEqual(['expanded-rows-change'])
+    expect((events[0]!.detail as { expandedKeys: string[] }).expandedKeys).toEqual(['1', '2'])
+  })
+
+  it('persistState expandedKeys restore replays through the model → one expanded-rows-change', () => {
+    const events: EventCapture[] = []
+    const saved = JSON.stringify({ expandedKeys: ['2'] })
+    const storage = {
+      value: saved,
+      getItem(): string | null {
+        return this.value
+      },
+      setItem(_k: string, v: string): void {
+        this.value = v
+      },
+    }
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        renderDetail={(r) => <div>D{r.id}</div>}
+        persistState={{ storage, key: 'iris-table-batch-dw' }}
+        onExpandedRowsChange={() => {}}
+        onTableEvent={bus(events)}
+      />,
+    )
+    // The mount restore gates on onExpandedRowsChange + an expandable table,
+    // then calls expansion.set → the SAME model channel as a user toggle.
+    expect(events.map((e) => e.type)).toEqual(['expanded-rows-change'])
+    expect((events[0]!.detail as { expandedKeys: string[] }).expandedKeys).toEqual(['2'])
+  })
+
   it('gate parity: a cell click emits no cell-click without onCellClick/rowMode', () => {
     const events: EventCapture[] = []
     render(<IrisTable columns={cols} data={rows} rowKey="id" onTableEvent={bus(events)} />)

@@ -65,6 +65,8 @@
     editPreviewText,
     TABLE_CONST,
     cellId,
+    isEditableColumn,
+    withComputedFormulaCells,
     type SpanPlan,
     computeResponsiveTableColumns,
   } from './tableUtils'
@@ -371,10 +373,8 @@
     if (!autoDetectTypes || detectTypesDone || baseData.length === 0) return
     detectTypesDone = true
     const next: Record<string, DetectedColumnType> = {}
-    for (const column of flattenLeafColumns(columns)) {
-      const candidate = column as IrisTableColumn & { formula?: unknown }
-      if (candidate.formula) continue
-      next[column.key] = detectColumnType(baseData.map((row) => getCellValue(row, candidate)))
+    for (const column of flattenLeafColumns(columns).filter((c) => !c.formula)) {
+      next[column.key] = detectColumnType(baseData.map((row) => getCellValue(row, column)))
     }
     detectedTypes = next
   })
@@ -562,9 +562,13 @@
     clearFilter,
     removeRows: removeRowsForHandle,
     getFilteredData: () => [...bodyData],
-    exportCurrentViewCsv: () => serializeTableCsv(bodyData, leafColumns),
+    exportCurrentViewCsv: () =>
+      serializeTableCsv(withComputedFormulaCells(bodyData, leafColumns), leafColumns),
     exportMultiCsv: () => {
-      const current = serializeTableCsv(bodyData, leafColumns)
+      const current = serializeTableCsv(
+        withComputedFormulaCells(bodyData, leafColumns),
+        leafColumns,
+      )
       if (!exportNames || exportNames.length === 0) return current
       const segments = [`# current${current ? `\n${current}` : ''}`]
       for (const entry of exportNames) {
@@ -860,7 +864,8 @@
     column: IrisTableColumn,
     rowIdent: string | number,
   ): void {
-    if (!column.editable) return
+    // Batch EM: a formula column is display-only — never enters cell mode.
+    if (!isEditableColumn(column)) return
     editingCellId = cellId(rowIdent, column.key)
     editingColumnKey = column.key
     const current = getCellValue(row, column)
@@ -1457,7 +1462,7 @@
               role="cell"
               data-iris-table-cell={col.key}
               data-iris-table-pinned={col.pinned}
-              data-editable={col.editable ? '' : undefined}
+              data-editable={isEditableColumn(col) ? '' : undefined}
               data-editing={isEditing ? '' : undefined}
               data-iris-input-hint={patternHint ? 'true' : undefined}
               data-grid-row={keyboardNavigation ? index : undefined}
@@ -1479,7 +1484,7 @@
                         cellRangeCtrl.startRange(index, ci)
                       }
                     }
-                  : editConfig?.trigger === 'click' && col.editable
+                  : editConfig?.trigger === 'click' && isEditableColumn(col)
                     ? () => beginEdit(row, col, id)
                     : undefined}
               onkeydown={cellRange
@@ -1492,7 +1497,7 @@
                 : undefined}
               ondblclick={rowMode && editConfig?.trigger !== 'manual'
                 ? () => rowEdit.switchTo(row, index, col.key)
-                : col.editable &&
+                : isEditableColumn(col) &&
                     editConfig?.trigger !== 'click' &&
                     editConfig?.trigger !== 'manual'
                   ? () => beginEdit(row, col, id)
@@ -1508,7 +1513,9 @@
                 ? ` grid-column-end: span ${spanEntry.colspan};`
                 : ''} padding: {isEditing
                 ? '4px'
-                : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
+                : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {isEditableColumn(
+                col,
+              )
                 ? 'cell'
                 : 'default'}{cellRange && isInRange(index, ci)
                 ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
@@ -1570,7 +1577,7 @@
               {:else if col.render}
                 {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
               {:else}
-                {tableDisplayText(row, col)}
+                {tableDisplayText(row, col, getCellValue)}
               {/if}
             </div>
           {/if}

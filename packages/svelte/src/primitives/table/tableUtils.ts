@@ -5,6 +5,7 @@ import {
   computeVirtualRange,
   createCellRange,
   flattenLeafColumns,
+  memoizedFormulaValue,
   RESPONSIVE_NARROW_WIDTH,
 } from '@iris-ui-kit/core'
 import type {
@@ -124,8 +125,44 @@ export function editPreviewText(
 }
 
 export function getCellValue(row: Record<string, unknown>, column: IrisTableColumn): unknown {
+  // Batch EM: a formula column reads the COMPUTED value (2-arg
+  // memoizedFormulaValue — no tables slot, react AO byte semantics). This
+  // choke point feeds sorting, filtering, summary, the cell render, edit
+  // drafts, pattern hints and range copy, so the computed value flows
+  // everywhere.
+  if (column.formula) return memoizedFormulaValue(column.formula, row)
   const key = (column.dataIndex ?? column.key) as string
   return row[key]
+}
+
+/** Batch EM: a formula column is DISPLAY-ONLY even when `editable` — every
+ * editing entry point (inline, row mode, click trigger, data-editable attr,
+ * cursor) reads this same condition. */
+export function isEditableColumn(column: IrisTableColumn): boolean {
+  return !!column.editable && !column.formula
+}
+
+/** CSV/range-copy shadow rows (batch EM): core `toCsv`/`serializeTableRange`
+ * read `row[dataIndex]` directly, so formula columns materialize their
+ * computed value onto a shallow copy (original rows untouched — immutable
+ * row contract). No formula columns → the input array is returned as-is
+ * (reference-preserving). */
+export function withComputedFormulaCells(
+  rows: readonly Record<string, unknown>[],
+  columns: readonly IrisTableColumn[],
+): Record<string, unknown>[] {
+  const formulaCols = columns.filter((c) => c.formula)
+  if (formulaCols.length === 0) return rows as Record<string, unknown>[]
+  return rows.map((row) => {
+    let shadow: Record<string, unknown> | null = null
+    for (const col of formulaCols) {
+      const key = (col.dataIndex ?? col.key) as string
+      const next: Record<string, unknown> = shadow ?? { ...row }
+      next[key as string] = memoizedFormulaValue(col.formula!, row)
+      shadow = next
+    }
+    return shadow as Record<string, unknown>
+  })
 }
 
 /** Serialize checked filter sets for a remote query (vxe comma parity). */

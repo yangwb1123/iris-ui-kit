@@ -37,6 +37,18 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string
   dataIndex?: keyof Row | string
+  /**
+   * Single-line cell formula (batch EM, iris 独有 — vxe has no computed
+   * columns; the closest is a display-only formatter). Evaluated by the core
+   * `evaluateFormula` parser against each row: field refs + `+ - * / %` +
+   * whitelist functions SUM/AVG/MIN/MAX/COUNT (case-insensitive), optional
+   * leading `=`. The COMPUTED value feeds every data consumer — cell render,
+   * sorting, filtering, summary, range copy and CSV export (all via the
+   * `getCellValue` choke point). Errors / unknown fields → null (empty
+   * cell). An `editable` formula column is DISPLAY-ONLY: inline editing and
+   * row mode ignore it. Overrides `dataIndex`.
+   */
+  formula?: string
   /** Format the masked display value; copyWithFormat uses this string. */
   formatter?: (value: unknown, row: Row) => unknown
   /** Mask the display/copy value before the formatter. */

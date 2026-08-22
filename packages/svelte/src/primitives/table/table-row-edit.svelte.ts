@@ -1,4 +1,5 @@
 import { validateEditRulesAsync } from '@iris-ui-kit/core'
+import { isEditableColumn } from './tableUtils'
 import type { IrisTableCellEditEvent, IrisTableColumn } from './types'
 
 export interface TableRowEditSession {
@@ -145,7 +146,7 @@ export function createTableRowEditController(options: {
   }
 
   const begin = (row: Record<string, unknown>, rowIndex: number, focusColumn?: string): void => {
-    const columns = options.getColumns().filter((column) => column.editable)
+    const columns = options.getColumns().filter(isEditableColumn)
     if (!columns.length) return
     const key = options.getRowId(row, rowIndex)
     const next = new Map<string, TableRowEditSession>()
@@ -178,7 +179,7 @@ export function createTableRowEditController(options: {
     key: string | number,
   ): void => {
     if (active?.key === key) {
-      if (!column.editable) return
+      if (!isEditableColumn(column)) return
       const id = `${key}::${column.key}`
       if (!sessions.has(id)) {
         const next = new Map(sessions)
@@ -203,7 +204,7 @@ export function createTableRowEditController(options: {
     const columns = options.getColumns()
     const start = columns.indexOf(column)
     for (let index = start + direction; index >= 0 && index < columns.length; index += direction) {
-      if (columns[index]?.editable) {
+      if (isEditableColumn(columns[index]!)) {
         focus(columns[index]!.key)
         return
       }

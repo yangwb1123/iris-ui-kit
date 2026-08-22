@@ -116,7 +116,7 @@ jobs:
           cache: pnpm
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: stable
           cache-dependency-path: apps/desktop-wails/go.sum

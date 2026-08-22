@@ -1,4 +1,4 @@
-import { useRef, type MutableRefObject } from 'react'
+import { useRef, useState, type MutableRefObject } from 'react'
 import { IrisTable, type IrisTableColumn, type IrisTableHandle } from '@iris-ui-kit/react'
 
 /**
@@ -256,6 +256,24 @@ export function VxeGridExamplePage() {
         </p>
         <RowOpsDemo />
       </section>
+
+      <section>
+        <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+          内容自适应行高（adaptiveRowHeight，iris 独有）
+        </h2>
+        <p
+          style={{
+            margin: '0 0 12px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+            color: 'var(--iris-muted)',
+          }}
+        >
+          无固定 rowHeight 时数据行按内容换行自增长——vxe autoHeight
+          是撑满视口，不释放单元格换行。下方按钮提交更长
+          文本：真实浏览器里旧钉住高度会被再次测量为自然高度（clamp-trap 自愈），行随之变高
+        </p>
+        <AdaptiveHeightDemo />
+      </section>
     </div>
   )
 }
@@ -300,5 +318,50 @@ function RowOpsDemo() {
       columns={rowOpsColumns}
       data={tableData}
     />
+  )
+}
+
+/** Batch EC 真实浏览器验证区：`adaptiveRowHeight` 表格——短行 vs 多行文本行高差异，
+ * 增长按钮 commit 更长内容后旧钉住高度被重测为自然高度（clamp-trap 自愈）。
+ * Playwright 规格断言行高差异 + 增长自愈 + 表头保持单行。 */
+function AdaptiveHeightDemo() {
+  const [note, setNote] = useState('短文本')
+  const adaptiveRows: GridRow[] = [
+    { id: 1, name: 'Short', role: '-', sex: '-', age: 1, address: note },
+    {
+      id: 2,
+      name: 'Tall',
+      role: '-',
+      sex: '-',
+      age: 2,
+      address:
+        'Long content that wraps across multiple lines in a real browser — the row grows to show it all instead of clipping to one line.',
+    },
+  ]
+  const adaptiveColumns: IrisTableColumn<GridRow>[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'address', title: 'Note' },
+  ]
+  return (
+    <div>
+      <button
+        type="button"
+        data-iris-adaptive-grow
+        onClick={() =>
+          setNote(
+            'Now this cell holds a much longer paragraph that wraps onto several lines — the row must re-measure to its natural height instead of keeping the old shorter pin.',
+          )
+        }
+      >
+        增长第 1 行内容（grow row 1）
+      </button>
+      <IrisTable
+        bordered
+        rowKey="id"
+        adaptiveRowHeight
+        data={adaptiveRows}
+        columns={adaptiveColumns}
+      />
+    </div>
   )
 }

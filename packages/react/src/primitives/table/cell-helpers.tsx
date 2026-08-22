@@ -140,58 +140,6 @@ export const rowHeightStyleOf = (
     ? undefined
     : { height: typeof rowHeight === 'number' ? rowHeight : rowHeight(idx) }
 
-/** Batch EC: the `data-iris-table-row` values that are NOT data rows — the
- * reserved roles sharing the attribute namespace with row keys. The CSS wrap
- * rule applies the SAME exclusion (a colliding key stays single-line). */
-const ADAPTIVE_ROW_ATTR_SKIP = new Set(['header', 'summary', 'loading', 'empty', 'error'])
-
-/** Batch EC: the inline height for a data row under `adaptiveRowHeight` — the
- * measured natural height from `measureAdaptiveRowHeights`, keyed by the SAME
- * identity `data-iris-table-row` carries. undefined when off / unmeasured /
- * skipped — natural content height (a pinned 0 would collapse it). `rowStyle`
- * (spread after) stays the per-row escape hatch. */
-export const adaptiveHeightStyleOf = (
-  key: string | number,
-  heights: ReadonlyMap<string, number> | null | undefined,
-): React.CSSProperties | undefined => {
-  if (!heights) return undefined
-  const h = heights.get(String(key))
-  return h == null || h <= 0 ? undefined : { height: h }
-}
-
-/** Batch EC: walk a table root's DATA rows (same reserved-role exclusion as
- * the CSS wrap rule), read each rendered row's `offsetHeight`, and produce
- * the next height map. Rows measuring `≤ 0` (jsdom/SSR/hidden) are SKIPPED —
- * never pinned at 0, natural height instead of a 0px collapse.
- * Same-as-previous → `previous` BY IDENTITY (caller bails — zero re-render
- * noise); otherwise a fresh map (stale keys from departed rows dropped). */
-export const measureAdaptiveRowHeights = (
-  root: HTMLElement,
-  previous: ReadonlyMap<string, number> | null,
-): ReadonlyMap<string, number> | null => {
-  const next = new Map<string, number>()
-  for (const row of root.querySelectorAll<HTMLElement>('[role="row"]')) {
-    const value = row.getAttribute('data-iris-table-row')
-    if (value == null || ADAPTIVE_ROW_ATTR_SKIP.has(value) || value.startsWith('footer-')) {
-      continue
-    }
-    const h = row.offsetHeight
-    if (h <= 0) continue
-    next.set(value, h)
-  }
-  if (previous !== null && previous.size === next.size) {
-    let same = true
-    for (const [key, h] of next) {
-      if (previous.get(key) !== h) {
-        same = false
-        break
-      }
-    }
-    if (same) return previous
-  }
-  return next
-}
-
 /** Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
  * the entries whose `cellKey` (the canonical `${rowKeyVal}::${colKey}`
  * delimiter) matches this cell — one Map lookup per visible cell, undefined

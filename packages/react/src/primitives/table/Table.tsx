@@ -112,13 +112,12 @@ import {
   renderTableWatermark,
   resolveCopyTarget,
   rowHeightStyleOf,
-  adaptiveHeightStyleOf,
-  measureAdaptiveRowHeights,
   sparklineCell,
   sparklineSeries,
   type IrisRangeCopyTarget,
   type SparklineData,
 } from './cell-helpers'
+import { adaptiveHeightStyleOf, measureAdaptiveRowHeights } from './adaptive-height'
 import { EditorSurface } from './editor-surface'
 export { autoHeightSize } from './editor-surface'
 import { renderEmptyState } from './empty-state'
@@ -858,6 +857,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // a virtual body all disable it; only a table with NO fixed row height
   // activates (the spec's "无固定 rowHeight 时").
   const adaptiveOn = adaptiveRowHeight === true && effectiveRowHeight == null && !virtualScroll
+  // Dependency-free layout effect: runs after EVERY commit so data / cell-edit
+  // / font / density changes self-heal (many of those live in internal state —
+  // editing, paging, filter/sort — that a prop dep-gate cannot enumerate;
+  // dep-gating would reintroduce frozen-pin regressions, the very bug class
+  // the clamp-trap fix removes). The cheap part is the re-render noise, which
+  // the identity bail already stops; the O(rows) cost per commit is ONE forced
+  // layout because measureAdaptiveRowHeights clears all pins, reads all rows,
+  // then restores pins (see the helper). Window resize / ResizeObserver also
+  // re-measure directly with no React commit.
   useIsomorphicLayoutEffect(() => {
     if (!adaptiveOn) {
       if (adaptiveHeightsRef.current !== null) setAdaptiveHeights(null)

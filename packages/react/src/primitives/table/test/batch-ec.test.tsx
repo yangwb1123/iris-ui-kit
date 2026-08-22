@@ -5,7 +5,7 @@ import * as React from 'react'
 import { IrisTable } from '../Table'
 import type { IrisTableProps } from '../Table'
 import { TABLE_ROW_CSS } from '../table-css'
-import { adaptiveHeightStyleOf, measureAdaptiveRowHeights } from '../cell-helpers'
+import { adaptiveHeightStyleOf, measureAdaptiveRowHeights } from '../adaptive-height'
 import type { IrisTableColumn } from '../types'
 
 /**
@@ -91,6 +91,31 @@ describe('@iris-ui-kit/react IrisTable adaptiveRowHeight — helpers (batch EC)'
     const shrunk = measureAdaptiveRowHeights(root, map)
     expect(shrunk).not.toBe(map)
     expect(shrunk).toEqual(new Map([['1', 32]]))
+  })
+
+  it('clamp-feedback trap: measure reads the CLEARED (natural) height, never the pin, and restores pins in place', () => {
+    const root = document.createElement('div')
+    root.innerHTML = '<div role="row" data-iris-table-row="1" style="height: 42px"></div>'
+    const row = root.firstElementChild as HTMLElement
+    // Browser semantics: offsetHeight IS the current layout box. While the
+    // pin is inline the box is 42 (growth clipped by the cell overflow); once
+    // the helper clears it to 'auto', the box resolves the natural content
+    // height — re-measure must see the natural value, not read the pin back.
+    let natural = 58
+    Object.defineProperty(row, 'offsetHeight', {
+      configurable: true,
+      get() {
+        // Pinned → the layout box IS the pin; cleared 'auto' → natural.
+        const inline = row.style.height
+        return inline && inline !== 'auto' ? parseFloat(inline) : natural
+      },
+    })
+    expect(measureAdaptiveRowHeights(root, null)).toEqual(new Map([['1', 58]]))
+    // Pins restored in place — the DOM still shows the old pin until the
+    // caller re-renders with the new map.
+    expect(row.style.height).toBe('42px')
+    natural = 81 // content grew after an edit
+    expect(measureAdaptiveRowHeights(root, null)).toEqual(new Map([['1', 81]]))
   })
 
   it('adaptiveHeightStyleOf: off / unknown / ≤0 → undefined, measured → { height }', () => {
@@ -182,6 +207,56 @@ describe('@iris-ui-kit/react IrisTable adaptiveRowHeight — 行高差异/自愈
     view.rerender(<IrisTable columns={cols} data={grown} rowKey="id" adaptiveRowHeight />)
     expect(dataRow(2).style.height).toBe('120px')
     expect(dataRow(1).style.height).toBe('32px')
+  })
+
+  it('clamp-trap self-heal: a GROWN pinned row re-pins to its natural height (growth never reads the pin back)', () => {
+    const view = render(<IrisTable columns={cols} data={rows} rowKey="id" adaptiveRowHeight />)
+    // Real-browser semantics: offsetHeight = the CURRENT layout box — while
+    // the pin is inline the box IS the pin (growth clipped by the cell's
+    // overflow:hidden); the fix clears it so the natural height wins.
+    const box = (natural: number) => ({
+      configurable: true,
+      get(this: HTMLElement): number {
+        const pinned = this.style.height
+        return pinned && pinned !== 'auto' ? parseFloat(pinned) : natural
+      },
+    })
+    Object.defineProperty(dataRow(1), 'offsetHeight', box(32))
+    Object.defineProperty(dataRow(2), 'offsetHeight', box(63))
+    fireEvent(window, new Event('resize'))
+    expect(dataRow(1).style.height).toBe('32px')
+    expect(dataRow(2).style.height).toBe('63px')
+    // Content grows (data commit) — without the fix the pinned 32/63 read
+    // back forever and the growth stays clipped; with it, 44/120 win.
+    const grown = rows.map((r) => (r.id === 2 ? { ...r, bio: r.bio.repeat(12) } : r))
+    Object.defineProperty(dataRow(1), 'offsetHeight', box(44))
+    Object.defineProperty(dataRow(2), 'offsetHeight', box(120))
+    view.rerender(<IrisTable columns={cols} data={grown} rowKey="id" adaptiveRowHeight />)
+    expect(dataRow(1).style.height).toBe('44px')
+    expect(dataRow(2).style.height).toBe('120px')
+  })
+
+  it('clamp-trap self-heal: a SHRUNK pinned row releases the old too-tall pin', () => {
+    render(<IrisTable columns={cols} data={rows} rowKey="id" adaptiveRowHeight />)
+    const box = (natural: number) => ({
+      configurable: true,
+      get(this: HTMLElement): number {
+        const pinned = this.style.height
+        return pinned && pinned !== 'auto' ? parseFloat(pinned) : natural
+      },
+    })
+    Object.defineProperty(dataRow(1), 'offsetHeight', box(48))
+    Object.defineProperty(dataRow(2), 'offsetHeight', box(72))
+    fireEvent(window, new Event('resize'))
+    expect(dataRow(1).style.height).toBe('48px')
+    expect(dataRow(2).style.height).toBe('72px')
+    // Font/density change shrinks the content — old pins would read back
+    // forever (rows never shrink); the fix re-pins to natural 30/40.
+    Object.defineProperty(dataRow(1), 'offsetHeight', box(30))
+    Object.defineProperty(dataRow(2), 'offsetHeight', box(40))
+    fireEvent(window, new Event('resize'))
+    expect(dataRow(1).style.height).toBe('30px')
+    expect(dataRow(2).style.height).toBe('40px')
   })
 
   it('same-value bail: unrelated commits and resize events never churn the pins', () => {

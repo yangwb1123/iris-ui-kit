@@ -4,6 +4,8 @@ import type { IrisTableColumn, IrisTableEditDirtyConfig, IrisTablePresenceEntry 
 import {
   CELL_NOTE_STYLE,
   PRESENCE_LABEL_STYLE,
+  RANGE_COPY_STYLE,
+  RANGE_COPY_TARGET_OUTLINE,
   WATERMARK_OVERLAY_STYLE,
   WATERMARK_TILE_STYLE,
   WATERMARK_WRAPPER_STYLE,
@@ -182,6 +184,106 @@ export function renderPresenceLabels(
       {e.name}
     </span>
   ))
+}
+
+// ── Batch DZ cell drag-copy helpers (iris 独有 — vxe has no cell-copy
+// parity): module scope, same discipline as the CN move helpers — the
+// per-cell copy-grip logic stays OUT of the row-render arrow so the eslint
+// complexity budget on that hot callback is untouched. Co-located with the
+// presence outline (the outline precedent) — the copy-target outline is the
+// same mechanism, token-driven. Each helper is a pure function of its
+// inputs. ────────────────────────────────────────────────────────────────
+
+/** The resolved copy-target rectangle (named + exported for the manifest
+ * scanner): the drag destination's top-left cell — the block ALWAYS fits
+ * (resolveCopyTarget returns null otherwise, 越界忽略). */
+export interface IrisRangeCopyTarget {
+  row: number
+  col: number
+}
+
+/** True when this cell is the range's top-left cell hosting the copy grip. */
+export function isRangeCopyGripCell(
+  cellDragCopy: boolean,
+  range: { start: { row: number; col: number } } | null,
+  idx: number,
+  ci: number,
+): boolean {
+  return cellDragCopy && range !== null && range.start.row === idx && range.start.col === ci
+}
+
+/** Host style for the copy-grip cell: relative + above pinned sticky cells
+ * (zIndex 2 — the same anchor the fill handle and move grip hosts use; the
+ * three spreads coexist because relative is idempotent and both grips never
+ * share the same cell edge). */
+export function rangeCopyCellStyle(gripCell: boolean): React.CSSProperties {
+  return gripCell ? { position: 'relative', zIndex: 2 } : {}
+}
+
+/** The 12×4 copy grip (data-iris-range-copy) on the range's bottom edge,
+ * rendered only in the range's top-left cell; pointerdown starts the drag
+ * (and stops the cell click, move-grip precedent). */
+export function renderRangeCopyGrip(
+  gripCell: boolean,
+  row: number,
+  col: number,
+  onPointerDown: (e: React.PointerEvent, row: number, col: number) => void,
+): React.ReactNode {
+  if (!gripCell) return null
+  return (
+    <span
+      data-iris-range-copy=""
+      onPointerDown={(e) => onPointerDown(e, row, col)}
+      style={RANGE_COPY_STYLE}
+    />
+  )
+}
+
+/** Resolve the destination rectangle for a copy drag ending at (endRow,
+ * endCol): the WHOLE block (source height × width) must fit inside the table
+ * (bounds inclusive) — else null. Pure + DOM-free, so the move handler
+ * (outline) and the up handler (commit) resolve through the SAME check with
+ * no drift; the 越界忽略 (no clamp, unlike cellDrag's move) is this null. */
+export function resolveCopyTarget(
+  endRow: number,
+  endCol: number,
+  range: { start: { row: number; col: number }; end: { row: number; col: number } } | null,
+  bodyLength: number,
+  colCount: number,
+): IrisRangeCopyTarget | null {
+  if (range === null || bodyLength <= 0 || colCount <= 0) return null
+  const h = range.end.row - range.start.row + 1
+  const w = range.end.col - range.start.col + 1
+  if (endRow < 0 || endCol < 0) return null
+  if (endRow + h > bodyLength || endCol + w > colCount) return null
+  return { row: endRow, col: endCol }
+}
+
+/** Batch DZ: is (row, col) inside the copy-target rectangle (the resolved
+ * drag destination)? Null rect (not dragging / 越界) → false. */
+export function isCopyTargetCell(
+  rect: { row: number; col: number } | null,
+  range: { start: { row: number; col: number }; end: { row: number; col: number } } | null,
+  idx: number,
+  ci: number,
+): boolean {
+  if (rect === null || range === null) return false
+  const h = range.end.row - range.start.row + 1
+  const w = range.end.col - range.start.col + 1
+  return idx >= rect.row && idx < rect.row + h && ci >= rect.col && ci < rect.col + w
+}
+
+/** The data-iris-copy-target attr value (undefined hides it). */
+export function copyTargetAttr(isTarget: boolean): string | undefined {
+  return isTarget ? 'true' : undefined
+}
+
+/** The copy-target cell outline — token-driven only (the same
+ * surface-selected discipline as the fill target background, in outline
+ * form — presence precedent). Empty object when nothing renders so the
+ * spread adds nothing to the hot row arrow. */
+export function copyTargetCellStyle(isTarget: boolean): React.CSSProperties {
+  return isTarget ? { outline: RANGE_COPY_TARGET_OUTLINE } : {}
 }
 
 // ── Batch BU table watermark (iris 独有 — vxe has no watermark) ────────

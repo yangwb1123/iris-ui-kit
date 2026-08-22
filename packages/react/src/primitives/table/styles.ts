@@ -184,6 +184,34 @@ export const RANGE_MOVE_STYLE: React.CSSProperties = {
   zIndex: 3,
 }
 
+/* Batch DZ cell drag-copy (iris 独有 — vxe has no cell-copy parity): the
+   12×4 primary pill on the range's BOTTOM edge (data-iris-range-copy),
+   rendered inside the range's top-left cell — the CN move grip owns the
+   top edge (RANGE_MOVE_STYLE), so the bottom edge collides with nothing.
+   cursor: copy — the whole gesture is the grip. Centered on the edge
+   (left/right 0 + auto margins — direction-neutral in RTL, same discipline
+   as the move pill) above the host cell's zIndex 2, same layering (z 3). */
+export const RANGE_COPY_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  bottom: 2,
+  left: 0,
+  right: 0,
+  margin: '0 auto',
+  width: 12,
+  height: 4,
+  background: 'var(--iris-primary)',
+  cursor: 'copy',
+  zIndex: 3,
+}
+
+/* Batch DZ: the drag-target outline on every cell of the destination
+   rectangle while the copy drag is live — token-driven only, same
+   surface-selected discipline as the fill target background, in outline
+   form (presence precedent). Longhand `outline` so nothing else can
+   clobber it mid-drag; the alias carries the color + the codebase's
+   token-with-fallback pattern. */
+export const RANGE_COPY_TARGET_OUTLINE = '2px solid var(--iris-primary, #6366f1)'
+
 /* Batch CE copy flash (iris 独有 — vxe has no copy feedback): after a
    SUCCESSFUL range copy (Ctrl/Cmd+C or the range toolbar 复制) the copied
    cells flash briefly. color-mix over the background token — distinct from

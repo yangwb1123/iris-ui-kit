@@ -93,19 +93,27 @@ import {
 import { TABLE_ROW_CSS } from './table-css'
 import {
   cellNoteState,
+  copyTargetAttr,
+  copyTargetCellStyle,
   dirtyCellState,
   dirtyKey,
+  isCopyTargetCell,
+  isRangeCopyGripCell,
   justifyFor,
   notePopoverCellHandlers,
   presenceOf,
   presenceStyle,
+  rangeCopyCellStyle,
   renderCellNoteBadge,
   renderPresenceLabels,
+  renderRangeCopyGrip,
   renderSparkline,
   renderTableWatermark,
+  resolveCopyTarget,
   rowHeightStyleOf,
   sparklineCell,
   sparklineSeries,
+  type IrisRangeCopyTarget,
   type SparklineData,
 } from './cell-helpers'
 import { EditorSurface } from './editor-surface'
@@ -565,6 +573,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   cellRange = false,
   rangeFill = false,
   cellDrag = false,
+  cellDragCopy = false,
   clipConfig,
   pasteOptions,
   fnr = false,
@@ -5828,6 +5837,114 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [cellRangeCtrl, rowKey, commitRowList, updateRangeToolbarAnchor],
   )
 
+  // ── Cell drag-copy (batch DZ, iris 独有 — vxe has no cell-copy parity) ──
+  // The copy grip (data-iris-range-copy, 12×4 primary pill) renders on the
+  // range's BOTTOM edge at its top-left cell (the CN move grip owns the top
+  // edge — zero collision); dragging it to another cell COPIES the whole
+  // block there (源块不动 — the source never changes, unlike cut-move) and
+  // the selection stays on the source block (Excel parity). The drag end
+  // must FIT the whole block inside the table (越界忽略 — no clamp, the
+  // deliberate divergence from CN's move): `cellDragCopyRect` stores the
+  // resolved destination rectangle directly (null = not dragging OR the
+  // block does not fit → no outline, zero-commit release). The SAME
+  // hit-testing mold as the move grip — elementFromPoint →
+  // closest('[data-iris-cell-row][data-iris-cell-col]') (leaf cells only).
+  const cellDragCopyArmRef = React.useRef(false)
+  const [cellDragCopyRect, setCellDragCopyRect] = React.useState<IrisRangeCopyTarget | null>(null)
+
+  const handleCellDragCopyPointerDown = (e: React.PointerEvent): void => {
+    if (e.button !== 0) return
+    // preventDefault stops the compatibility click → the cell's onClick
+    // (startRange/extendRange) never fires from a grip press.
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* jsdom has no real pointer capture */
+    }
+    cellDragCopyArmRef.current = true
+    setCellDragCopyRect(null)
+  }
+
+  const handleCellDragCopyPointerMove = (e: React.PointerEvent): void => {
+    if (!cellDragCopyArmRef.current) return
+    const el = document.elementFromPoint(e.clientX, e.clientY)
+    const cellEl = el?.closest('[data-iris-cell-row][data-iris-cell-col]') as HTMLElement | null
+    if (!cellEl) return // outside the body → keep the last resolved rect
+    const r = Number(cellEl.dataset.irisCellRow)
+    const c = Number(cellEl.dataset.irisCellCol)
+    if (Number.isNaN(r) || Number.isNaN(c)) return
+    setCellDragCopyRect(
+      resolveCopyTarget(r, c, cellRangeCtrl.getRange(), bodyData.length, leafColumns.length),
+    )
+  }
+
+  const handleCellDragCopyPointerUp = (): void => {
+    // Batch AQ fix mirrored: the drag is over, so the next Escape / outside
+    // press must dismiss the range again (self-cleaning suppression flag).
+    suppressRangeDismissRef.current = false
+    if (!cellDragCopyArmRef.current) return
+    cellDragCopyArmRef.current = false
+    const rect = cellDragCopyRect
+    setCellDragCopyRect(null)
+    if (rect === null) return // 越界忽略: no outline seen, zero commit
+    copyRangeFromHandle(rect)
+  }
+
+  /** Copy of the whole range block into the resolved destination rectangle
+   * (this is the CN commit minus phase 2 — the source block is NEVER
+   * touched). The rect already fits by construction (resolveCopyTarget
+   * returns null otherwise — 越界忽略); the destination EQUAL to the source
+   * block is a zero-commit no-op. Formula columns are never read/written;
+   * locked/readonly destination cells survive; keyless rows skipped; ONE
+   * commitRowList. The selection stays on the source block (copy does not
+   * move it). */
+  const copyRangeFromHandle = React.useCallback(
+    (rect: IrisRangeCopyTarget): void => {
+      const range = cellRangeCtrl.getRange()
+      if (!range || !rowKey) return
+      const body = liveBodyRef.current
+      const cols = liveLeafRef.current
+      if (body.length === 0 || cols.length === 0) return
+      const refit = resolveCopyTarget(rect.row, rect.col, range, body.length, cols.length)
+      if (refit === null) return // race-safety: the table shrank mid-drag
+      const h = range.end.row - range.start.row + 1
+      const w = range.end.col - range.start.col + 1
+      if (refit.row === range.start.row && refit.col === range.start.col) return
+      const byKey = new Map<string | number, Record<string, unknown>>()
+      for (let r = 0; r < h; r += 1) {
+        const srcRow = body[range.start.row + r]
+        const dstRowObj = body[refit.row + r]
+        if (!srcRow || !dstRowObj) continue
+        const srcKey = rowKeyOf(srcRow)
+        const dstKey = rowKeyOf(dstRowObj)
+        if (srcKey == null || dstKey == null) continue // keyless rows skipped
+        for (let c = 0; c < w; c += 1) {
+          const srcCol = cols[range.start.col + c]
+          const dstColObj = cols[refit.col + c]
+          if (!srcCol || !dstColObj) continue
+          // Formula columns are display-only: never read or written.
+          if (srcCol.formula || dstColObj.formula) continue
+          // Locked/readonly destination cells survive the copy.
+          if (isCellLocked(dstRowObj, dstColObj) || isCellReadonly(dstRowObj, dstColObj)) continue
+          const value = getCellValue(srcRow, srcCol)
+          byKey.set(dstKey, { ...byKey.get(dstKey), [dstColObj.key]: value })
+        }
+      }
+      if (byKey.size === 0) return
+      const keyField = rowKey
+      const next = (externalDataRef.current ?? []).map((row) => {
+        const k = (row as Record<string, unknown>)[keyField]
+        const patch = k != null ? byKey.get(k as string | number) : undefined
+        return patch ? { ...row, ...patch } : row
+      })
+      commitRowList(next, 'edit')
+      // Copy does NOT move the selection: it stays on the source block.
+    },
+    [cellRangeCtrl, rowKey, commitRowList],
+  )
+
   const copyActiveRange = React.useCallback((): void => {
     const range = cellRangeCtrl.getRange()
     if (!range) return
@@ -5930,16 +6047,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // them; every pointerdown re-syncs the flag, so it is self-cleaning.
   const suppressRangeDismissRef = React.useRef(false)
   React.useEffect(() => {
-    if (!rangeFill && !cellDrag) return
+    if (!rangeFill && !cellDrag && !cellDragCopy) return
     const onWindowPointerDown = (e: PointerEvent): void => {
       const target = e.target as HTMLElement | null
       suppressRangeDismissRef.current = !!target?.closest(
-        '[data-iris-range-fill], [data-iris-range-move]',
+        '[data-iris-range-fill], [data-iris-range-move], [data-iris-range-copy]',
       )
     }
     window.addEventListener('pointerdown', onWindowPointerDown, true)
     return () => window.removeEventListener('pointerdown', onWindowPointerDown, true)
-  }, [rangeFill, cellDrag])
+  }, [rangeFill, cellDrag, cellDragCopy])
 
   // ── Find & replace (batch O: fnr) — Ctrl/Cmd+F opens the bar (when not
   // editing); matches highlight over bodyData in flat mode (case-insensitive
@@ -6780,6 +6897,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // top edge — its top-left cell (the bottom-right stays the fill
           // handle + charCount badge territory).
           const moveGripCell = isRangeMoveGripCell(cellDrag, activeRange, idx, ci)
+          // Batch DZ cell drag-copy: the 12×4 copy grip lives on the SAME
+          // top-left cell's BOTTOM edge (the top edge belongs to the move
+          // grip — zero collision), and the COPY TARGET outline marks every
+          // cell of the resolved destination rectangle while the drag is
+          // live (null rect → no outline, 越界忽略).
+          const copyGripCell = isRangeCopyGripCell(cellDragCopy, activeRange, idx, ci)
+          const copyTargetCell = isCopyTargetCell(cellDragCopyRect, activeRange, idx, ci)
           // Batch CE copy flash: SNAPSHOT semantics — the rect was captured
           // at copy time, so the highlight does not chase a changed selection
           // (spec “复制成功后…选中单元格短暂高亮”).
@@ -6841,6 +6965,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     'data-iris-cell-selected': isInRange(idx, ci) ? 'true' : undefined,
                     'data-iris-copy-flash': copyFlashCellAttr(copyFlashRange, idx, ci),
                     'data-iris-range-fill-target': rangeFillTargetAttr(fillTargetCell),
+                    // Batch DZ: the copy drag marks the resolved destination
+                    // rectangle (null rect → undefined → hidden, 越界忽略).
+                    'data-iris-copy-target': copyTargetAttr(copyTargetCell),
                   }
                 : null)}
               {...(fnrHighlighting
@@ -6918,6 +7045,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // (spread AFTER rangeFillCellStyle — relative is idempotent,
                 // the zIndex 2 stays, same layering discipline).
                 ...rangeMoveCellStyle(moveGripCell),
+                // Batch DZ: the copy-grip host anchors to a relative cell
+                // (same idempotent relative) and the copy-target outline
+                // marks the whole resolved destination rectangle (spread
+                // AFTER the presence outline so the drag highlight wins).
+                ...rangeCopyCellStyle(copyGripCell),
+                ...copyTargetCellStyle(copyTargetCell),
                 // Batch CG: the charCount corner badge anchors to a relative
                 // cell (editing cell + selection badge host) — spread AFTER
                 // rangeFillCellStyle so the handle host keeps its zIndex 2
@@ -7147,6 +7280,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
               top-left cell top edge — same pointerdown-stops-the-click
               discipline as the fill handle. */}
               {renderRangeMoveGrip(moveGripCell, idx, ci, handleCellDragPointerDown)}
+              {/* Batch DZ (iris 独有): the cell-drag-copy grip on the range's
+              top-left cell bottom edge — same pointerdown-stops-the-click
+              discipline as the move grip. */}
+              {renderRangeCopyGrip(copyGripCell, idx, ci, handleCellDragCopyPointerDown)}
               {/* Batch CG (iris 独有): the selection badge at the range's
               bottom-right cell — count (+ sum when numeric data exists),
               reusing the rangeStatsData memo the stats panel consumes. */}
@@ -8710,30 +8847,32 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : undefined
         }
         onPointerMove={
-          rowDragEnabled || columnDrag || rangeFill || cellDrag || selectionDrag
+          rowDragEnabled || columnDrag || rangeFill || cellDrag || cellDragCopy || selectionDrag
             ? (e) => {
                 handleRowDragPointerMove(e)
                 handleColDragPointerMove(e)
                 handleRangeFillPointerMove(e)
                 handleCellDragPointerMove(e)
+                handleCellDragCopyPointerMove(e)
                 handleSelectionDragPointerMove(e)
               }
             : undefined
         }
         onPointerUp={
-          rowDragEnabled || columnDrag || rangeFill || cellDrag || selectionDrag
+          rowDragEnabled || columnDrag || rangeFill || cellDrag || cellDragCopy || selectionDrag
             ? (e) => {
                 handleRowDragPointerUp(e)
                 resolveColDrag(e.clientX, e.clientY)
                 handleRangeFillPointerUp()
                 handleCellDragPointerUp()
+                handleCellDragCopyPointerUp()
                 handleSelectionDragPointerUp()
               }
             : undefined
         }
         onPointerLeave={rowDragEnabled && !rowDragBetween ? handleRowDragPointerLeave : undefined}
         onPointerCancel={
-          rangeFill || cellDrag || selectionDrag || rowDragEnabled
+          rangeFill || cellDrag || cellDragCopy || selectionDrag || rowDragEnabled
             ? () => {
                 // Aborted drag → drop the target highlight, nothing committed.
                 // Re-arm dismissal too (same stale-flag fix as pointerup).
@@ -8742,6 +8881,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // Batch CN: aborted move drag → drop the drag end, nothing
                 // committed (same zero-commit discipline as the fill cancel).
                 setCellDragTarget(null)
+                // Batch DZ: aborted copy drag → drop the drag arm + target
+                // rect, nothing committed (same zero-commit discipline).
+                cellDragCopyArmRef.current = false
+                setCellDragCopyRect(null)
                 // Aborted selection drag: drop the pending press / active
                 // anchor (nothing committed) and clear the suppression arm —
                 // no trailing click follows a cancel, so an armed flag must

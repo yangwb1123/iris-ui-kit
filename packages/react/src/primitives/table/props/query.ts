@@ -66,6 +66,23 @@ export interface IrisTableQueryProps<
    * Additive — default off.
    */
   cellDrag?: boolean
+  /**
+   * Cell drag-copy (batch DZ, iris 独有 — vxe has no cell-copy parity): when
+   * `cellRange` has a live selected range (≥1 cell), a copy grip
+   * (`data-iris-range-copy`, 12×4 primary pill on the range's BOTTOM edge at
+   * its top-left cell — the CN move grip owns the top edge, zero collision)
+   * appears; dragging it to another cell COPIES the whole block there (源块
+   * 不动 — the source keeps its values, unlike cellDrag's cut-move) through
+   * ONE batched `commitRowList`, and the selection stays on the source block
+   * (Excel parity — a copy never moves the selection). The whole destination
+   * rectangle must FIT inside the table (越界忽略, deliberately divergent
+   * from cellDrag's clamp): an out-of-bounds drag end shows no outline and
+   * the release is a zero-commit no-op; a drop on the source block itself is
+   * a zero-commit no-op too. Formula columns are never read/written;
+   * locked/readonly destination cells survive; keyless rows skipped. Inert
+   * without `cellRange`. Additive — default off.
+   */
+  cellDragCopy?: boolean
   /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off.
    * Batch BP (iris 独有 — vxe clipboard-config has no output-format switch): `copyFormat` selects the copy OUTPUT format for BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制 button) — `'tsv'` (default, byte-identical to batch O) / `'csv'` (RFC-4180, headerless range fiat like the 导出 CSV download) / `'html'` (a `<table>` fragment via core `toHtml`, with a header row of column titles — the toHtml contract — and the masked cell values, the batch-AY invariant across all three formats). Paste is unaffected — it always reads `\t`-delimited text. Invalid runtime values fail-closed to `'tsv'`.
    * Batch CU (iris 独有 — vxe clipboard-config always copies raw values, no format-preserving copy): `copyWithFormat` copies the FORMATTED text of formatter columns (the `contextCellText` display chain — mask → formatter → String, the same chain as the context-menu 复制值) instead of the raw/masked value, across ALL THREE `copyFormat` serializers. Only `col.formatter` columns switch chains — non-formatter columns stay byte-identical — and the formatted STRING still flows through the same serializers (RFC-4180 quoting + OWASP neutralization still apply). `exportRaw`'s copy-path skip is superseded on formatter columns (mask → formatter always); exports are untouched.

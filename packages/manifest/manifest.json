@@ -37029,6 +37029,12 @@
           "description": "Cell drag-move (batch CN, iris 独有 — vxe has no cell-move parity): when `cellRange` has a live selected range (≥1 cell), a move grip (`data-iris-range-move`, 12×4 primary pill on the range's top edge at its top-left cell) appears; dragging it to another cell CUT-MOVES the whole block there (剪切移动 — source cells not covered by the destination rect are cleared; locked/readonly and formula cells survive both phases) and the selection follows the moved block (Excel parity). The drag end clamps so the block always fits (down/up/right/left 越界). Zero-commit no-op when the drag stays on the source block. Inert without `cellRange`. Additive — default off."
         },
         {
+          "name": "cellDragCopy",
+          "type": "boolean",
+          "optional": true,
+          "description": "Cell drag-copy (batch DZ, iris 独有 — vxe has no cell-copy parity): when `cellRange` has a live selected range (≥1 cell), a copy grip (`data-iris-range-copy`, 12×4 primary pill on the range's BOTTOM edge at its top-left cell — the CN move grip owns the top edge, zero collision) appears; dragging it to another cell COPIES the whole block there (源块 不动 — the source keeps its values, unlike cellDrag's cut-move) through ONE batched `commitRowList`, and the selection stays on the source block (Excel parity — a copy never moves the selection). The whole destination rectangle must FIT inside the table (越界忽略, deliberately divergent from cellDrag's clamp): an out-of-bounds drag end shows no outline and the release is a zero-commit no-op; a drop on the source block itself is a zero-commit no-op too. Formula columns are never read/written; locked/readonly destination cells survive; keyless rows skipped. Inert without `cellRange`. Additive — default off."
+        },
+        {
           "name": "clipConfig",
           "type": "{ copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html'; copyWithFormat?: boolean }",
           "optional": true,
@@ -38243,6 +38249,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Cell drag-move (batch CN, iris 独有 — vxe has no cell-move parity): when `cellRange` has a live selected range (≥1 cell), a move grip (`data-iris-range-move`, 12×4 primary pill on the range's top edge at its top-left cell) appears; dragging it to another cell CUT-MOVES the whole block there (剪切移动 — source cells not covered by the destination rect are cleared; locked/readonly and formula cells survive both phases) and the selection follows the moved block (Excel parity). The drag end clamps so the block always fits (down/up/right/left 越界). Zero-commit no-op when the drag stays on the source block. Inert without `cellRange`. Additive — default off."
+            },
+            {
+              "name": "cellDragCopy",
+              "type": "boolean",
+              "optional": true,
+              "description": "Cell drag-copy (batch DZ, iris 独有 — vxe has no cell-copy parity): when `cellRange` has a live selected range (≥1 cell), a copy grip (`data-iris-range-copy`, 12×4 primary pill on the range's BOTTOM edge at its top-left cell — the CN move grip owns the top edge, zero collision) appears; dragging it to another cell COPIES the whole block there (源块 不动 — the source keeps its values, unlike cellDrag's cut-move) through ONE batched `commitRowList`, and the selection stays on the source block (Excel parity — a copy never moves the selection). The whole destination rectangle must FIT inside the table (越界忽略, deliberately divergent from cellDrag's clamp): an out-of-bounds drag end shows no outline and the release is a zero-commit no-op; a drop on the source block itself is a zero-commit no-op too. Formula columns are never read/written; locked/readonly destination cells survive; keyless rows skipped. Inert without `cellRange`. Additive — default off."
             },
             {
               "name": "clipConfig",
@@ -40103,7 +40115,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 203,
+        "propCount": 204,
         "eventCount": 33
       }
     },

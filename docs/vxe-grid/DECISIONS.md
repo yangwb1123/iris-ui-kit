@@ -3029,3 +3029,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-du-baseline.md [ok]: What was verified (all anchors against HEAD `4bc9be0b`): - **DU not yet implemented** — `rg exportAnnotations` → zero hits across the monorepo; this is a forward design for the ; Key design decisions (documented in baseline): - `exportAnnotations?: boolean` = batched boolean feature gate (auditLog precedent, default off); `exportAnnotationsCsv(; File map + test plan: props/query.ts +1 prop · types/handle.ts +1 method · Table.tsx 4 points (~20 lines, zero new imports) · new `test/batch-
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-du-baseline.md
+
+## 2026-08-22 06:07:55 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-du-adapt.md [ok]: Files changed (4 source/test files + manifest + docs): | File | Change |; Implementation: - Notes resolved through the **same `cellNoteState` path as the render** (dynamic `cellNote` wins over static `annotatio; Verification: - `@iris-ui-kit/core test`: ✅ 104 files / **1597/1597**; What is left: Nothing source-side. Baseline's 4 non-blocking observations remain documented (off/empty indistinguishable, dynamic-note
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-du-adapt.md
+
+## 2026-08-22 06:11:53 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-du-review.md [ok]: Verification results (all green): | Gate | Result |; Findings (all info, non-blocking — no FAIL items): 1. **info** — `batch-du-baseline.md`: quoted "propCount 162→163" is stale; actual manifest shows react contract 199→200 ; Adversarial checks on the core claims: - **Spec**: `exportAnnotationsCsv()` emits spec-literal `rowKey,column,annotation`, bodyData order, same `cellNoteState`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-du-review.md
+
+## 2026-08-22 06:17:19 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-du-gate.md [ok]: 批 DU Gate — PASS ✅: **Verdict**: `batch-du-review.md` = **PASS** (feature landed at `8cce5887` —— `feat(table): grid 批 DU——批注导出（iris 独有）`, 2 commits ahead of `4bc9be0b` baseline; zero gate-stage source changes needed —— DU is `exportAnnotations?: boolean` + handle `exportAnnotationsCsv()` with render-identical `cellNoteState` resolution and core `toCsv` serialization).; Gates re-run: | Gate | Result |; Test counts (fresh runs): - **core**: 104 files — **1597/1597** ✅; Doc update (`docs/vxe-grid-comparison.md`, iris 独有 section): - New **批 DU** row inserted after 批 DT in the 能力/说明 table: `exportAnnotations?: boolean` (`props/query.ts:193`) + `IrisTableHandle.exportAnnotationsCsv(): string` (`types/handle.ts:98`); Commit: working tree bundled into the single feat commit (source/test/manifest already at `8cce5887`; this pass adds the review verdict + trimmed adapt doc + DECISIONS entries + comparison rows + this report). Pre-existing untracked `docs/GRID-PLUGIN-REFACTOR.md` deliberately left uncommitted (untouched, per baseline + adapt notes)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-du-gate.md

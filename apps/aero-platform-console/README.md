@@ -19,9 +19,14 @@ grant_types: authorization_code
 response_types: code
 require_pkce: true
 redirect_uri: https://accounts.example.com/
+tenant_id: <Snaplink tenant ID>
 allowed_resources: aero-id
 scopes: openid profile account:read account:write operation:read source:sync
 ```
+
+Snaplink 当前把 `tenant_id` 从 client 绑定写入 access token，而 aero-id 的生产校验要求非空
+tenant claim。因此每个租户应注册独立 client（或使用独立域名/运行配置选择对应 client_id），不能
+用一个无租户 client 给所有租户签发 token。
 
 Snaplink 的 `authorization_endpoint` 必须在部署入口上呈现 hosted login UI。如果 API 与
 hosted login 分离，通过运行配置的 `snaplinkAuthorizationEndpoint` 指向 Snaplink Console
@@ -37,7 +42,14 @@ window.__AERO_PLATFORM_CONFIG__ = {
   snaplinkAuthorizationEndpoint: 'https://identity.example.com/auth/login',
   snaplinkClientId: 'aero-account-console',
   snaplinkResource: 'aero-id',
-  snaplinkScopes: ['openid', 'profile', 'account:read', 'account:write'],
+  snaplinkScopes: [
+    'openid',
+    'profile',
+    'account:read',
+    'account:write',
+    'operation:read',
+    'source:sync',
+  ],
   redirectUri: 'https://accounts.example.com/',
   aeroIdApiBase: 'https://accounts-api.example.com/v1',
   auditConsoleUrl: 'https://audit.example.com',

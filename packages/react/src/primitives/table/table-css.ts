@@ -228,4 +228,18 @@ export const TABLE_ROW_CSS = `
     transition: none !important;
   }
 }
+/* Batch EC adaptive row height (iris 独有 — vxe has no content-wrap display
+   row): while the root marker is on, DATA rows release the one-line clamp —
+   their cells wrap (white-space: normal !important beats the INLINE nowrap
+   cell base; word-break: break-word guards long unbroken strings) so
+   textarea/paragraph content renders fully and the row grows to it. The
+   :not() keeps the reserved roles — header / summary / footer / loading /
+   empty / error — on the single-line base (the measurement helper applies
+   the SAME exclusion). Marker off by default → byte-identical base. */
+[data-iris-table][data-iris-adaptive-height="true"]
+[role="row"][data-iris-table-row]:not([data-iris-table-row="header"]):not([data-iris-table-row="summary"]):not([data-iris-table-row="loading"]):not([data-iris-table-row="empty"]):not([data-iris-table-row="error"]):not([data-iris-table-row^="footer-"])
+[role="cell"] {
+  white-space: normal !important;
+  word-break: break-word;
+}
 `

@@ -112,6 +112,8 @@ import {
   renderTableWatermark,
   resolveCopyTarget,
   rowHeightStyleOf,
+  adaptiveHeightStyleOf,
+  measureAdaptiveRowHeights,
   sparklineCell,
   sparklineSeries,
   type IrisRangeCopyTarget,
@@ -632,6 +634,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   selectionDrag = false,
   virtualScroll,
   rowHeight,
+  adaptiveRowHeight = false,
   persistState,
   autoSaveState,
   urlState = false,
@@ -835,6 +838,52 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // means the responsive observer measures the exact element that receives
   // the overflow style below.
   const rootRef = React.useRef<HTMLDivElement | null>(null)
+  // Batch EC (iris 独有): adaptiveRowHeight — when NO fixed row height is set
+  // the data rows grow to their content. `adaptiveHeights` pins each data row
+  // to its MEASURED natural height (keyed by the SAME identity
+  // `data-iris-table-row` carries — String(rowKeyOf(row, idx))); null/empty =
+  // never pinned (rows keep natural content height, so the first measure is
+  // never compressed). The dependency-free layout effect below re-measures
+  // after EVERY commit (data/edit/font/density changes self-heal) and on
+  // window resize / a ResizeObserver; the same-value bail returns the same
+  // REFERENCE, so React bails out — no re-render loops.
+  const [adaptiveHeights, setAdaptiveHeights] = React.useState<ReadonlyMap<string, number> | null>(
+    null,
+  )
+  const adaptiveHeightsRef = React.useRef(adaptiveHeights)
+  adaptiveHeightsRef.current = adaptiveHeights
+  // Batch EC activation gate — three-state inert against the BN throat
+  // (`effectiveRowHeight = rowHeight ?? virtualScroll?.itemHeight`, above): an
+  // explicit `rowHeight` (fixed or per-row fn), `virtualScroll.itemHeight`, or
+  // a virtual body all disable it; only a table with NO fixed row height
+  // activates (the spec's "无固定 rowHeight 时").
+  const adaptiveOn = adaptiveRowHeight === true && effectiveRowHeight == null && !virtualScroll
+  useIsomorphicLayoutEffect(() => {
+    if (!adaptiveOn) {
+      if (adaptiveHeightsRef.current !== null) setAdaptiveHeights(null)
+      return
+    }
+    const root = rootRef.current
+    if (!root) return
+    const measure = (): void => {
+      const next = measureAdaptiveRowHeights(root, adaptiveHeightsRef.current)
+      if (next === adaptiveHeightsRef.current) return
+      adaptiveHeightsRef.current = next
+      setAdaptiveHeights(next)
+    }
+    measure()
+    if (typeof window === 'undefined') return
+    window.addEventListener('resize', measure)
+    let ro: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measure)
+      ro.observe(root)
+    }
+    return () => {
+      window.removeEventListener('resize', measure)
+      ro?.disconnect()
+    }
+  })
   // Tooltip cells are measured after layout only when showAll is explicitly
   // false.  The callback map keeps ref identities stable across renders (an
   // inline ref would cause a null/node pair on every render and repeatedly
@@ -7458,8 +7507,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // Batch BN: the non-virtual path applies `rowHeight` inline on the data
     // row (fixed = uniform, fn = per-bodyData-index); detail wraps and group
     // headers keep content height. The virtual path never calls this — slots
-    // fill via `height: '100%'` from the same throat.
-    const main = renderRow(row, idx, rowHeightStyleOf(effectiveRowHeight, idx), flatTree?.[idx])
+    // fill via `height: '100%'` from the same throat. Batch EC: with no fixed
+    // row height, `rowHeightStyleOf` yields nothing and the adaptive map
+    // pins the row to its measured natural height (`rowStyle` spread after
+    // still wins — the per-row escape hatch is preserved).
+    const main = renderRow(
+      row,
+      idx,
+      rowHeightStyleOf(effectiveRowHeight, idx) ??
+        adaptiveHeightStyleOf(rowKeyOf(row, idx), adaptiveHeights),
+      flatTree?.[idx],
+    )
     if (
       !hasDetail ||
       !isRowExpandable(row, idx) ||
@@ -9012,6 +9070,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-striped={striped ? 'true' : undefined}
         data-column-virtualized={columnVirtualization ? 'true' : undefined}
         data-iris-table-fixed-height={fixedHeight ? 'true' : undefined}
+        data-iris-adaptive-height={adaptiveOn ? 'true' : undefined}
         data-iris-table-zoomed={zoomed ? 'true' : undefined}
         data-iris-scrollbar-thin={scrollbarConfig?.theme === 'thin' ? 'true' : undefined}
         data-iris-scrollbar-thumb={scrollbarThumb ? 'true' : undefined}

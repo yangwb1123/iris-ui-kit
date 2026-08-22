@@ -36958,6 +36958,12 @@
           "description": "Per-row height (batch BN, iris 独有 — vxe row-height is a fixed config value). Number → uniform height (overrides the default AND `virtualScroll.itemHeight` in virtual mode); `(index) => number` → per-row heights — in virtual mode the fn feeds the variable-height virtualizer (virtual PLAN index, prefix-sum offsets, like `virtualScroll.itemHeight`), otherwise each body row gets its inline height (bodyData index). `rowStyle` stays the per-row escape hatch (it wins)."
         },
         {
+          "name": "adaptiveRowHeight",
+          "type": "boolean",
+          "optional": true,
+          "description": "Batch EC (iris 独有 — vxe autoHeight fills rows to the VIEWPORT instead; there is no content-wrap display row): when NO fixed row height is set — `rowHeight` and `virtualScroll.itemHeight` both absent — DATA rows grow to their content. The one-line clamp (nowrap + ellipsis) is released for data-row cells via a CSS root marker (`data-iris-adaptive-height`) and each data row's height is pinned to its MEASURED rendered height (a dependency-free layout effect reads `offsetHeight` after every commit, diffs once, same-value bail — no re-render loops; window resize + a ResizeObserver re-measure; data/edit/font/density changes self-heal through the per-commit effect), so a textarea/paragraph cell renders fully instead of being clipped at one line. Header/summary/footer/state rows stay nowrap; virtual tables and tables with a fixed `rowHeight` are inert (uniform slots). Rows that measure `≤ 0` (jsdom/SSR/hidden) keep natural height — never a 0px collapse. `rowStyle` stays the per-row escape hatch (it wins). Additive; default off (fail-closed — the nowrap base renders byte-identical)."
+        },
+        {
           "name": "persistState",
           "type": "TableTypes.IrisTablePersistConfig",
           "optional": true,
@@ -38190,6 +38196,12 @@
               "type": "number | ((index: number) => number)",
               "optional": true,
               "description": "Per-row height (batch BN, iris 独有 — vxe row-height is a fixed config value). Number → uniform height (overrides the default AND `virtualScroll.itemHeight` in virtual mode); `(index) => number` → per-row heights — in virtual mode the fn feeds the variable-height virtualizer (virtual PLAN index, prefix-sum offsets, like `virtualScroll.itemHeight`), otherwise each body row gets its inline height (bodyData index). `rowStyle` stays the per-row escape hatch (it wins)."
+            },
+            {
+              "name": "adaptiveRowHeight",
+              "type": "boolean",
+              "optional": true,
+              "description": "Batch EC (iris 独有 — vxe autoHeight fills rows to the VIEWPORT instead; there is no content-wrap display row): when NO fixed row height is set — `rowHeight` and `virtualScroll.itemHeight` both absent — DATA rows grow to their content. The one-line clamp (nowrap + ellipsis) is released for data-row cells via a CSS root marker (`data-iris-adaptive-height`) and each data row's height is pinned to its MEASURED rendered height (a dependency-free layout effect reads `offsetHeight` after every commit, diffs once, same-value bail — no re-render loops; window resize + a ResizeObserver re-measure; data/edit/font/density changes self-heal through the per-commit effect), so a textarea/paragraph cell renders fully instead of being clipped at one line. Header/summary/footer/state rows stay nowrap; virtual tables and tables with a fixed `rowHeight` are inert (uniform slots). Rows that measure `≤ 0` (jsdom/SSR/hidden) keep natural height — never a 0px collapse. `rowStyle` stays the per-row escape hatch (it wins). Additive; default off (fail-closed — the nowrap base renders byte-identical)."
             },
             {
               "name": "persistState",
@@ -40140,7 +40152,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 206,
+        "propCount": 207,
         "eventCount": 33
       }
     },

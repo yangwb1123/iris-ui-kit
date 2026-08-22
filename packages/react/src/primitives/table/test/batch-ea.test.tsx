@@ -192,6 +192,57 @@ describe('@iris-ui-kit/react IrisTable back-to-top (batch EA, iris 独有)', () 
     expect(tableRoot().scrollTop).toBe(0) // root untouched
   })
 
+  it('async flow: viewport mounting after empty data re-arms the listener', () => {
+    // The canonical loading → data path: the virtual viewport does not exist
+    // while the table is empty, and scroll events don't bubble — the effect
+    // must re-arm on the data-presence flip so the button follows the
+    // effective scroller once rows arrive.
+    const { rerender } = render(
+      <IrisTable
+        columns={cols}
+        data={[]}
+        rowKey="id"
+        scrollToTop
+        virtualScroll={{ height: 160, itemHeight: 40 }}
+      />,
+    )
+    expect(virtualViewport()).toBeNull()
+    rerender(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        scrollToTop
+        virtualScroll={{ height: 160, itemHeight: 40 }}
+      />,
+    )
+    const viewport = virtualViewport()
+    expect(viewport).not.toBeNull()
+    // The re-armed listener follows the NEW effective scroller via event-time
+    // resolution: a root probe stays inert (it reads the viewport, at 0) —
+    // the stranded-root bug would have kept showing the stale probe value.
+    scrollTo(tableRoot(), 300)
+    expect(backTop()).toBeNull()
+    tableRoot().scrollTop = 0 // undo the manual probe — virtual roots never scroll
+    scrollTo(viewport!, 320)
+    expect(backTop()).not.toBeNull()
+    // Click resets the effective scroller (the viewport), not the root.
+    fireEvent.click(backTop()!)
+    expect(viewport!.scrollTop).toBe(0)
+    expect(tableRoot().scrollTop).toBe(0)
+  })
+
+  it('async flow: fixed-height path keeps working after data arrival', () => {
+    const { rerender } = render(
+      <IrisTable columns={cols} data={[]} rowKey="id" height={300} scrollToTop />,
+    )
+    rerender(<IrisTable columns={cols} data={rows} rowKey="id" height={300} scrollToTop />)
+    scrollTo(tableRoot(), 500)
+    expect(backTop()).not.toBeNull()
+    fireEvent.click(backTop()!)
+    expect(tableRoot().scrollTop).toBe(0)
+  })
+
   it('state survives re-renders (listener keeps working)', () => {
     const { rerender } = render(
       <IrisTable columns={cols} data={rows} rowKey="id" height={300} scrollToTop />,

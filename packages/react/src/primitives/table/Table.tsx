@@ -7639,26 +7639,44 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // ── Back-to-top (batch EA, iris 独有 — vxe has no back-to-top) ────────
   // Boolean visibility state driven ONLY by the threshold crossing (a repeated
   // boolean bails out, so scrolling never re-renders the table row-by-row).
-  // The listener attaches to the EFFECTIVE scroller — the virtual-scroll
-  // viewport when present, else the fixed-height root — the same resolution
-  // the paging keys use (line 5030 precedent), so a virtual table (root never
-  // scrolls) and a fixed-height table (no viewport) both work. When neither
-  // exists (overflow-hidden non-scrollable root) the listener never fires →
-  // lazy zero-node fail-closed. The deps cover scroller identity changes
-  // (virtualScroll config flips, fixedHeight engaging on measure).
+  // The listener tracks the EFFECTIVE scroller — the virtual-scroll viewport
+  // when present, else the fixed-height root — the same resolution the paging
+  // keys use (line 5030 precedent), so a virtual table (root never scrolls)
+  // and a fixed-height table (no viewport) both work. When neither exists
+  // (overflow-hidden non-scrollable root) the listener never fires → lazy
+  // zero-node fail-closed. Detail comments below cover the dual attach,
+  // event-time resolution and the data-presence re-arm dep.
   const [scrollTopShown, setScrollTopShown] = React.useState(false)
   React.useEffect(() => {
     if (!scrollToTop) return
     const root = rootRef.current
     if (!root) return
-    const scroller = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]') ?? root
+    // Resolve the effective scroller at EVENT time, not effect time: the
+    // virtual viewport only mounts once data is present, so a handler
+    // captured at effect time would read the closed-over (or missing) node.
     const onScroll = (): void => {
+      const viewport = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+      const scroller = viewport ?? root
       setScrollTopShown(scroller.scrollTop >= SCROLL_TOP_VISIBLE_PX)
     }
-    scroller.addEventListener('scroll', onScroll)
+    // Attach to BOTH potential scrollers — scroll events don't bubble, so a
+    // listener stranded on the root never sees the virtual viewport scroll.
+    root.addEventListener('scroll', onScroll)
+    root
+      .querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+      ?.addEventListener('scroll', onScroll)
     onScroll()
-    return () => scroller.removeEventListener('scroll', onScroll)
-  }, [scrollToTop, Boolean(virtualScroll), fixedHeight])
+    return () => {
+      root.removeEventListener('scroll', onScroll)
+      // Re-query at cleanup: the viewport node may have been replaced.
+      root
+        .querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+        ?.removeEventListener('scroll', onScroll)
+    }
+    // The data-presence flip (empty → rows) is exactly when a virtual viewport
+    // mounts in the canonical async flow, so re-arming on the boolean covers
+    // it; the primitive boolean bails out on every ordinary data refresh.
+  }, [scrollToTop, Boolean(virtualScroll), fixedHeight, Boolean(bodyData.length)])
 
   // Click = scroll the same effective scroller back to top: scrollTo with a
   // behavior that honors reduced motion, falling back to scrollTop = 0 (the

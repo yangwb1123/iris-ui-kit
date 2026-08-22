@@ -3169,3 +3169,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dz-gate.md [ok]: Review verdict: `batch-dz-review.md` = **PASS** — verification all green vs `aef146fa` (core 1641/1641 · react 2928/2928 with 21 new tests · typecheck/lint/audit/manifest clear). 3 findings all LOW/INFO non-blocking (per-pointmove unconditional setCellDragCopyRect re-render perf-only; 2 lint warnings pre-existing at parent; untested 1×1 three-overlay combo). Full gate: turbo **184/184** (126 cached) · audit:security **0** · audit:tokens exit 0 · iris-ui-spec **0 violations / 1546 files** · gen:manifest + check:manifest ✅ (204 props / 33 events, 155×4 / 86 tokens, git clean). Final counts: core **106 files / 1641/1641** · react **253 files / 2928/2928** (batch-dz 21/21, 499 lines ≤500). Comparison doc 批 DZ row added; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW/DX/DY precedent).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dz-gate.md
+
+## 2026-08-22 10:16:10 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dz-gate.md [ok]: Report: **Review verdict:** `batch-dz-review.md` = **PASS** (3 findings all LOW/INFO non-blocking; no fixes required).; Full gate results: | Gate | Result |; Final test counts: - **core**: 106 files — **1641/1641** (zero core changes, framework-free invariant); Commit: **`31addcd3`** — `feat(table): grid 批 DZ——单元格拖拽复制（iris 独有）` (6 files, docs only: comparison 批 DZ row + DECISIONS entries
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dz-gate.md
+
+## 2026-08-22 10:21:55 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ea-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ea-baseline.md
+
+## 2026-08-22 10:46:54 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ea-adapt.md [ok]: Report; Files changed (6 committed; 2 source + 1 test + manifest ×2 + adapt doc): | File | Change |; Tests added (17): fail-closed (no prop → zero nodes) · mount-below-threshold zero nodes · appears past 200px (aria-label=`Back to top` via; Counts (all green): - **core: 106 files / 1641/1641** ✓ (zero core changes — framework-free invariant); What is left: - review/gate harness stages + comparison-doc row / DECISIONS entries (gate-stage convention)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ea-adapt.md
+
+## 2026-08-22 10:51:25 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ea-review.md [ok]: Summary: **Verification (all green):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ea-review.md
+
+## 2026-08-22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ea-gate.md [ok]: Review verdict: `batch-ea-review.md` = **PASS** (1 MEDIUM recommended for fix before merge + 2 LOW/INFO). MEDIUM fixed: async empty→data virtual-viewport re-arm — dual-scroller attach + event-time effective-scroller resolution + `Boolean(bodyData.length)` dep (+2 regression tests, batch-ea 19/19). Full gate: turbo **184/184** (126 cached) · audit:security **0** · audit:tokens exit 0 · iris-ui-spec **0 violations / 1546 files** (review-verified; fix adds no style literals) · gen:manifest + check:manifest ✅ (205 props / 33 events / 155×4 / 86 tokens, nil diff). Final counts: core **106 files / 1641/1641** · react **254 files / 2947/2947** (batch-ea 19/19, 397 lines ≤500). Comparison doc 批 EA row added; commit `8ce4f828`; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW/DX/DY/DZ precedent).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ea-gate.md

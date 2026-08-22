@@ -33,6 +33,15 @@ function cell(id: number, key: string): HTMLElement {
   return document.querySelector(`[data-iris-table-row="${id}"] [data-iris-table-cell="${key}"]`)!
 }
 
+function focusCell(id: number, key: string): HTMLElement {
+  const el = cell(id, key)
+  act(() => {
+    el.focus()
+    fireEvent.focus(el)
+  })
+  return el
+}
+
 function pointerEvent(type: string, init: Record<string, unknown> = {}): Event {
   const event = new Event(type, { bubbles: true, cancelable: true })
   Object.assign(event, { button: 0, pointerId: 1, clientX: 0, clientY: 0 }, init)
@@ -383,13 +392,73 @@ describe('IrisTable batches DL–DT', () => {
         editKeys={['Enter']}
       />,
     )
-    const target = cell(1, 'name')
-    act(() => {
-      target.focus()
-      fireEvent.focus(target)
-    })
-    act(() => fireEvent.keyDown(target, { key: 'Enter' }))
+    const el = focusCell(1, 'name')
+    act(() => fireEvent.keyDown(el, { key: 'Enter' }))
     expect(document.querySelector('[data-iris-table-editor]')).not.toBeNull()
+  })
+
+  it('DR keeps F2 available when editKeys are configured', () => {
+    render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        keyboardNavigation
+        editKeys={['Enter']}
+      />,
+    )
+    const el = focusCell(1, 'city')
+    act(() => fireEvent.keyDown(el, { key: 'F2' }))
+    expect(document.querySelector('[data-iris-table-editor]')).not.toBeNull()
+  })
+
+  it('DR starts editing on Space (key + code three-way match)', () => {
+    render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        keyboardNavigation
+        editKeys={['Space']}
+      />,
+    )
+    const el = focusCell(1, 'name')
+    act(() => fireEvent.keyDown(el, { key: ' ', code: 'Space' }))
+    expect(document.querySelector('[data-iris-table-editor]')).not.toBeNull()
+  })
+
+  it('DR with an empty editKeys list keeps only F2 (Enter inert)', () => {
+    render(<IrisTable columns={columns} data={rows} rowKey="id" keyboardNavigation editKeys={[]} />)
+    const el = focusCell(1, 'name')
+    act(() => fireEvent.keyDown(el, { key: 'Enter' }))
+    expect(document.querySelector('[data-iris-table-editor]')).toBeNull()
+    act(() => fireEvent.keyDown(el, { key: 'F2' }))
+    expect(document.querySelector('[data-iris-table-editor]')).not.toBeNull()
+  })
+
+  it('DR is inert without keyboardNavigation and on non-editable columns', () => {
+    const { rerender } = render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        keyboardNavigation={false}
+        editKeys={['Enter', 'Space', 'F2']}
+      />,
+    )
+    act(() => fireEvent.keyDown(focusCell(1, 'name'), { key: 'Enter' }))
+    expect(document.querySelector('[data-iris-table-editor]')).toBeNull()
+    rerender(
+      <IrisTable
+        columns={[{ key: 'age', title: 'Age' }]}
+        data={rows}
+        rowKey="id"
+        keyboardNavigation
+        editKeys={['Enter', 'Space', 'F2']}
+      />,
+    )
+    act(() => fireEvent.keyDown(focusCell(1, 'age'), { key: 'F2' }))
+    expect(document.querySelector('[data-iris-table-editor]')).toBeNull()
   })
 
   it('DS shows and clears the live width hint during a resize drag', () => {

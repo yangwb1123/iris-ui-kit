@@ -2944,3 +2944,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dq-gate.md [ok]: Gate PASS complete for 批 DQ 行拖拽跨表: review PASS（2 × P3 + 1 × INFO，无阻断）· turbo 180/180 (125 cached, 1m59s) · audit 0 (No known vulnerabilities) · gen:manifest+check:manifest up to date (155×4/86 tokens, zero diff) · react 246 files/**2822** (batch-dl-dt 17/17) · core 104 files/1597 不变 · typecheck clean · lint 0 errors. Comparison doc updated（批 DQ row in iris 独有 section + 构建状态 summary）; batch-dq-gate.md rewritten as real gate report; commit follows
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-gate.md
+
+## 2026-08-22 04:24:36 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-gate.md [ok]: 执行结果: | 门禁项 | 结果 |; 最终测试计数: | Suite | Files | Tests |; 文档更新（`docs/vxe-grid-comparison.md` iris 独有 节）: - 新增 **批 DQ 行**：`rowDragBetween` 拖拽跨表——`externalRowDropAt` 命中链（elementFromPoint→closest→attribute 匹配、每事件最新 prop）、leave 豁; Commit: **`2a413bdd`** `feat(table): grid 批 DQ——行拖拽跨表（iris 独有）` — 5 files, +83/−51（纯文档收尾；源码已由 `7f2ed0cb` adapt commit 携带）。工作树干净（
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-gate.md
+
+## 2026-08-22 04:38:24 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md [ok]: Baseline summary — 批 DR：单元格编辑快捷键（iris 独有）: **Exact design** — spec（`editKeys?: Array<'F2' | 'Enter' | 'Space'>`，可编辑单元格聚焦时按这些键进入编辑；默认 F2；配置扩展；测试自定义键编辑）**已在 HEAD `2a
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md
+
+## 2026-08-22 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-adapt.md [ok]: Report — 批 DR：单元格编辑快捷键（iris 独有）: spec 已在 HEAD 完整实现（61ec5418 adapter 对齐批内落地）；本会话逐锚点验证 + 关闭 baseline 观察②（editKeys=[] 仅 F2）与 ① 的 DR 专属半（F2 保留/Space 三写/无 keyboardNavigation 惰性/非可编辑列拦截）。react test 246 files/2826（batch-dl-dt 21/21，+4 DR cases，文件 423→464 ≤500）· core 104/1597 不变 · typecheck clean · lint 0 errors（2 条既有 complexity 警告）· spec scan 0 violations · gen:manifest 零 diff（155×4/86 tokens）。commit follows
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-adapt.md

@@ -5,7 +5,7 @@ export {
   type IrisTablePagerConfig,
   type IrisTableEmptyState,
 } from './props'
-export { type IrisTableHandle } from './types'
+export { type IrisTableHandle, type IrisTableColumnStat } from './types'
 export {
   type IrisTableColumn,
   type IrisTableCellClickParams,

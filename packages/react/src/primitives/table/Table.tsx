@@ -83,6 +83,7 @@ import { TableEditHistoryPanel } from './EditHistoryPanel'
 import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { TablePerfPanel } from './PerfPanel'
 import { TableShortcutHintsPanel } from './ShortcutHintsPanel'
+import { TableColumnStatsPanel } from './ColumnStatsPanel'
 import {
   COLUMN_TOTALS_STYLE,
   DEFAULT_PINNED_WIDTH,
@@ -238,7 +239,10 @@ import type {
   IrisTablePersistPiece,
   IrisTablePersistedState,
   IrisTableSortState,
+  IrisTableColumnStat,
 } from './types'
+
+import { COLUMN_STATS_TOP } from './ColumnStatsPanel'
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
 
@@ -536,6 +540,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   editPreview,
   pattern = false,
   patternFill = false,
+  columnStats,
   columnTotals,
   expandScrollPreserve = false,
   shortcutHints,
@@ -2402,8 +2407,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rowIdent: string | number,
     col: IrisTableColumn<Row>,
     rowIndex: number,
-  ): CellEdit =>
-    createCellEdit({
+  ): CellEdit => {
+    // Batch EB (iris 独有): ONE edit count per row session opened — row-mode
+    // fan-out counts per editable column (locked/readonly rows never reach
+    // here — the callers filter first), and the single-column reopen counts
+    // again. Escape still counts (the bump happens at OPEN, not commit).
+    if (columnStatsEnabledRef.current) bumpColumnStats(col.key, 'edit')
+    return createCellEdit({
       validate: (draft) => {
         const row = currentRowFor(rowIdent)
         if (!row) return null
@@ -2436,6 +2446,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
       },
     })
+  }
   const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
     const k = rowKeyOf(row, rowIndex)
     if (k == null) return
@@ -2758,6 +2769,60 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // `?` button after the perf trigger; floating like the chart/audit panels).
   const [hintsOpen, setHintsOpen] = React.useState(false)
   const hintsAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // Batch EB (iris 独有 — vxe has no column access stats): per-column
+  // click/edit counters — SESSION-local "internal counting" (no core
+  // controller, no persistence, no clear channel). The map is plain local
+  // state: every bump is a functional setState (the sole writer), so the
+  // snapshot reads below are always current AND the opt-in re-render cost is
+  // exactly one table render per bump (documented). Off = zero cost: the map
+  // never changes, so no counting re-renders and `getColumnStats` returns [].
+  const [columnStatsMap, setColumnStatsMap] = React.useState<
+    Record<string, { clicks: number; edits: number }>
+  >({})
+  const columnStatsRef = React.useRef(columnStatsMap)
+  columnStatsRef.current = columnStatsMap
+  // The single writer: a functional setState bump, so every call site stays a
+  // one-line `columnStats`-gated call AND a stale-closure call still lands on
+  // the latest map (the pattern's sole correctness lever).
+  const bumpColumnStats = (key: string, kind: 'click' | 'edit'): void => {
+    setColumnStatsMap((prev) => {
+      const cur = prev[key]
+      if (!cur) {
+        return {
+          ...prev,
+          [key]: kind === 'click' ? { clicks: 1, edits: 0 } : { clicks: 0, edits: 1 },
+        }
+      }
+      return {
+        ...prev,
+        [key]:
+          kind === 'click'
+            ? { clicks: cur.clicks + 1, edits: cur.edits }
+            : { clicks: cur.clicks, edits: cur.edits + 1 },
+      }
+    })
+  }
+  // Gate mirror (auditLog/perfStats precedent): beginEdit runs from the
+  // async-settle effect and the mount-time handle closure too — a ref read
+  // stays correct there where the render closure would go stale.
+  const columnStatsEnabledRef = React.useRef(columnStats)
+  columnStatsEnabledRef.current = columnStats
+  // Panel open state + toolbar trigger anchor (floating like audit/perf).
+  const [columnStatsOpen, setColumnStatsOpen] = React.useState(false)
+  const columnStatsAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // The handle/panel snapshot: all counted leaf keys, sorted total DESC then
+  // key ASC (deterministic tiebreak). `columnStatsRef` is the mount-time-safe
+  // source (the handle object is captured once — getFilteredData precedent).
+  const columnStatsSnapshot = (): IrisTableColumnStat[] => {
+    const entries = Object.entries(columnStatsRef.current)
+    if (entries.length === 0) return []
+    return entries
+      .map(([key, v]) => ({ key, clicks: v.clicks, edits: v.edits, total: v.clicks + v.edits }))
+      .sort((a, b) => b.total - a.total || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+  }
+  // Top-N slice the toolbar panel renders (zero-subscription passive prop;
+  // the table re-render on each bump is the panel's live refresh).
+  const columnStatsTop = columnStats ? columnStatsSnapshot().slice(0, COLUMN_STATS_TOP) : []
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   // Batch CW import preview (iris 独有 — vxe has no pre-import preview):
   // when `importPreview` is on, the parsed rows are held in local state and
@@ -3623,6 +3688,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rowIndex: number,
   ) => {
     if (!col.editable || col.formula || isCellLocked(row, col) || isCellReadonly(row, col)) return
+    // Batch EB (iris 独有): ONE edit count per cell-mode edit that actually
+    // opens (the guards above filter locked/readonly/formula — failed
+    // candidates never count); dblclick / F2 / click-trigger / Tab-nav all
+    // funnel through here. Escape after opening still counts (open-time).
+    if (columnStatsEnabledRef.current) bumpColumnStats(col.key, 'edit')
     // Any manual start supersedes a stashed Tab-navigation intent (M1).
     pendingNavRef.current = null
     editCtxRef.current = { row, col, rowIndex }
@@ -3791,6 +3861,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     idx: number,
     ci: number,
   ): void => {
+    // Batch EB (iris 独有): every click through THIS throat counts exactly
+    // once — regardless of which (if any) internal branch acts on it (plain
+    // tables fall through all three). The two narrow onClick branches below
+    // (used only when onCellClick/rowMode are absent) bump themselves, so a
+    // cell click lands on exactly one click-count site.
+    if (columnStatsEnabledRef.current) bumpColumnStats(col.key, 'click')
     if (rowMode && k != null) {
       // vxe editConfig.mode='row' parity (batch K): a click on any cell of a
       // row that has editable columns opens every editable column's editor;
@@ -4335,6 +4411,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // throws). Pairs naturally with exportStateJson / importStateJson (T12
     // audit loop: export → compare → import).
     compareStates: (a, b) => compareStatesDiff(a, b),
+    // Batch EB (iris 独有): column access-stats snapshot — sorted total desc,
+    // key asc tiebreak; [] when off (the map never changes) or idle. Reads
+    // the ref-mirrored map so the mount-time handle closure stays fresh.
+    getColumnStats: () => columnStatsSnapshot(),
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current
@@ -7055,12 +7135,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     }
                   : cellRange
                     ? (e: React.MouseEvent) => {
+                        if (columnStatsEnabledRef.current) bumpColumnStats(col.key, 'click')
                         if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
                         else cellRangeCtrl.startRange(idx, ci)
                         updateRangeToolbarAnchor()
                       }
                     : editableLive && editConfig?.trigger === 'click'
-                      ? () => beginEdit(row, col, k, idx)
+                      ? () => {
+                          if (columnStatsEnabledRef.current) bumpColumnStats(col.key, 'click')
+                          beginEdit(row, col, k, idx)
+                        }
                       : undefined
               }
               style={{
@@ -7809,7 +7893,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         versionHistory ||
         editSidebar ||
         shortcutHints ||
-        densityToggle) &&
+        densityToggle ||
+        columnStats) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -8685,6 +8770,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={t('table.perf')}
             >
               ⚡
+            </button>
+          ) : null}
+          {/* Batch EB (iris 独有): column-stats `▦` trigger after the perf
+              trigger — opens the top-5 access panel (perfStats precedent). */}
+          {columnStats ? (
+            <button
+              ref={columnStatsAnchorRef}
+              type="button"
+              data-iris-column-stats-trigger=""
+              onClick={() => setColumnStatsOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: columnStatsOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.columnStats')}
+              title={t('table.columnStats')}
+            >
+              ▦
             </button>
           ) : null}
           {/* Batch CJ (iris 独有): shortcut-hints `?` trigger after the perf
@@ -9923,6 +10029,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
           perf={perf}
           audit={auditLog ? audit : null}
           onClose={() => setPerfOpen(false)}
+          t={t}
+        />
+      ) : null}
+      {columnStats && columnStatsOpen ? (
+        <TableColumnStatsPanel
+          open
+          anchorRef={columnStatsAnchorRef}
+          stats={columnStatsTop}
+          onClose={() => setColumnStatsOpen(false)}
           t={t}
         />
       ) : null}

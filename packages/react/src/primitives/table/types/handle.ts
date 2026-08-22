@@ -117,6 +117,13 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   importStateJson: (json: string) => boolean
   /** Compare two exported-state JSONs (batch DE, iris 独有): field-level diff text (`+` added / `-` removed / `~ changed old → new`), deterministic by sorted keys + structural deep-equal (order-independent); identical → `''`; invalid JSON → `! compareStates: invalid JSON` (never throws). Pairs with `exportStateJson`/`importStateJson` — `a` = before, `b` = after. */
   compareStates: (a: string, b: string) => string
+  /** Column access stats (batch EB, iris 独有 — vxe has no counter): a
+   * snapshot of the per-column session counters — `{ key, clicks, edits,
+   * total }` sorted total DESC, key ASC tiebreak; `[]` when `columnStats` is
+   * off or nothing was counted yet (fail-closed). Session-local (no
+   * persistence, no clear channel); the handle re-created every render
+   * closes over the latest ref-mirrored map (getFilteredData precedent). */
+  getColumnStats: () => ReadonlyArray<IrisTableColumnStat>
 }
 
 /**
@@ -171,6 +178,24 @@ export interface IrisTablePresenceEntry {
   color: string
   /** Target cell: `${rowKeyVal}::${colKey}` (same delimiter as `cellId`). */
   cellKey: string
+}
+
+/**
+ * Column access-stats entry (batch EB, iris 独有 — vxe has no counter): one
+ * leaf column's session counters. DELIBERATELY session-local (no core
+ * controller, no persistence, no clear channel) — the parent reads the
+ * snapshot and owns any downstream use. `total = clicks + edits` is the sort
+ * key (descending; ties resolve key ASC for a deterministic order).
+ */
+export interface IrisTableColumnStat {
+  /** Leaf column key (the same key as the column def / `data-iris-table-header`). */
+  key: string
+  /** Cell clicks on this column — every cell click counts ONCE (row-edit, cell-range and click-trigger paths included). */
+  clicks: number
+  /** Inline-edit opens on this column — cell-mode `beginEdit` plus each row-mode session created. */
+  edits: number
+  /** `clicks + edits` — the handle/panel sort key. */
+  total: number
 }
 
 /** Pager configuration (vxe-grid pagerConfig parity). */

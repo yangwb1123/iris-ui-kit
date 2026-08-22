@@ -144,6 +144,20 @@ export interface IrisTableEditingProps<
    * an inline draft is open, matching committed values in the same column get
    * `data-iris-input-hint`; kept as a separate switch for the batch contract. */
   patternFill?: boolean
+  /** Batch EB (iris 独有 — vxe has no column access stats): count per-column
+   * cell clicks and inline-edit opens (SESSION-local internal counting — no
+   * core controller, no persistence, no clear channel). Every cell click
+   * counts ONCE through exactly one path — row-edit mode counts the clicked
+   * row's columns (a click + one edit per editable column opened), cell-range
+   * clicks count the clicked column, click-trigger edits count as BOTH a
+   * click and an edit; paste/fill, header clicks and keyboard-opened editors
+   * never add clicks. `handle.getColumnStats()` returns the `{ key, clicks,
+   * edits, total }` snapshot (total desc, key asc tiebreak; `[]` when off or
+   * idle) and the toolbar `▦` trigger opens the top-5 panel. The counting
+   * bumps are plain functional setState — the opt-in re-render cost is
+   * documented (off = zero cost, no bumps, no re-renders). Additive; default
+   * off (fail-closed). */
+  columnStats?: boolean
   /** Batch CR (iris 独有 — vxe has no equivalent; Excel status-bar parity):
    * show a full-width horizontal strip directly below the toolbar
    * (`data-iris-column-totals`) with the column totals for every

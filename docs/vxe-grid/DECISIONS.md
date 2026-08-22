@@ -3144,3 +3144,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dy-review.md [ok]: Verification results (all against HEAD `01f9ab26`): | Check | Result |; Checklist: - **Spec correctness** — matches the baseline design: two-phase machine (diff vs. committed map, mount-hidden never anim; Findings (all LOW/INFO, non-blocking): 1. **LOW** — totals container (`Table.tsx:8531`) lacks `role="row"`, so its grid-template transition doesn't fire; track
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dy-review.md
+
+## 2026-08-22 09:42:47 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dy-gate.md [ok]: Review verdict: `batch-dy-review.md` = **PASS** — verification all green vs `01f9ab26` (core 1641/1641 · react 2907/2907 with 17 new tes; Full gate results: | Gate | Result |; Final test counts (fresh): - **core**: 106 files — **1641/1641**; Commit: **`b0a75395`** — `feat(table): grid 批 DY——列显隐动画（iris 独有）` (6 files, docs only: comparison 批 DY row + DECISIONS entries +
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dy-gate.md
+
+## 2026-08-22 09:47:18 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dz-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dz-baseline.md
+
+## 2026-08-22 10:05:02 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dz-adapt.md [ok]: Report; Files changed (4 source + 1 test + manifest + adapt doc): | File | Change |; Tests added (21): fail-closed ×2 · grip bottom-edge render + press-survival · 复制 ×3 (single / 2×2 whole / overlapping snapshot — Excel par; Counts (all green): - **core 106 files / 1641/1641** ✓ (zero core changes — framework-free invariant); What is left: - review/gate stages (harness) + batch comparison-doc row / DECISIONS entries (gate-stage convention)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dz-adapt.md
+
+## 2026-08-22 10:10:53 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dz-review.md [ok]: Verification commands (all run): | Command | Result |; Spec correctness — all 9 fiats confirmed: - **越界忽略** (`resolveCopyTarget` null ⇒ no outline + zero commit, shared by move/up handlers, no drift) — deliberate dive; Findings: 1. **LOW** — `Table.tsx:5878-5880`: unconditional `setCellDragCopyRect` per pointermove (new object identity → re-render
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dz-review.md
+
+## 2026-08-22 10:15:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dz-gate.md [ok]: Review verdict: `batch-dz-review.md` = **PASS** — verification all green vs `aef146fa` (core 1641/1641 · react 2928/2928 with 21 new tests · typecheck/lint/audit/manifest clear). 3 findings all LOW/INFO non-blocking (per-pointmove unconditional setCellDragCopyRect re-render perf-only; 2 lint warnings pre-existing at parent; untested 1×1 three-overlay combo). Full gate: turbo **184/184** (126 cached) · audit:security **0** · audit:tokens exit 0 · iris-ui-spec **0 violations / 1546 files** · gen:manifest + check:manifest ✅ (204 props / 33 events, 155×4 / 86 tokens, git clean). Final counts: core **106 files / 1641/1641** · react **253 files / 2928/2928** (batch-dz 21/21, 499 lines ≤500). Comparison doc 批 DZ row added; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW/DX/DY precedent).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dz-gate.md

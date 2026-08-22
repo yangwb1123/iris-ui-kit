@@ -2781,3 +2781,14 @@ generated output, and `git diff --check` passed.
 - gate DR: **PASS** — [`batch-dr-gate.md`](batch-dr-gate.md)
 - gate DS: **PASS** — [`batch-ds-gate.md`](batch-ds-gate.md)
 - gate DT: **PASS** — [`batch-dt-gate.md`](batch-dt-gate.md)
+
+## 2026-08-22 02:28:23 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md
+
+## 2026-08-22 02:32:00 — stage 'implement' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md [ok]: 批 DL implement —— `patternFill?: boolean` 已随 HEAD 落地（props/editing.ts:147 · Table.tsx:333/1813-1814 · clipboard-display-helpers.tsx patternHintStyle/PATTERN_HINT_BG），编辑 draft 时同列 RAW 匹配值经 `data-iris-input-hint` + `--iris-input-hint` 轻高亮，空 draft fail-closed。行为契约 pattern-fill.test.tsx（12 用例）+ batch-dl-dt.test.tsx（10 用例，含 L47 别名回归）全绿。
+- gates: core test 1597/1597 · react typecheck ✅ · react test 2815/2815 · react lint 0 errors · spec 0 violations · check:manifest up to date
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md

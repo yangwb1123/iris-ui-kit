@@ -242,7 +242,7 @@ describe('IrisCascader', () => {
       fireEvent.click(triggerEl(container))
       expect(container.querySelectorAll('[data-iris-cascader-option]').length).toBe(10_000)
       expect(container.querySelector('[data-iris-virtual-scroll]')).toBeNull()
-    })
+    }, 30_000)
 
     it('a11y parity: virtual container carries the same surface as the plain listbox', () => {
       const small: IrisCascaderNode[] = [

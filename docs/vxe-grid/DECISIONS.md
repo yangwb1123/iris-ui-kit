@@ -2792,3 +2792,20 @@ generated output, and `git diff --check` passed.
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md [ok]: 批 DL implement —— `patternFill?: boolean` 已随 HEAD 落地（props/editing.ts:147 · Table.tsx:333/1813-1814 · clipboard-display-helpers.tsx patternHintStyle/PATTERN_HINT_BG），编辑 draft 时同列 RAW 匹配值经 `data-iris-input-hint` + `--iris-input-hint` 轻高亮，空 draft fail-closed。行为契约 pattern-fill.test.tsx（12 用例）+ batch-dl-dt.test.tsx（10 用例，含 L47 别名回归）全绿。
 - gates: core test 1597/1597 · react typecheck ✅ · react test 2815/2815 · react lint 0 errors · spec 0 violations · check:manifest up to date
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-baseline.md
+
+## 2026-08-22 02:34:22 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dl-adapt.md [ok]: 批 DL —— 单元格图案填充（`patternFill`）Report: **Situation**: This is a re-run of DL's implement stage. The feature was already shipped at HEAD by the prior DL cycle (
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-adapt.md
+
+## 2026-08-22 02:38:42 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dl-review.md [ok]: 批 DL（`patternFill`）Adversarial Review — **PASS**: **Contract**: `patternFill?: boolean` is an additive alias for the batch DH `pattern` editing-consistency hint — gated a
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dl-review.md
+
+## 2026-08-22 — stage 'gate' — PASS（含 review finding #1 spec-correction 记录）
+
+- review 裁定 PASS，3 findings 均 non-blocking；medium finding #1 要求显式 spec-correction 记录到 DECISIONS.md——**spec 更正**：批 DL 原始 spec 措辞为「复用 `rangeFill` 的入口」，与交付物（batch DH `pattern` 的独立开关别名）及所有其他记录冲突，且 baseline 文档在 implement 重跑（9b23d89b）时被改写为交付摘要；**接受契约（acceptance criteria）**：`patternFill?: boolean`（props/editing.ts:147，具名 `IrisTableEditingProps`，紧随 `pattern`，默认 false）为纯 additive 别名，门控 `(pattern || patternFill) && editingTarget !== null`（Table.tsx:1813-1814），逐格 `patternHintStyle`/`data-iris-input-hint`/`--iris-input-hint` 长写 background-image；语义全套继承批 DH——`String(raw) === String(draft)` 实时逐键、编辑中格豁免、空 draft fail-closed、仅本列、commit 清提示、row 模式 fiat、cellRange 共存；off 路径零字节；core/styles/i18n 零改动；vue/solid/svelte 契约清单同步为真实源码逻辑（无 unavailable 占位）；manifest 含 `patternFill` ×5 + 四框架 llms.txt。
+- gate: turbo **180/180**（--concurrency=2，174 cached）· react 246 files/**2815**（含 DL 22 测试：pattern-fill 12 + batch-dl-dt 10）· core 104 files/**1597** · vue 165 files/1573 · solid 142 files/1013+38 hydration · svelte 144 files/969+35 hydration · `pnpm audit` **0** vulns · gen:manifest + check:manifest **up to date** · typecheck/lint/build 全绿
+- docs: vxe-grid-comparison.md iris 独有节新增 批 DL 行 + 构建状态行追加 + DL–DT 记录表措辞订正；batch-dl-gate.md 重写为真实 gate 报告
+- commit: `feat(table): grid 批 DL——单元格图案填充（iris 独有）`

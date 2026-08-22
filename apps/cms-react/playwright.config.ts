@@ -9,6 +9,7 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
@@ -16,6 +17,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   expect: {
+    timeout: 15_000,
     toHaveScreenshot: {
       // `threshold` (0-1, per-pixel YIQ color-distance tolerance) absorbs
       // ordinary anti-aliasing/subpixel-rendering jitter; Playwright's own
@@ -37,19 +39,15 @@ export default defineConfig({
       animations: 'disabled',
     },
   },
-  // channel: 'chrome' pins the system-installed Google Chrome stable rather than
-  // downloading Playwright's bundled Chromium build. This is load-bearing for the
-  // visual-regression spec (e2e/visual.spec.ts): pixel screenshots need a browser
-  // binary that's actually installable in every environment this suite runs in,
-  // and it also means local baseline generation and CI compare against the same
-  // browser family (GitHub's ubuntu-latest images ship Chrome stable preinstalled).
+  // CI runs these projects in the Playwright image matching @playwright/test.
+  // Use its bundled Chromium instead of the mutable system Chrome channel so
+  // screenshot rendering stays reproducible across runner image updates.
   projects: [
     {
       // Keep this name stable: the committed visual snapshots include it.
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
         baseURL: 'http://localhost:5176',
       },
     },
@@ -58,7 +56,6 @@ export default defineConfig({
       testMatch: /cross-framework\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
         baseURL: 'http://localhost:5175',
       },
     },
@@ -67,7 +64,6 @@ export default defineConfig({
       testMatch: /cross-framework\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
         baseURL: 'http://localhost:5177',
       },
     },
@@ -76,32 +72,31 @@ export default defineConfig({
       testMatch: /cross-framework\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
         baseURL: 'http://localhost:5178',
       },
     },
   ],
   webServer: [
     {
-      command: 'pnpm --dir ../cms dev',
+      command: 'corepack pnpm --dir ../cms exec vite preview --host 0.0.0.0 --port 5175',
       url: 'http://localhost:5175',
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
     {
-      command: 'pnpm dev',
+      command: 'corepack pnpm exec vite preview --host 0.0.0.0 --port 5176',
       url: 'http://localhost:5176',
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
     {
-      command: 'pnpm --dir ../cms-solid dev',
+      command: 'corepack pnpm --dir ../cms-solid exec vite preview --host 0.0.0.0 --port 5177',
       url: 'http://localhost:5177',
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
     {
-      command: 'pnpm --dir ../cms-svelte dev',
+      command: 'corepack pnpm --dir ../cms-svelte exec vite preview --host 0.0.0.0 --port 5178',
       url: 'http://localhost:5178',
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,

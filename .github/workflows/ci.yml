@@ -81,10 +81,12 @@ jobs:
         run: pnpm turbo run test --concurrency=2
 
       - name: Browser E2E (four CMS frameworks) + visual regression
-        run: |
-          cd apps/cms-react
-          npx playwright install --with-deps chrome
-          npx playwright test
+        run: >-
+          docker run --rm --network host --ipc=host --ulimit nofile=65536:65536
+          --env CI=true
+          --volume "$GITHUB_WORKSPACE:/work" --workdir /work/apps/cms-react
+          mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+          corepack pnpm exec playwright test
 
       - name: Bench + regression check
         run: |

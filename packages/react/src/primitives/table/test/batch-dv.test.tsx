@@ -350,13 +350,16 @@ describe('@iris-ui-kit/react IrisTable urlState (batch DV, iris 独有)', () => 
     })
   })
 
-  it('an uncontrolled piece is inert in BOTH directions (URL never claims it)', () => {
-    // No callbacks = no channel to restore into or serialize from.
+  it('an uncontrolled table never touches the URL: a seeded deep link survives mount AND interaction', () => {
+    // No callbacks = no owning channel — the seed must survive mount (the
+    // review gate defect: the pre-fix writer serialized an empty payload to
+    // null and DELETED `_table` before the first post-mount render) and stay
+    // untouched across an internal uncontrolled sort flip.
     setLocation(urlWithTable({ v: 1, sort: { key: 'name', direction: 'asc' } }))
+    const before = window.location.search // pre-render captured, not post
     render(<IrisTable columns={columns} data={rows} rowKey="id" urlState />)
-    const before = window.location.search
+    expect(window.location.search).toBe(before) // seed survived the mount write
     act(() => fireEvent.click(headers()[0]!)) // internal uncontrolled sort flip
-    // The URL keeps the seeded payload untouched (nothing new encoded over it).
     expect(window.location.search).toBe(before)
   })
 

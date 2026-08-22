@@ -1751,6 +1751,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
       urlMountAppliedRef.current = false
       return
     }
+    // A fully-uncontrolled table (urlState on, ZERO owning callbacks) never
+    // writes the URL — a seeded `_table` deep link survives a urlState-only
+    // view. The persistState precedent ("Nothing the parent owns → nothing to
+    // write") applies verbatim: the URL must not claim a channel the table
+    // cannot replay. "Empties remove `_table`" still holds for tables that DO
+    // own a channel but currently have nothing to encode.
+    const ownsChannel =
+      (multiSort ? onMultiSortChange : onSortChange) ||
+      onFiltersChange ||
+      onFilterValuesChange ||
+      (Boolean(proxy) && Boolean(proxyConfig?.onPageChange))
+    if (!ownsChannel) return
     const payload: IrisTableUrlState = { v: 1 }
     if (multiSort) {
       if (onMultiSortChange && multiSortState.length > 0) payload.sorts = multiSortState

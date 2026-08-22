@@ -146,9 +146,58 @@ export async function writeClipboardText(text: string): Promise<boolean> {
   return copied
 }
 
-/** Case-insensitive replace of every occurrence (fnr replace / replace-all). */
-export function replaceAllOccurrences(text: string, query: string, replacement: string): string {
+/**
+ * Batch DX (iris 独有 — raw vxe fnr search takes a plain string): parse an fnr
+ * find/replace query in `/pattern/` or `/pattern/flags` notation into a
+ * RegExp. Any other shape — not starting with `/`, an empty body (`//`), an
+ * unterminated form (`/unclosed`), an invalid pattern, or non-lowercase
+ * flags — fails closed to `null` (the literal-substring path), so regexp
+ * detection never throws while typing. Flags are canonicalized to always
+ * include `g` (replace = every matching occurrence; spec: “replace 全匹配”)
+ * and `lastIndex` is reset so repeated `.test()` calls are stateless.
+ * Regexp mode is case-SENSITIVE by default — `/i` is opt-in, the documented
+ * counterpoint to the always-case-insensitive literal path.
+ */
+export function parseFnrQuery(query: string): RegExp | null {
+  if (query.length < 3 || !query.startsWith('/')) return null
+  const lastSlash = query.lastIndexOf('/')
+  if (lastSlash <= 0) return null
+  const body = query.slice(1, lastSlash)
+  if (body === '') return null
+  const rawFlags = query.slice(lastSlash + 1)
+  if (!/^[a-z]*$/.test(rawFlags)) return null
+  const knownFlags = 'gimsuy'
+  // Fail closed on any unrecognized flag — never silently drop what the
+  // user wrote.
+  if (Array.from(rawFlags).some((f) => !knownFlags.includes(f))) return null
+  // Canonicalize: always include `g` (replace 全匹配), dedupe.
+  const flags = Array.from(new Set(`${rawFlags}g`)).join('')
+  try {
+    const re = new RegExp(body, flags)
+    re.lastIndex = 0
+    return re
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Replace every occurrence. The literal path is case-insensitive and keeps
+ * `$` patterns in the replacement literal. When a parsed regexp is passed
+ * (batch DX), real `String.replace` semantics apply — `$1`/`$&` expand.
+ * Absent regexp → byte-identical legacy behavior.
+ */
+export function replaceAllOccurrences(
+  text: string,
+  query: string,
+  replacement: string,
+  regex?: RegExp | null,
+): string {
   if (query === '') return text
+  if (regex) {
+    regex.lastIndex = 0
+    return text.replace(regex, replacement)
+  }
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   // Function replacement keeps `$` patterns in the replacement literal.
   return text.replace(new RegExp(escaped, 'gi'), () => replacement)

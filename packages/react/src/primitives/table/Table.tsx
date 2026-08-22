@@ -116,6 +116,7 @@ import {
   conditionalCellStyle,
   contextCellText,
   fnrCellStyle,
+  parseFnrQuery,
   patternHintStyle,
   readClipboardText,
   renderAutoLinkCell,
@@ -5773,18 +5774,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const [fnrActive, setFnrActive] = React.useState(0)
   const fnrFindRef = React.useRef<HTMLInputElement | null>(null)
 
+  // Batch DX: `/pattern/` or `/pattern/flags` queries auto-parse to a RegExp
+  // (fail-closed to literal substring while typing); one memo feeds find +
+  // both replace call sites.
+  const fnrParsed = React.useMemo(() => parseFnrQuery(fnrQuery), [fnrQuery])
+
   const fnrMatches = React.useMemo(() => {
-    if (!fnr || !fnrOpen || fnrQuery === '') return [] as Array<{ row: number; col: number }>
-    const q = fnrQuery.toLowerCase()
     const out: Array<{ row: number; col: number }> = []
+    if (!fnr || !fnrOpen || fnrQuery === '') return out
+    const q = fnrQuery.toLowerCase()
+    const re = fnrParsed
     bodyData.forEach((row, r) => {
       leafColumns.forEach((col, c) => {
         const v = getCellValue(row, col)
-        if (v != null && String(v).toLowerCase().includes(q)) out.push({ row: r, col: c })
+        if (v == null) return
+        const text = String(v)
+        // Regexp mode: case-sensitive by default, `/i` opt-in; reset
+        // lastIndex so each find is stateless. Literal fallback unchanged.
+        const hit = re ? ((re.lastIndex = 0), re.test(text)) : text.toLowerCase().includes(q)
+        if (hit) out.push({ row: r, col: c })
       })
     })
     return out
-  }, [fnr, fnrOpen, fnrQuery, bodyData, leafColumns])
+  }, [fnr, fnrOpen, fnrQuery, fnrParsed, bodyData, leafColumns])
 
   const fnrActiveIndex = Math.min(fnrActive, Math.max(fnrMatches.length - 1, 0))
   const fnrActiveMatch = fnrMatches.length > 0 ? fnrMatches[fnrActiveIndex]! : null
@@ -5858,7 +5870,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (isCellLocked(row, col) || isCellReadonly(row, col)) return
     const current = getCellValue(row, col)
     const text = current == null ? '' : String(current)
-    const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace)
+    const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace, fnrParsed)
     if (nextText === text) return
     const k = rowKeyOf(row)
     if (k == null) return
@@ -5880,7 +5892,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
       const current = getCellValue(row, col)
       const text = current == null ? '' : String(current)
-      const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace)
+      const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace, fnrParsed)
       if (nextText === text) continue
       const k = rowKeyOf(row)
       if (k == null) continue

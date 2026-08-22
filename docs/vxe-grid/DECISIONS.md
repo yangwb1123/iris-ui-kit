@@ -2999,3 +2999,23 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ds-gate.md [ok]: 批 DS（列宽提示）gate 完成——review PASS（2 × P3 非阻断，无阻断）；full gate turbo 180/180（174 cached）；pnpm audit 0 known vulnerabilities；gen/check:manifest up to date（155×4 / 86 tokens，重新生成零 diff）；最终计数 react 246 files/2826（batch-dl-dt 21/21，DS 定向 case :464-483 显示 116px/隐藏两态）· core 104 files/1597；comparison.md iris 独有 新增 批 DS 行 + 构建状态追加；batch-ds-gate.md 重写为真实报告；纯文档收尾（DS 源码与测试已由 61ec5418 DL–DT 批次携带）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-gate.md
+
+## 2026-08-22 05:10:55 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ds-gate.md [ok]: 结果: **Review verdict:** PASS （2 × P3 non-blocking，无阻断；DS 实现已在 `61ec5418` DL–DT 批次携带，本次零源码改动）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-gate.md
+
+## 2026-08-22 05:14:46 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dt-baseline.md [ok]: 结论：批 DT（表格导出选择，iris 独有）已在 HEAD 完整提交: Spec（`exportSelectionCsv` 增强：`exportRowsCsv?(keys: Array<string | number>)`——按指定 keys 导出；测试（指定行导出））于 DL–DT 批次 `61ec5418`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-baseline.md
+
+## 2026-08-22 05:16:59 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dt-adapt.md [ok]: Report: batch DT（表格导出选择，iris 独有）: **Status**: ✅ Complete — spec already implemented at `61ec5418` ("feat(adapters): align primitives and grid capabilities; Anchors (spec-literal): - **Handle contract** — `packages/react/src/primitives/table/types/handle.ts:38`:; Verification results: | Gate | Result |; Files changed: - None by this pass (implementation, contract, test all landed at `61ec5418`).; What is left: - Nothing source-side. Commit requirement satisfied in substance: `gen:manifest` is a no-op because the manifest was alr
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-adapt.md
+
+## 2026-08-22 05:20:31 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dt-review.md [ok]: Verdict: **PASS**: The DT capability (表格导出选择, iris 独有) landed in commit `61ec5418` (ancestor of HEAD `28d5fcf5`); this pass made zero sourc; Checks: - **Spec correctness** — `exportRowsCsv(keys)` contract at `types/handle.ts:38`; implementation `Table.tsx:3464-3472` by; Gates re-run: | Gate | Result |; Findings (all P3 non-blocking, inherited from baseline): 1. No negative-case tests (empty keys / unknown keys / duplicates) — `batch-dl-dt.test.tsx:485`.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-review.md

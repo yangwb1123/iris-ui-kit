@@ -283,4 +283,17 @@ export interface IrisTableEditingProps<
   /** Batch DM (iris 独有): periodically persist the complete exported view
    * state to a separate storage key and restore it once on mount. */
   autoSaveState?: TableTypes.IrisTableAutoSaveStateConfig
+  /** Batch DV (iris 独有 — vxe has no URL-state concept): deep-linkable view
+   * state — when `true`, the table mirrors sort / sorts (multiSort mode) /
+   * filters / filterValues / page+pageSize (proxy only) into ONE `_table`
+   * query param (`history.replaceState`, other params preserved; empty state
+   * removes it) and restores from the URL on mount (URL wins over
+   * `persistState` on conflicts) and on `hashchange`/`popstate` (share-link
+   * support). Each piece follows the SAME per-piece callback gates as
+   * `persistState` (onSortChange / onMultiSortChange / onFiltersChange /
+   * onFilterValuesChange / proxy onPageChange) — an uncontrolled piece is
+   * inert in both directions. Decode is whole-state fail-closed: a corrupt /
+   * wrong-version payload is ignored entirely, never partially restored.
+   * Default off. */
+  urlState?: boolean
 }

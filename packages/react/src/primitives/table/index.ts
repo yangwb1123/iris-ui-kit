@@ -1,4 +1,5 @@
 export { IrisTable, type IrisTableProps } from './Table'
+export { type IrisTableUrlState, IRIS_URL_STATE_KEY } from './Table'
 export {
   type IrisTableFormConfig,
   type IrisTablePagerConfig,

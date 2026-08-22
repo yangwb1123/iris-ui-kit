@@ -231,6 +231,155 @@ import type {
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
 
+// ── Batch DV: URL state deep-link (iris 独有 — vxe has no URL-state) ────
+// `urlState` serializes the view state into ONE `_table` query param. The wire
+// format is a versioned JSON object (`{v:1, sort?, sorts?, filters?,
+// filterValues?, page?, pageSize?}`) — `sorts` is the multiSort channel
+// (multiSort mode only); `page`/`pageSize` are proxy-only. Decode is
+// WHOLE-STATE fail-closed: schema version + per-piece type guards — any
+// violation → null, never a partial restore. Encoding uses URLSearchParams
+// (set/get are symmetric, exactly-once percent-decoding), preserving every
+// other param.
+/** URL-state snapshot (batch DV): the pieces `urlState` reads/writes in the
+ * `_table` query param. Mirror of `IrisTablePersistedState` minus the
+ * layout/expansion pieces — a deep link carries what affects served rows. */
+export interface IrisTableUrlState {
+  /** Wire schema version — decode rejects anything else (forward-compat). */
+  v: 1
+  /** Single-column sort (omitted when inactive; null never encoded). */
+  sort?: IrisTableSortState | null
+  /** Multi-column sort list (multiSort mode only, non-empty). */
+  sorts?: IrisTableSortState[]
+  /** Text filters (column key → filter text, non-empty map only). */
+  filters?: Record<string, string>
+  /** Checked filter sets (column key → values, non-empty map only). */
+  filterValues?: IrisTableFilterValues
+  /** 1-based page (proxy only; omitted when 1). */
+  page?: number
+  /** Rows per page (proxy only). */
+  pageSize?: number
+}
+
+/** Query-param key that carries the whole payload. */
+export const IRIS_URL_STATE_KEY = '_table'
+
+function isUrlSortState(v: unknown): v is IrisTableSortState {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false
+  const s = v as Record<string, unknown>
+  return (
+    typeof s.key === 'string' && s.key !== '' && (s.direction === 'asc' || s.direction === 'desc')
+  )
+}
+
+function isUrlStringMap(v: unknown): v is Record<string, string> {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false
+  for (const value of Object.values(v)) {
+    if (typeof value !== 'string') return false
+  }
+  return true
+}
+
+function isUrlStringArrayMap(v: unknown): v is IrisTableFilterValues {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false
+  for (const value of Object.values(v)) {
+    if (!Array.isArray(value)) return false
+    for (const item of value) {
+      if (typeof item !== 'string') return false
+    }
+  }
+  return true
+}
+
+/** Whole-state fail-closed decode of a `_table` payload: corrupt JSON, wrong
+ * schema version, or ANY invalid piece → null (never a partial restore). */
+export function decodeUrlTableState(raw: string): IrisTableUrlState | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
+  const record = parsed as Record<string, unknown>
+  if (record.v !== 1) return null
+  const out: IrisTableUrlState = { v: 1 }
+  if (record.sort !== undefined) {
+    if (record.sort !== null && !isUrlSortState(record.sort)) return null
+    out.sort = record.sort as IrisTableSortState | null
+  }
+  if (record.sorts !== undefined) {
+    if (!Array.isArray(record.sorts) || !record.sorts.every(isUrlSortState)) return null
+    out.sorts = record.sorts as IrisTableSortState[]
+  }
+  if (record.filters !== undefined) {
+    if (!isUrlStringMap(record.filters)) return null
+    out.filters = record.filters as Record<string, string>
+  }
+  if (record.filterValues !== undefined) {
+    if (!isUrlStringArrayMap(record.filterValues)) return null
+    out.filterValues = record.filterValues as IrisTableFilterValues
+  }
+  if (record.page !== undefined) {
+    if (typeof record.page !== 'number' || !Number.isInteger(record.page) || record.page < 1) {
+      return null
+    }
+    out.page = record.page
+  }
+  if (record.pageSize !== undefined) {
+    if (
+      typeof record.pageSize !== 'number' ||
+      !Number.isInteger(record.pageSize) ||
+      record.pageSize < 1
+    ) {
+      return null
+    }
+    out.pageSize = record.pageSize
+  }
+  return out
+}
+
+/** Read + decode the current URL's `_table` param. SSR-guarded: no window →
+ * null. Returns null when the param is absent OR the payload is invalid. */
+export function readUrlTableState(): IrisTableUrlState | null {
+  if (typeof window === 'undefined') return null
+  const raw = new URLSearchParams(window.location.search).get(IRIS_URL_STATE_KEY)
+  if (raw === null) return null
+  return decodeUrlTableState(raw)
+}
+
+/** Current raw `_table` param value (the same exactly-once-decoded value the
+ * writer serializes — used for idempotent write-skip comparison). */
+function readUrlTableParam(): string | null {
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get(IRIS_URL_STATE_KEY)
+}
+
+/** Replace the `_table` param (preserving every other param) via
+ * `history.replaceState` — never pushes history entries. `null` removes it. */
+export function writeUrlTableState(value: string | null): void {
+  if (typeof window === 'undefined') return
+  const url = new URL(window.location.href)
+  if (value === null) url.searchParams.delete(IRIS_URL_STATE_KEY)
+  else url.searchParams.set(IRIS_URL_STATE_KEY, value)
+  window.history.replaceState(null, '', url.toString())
+}
+
+/** Canonical JSON of a payload (fixed field order, so equal states compare
+ * byte-equal). A payload with no pieces serializes to null — the URL's
+ * `_table` is then removed. */
+export function serializeUrlTableState(state: IrisTableUrlState | null): string | null {
+  if (!state) return null
+  const hasPiece =
+    state.sort !== undefined ||
+    state.sorts !== undefined ||
+    state.filters !== undefined ||
+    state.filterValues !== undefined ||
+    state.page !== undefined ||
+    state.pageSize !== undefined
+  if (!hasPiece) return null
+  return JSON.stringify(state)
+}
+
 /**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
  * can support future virtual scroll / column resize uniformly. Wires ARIA
@@ -422,6 +571,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   rowHeight,
   persistState,
   autoSaveState,
+  urlState = false,
   views,
   onActiveViewChange,
   tableTabs,
@@ -623,6 +773,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // on cleanup so a StrictMode remount / proxy re-add restores again.
   const persistParsedRef = React.useRef<IrisTablePersistedState | null>(null)
   const persistPageSizeAppliedRef = React.useRef(false)
+  // Batch DV (urlState): the CURRENT URL's `_table` payload, parsed ONCE during
+  // the first render (guarded, idempotent — usePersistState precedent) so the
+  // proxy-creation effect can inject page/pageSize BEFORE the first query
+  // (URL wins over persistState — the pre-query pageSize channel precedent).
+  const urlParsedRef = React.useRef<IrisTableUrlState | null>(null)
+  const urlParsedLoadedRef = React.useRef(false)
+  if (!urlParsedLoadedRef.current) {
+    urlParsedLoadedRef.current = true
+    urlParsedRef.current = readUrlTableState()
+  }
   React.useEffect(() => {
     let ctrl = proxyRef.current
     if (!ctrl && hasProxy) {
@@ -631,18 +791,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
       forceRender()
     }
     if (ctrl) {
-      // persistState pageSize (batch AG): apply the restored size + notify
-      // BEFORE the default first query. request(partial) applies the params
-      // and fires exactly ONE query — setParams alone would re-request on
-      // its own, double-fetching with the request below. Skipped without
+      // Batch AG (persistState) + batch DV (urlState): apply the restored
+      // page/pageSize + notify BEFORE the default first query — a URL payload
+      // WINS over persisted state on conflicts (deep-link intent, the
+      // pre-query pageSize channel precedent). request(partial) applies the
+      // params and fires exactly ONE query — setParams alone would re-request
+      // on its own, double-fetching with the request below. Skipped without
       // proxyConfig.onPageChange (documented: pageSize is only meaningful
-      // with it) and when nothing was persisted.
+      // with it) and when nothing was restored.
       if (!persistPageSizeAppliedRef.current) {
         persistPageSizeAppliedRef.current = true
-        const size = persistParsedRef.current?.pageSize
+        const urlState = urlParsedRef.current
+        const size =
+          (urlState && typeof urlState.pageSize === 'number' && urlState.pageSize > 0
+            ? urlState.pageSize
+            : undefined) ?? persistParsedRef.current?.pageSize
         if (typeof size === 'number' && size > 0 && proxyConfig?.onPageChange) {
-          proxyConfig.onPageChange(1, size)
-          void ctrl.request({ pageSize: size, page: 1 })
+          const page = urlState && typeof urlState.page === 'number' ? urlState.page : 1
+          proxyConfig.onPageChange(page, size)
+          void ctrl.request({ pageSize: size, page })
         } else if (proxyConfig?.autoLoad !== false) {
           void ctrl.request()
         }
@@ -1518,6 +1685,121 @@ export function IrisTable<Row extends Record<string, unknown>>({
     restorePiece: restorePersistPiece,
   })
   persistParsedRef.current = persistParsed.parsed
+
+  // ── URL state deep-link (batch DV, iris 独有 — vxe has no URL-state) ────
+  // `urlState` mirrors the SELECTED view-state pieces into the browser URL's
+  // single `_table` query param (deep-linkable / shareable). Declared AFTER
+  // the persistState block so on mount conflicts the URL payload wins. Every
+  // piece goes through the SAME per-piece callback gates as
+  // `restorePersistPiece` — both directions: encode what can be restored
+  // (sort → onSortChange; sorts → multiSort + onMultiSortChange; filters →
+  // onFiltersChange; filterValues → onFilterValuesChange; page/pageSize →
+  // proxyConfig.onPageChange, proxy-only). An uncontrolled piece is inert
+  // both ways — the URL never claims a channel the table cannot replay.
+  const urlStateOn = urlState === true
+  const urlMountAppliedRef = React.useRef(false)
+  const urlLastAppliedRef = React.useRef<string | null>(null)
+  /** Replay the NON-pager pieces through the shared gated restore channel. */
+  const applyUrlPieces = React.useCallback(
+    (state: IrisTableUrlState): void => {
+      if (state.sort !== undefined) restorePersistPiece('sort', state.sort)
+      if (state.sorts !== undefined) restorePersistPiece('multiSortState', state.sorts)
+      if (state.filters !== undefined) restorePersistPiece('filters', state.filters)
+      if (state.filterValues !== undefined) restorePersistPiece('filterValues', state.filterValues)
+    },
+    [restorePersistPiece],
+  )
+  /** Mid-session page/pageSize reproduction (`applyViewSnapshot` pageSize
+   * precedent): notify + exactly ONE request. `page` defaults to 1 and
+   * `pageSize` to the proxy default when the payload omits either. */
+  const applyUrlPager = React.useCallback(
+    (state: IrisTableUrlState): void => {
+      const pageChange = proxyConfig?.onPageChange
+      if (!pageChange) return
+      const page = typeof state.page === 'number' && state.page > 0 ? state.page : 1
+      const size =
+        typeof state.pageSize === 'number' && state.pageSize > 0
+          ? state.pageSize
+          : (proxyConfig?.pageSize ?? 10)
+      pageChange(page, size)
+      void proxyRef.current?.request({ pageSize: size, page })
+    },
+    [proxyConfig, proxyRef],
+  )
+  // Mount restore — []-deps with the first-render `urlState` closure; declared
+  // AFTER the persist restore (inside usePersistState) so the URL wins on
+  // conflicts. page/pageSize are NOT re-applied here: the proxy-creation
+  // effect injected them pre-query (exactly one request for an app-start deep
+  // link). `urlLastAppliedRef` records the payload so the listener's mount
+  // activation (same URL) is an idempotent no-op.
+  React.useEffect(() => {
+    if (!urlState) return
+    const parsed = urlParsedRef.current
+    if (!parsed) return
+    applyUrlPieces(parsed)
+    urlLastAppliedRef.current = serializeUrlTableState(parsed)
+    urlMountAppliedRef.current = true
+  }, [])
+  // URL write — declared after the mount restore so the restored values land
+  // first; the first post-restore run is skipped (the restored parent state
+  // re-renders and rewrites the URL with the final values — what can be
+  // restored is what gets saved). Empties remove `_table`; unchanged payloads
+  // skip the replaceState.
+  React.useEffect(() => {
+    if (!urlStateOn) return
+    if (urlMountAppliedRef.current) {
+      urlMountAppliedRef.current = false
+      return
+    }
+    const payload: IrisTableUrlState = { v: 1 }
+    if (multiSort) {
+      if (onMultiSortChange && multiSortState.length > 0) payload.sorts = multiSortState
+    } else if (onSortChange && sort) {
+      payload.sort = sort
+    }
+    if (onFiltersChange && filters && Object.keys(filters).length > 0) payload.filters = filters
+    if (onFilterValuesChange && filterValues && Object.keys(filterValues).length > 0) {
+      payload.filterValues = filterValues
+    }
+    if (proxy && proxyConfig?.onPageChange) {
+      const page = proxyState.params.page
+      const size = proxyState.params.pageSize
+      if (typeof page === 'number' && page > 1) payload.page = page
+      // The proxy default size is the URL's omission threshold — a fresh app
+      // start carries NO pager channel at all (empty state removes `_table`),
+      // while a user-chosen size round-trips exactly.
+      if (typeof size === 'number' && size > 0 && size !== (proxyConfig.pageSize ?? 10)) {
+        payload.pageSize = size
+      }
+    }
+    const json = serializeUrlTableState(payload)
+    if (json === readUrlTableParam()) return
+    writeUrlTableState(json)
+  })
+  // Mid-session restore: `hashchange` (spec — a pasted/edited share link while
+  // the app is open) + `popstate` (documented extension for back/forward). The
+  // same serialized-payload idempotency makes an identical URL a no-op; a
+  // missing/invalid `_table` is a no-op; application goes through the shared
+  // gated channels (pieces × pager reproduction — one request).
+  React.useEffect(() => {
+    if (!urlStateOn) return
+    const apply = (): void => {
+      const parsed = readUrlTableState()
+      if (!parsed) return
+      const serialized = serializeUrlTableState(parsed)
+      if (serialized === urlLastAppliedRef.current) return
+      applyUrlPieces(parsed)
+      applyUrlPager(parsed)
+      urlLastAppliedRef.current = serialized
+    }
+    apply()
+    window.addEventListener('hashchange', apply)
+    window.addEventListener('popstate', apply)
+    return () => {
+      window.removeEventListener('hashchange', apply)
+      window.removeEventListener('popstate', apply)
+    }
+  }, [urlStateOn, applyUrlPieces, applyUrlPager])
 
   // ── Named view presets (batch AH, iris 独有 — vxe has no equivalent) ────
   // The toolbar select + inline save input (TableViews) render the hook's

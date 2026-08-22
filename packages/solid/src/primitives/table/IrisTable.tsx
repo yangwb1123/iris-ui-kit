@@ -71,6 +71,7 @@ import { createTableRowTarget } from './table-row-target'
 import { createPinnedDragMath } from './table-pinned-drag'
 import { createTableViewsController, TableTabs, TableViews } from './table-views'
 import { getCellValue as getTableCellValue } from './utils'
+import { isEditableColumn, withComputedFormulaCells } from './utils'
 import { exportCsv as serializeTableCsv } from './exportCsv'
 
 export type { IrisTableProps } from './props'
@@ -254,10 +255,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (!enabled || detectTypesDone || rows.length === 0) return
     detectTypesDone = true
     const next: Record<string, DetectedColumnType> = {}
-    for (const column of flattenLeafColumns(sourceColumns)) {
-      const candidate = column as IrisTableColumn<Row> & { formula?: unknown }
-      if (candidate.formula) continue
-      next[column.key] = detectColumnType(rows.map((row) => getTableCellValue(row, candidate)))
+    for (const column of flattenLeafColumns(sourceColumns).filter((c) => !c.formula)) {
+      next[column.key] = detectColumnType(rows.map((row) => getTableCellValue(row, column)))
     }
     setDetectedTypes(next)
   })
@@ -540,6 +539,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return filteredData().map((row) => ({ row, meta: null }))
   })
   const bodyRows = createMemo<Row[]>(() => bodyEntries().map((e) => e.row))
+  const materializedRows = (): Row[] => withComputedFormulaCells(bodyRows(), leafColumns())
 
   // ---- Selection ----
   // Row-selection logic (single/multi toggle, dedup, select-all) is single-sourced
@@ -617,7 +617,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   let cellEditGen = 0
 
   const beginEdit = (row: Row, column: IrisTableColumn<Row>, rowIdent: string | number): void => {
-    if (!column.editable) return
+    if (!isEditableColumn(column)) return
     cellEditGen++ // a new session supersedes any pending async commit
     setEditingCellId(`${rowIdent}::${column.key}`)
     setEditingColumnKey(column.key)
@@ -812,7 +812,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
     const k = rowId(row, rowIndex)
-    const editableCols = leafColumns().filter((c) => c.editable)
+    const editableCols = leafColumns().filter(isEditableColumn)
     if (editableCols.length === 0) return
     const sessions = new Map<string, RowCellSession<Row>>()
     for (const col of editableCols) {
@@ -870,7 +870,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   ): void => {
     if (rowEditing()?.k === k) {
       const id = `${k}::${col.key}`
-      if (col.editable && !rowSessions().has(id)) {
+      if (isEditableColumn(col) && !rowSessions().has(id)) {
         const session = createRowSession(row, col, rowIndex)
         setRowSessions((prev) => {
           const next = new Map(prev)
@@ -898,7 +898,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const start = cols.indexOf(col)
     for (let i = start + dir; i >= 0 && i < cols.length; i += dir) {
       const nextCol = cols[i]!
-      if (!nextCol.editable) continue
+      if (!isEditableColumn(nextCol)) continue
       focusRowEditor(nextCol.key)
       return
     }
@@ -1063,9 +1063,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       merged.onDataChange?.(rows)
     },
     getFilteredData: (): Row[] => [...bodyRows()],
-    exportCurrentViewCsv: (): string => serializeTableCsv(bodyRows(), leafColumns()),
+    exportCurrentViewCsv: (): string => serializeTableCsv(materializedRows(), leafColumns()),
     exportMultiCsv: (): string => {
-      const current = serializeTableCsv(bodyRows(), leafColumns())
+      const current = serializeTableCsv(materializedRows(), leafColumns())
       const names = props.exportNames
       if (!names || names.length === 0) return current
       const segments = [`# current${current ? `\n${current}` : ''}`]
@@ -1169,7 +1169,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (!range || merged.clipConfig?.copy === false) return
     void writeClipboardText(
       serializeTableRange<Row>(
-        bodyRows(),
+        materializedRows(),
         leafColumns(),
         range,
         merged.clipConfig?.copyFormat,
@@ -1589,6 +1589,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               !isEditing() &&
               editingDraft() !== '' &&
               String(getTableCellValue(row, col) ?? '') === editingDraft()
+            const displayText = (): string => tableDisplayText<Row>(row, col, getTableCellValue)
             // Cell merge (vxe spanMethod parity): the occupied set carries
             // cells covered by an earlier rowspan/colspan origin — those cells
             // render nothing. Origin cells with colspan > 1 extend their grid
@@ -1614,7 +1615,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   role="cell"
                   data-iris-table-cell={col.key}
                   data-iris-table-pinned={col.pinned}
-                  data-editable={col.editable ? '' : undefined}
+                  data-editable={isEditableColumn(col) ? '' : undefined}
                   data-editing={isEditing() ? '' : undefined}
                   data-iris-input-hint={patternHint() ? 'true' : undefined}
                   data-grid-row={merged.keyboardNavigation ? index : undefined}
@@ -1641,14 +1642,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                               cellRangeCtrl.startRange(index, colIndex)
                             }
                           }
-                        : col.editable && merged.editConfig?.trigger === 'click'
+                        : isEditableColumn(col) && merged.editConfig?.trigger === 'click'
                           ? () => beginEdit(row, col, id)
                           : undefined
                   }
                   onDblClick={
                     rowMode()
                       ? () => switchRowEdit(row, index, col.key)
-                      : col.editable
+                      : isEditableColumn(col)
                         ? () => beginEdit(row, col, id)
                         : undefined
                   }
@@ -1675,7 +1676,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     'white-space': 'nowrap',
                     overflow: 'hidden',
                     'text-overflow': 'ellipsis',
-                    cursor: col.editable ? 'cell' : 'default',
+                    cursor: isEditableColumn(col) ? 'cell' : 'default',
                     background:
                       merged.cellRange && isInRange(index, colIndex)
                         ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
@@ -1801,7 +1802,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   <Show
                     when={isEditing()}
                     fallback={
-                      <Show when={col.renderCell} fallback={tableDisplayText<Row>(row, col)}>
+                      <Show when={col.renderCell} fallback={displayText()}>
                         {col.renderCell!(row, index)}
                       </Show>
                     }

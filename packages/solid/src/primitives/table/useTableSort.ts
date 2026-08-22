@@ -1,6 +1,7 @@
 import { createSignal, createMemo, type Accessor } from 'solid-js'
 import { compareValues } from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableSortState } from './types'
+import { getCellValue } from './utils'
 
 type MaybeAccessor<T> = T | Accessor<T>
 
@@ -84,13 +85,4 @@ export function useTableSort<Row extends Record<string, unknown>>(
     sortComparator,
     sortedData,
   }
-}
-
-/** Get the value for a column from a row (handles dataIndex fallback). */
-function getCellValue<Row extends Record<string, unknown>>(
-  row: Row,
-  column: IrisTableColumn<Row>,
-): unknown {
-  const key = (column.dataIndex ?? column.key) as keyof Row
-  return row[key]
 }

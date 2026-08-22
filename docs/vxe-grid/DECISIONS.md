@@ -2929,3 +2929,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dq-baseline.md [ok]: 批 DQ implement——spec 已在 `61ec5418` 随 DL–DT 批次落地，本批次补观察② 三条缺失测试（key 不匹配负向 / 命中 zone 不触发 onReorder 组合 / elementFromPoint 缺失防御分支）+ 观察③ manifest 卫生：`rowDragBetween` JSDoc 单行化（两记录 description 可提取）+ barrel 显式补 `type IrisTableRowDragBetweenTarget` 出口（llms types 清单补齐）。batch-dl-dt 17/17 · react 2822/2822 · core 1597/1597 · typecheck ✓ · lint 0 errors · spec 0 violations · gen:manifest 155×4/86 tokens 重新生成 + check:manifest up to date。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-adapt.md
+
+## 2026-08-22 04:13:42 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-adapt.md [ok]: Report — 批 DQ：行拖拽跨表（iris 独有）: The spec was already fully implemented at HEAD (landed in the `61ec5418` adapter-alignment batch); this session verified
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-adapt.md
+
+## 2026-08-22 04:19:40 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-review.md [ok]: Verdict: **PASS**（2 × P3 + 1 × INFO，无阻断）: Review written to `docs/vxe-grid/batch-dq-review.md`. 逐项核对结果：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-review.md
+
+## 2026-08-22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dq-gate.md [ok]: Gate PASS complete for 批 DQ 行拖拽跨表: review PASS（2 × P3 + 1 × INFO，无阻断）· turbo 180/180 (125 cached, 1m59s) · audit 0 (No known vulnerabilities) · gen:manifest+check:manifest up to date (155×4/86 tokens, zero diff) · react 246 files/**2822** (batch-dl-dt 17/17) · core 104 files/1597 不变 · typecheck clean · lint 0 errors. Comparison doc updated（批 DQ row in iris 独有 section + 构建状态 summary）; batch-dq-gate.md rewritten as real gate report; commit follows
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dq-gate.md

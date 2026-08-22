@@ -3099,3 +3099,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dw-gate.md [ok]: Verdict: FAIL → fixed → PASS ✅: review #1 MEDIUM (spec-correctness: JSDoc claimed "snapshot restores and expandAll fire no bus event", but expansion.merge(set)/expansion.set (expandAll seed :4633 + expandedKeys snapshot/URL restore :1579) go through createExpansion's unconditional onChange → expanded-rows-change on mount/restore — black-box jsdom confirmed) + #2 LOW (IrisTableEvent union unused: emitTableEvent typed string) + #3 INFO (record drift). Fixes: **(#1)** contract corrected in props/layout.ts + types/event.ts — expansion family mirrors shared onExpandedRowsChange channel (EVERY model commit fires expanded-rows-change: user toggles, expandAll seeding, persistState/view expandedKeys restores; restore still gates on onExpandedRowsChange + expandable table) + **2 pinning tests** (expandAll seed ['1','2'] key-order; persistState expandedKeys ['2'] restore fires exactly one event) — batch-dw.test.tsx 17/17 (475 lines ≤500). **(#2)** funnel typed to the union: `emitTableEvent = <K extends IrisTableEvent<Row>['type']>(type: K, detail: Extract<IrisTableEvent<Row>, { type: K }>['detail'])` — all 19 sites typecheck, typo'd event type now fails typecheck. **(#3)** baseline "13-type"→"14-type"; adapt "18/15/402"→"19/17/475" + corrected design note. Gates re-run: turbo **184/184** tasks (126 cached) · audit **0** · gen:manifest + check:manifest ✅ (regenerated onTableEvent description) · check:pack-install ✅ 27/27 (review's stale-dist note closed — rebuilt dist now carries onTableEvent). Final count (fresh): react **250 files / 2872/2872** (DW 17/17) · core **106 files / 1641/1641**. Comparison doc 批 DW row added; concurrent grid-refactor working-tree changes left uncommitted and untouched.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dw-gate.md
+
+## 2026-08-22 08:40:55 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dw-gate.md [ok]: Review verdict: `batch-dw-review.md`: **FAIL** with concrete fixes:; Fixes applied: 1. **Contract corrected + pinned** — `props/layout.ts` + `types/event.ts` now state the expansion family mirrors the sha; Full gate: | Gate | Result |; Final test counts (fresh runs): - **core**: 106 files — **1641/1641** ✅; Commit: **`bb5a847551d224f1978ade5ad7ac908f0ef45b8b`** `feat(table): grid 批 DW——表格事件总线（iris 独有）` — 11 files (+186/−7), `git diff
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dw-gate.md
+
+## 2026-08-22 08:44:02 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dx-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dx-baseline.md
+
+## 2026-08-22 08:49:47 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dx-adapt.md [ok]: Report: **Files changed (3, all + test):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dx-adapt.md
+
+## 2026-08-22 08:53:05 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dx-review.md [ok]: Summary: **Reviewed**: commit `43bade0f` (3 files: `Table.tsx` +24, `clipboard-display-helpers.tsx` +53, new `test/batch-dx.test.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dx-review.md
+
+## 2026-08-22 08:57:57 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dx-gate.md [ok]: Verdict: **PASS** — review 5 findings all LOW non-blocking (sticky `y` flag position-0 anchored、flag 白名单任意、字面量 `/…/` 被劫持无提示、reDoS 无防护、regexp 模式死 toLowerCase)，fix 建议记录待后续批。Source changes already committed at adapt stage `43bade0f` (Table.tsx +24 / clipboard-display-helpers.tsx +53 / batch-dx.test.tsx 253 行 18 测试)。Gates: turbo **184/184** (126 cached) · audit:security **0** · iris-ui-spec all **0 violations / 1546 files** · gen:manifest + check:manifest ✅ (nil diff — 155×4 / 86 tokens / 202 props / 33 events unchanged)。Final count (fresh): react **251 files / 2890/2890** (DX 18/18) · core **106 files / 1641/1641**。Comparison doc 批 DX row added `feat(table): grid 批 DX——fnr 正则替换（iris 独有）`; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW precedent).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dx-gate.md

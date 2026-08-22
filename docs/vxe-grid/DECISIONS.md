@@ -2959,3 +2959,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dr-adapt.md [ok]: Report — 批 DR：单元格编辑快捷键（iris 独有）: spec 已在 HEAD 完整实现（61ec5418 adapter 对齐批内落地）；本会话逐锚点验证 + 关闭 baseline 观察②（editKeys=[] 仅 F2）与 ① 的 DR 专属半（F2 保留/Space 三写/无 keyboardNavigation 惰性/非可编辑列拦截）。react test 246 files/2826（batch-dl-dt 21/21，+4 DR cases，文件 423→464 ≤500）· core 104/1597 不变 · typecheck clean · lint 0 errors（2 条既有 complexity 警告）· spec scan 0 violations · gen:manifest 零 diff（155×4/86 tokens）。commit follows
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-adapt.md
+
+## 2026-08-22 04:43:20 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-adapt.md [ok]: 批 DR：单元格编辑快捷键 — complete ✅: **Situation:** the spec (`editKeys?: Array<'F2'|'Enter'|'Space'>`, default F2, config extends, custom-key test) was alre
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-adapt.md
+
+## 2026-08-22 04:51:19 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-review.md [ok]: Verdict: **PASS**（1 × P3 + 2 × INFO，无阻断）: **Verified by actually running:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-review.md
+
+## 2026-08-22 05:00:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-gate.md [ok]: 批 DR（单元格编辑快捷键）gate 完成——review PASS（1 × P3 + 2 × INFO，无阻断）；full gate turbo 180/180（135 cached，1m59s）；audit 0；gen/check:manifest up to date（155×4 / 86 tokens，零 diff）；最终计数 react 246 files/2826（batch-dl-dt 21/21）· core 104 files/1597；comparison.md 新增 批 DR 行 + 构建状态追加；batch-dr-gate.md 重写为真实报告；纯文档收尾（DR 源码与 +4 测试已由 e4761d0c 携带），commit follows
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-gate.md

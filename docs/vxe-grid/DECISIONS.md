@@ -2869,3 +2869,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md [ok]: Verification-style adapt — feature already shipped at `61ec5418` (formatContextSelection, formatActions opt-in, __iris-format-number/upper keys, commitRowList funnel); verified all baseline anchors; closed 2 actionable non-blocking observations with explicit tests in `batch-dl-dt.test.tsx` (+2, now 13 tests/312 lines): (1) user onSelect never sees format keys (custom item still routes), (2) no-match (format-number on text / format-upper on number) → zero commits, onDataChange not called; observation #3 (string write-back) is spec-inherent. Gate: core 104 files/1597 ✓ · react typecheck ✓ · react 246 files/2818 ✓ (+2) · lint 0 errors (2 pre-existing Table.tsx complexity warnings) · iris-ui-spec 0 violations (1535 files) · gen:manifest no diff (155×4, 86 tokens). DO suites 43 tests (13+13+17). Commit: feat(react): grid 批 DO——单元格右键格式（iris 独有）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md
+
+## 2026-08-22 03:35:55 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md [ok]: Report — 批 DO：单元格右键格式（iris 独有）: **Batch nature**: verification-style baseline. The feature was already shipped at `61ec5418` (pre-existing commit). This
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md
+
+## 2026-08-22 03:39:30 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-do-review.md`; What was verified: **Spec correctness** — every baseline anchor matches line-for-line (`packages/react/src/primitives/table/`):; Findings (7 total, all INFO/LOW): 1. Spec anchors all exact — no deviation
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-review.md
+
+## 2026-08-22 12:00:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md [ok]: Gate PASS — review verdict PASS; full repo gate `turbo run test typecheck lint build --concurrency=2` 180/180 successful (135 cached) · `pnpm audit:security` 0 vulnerabilities · `gen:manifest`+`check:manifest` up to date (155×4, 86 tokens, DO zero diff) · updated `docs/vxe-grid-comparison.md` (iris 独有 批 DO row: contextMenu.formatActions opt-in, keys __iris-format-number/__iris-format-upper, formatContextSelection toFixed(2)/toUpperCase via commitRowList 'edit', onSelect interception, i18n en+zh) + 构建状态 summary · batch-do-gate.md rewritten as real gate report. Final counts: react 246 files/2818 · core 104 files/1597 · DO suites 43/43 · commit: feat(table): grid 批 DO——单元格右键格式（iris 独有）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md

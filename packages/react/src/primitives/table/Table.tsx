@@ -70,6 +70,7 @@ import {
   type SortableRect,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { usePrefersReducedMotion } from '../../motion'
 import { TableForm, TablePager } from './table-chrome'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableDensity, IrisTableProps } from './props'
@@ -499,6 +500,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnDrag,
   columnVisibility,
   onColumnVisibilityChange,
+  columnFade = false,
   columnOrder,
   onColumnOrderChange,
   filters,
@@ -634,6 +636,130 @@ export function IrisTable<Row extends Record<string, unknown>>({
     document.head.appendChild(style)
   }, [])
 
+  // ── Batch DY: column show/hide fade machine (iris 独有 — vxe has no
+  // show/hide transition) ───────────────────────────────────────
+  // `columnVisibility` is parent-owned; the machine only decides how a change
+  // REACHES the render. Each toggled column gets an overlay entry with a
+  // direction and a two-phase clock:
+  //   'out': hide — the column STAYS mounted (the effective visibility map
+  //     keeps it true) while its track collapses Wpx→0px and opacity 1→0,
+  //     then the commit timer drops the overlay entry and the real (hidden)
+  //     prop takes over (cells unmount, track removed).
+  //   'in': show — the column joins the render at a 0px track + opacity 0
+  //     (pending phase), then restores both over the same window; at commit
+  //     the entry is dropped (the prop already says visible) with zero visual
+  //     change.
+  // `pending` is the FIRST paint (the machine's starting layout); `run` is
+  // the transition target. The double-rAF flip guarantees the browser painted
+  // the pending layout before the target replaces it (React commits the
+  // layout-effect-triggered re-render before paint). ONE FADE_DURATION_MS
+  // commit timer applies to every entry in flight. Mount-hidden columns never
+  // animate (the first diff only records the base map); a mid-fade revert
+  // replaces the entry and restarts the fade in the new direction. Reduced
+  // motion disables the machine entirely (instant show/hide) — plus the CSS
+  // reduced-motion freeze gate in table-css.ts as a backstop.
+  const reducedMotion = usePrefersReducedMotion()
+  const [fadeOverlay, setFadeOverlay] = React.useState<
+    Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }>
+  >({})
+  const fadeOverlayRef = React.useRef(fadeOverlay)
+  fadeOverlayRef.current = fadeOverlay
+  const columnVisibilityRef = React.useRef(columnVisibility)
+  columnVisibilityRef.current = columnVisibility
+  const prevVisibilityRef = React.useRef<Record<string, boolean> | undefined>(undefined)
+  const fadeFlipRafRef = React.useRef<number | null>(null)
+  const fadeCommitTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Aligned to the `--iris-duration-md, 200ms` fallback the CSS uses; a skin
+  // that overrides the token also stretches the CSS transition (documented).
+  const FADE_DURATION_MS = 200
+
+  const fadeFlip = (
+    current: Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }>,
+  ): Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }> | undefined => {
+    let changed = false
+    const next: Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }> = {}
+    for (const [key, entry] of Object.entries(current)) {
+      if (entry.phase === 'pending') {
+        next[key] = { dir: entry.dir, phase: 'run' }
+        changed = true
+      } else next[key] = entry
+    }
+    return changed ? next : undefined
+  }
+  const fadeCommit = (
+    current: Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }>,
+  ): Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }> | undefined => {
+    let changed = false
+    const next: Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }> = {}
+    for (const [key, entry] of Object.entries(current)) {
+      const committedVisible = (columnVisibilityRef.current ?? {})[key] !== false
+      const done = entry.dir === 'out' ? !committedVisible : committedVisible
+      if (done) changed = true
+      else next[key] = entry
+    }
+    return changed ? next : undefined
+  }
+
+  // Diff the visibility map against the LAST COMMITTED one (not the overlay),
+  // so a reversal mid-fade still sees the flip: hide('a') → show('a') while
+  // the 'out' entry is in flight replaces it with 'in' (restart semantic).
+  React.useLayoutEffect(() => {
+    const next = columnVisibilityRef.current ?? {}
+    if (prevVisibilityRef.current === undefined) {
+      prevVisibilityRef.current = next // mount: record the base, never animate
+      return
+    }
+    const prev = prevVisibilityRef.current
+    prevVisibilityRef.current = next
+    if (!columnFade || reducedMotion) return
+    const overlay = { ...fadeOverlayRef.current }
+    let dirty = false
+    for (const key of new Set([...Object.keys(prev), ...Object.keys(next)])) {
+      const was = prev[key] !== false // sparse map: absence = visible
+      const is = next[key] !== false
+      if (was === is) continue
+      overlay[key] = is ? { dir: 'in', phase: 'pending' } : { dir: 'out', phase: 'pending' }
+      dirty = true
+    }
+    if (!dirty) return
+    setFadeOverlay(overlay)
+    if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+      // Fail-closed: no rAF (SSR) → drop the overlay; the committed
+      // visibility map renders immediately (instant show/hide, vxe parity).
+      setFadeOverlay({})
+      return
+    }
+    if (fadeFlipRafRef.current === null) {
+      fadeFlipRafRef.current = window.requestAnimationFrame(() => {
+        fadeFlipRafRef.current = window.requestAnimationFrame(() => {
+          fadeFlipRafRef.current = null
+          setFadeOverlay((current) => fadeFlip(current) ?? current)
+        })
+      })
+    }
+    if (fadeCommitTimerRef.current !== null) clearTimeout(fadeCommitTimerRef.current)
+    fadeCommitTimerRef.current = setTimeout(() => {
+      fadeCommitTimerRef.current = null
+      setFadeOverlay((current) => fadeCommit(current) ?? current)
+    }, FADE_DURATION_MS)
+  }, [columnFade, reducedMotion, columnVisibility])
+
+  // Machine off (prop off / reduced motion): drop any in-flight overlay so the
+  // committed visibility map renders as-is, and re-base the diff.
+  React.useEffect(() => {
+    if (columnFade && !reducedMotion) return
+    prevVisibilityRef.current = columnVisibilityRef.current ?? {}
+    setFadeOverlay({})
+  }, [columnFade, reducedMotion])
+
+  // Unmount: cancel pending rAF flip + commit timer (no leaks across tests).
+  React.useEffect(() => {
+    return () => {
+      if (fadeFlipRafRef.current !== null) window.cancelAnimationFrame(fadeFlipRafRef.current)
+      if (fadeCommitTimerRef.current !== null) clearTimeout(fadeCommitTimerRef.current)
+    }
+  }, [])
+
   const { t } = useI18n()
   // Batch BL perf sampling: render-top mark — `nowMs()` (performance.now
   // with a Date.now fallback for SSR/jsdom). The dependency-less
@@ -689,6 +815,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [scheduleTooltipMeasure],
   )
   const [responsiveWidth, setResponsiveWidth] = React.useState(0)
+  // Batch DY: the fade machine's overlay keeps mid-fade columns in the render —
+  // pass it merged on top of the parent's map so `displayColumns` keeps a
+  // hiding column mounted until COMMIT, and a showing column is mounted from
+  // its first 0px frame. No useTableColumns signature change (same prop).
+  const effectiveColumnVisibility = React.useMemo(() => {
+    if (Object.keys(fadeOverlay).length === 0) return columnVisibility
+    const merged = { ...(columnVisibility ?? {}) }
+    for (const key of Object.keys(fadeOverlay)) merged[key] = true
+    return merged
+  }, [columnVisibility, fadeOverlay])
   const {
     hasDetail,
     safeColumns,
@@ -718,13 +854,43 @@ export function IrisTable<Row extends Record<string, unknown>>({
     selectable,
     autoDetectTypes,
     columnOrder,
-    columnVisibility,
+    columnVisibility: effectiveColumnVisibility,
     columnWidths: columnWidthsProp,
     defaultColumnWidths,
     onColumnWidthsChange,
     pinnedColumns,
     onColumnPinnedChange,
   })
+  // Batch DY: expand the overlay — keyed by TOP-LEVEL column keys (matching
+  // `columnVisibility`) — down to leaf keys, so a grouped parent's fade
+  // drives ALL of its leaf tracks + leaf cells as one column. Top-level keys
+  // that are already leaves map to themselves.
+  const fadeByLeaf = React.useMemo(() => {
+    if (Object.keys(fadeOverlay).length === 0) return {}
+    const out: Record<string, { dir: 'in' | 'out'; phase: 'pending' | 'run' }> = {}
+    for (const [key, entry] of Object.entries(fadeOverlay)) {
+      const top = orderedColumns.find((c) => c.key === key)
+      if (!top) continue
+      const leaves = top.children && top.children.length > 0 ? flattenLeafColumns([top]) : [top]
+      for (const leaf of leaves) out[leaf.key] = entry
+    }
+    return out
+  }, [fadeOverlay, orderedColumns])
+  // Per-cell fade surface: attr for the test/DOM contract, inline opacity 0
+  // ONLY on the fade's starting phase. `top-level match first` lets a grouped
+  // parent header (not in fadeByLeaf) fade alongside its leaves.
+  const columnFadeAttr = (col: IrisTableColumn<Row>): 'in' | 'out' | undefined => {
+    const overlayEntry = fadeOverlay[col.key]
+    if (overlayEntry) return overlayEntry.dir
+    return fadeByLeaf[col.key]?.dir
+  }
+  const columnFadeStyle = (col: IrisTableColumn<Row>): React.CSSProperties | null => {
+    const entry = fadeOverlay[col.key] ?? fadeByLeaf[col.key]
+    if (!entry) return null
+    const hidden = entry.dir === 'out' ? entry.phase === 'run' : entry.phase === 'pending'
+    return hidden ? { opacity: 0 } : null
+  }
+  const columnFadeActive = columnFade && Object.keys(fadeOverlay).length > 0
   // Column visibility (vxe columnConfig.visible parity): filter hidden
   // columns out of every render path (header, body, summary).
   //
@@ -4675,6 +4841,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (hasDetail) widths.push(`${EXPAND_COL_WIDTH}px`)
     if (selectable !== 'none') widths.push('40px')
     for (const col of leafColumns) {
+      const fade = fadeByLeaf[col.key]
+      if (
+        fade &&
+        ((fade.dir === 'out' && fade.phase === 'run') ||
+          (fade.dir === 'in' && fade.phase === 'pending'))
+      ) {
+        // Batch DY: the fade's collapsed phase — the track goes to 0px while
+        // the cell stays mounted (opacity handled by the cell helper); the
+        // run of the opposite phase restores the normal width below.
+        widths.push('0px')
+        continue
+      }
       const override = columnWidths[col.key]
       if (isValidColumnWidth(override)) widths.push(`${override}px`)
       else if (isValidColumnWidth(col.width)) widths.push(`${col.width}px`)
@@ -4687,7 +4865,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else widths.push('minmax(0, 1fr)')
     }
     return widths.join(' ')
-  }, [leafColumns, selectable, columnWidths, hasDetail, showRowNumbers, rowDragEnabled])
+  }, [leafColumns, selectable, columnWidths, hasDetail, showRowNumbers, rowDragEnabled, fadeByLeaf])
 
   // Sticky offsets for pinned columns: each accumulates the resolved widths of
   // the pinned columns between it and its edge (plus the selection column on
@@ -6613,6 +6791,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }
               role="cell"
               data-iris-table-cell={col.key}
+              data-iris-column-fade={columnFadeAttr(col)}
               data-iris-table-pinned={pinOf(col)}
               data-editable={editableLive ? '' : undefined}
               data-editing={editing ? '' : undefined}
@@ -6769,6 +6948,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // every background shorthand above (range-fill/conditional/
                 // user) — an inline `background` shorthand resets
                 // background-image.
+                // Batch DY: fade-start opacity (0) — invisible for non-fading
+                // cells (helper returns null). AFTER user/conditional styles so
+                // the transition target can't be clobbered mid-fade.
+                ...(columnFadeStyle(col) ?? null),
                 ...lockedRender.style,
               }}
             >
@@ -7107,6 +7290,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
       pinnedStyle,
       footerTooltip,
       footerCellSpan,
+      columnFadeAttr,
+      columnFadeStyle,
       getCellValue,
     })
 
@@ -8353,8 +8538,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
               <div
                 key={col.key}
                 data-iris-column-totals-cell={col.key}
+                data-iris-column-fade={columnFadeAttr(col)}
                 style={{
                   ...baseCellStyle,
+                  ...(columnFadeStyle(col) ?? null),
                   justifyContent: justifyFor(col.align),
                 }}
               >
@@ -8468,6 +8655,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         aria-rowcount={ariaGridRowCount}
         aria-colcount={ariaGridColumnCount}
         data-iris-table=""
+        data-iris-column-fade-active={columnFadeActive ? 'true' : undefined}
         data-size={size}
         data-density={effectiveDensity}
         data-printable={printable ? 'true' : undefined}
@@ -8779,6 +8967,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     data-iris-table-header={col.key}
                     data-iris-table-header-group={isLeaf ? undefined : ''}
                     data-iris-table-pinned={isLeaf ? pinOf(col) : undefined}
+                    data-iris-column-fade={columnFadeAttr(col)}
                     data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                     data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
                     className={headerCellClassName?.(col)}
@@ -8825,6 +9014,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       fontWeight: 600,
                       userSelect: sortable ? 'none' : 'auto',
                       ...(headerCellStyle?.(col) ?? null),
+                      ...(columnFadeStyle(col) ?? null),
                       position: isLeaf ? 'relative' : undefined,
                       // Pinned leaf header keeps a solid surface bg + sticky
                       // position (flat-header precedent; group cells never pin).
@@ -9034,6 +9224,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   onContextMenu={columnPinMenu ? (e) => handleHeaderContextMenu(e, col) : undefined}
                   data-iris-table-header={col.key}
                   data-iris-table-pinned={pinOf(col)}
+                  data-iris-column-fade={columnFadeAttr(col)}
                   data-iris-col-current={currentColumnKey === col.key ? 'true' : undefined}
                   data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                   data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
@@ -9061,6 +9252,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     fontWeight: 600,
                     userSelect: col.sortable ? 'none' : 'auto',
                     ...(headerCellStyle?.(col) ?? null),
+                    ...(columnFadeStyle(col) ?? null),
                     ...(editConfig?.showAsterisk && col.editRules?.some((r) => r.required)
                       ? { '::after': undefined }
                       : {}),

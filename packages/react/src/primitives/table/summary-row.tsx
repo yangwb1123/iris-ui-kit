@@ -33,6 +33,10 @@ export interface TableSummaryRowProps<Row extends Record<string, unknown>> {
   pinnedStyle: (key: string) => React.CSSProperties | null
   footerTooltip: (column: IrisTableColumn<Row>) => string | undefined
   footerCellSpan: (rowIndex: number, columnIndex: number) => FooterCellSpanState
+  /** Batch DY column fade: `'in' | 'out'` while the column is mid-fade (undefined otherwise). */
+  columnFadeAttr: (col: IrisTableColumn<Row>) => 'in' | 'out' | undefined
+  /** Batch DY column fade: `{ opacity: 0 }` on the fade's starting phase, null otherwise. */
+  columnFadeStyle: (col: IrisTableColumn<Row>) => React.CSSProperties | null
   getCellValue: (row: Row, column: IrisTableColumn<Row>) => unknown
 }
 
@@ -60,6 +64,8 @@ export function TableSummaryRow<Row extends Record<string, unknown>>({
   pinnedStyle,
   footerTooltip,
   footerCellSpan,
+  columnFadeAttr,
+  columnFadeStyle,
   getCellValue,
 }: TableSummaryRowProps<Row>): React.ReactElement {
   return (
@@ -112,11 +118,13 @@ export function TableSummaryRow<Row extends Record<string, unknown>>({
             role="cell"
             data-iris-table-cell={column.key}
             data-iris-table-summary-cell={operation ? '' : undefined}
+            data-iris-column-fade={columnFadeAttr(column)}
             title={footerTooltip(column)}
             style={{
               ...baseCellStyle,
               ...(showFooterOverflow ? null : cellOverflowOverride),
               ...(spanState?.spanStyle ?? null),
+              ...(columnFadeStyle(column) ?? null),
               justifyContent: justifyFor(footerAlign ?? column.align),
               ...(visibleColSet ? { gridColumnStart: colTrack(columnIndex) } : null),
               ...pinnedStyle(column.key),

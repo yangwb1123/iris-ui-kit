@@ -36590,6 +36590,12 @@
           "description": "Fired when visibility changes (parent owns the map)."
         },
         {
+          "name": "columnFade",
+          "type": "boolean",
+          "optional": true,
+          "description": "Column show/hide transition (batch DY, iris 独有 — vxe has no fade): when true, `columnVisibility` changes play a 200ms opacity + width transition instead of snapping — a hiding column keeps its cells mounted while its track collapses Wpx→0px and opacity fades to 0, then commits away; a showing column mounts at 0px/opacity 0 and restores both. The duration is token-driven (`--iris-duration-md`, fallback 200ms) and the whole machine is disabled under `prefers-reduced-motion` (instant show/hide, vxe parity). Mount-hidden columns never animate (only later toggles play); a mid-fade revert restarts the fade in the new direction. Pure render-side additive — `columnVisibility`/`onColumnVisibilityChange` keep their exact semantics. Default false — byte-identical with the pre-prop render path."
+        },
+        {
           "name": "columnOrder",
           "type": "string[]",
           "optional": true,
@@ -37798,6 +37804,12 @@
               "type": "(next: Record<string, boolean>) => void",
               "optional": true,
               "description": "Fired when visibility changes (parent owns the map)."
+            },
+            {
+              "name": "columnFade",
+              "type": "boolean",
+              "optional": true,
+              "description": "Column show/hide transition (batch DY, iris 独有 — vxe has no fade): when true, `columnVisibility` changes play a 200ms opacity + width transition instead of snapping — a hiding column keeps its cells mounted while its track collapses Wpx→0px and opacity fades to 0, then commits away; a showing column mounts at 0px/opacity 0 and restores both. The duration is token-driven (`--iris-duration-md`, fallback 200ms) and the whole machine is disabled under `prefers-reduced-motion` (instant show/hide, vxe parity). Mount-hidden columns never animate (only later toggles play); a mid-fade revert restarts the fade in the new direction. Pure render-side additive — `columnVisibility`/`onColumnVisibilityChange` keep their exact semantics. Default false — byte-identical with the pre-prop render path."
             },
             {
               "name": "columnOrder",
@@ -40091,7 +40103,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 202,
+        "propCount": 203,
         "eventCount": 33
       }
     },

@@ -262,6 +262,20 @@ export interface IrisTableLayoutProps<
   columnVisibility?: Record<string, boolean>
   /** Fired when visibility changes (parent owns the map). */
   onColumnVisibilityChange?: (next: Record<string, boolean>) => void
+  /**
+   * Column show/hide transition (batch DY, iris 独有 — vxe has no fade): when
+   * true, `columnVisibility` changes play a 200ms opacity + width transition
+   * instead of snapping — a hiding column keeps its cells mounted while its
+   * track collapses Wpx→0px and opacity fades to 0, then commits away; a
+   * showing column mounts at 0px/opacity 0 and restores both. The duration is
+   * token-driven (`--iris-duration-md`, fallback 200ms) and the whole machine
+   * is disabled under `prefers-reduced-motion` (instant show/hide, vxe
+   * parity). Mount-hidden columns never animate (only later toggles play); a
+   * mid-fade revert restarts the fade in the new direction. Pure render-side
+   * additive — `columnVisibility`/`onColumnVisibilityChange` keep their exact
+   * semantics. Default false — byte-identical with the pre-prop render path.
+   */
+  columnFade?: boolean
   /** Controlled column order (vxe customConfig parity): the panel's drag list reorders these keys; unnamed keys follow in source order, unknown keys ignored. Top-level columns only. */
   columnOrder?: string[]
   /** Fired when the panel confirms a new order. `undefined` clears the order (parent drops `columnOrder`). */

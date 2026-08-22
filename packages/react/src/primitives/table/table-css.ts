@@ -204,4 +204,28 @@ export const TABLE_ROW_CSS = `
 [data-iris-table][data-density="cozy"] {
   --iris-cell-pad-y: 4px;
 }
+/* Batch DY column fade (iris 独有 — vxe has no show/hide transition): while a
+   column show/hide fade is in flight the ROOT carries
+   data-iris-column-fade-active, so (1) fading cells (data-iris-column-fade=
+   "in|out") transition opacity and (2) every row's grid-template-columns
+   transitions — the collapsing/expanding track animates instead of jumping
+   (the rows all share the same gridTemplateColumns string). Both use the
+   motion token with the 200ms fallback (batch-CL precedent). Scoping the
+   grid-template transition to the in-flight window keeps LATER width changes
+   (drag-resize / auto-fit) instantaneous — the gradient never lingers; the
+   inline opacity: 0 rides ON the fading cell, so the attr alone is inert.
+   The reduced-motion media block is a CSS backstop ON TOP of the JS skip
+   (columnFade forces the machine off under prefers-reduced-motion). */
+[data-iris-column-fade-active] [data-iris-column-fade] {
+  transition: opacity var(--iris-duration-md, 200ms) ease;
+}
+[data-iris-column-fade-active] [role="row"] {
+  transition: grid-template-columns var(--iris-duration-md, 200ms) ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-iris-column-fade-active] [data-iris-column-fade],
+  [data-iris-column-fade-active] [role="row"] {
+    transition: none !important;
+  }
+}
 `

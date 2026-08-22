@@ -225,9 +225,19 @@ describe('IrisTable batches DL–DT', () => {
   it('DP marks the root and injects custom thumb rules', () => {
     render(<IrisTable columns={columns} data={rows} scrollbarThumb />)
     expect(document.querySelector('[data-iris-scrollbar-thumb="true"]')).not.toBeNull()
-    expect(document.getElementById('iris-table-row-styles')?.textContent).toContain(
-      'data-iris-scrollbar-thumb',
-    )
+    const css = document.getElementById('iris-table-row-styles')?.textContent ?? ''
+    expect(css).toContain('data-iris-scrollbar-thumb')
+    // style properties: slim 8px webkit bars + rounded, token-colored thumb
+    // with the hover ramp (rest: translucent primary → hover: full primary)
+    expect(css).toContain('width: 8px')
+    expect(css).toContain('border-radius: var(--iris-radius-sm, 4px)')
+    expect(css).toContain('color-mix(in srgb, var(--iris-primary) 60%, transparent)')
+    expect(css).toContain('::-webkit-scrollbar-thumb:hover')
+  })
+
+  it('DP leaves native scrollbars untouched by default', () => {
+    render(<IrisTable columns={columns} data={rows} />)
+    expect(document.querySelector('[data-iris-scrollbar-thumb]')).toBeNull()
   })
 
   it('DQ drops a row on a matching external zone', () => {

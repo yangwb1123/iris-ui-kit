@@ -151,7 +151,11 @@ export const TABLE_ROW_CSS = `
   background: var(--iris-primary);
 }
 /* Custom scrollbar thumb (batch DP): keep native scrolling/keyboard access but
-   make the draggable thumb visible as a rounded token-colored affordance. */
+   restyle the draggable thumb as a slim rounded token affordance. At rest the
+   thumb is translucent primary (color-mix over the token — no hardcoded
+   colors); hovering or dragging ramps it to full primary, the spec's hover
+   color enhancement. Covers the root scroller and the virtual-scroll
+   descendant. */
 [data-iris-scrollbar-thumb="true"],
 [data-iris-scrollbar-thumb="true"] [data-iris-virtual-scroll] {
   scrollbar-color: var(--iris-primary) transparent;
@@ -163,7 +167,7 @@ export const TABLE_ROW_CSS = `
 }
 [data-iris-scrollbar-thumb="true"]::-webkit-scrollbar-thumb,
 [data-iris-scrollbar-thumb="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb {
-  background: var(--iris-primary);
+  background: color-mix(in srgb, var(--iris-primary) 60%, transparent);
   border-radius: var(--iris-radius-sm, 4px);
 }
 [data-iris-scrollbar-thumb="true"]::-webkit-scrollbar-thumb:hover,

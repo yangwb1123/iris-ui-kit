@@ -2884,3 +2884,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md [ok]: Gate PASS — review verdict PASS; full repo gate `turbo run test typecheck lint build --concurrency=2` 180/180 successful (135 cached) · `pnpm audit:security` 0 vulnerabilities · `gen:manifest`+`check:manifest` up to date (155×4, 86 tokens, DO zero diff) · updated `docs/vxe-grid-comparison.md` (iris 独有 批 DO row: contextMenu.formatActions opt-in, keys __iris-format-number/__iris-format-upper, formatContextSelection toFixed(2)/toUpperCase via commitRowList 'edit', onSelect interception, i18n en+zh) + 构建状态 summary · batch-do-gate.md rewritten as real gate report. Final counts: react 246 files/2818 · core 104 files/1597 · DO suites 43/43 · commit: feat(table): grid 批 DO——单元格右键格式（iris 独有）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md
+
+## 2026-08-22 03:44:09 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md [ok]: Gate results: | Check | Result |; Final test counts: | Suite | Files | Tests |; Docs updated: - `docs/vxe-grid-comparison.md` — added 批 DO row to **iris 独有** section (`contextMenu.formatActions` opt-in, `__iris-for; Commit: **`b2dc79b9`** `feat(table): grid 批 DO——单元格右键格式（iris 独有）` — 5 files, +106/−42
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md
+
+## 2026-08-22 03:48:11 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dp-baseline.md [ok]: 批 DP：表格滚动条增强（iris 独有）— 基线结论: **Feature 已在 HEAD `b2dc79b9` 完整提交**（于 `61ec5418` adapter 对齐提交内一并交付），逐行锚定：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-baseline.md
+
+## 2026-08-22 03:51:00 — stage 'do' — PASS
+
+- task 批 DP 表格滚动条增强（iris 独有）：验证 baseline 锚定全部在位（advanced.ts:198 prop · Table.tsx:286/8070 解构+标记 · table-css.ts 注入源），补 spec 要求的 hover 色增强真实现（rest `color-mix(in srgb, var(--iris-primary) 60%, transparent)` → hover 全量 `--iris-primary`，纯 token），补默认关态负向断言；batch-dl-dt 14/14 · core 104/1597 · react 246/2819 · typecheck ✓ · lint 0 errors（2 既有 complexity warning）· spec 扫描 1535 文件 0 violations · gen:manifest 155×4/86 tokens 无 diff
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dp-baseline.md

@@ -3194,3 +3194,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ea-gate.md [ok]: Review verdict: `batch-ea-review.md` = **PASS** (1 MEDIUM recommended for fix before merge + 2 LOW/INFO). MEDIUM fixed: async empty→data virtual-viewport re-arm — dual-scroller attach + event-time effective-scroller resolution + `Boolean(bodyData.length)` dep (+2 regression tests, batch-ea 19/19). Full gate: turbo **184/184** (126 cached) · audit:security **0** · audit:tokens exit 0 · iris-ui-spec **0 violations / 1546 files** (review-verified; fix adds no style literals) · gen:manifest + check:manifest ✅ (205 props / 33 events / 155×4 / 86 tokens, nil diff). Final counts: core **106 files / 1641/1641** · react **254 files / 2947/2947** (batch-ea 19/19, 397 lines ≤500). Comparison doc 批 EA row added; commit `8ce4f828`; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW/DX/DY/DZ precedent).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ea-gate.md
+
+## 2026-08-22 10:58:38 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ea-gate.md [ok]: Report: **Review verdict:** `batch-ea-review.md` = **PASS** (1 MEDIUM recommended for fix before merge + 2 LOW/INFO non-blocking; MEDIUM finding — fixed ✅: **`Table.tsx` async re-arm** (virtual viewport only mounts after data arrives; scroll events don't bubble → listener str; Full gate results: | Gate | Result |; Final test counts: - **core**: 106 files — **1641/1641** (zero core changes, framework-free invariant); Commit: **`30c860e1`** — `feat(table): grid 批 EA——滚动到顶按钮（iris 独有）` (8 files, +192/−28: Table.tsx fix + 2 tests + finalized adapt
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ea-gate.md
+
+## 2026-08-22 11:03:56 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-eb-baseline.md [ok]: 批 EB 列访问统计 baseline（/home/u1/iris-ui/docs/vxe-grid/batch-eb-baseline.md）: **Verified**（HEAD `30c860e1` 批 EA 已合入;manifest 205 props / 33 events → EB → **206 props**,events/components 不变;react 294
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eb-baseline.md
+
+## 2026-08-22 11:17:30 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-eb-adapt.md [ok]: Report: **Implemented: batch EB — 列访问统计 (`columnStats`, iris 独有)** — committed as `705fd67a feat(table): grid 批 EB——列访问统计（iris 独; Files changed (11, incl. manifest + baseline doc): | File | Change |; Tests added: `packages/react/src/primitives/table/test/batch-eb.test.tsx`— **499 lines**, **21 tests** (13 counting + 8 panel): plai; Verification (all pass): -`core test`— 1641/1641 ✓ (also`manifest test` 69/69); Design points / fiats honored: Session-local internal counting (no core controller, no persistence, no clear channel); every click counts exactly once
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eb-adapt.md
+
+## 2026-08-22 11:21:55 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-eb-review.md [ok]: What I verified (commit `705fd67a`, 11 files exactly as the adapt report claims): **Spec correctness** — the full topology matches baseline:; Findings (non-blocking): 1. **LOW** `Table.tsx:2825` — `columnStatsTop` sorts every render while `columnStats` is on even with the panel closed;
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eb-review.md
+
+## 2026-08-22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-eb-gate.md [ok]: Review verdict: `batch-eb-review.md` = **PASS** (1 LOW non-blocking + 2 INFO; no fixes required). Full gate: turbo **184/184** (55 cached) · audit:security **0** · audit:tokens exit 0 · iris-ui-spec **0 violations / 1547 files** · gen:manifest + check:manifest ✅ (206 props / 33 events / 155×4 / 86 tokens, nil diff). Final counts: core **106 files / 1641/1641** · react **255 files / 2968/2968** (batch-eb 21/21, 499 lines ≤500). Comparison doc 批 EB row added; LOW finding (columnStatsTop closed-panel sort) accepted non-blocking; concurrent grid-refactor working-tree changes left uncommitted and untouched (DV/DW/DX/DY/DZ/EA precedent).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-eb-gate.md

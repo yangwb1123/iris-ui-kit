@@ -2854,3 +2854,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dn-gate.md [ok]: Verdict: `batch-dn-review.md` → PASS（验证式 adapt：功能已在 `61ec5418` 交付，`8258df80` 补 1 个分组叶回归 + 交付记录；本轮 gate 确认全绿）; Gate results: full repo gate `corepack pnpm turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**（135 cached）；`pnpm audit:security` → **0 vulns**、`audit:tokens` → clean；`pnpm gen:manifest` + `check:manifest` → **up to date**（155×4、86 tokens、`headerStats` ×2）; Docs updated（`docs/vxe-grid-comparison.md`，iris 独有 section）: 新增 批 DN 行（`headerStats` 列头小统计——props/advanced.ts:201 默认 off fail-closed、`headerStatsByKey` memo :3951-3967 经 `getCellValue` 只收有限数值、平面/分组叶表头 `n=N · avg=X.XX` + `data-iris-header-stats`/aria-label、与列汇总条 `columnTotals` 独立 :7935）+ 构建状态行追加 + DL–DT 记录表 DN 行措辞收敛；batch-dn-gate.md 重写为真实 gate 报告; Commit: - **Hash:** `9fff46f16ec06eb385b8d54eee5807030f0d711f` — `feat(table): grid 批 DN——列头统计（iris 独有）`; Final test counts: react 246 files/**2816** · core 104 files/**1597** · vue 165 files/1573 · solid 142 files/1013+38 hydration · svelte 144 files/969+35 hydration · turbo **180/180** · audit **0/clean**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-gate.md
+
+## 2026-08-22 03:27:04 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dn-gate.md [ok]: Gate results: | Check | Result |; Final test counts: | Suite | Files | Tests |; Docs updated: `docs/vxe-grid-comparison.md` (iris 独有 section) — added 批 DN row (`headerStats` at `props/advanced.ts:201`, fail-closed ; Commits: - **`9fff46f1`** `feat(table): grid 批 DN——列头统计（iris 独有）` (5 files, +111/−30)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-gate.md
+
+## 2026-08-22 03:29:55 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-baseline.md [ok]: Baseline summary — 批 DO：单元格右键格式（iris 独有）: **Exact design** — spec（contextMenu 内置格式项：`__iris-format-number` 选中区域数字 `toFixed(2)` + `__iris-format-upper` 文本大写，经 `com
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-baseline.md
+
+## 2026-08-22 03:34:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md [ok]: Verification-style adapt — feature already shipped at `61ec5418` (formatContextSelection, formatActions opt-in, __iris-format-number/upper keys, commitRowList funnel); verified all baseline anchors; closed 2 actionable non-blocking observations with explicit tests in `batch-dl-dt.test.tsx` (+2, now 13 tests/312 lines): (1) user onSelect never sees format keys (custom item still routes), (2) no-match (format-number on text / format-upper on number) → zero commits, onDataChange not called; observation #3 (string write-back) is spec-inherent. Gate: core 104 files/1597 ✓ · react typecheck ✓ · react 246 files/2818 ✓ (+2) · lint 0 errors (2 pre-existing Table.tsx complexity warnings) · iris-ui-spec 0 violations (1535 files) · gen:manifest no diff (155×4, 86 tokens). DO suites 43 tests (13+13+17). Commit: feat(react): grid 批 DO——单元格右键格式（iris 独有）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md

@@ -148,6 +148,62 @@ describe('IrisTable batches DL–DT', () => {
     expect(onDataChange).toHaveBeenCalledTimes(1)
   })
 
+  it('DO keeps format keys out of the user onSelect callback', () => {
+    const onSelect = vi.fn()
+    render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        contextMenu={{
+          items: () => [{ key: 'custom', label: 'Custom' }],
+          onSelect,
+          formatActions: true,
+        }}
+      />,
+    )
+    fireEvent.contextMenu(cell(1, 'amount'), { clientX: 10, clientY: 10 })
+    act(() =>
+      fireEvent.click(
+        document.querySelector('[data-iris-table-context-menu-item="__iris-format-number"]')!,
+      ),
+    )
+    expect(onSelect).not.toHaveBeenCalled()
+    fireEvent.contextMenu(cell(1, 'amount'), { clientX: 10, clientY: 10 })
+    act(() =>
+      fireEvent.click(document.querySelector('[data-iris-table-context-menu-item="custom"]')!),
+    )
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect.mock.calls[0]![0]).toBe('custom')
+  })
+
+  it('DO commits nothing when no cell matches the requested format', () => {
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        onDataChange={onDataChange}
+        contextMenu={{ items: () => [], onSelect: vi.fn(), formatActions: true }}
+      />,
+    )
+    fireEvent.contextMenu(cell(1, 'name'), { clientX: 10, clientY: 10 })
+    act(() =>
+      fireEvent.click(
+        document.querySelector('[data-iris-table-context-menu-item="__iris-format-number"]')!,
+      ),
+    )
+    expect(onDataChange).not.toHaveBeenCalled()
+    fireEvent.contextMenu(cell(1, 'amount'), { clientX: 10, clientY: 10 })
+    act(() =>
+      fireEvent.click(
+        document.querySelector('[data-iris-table-context-menu-item="__iris-format-upper"]')!,
+      ),
+    )
+    expect(onDataChange).not.toHaveBeenCalled()
+  })
+
   it('DO applies uppercase formatting to the clicked text cell', () => {
     render(
       <IrisTable

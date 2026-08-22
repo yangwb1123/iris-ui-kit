@@ -40018,6 +40018,12 @@
               "description": "Read a row's children to enable tree mode."
             },
             {
+              "name": "persistState",
+              "type": "import('./types').IrisTablePersistConfig",
+              "optional": true,
+              "description": "Persist view state (sort/filters/column widths/page size) across remounts."
+            },
+            {
               "name": "keyboardNavigation",
               "type": "boolean",
               "optional": true,
@@ -40101,6 +40107,9 @@
             "IrisTableHandle",
             "IrisTableNamedView",
             "IrisTablePagerConfig",
+            "IrisTablePersistConfig",
+            "IrisTablePersistPiece",
+            "IrisTablePersistedState",
             "IrisTableProps",
             "IrisTableProxyConfig",
             "IrisTableProxyQueryParams",

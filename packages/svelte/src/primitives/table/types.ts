@@ -178,6 +178,40 @@ export interface IrisTableVirtualOptions {
 
 export type IrisTableColumnWidths = Record<string, number>
 
+/** State pieces persistable via `persistState` (batch EJ, iris 独有). */
+export type IrisTablePersistPiece =
+  'sort' | 'filters' | 'columnVisibility' | 'columnOrder' | 'columnWidths' | 'pageSize'
+
+/** One persisted state snapshot (batch EJ): the pieces `persistState` loads
+ * and saves, keyed by piece name — a piece appears only when defined + included. */
+export interface IrisTablePersistedState {
+  sort?: IrisTableSortState | null
+  filters?: Record<string, string>
+  columnVisibility?: Record<string, boolean>
+  columnOrder?: string[]
+  columnWidths?: IrisTableColumnWidths
+  pageSize?: number
+}
+
+/**
+ * `persistState` configuration (batch EJ, iris 独有 — vxe has no built-in
+ * state persistence). Persists view state (sort / filters / column widths /
+ * page size) to a storage adapter so a table remounts where the user left it.
+ * The table is CONTROLLED: restore replays through the change callbacks and
+ * saves serialize the current props on every change. `columnVisibility` and
+ * `columnOrder` are accepted for cross-framework parity but stay inert in this
+ * bridge — neither has a change callback yet (fiat F1).
+ */
+export interface IrisTablePersistConfig {
+  /** Storage adapter (`getItem`/`setItem`; defaults to `localStorage`).
+   * `false` fully disables persistence — no reads, no writes. */
+  storage?: Pick<Storage, 'getItem' | 'setItem'> | false
+  /** Storage key. Default `'iris-table-state'`. */
+  key?: string
+  /** Pieces to persist. Defaults to ALL pieces. */
+  include?: Array<IrisTablePersistPiece>
+}
+
 /** One search-form field (vxe-grid formConfig items parity). On submit the
  * field's value merges into the table filters under `key` (client-side path
  * or the proxy query); empty strings are inactive and stripped. */

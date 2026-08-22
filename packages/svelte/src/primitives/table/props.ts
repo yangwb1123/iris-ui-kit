@@ -151,6 +151,8 @@ export interface IrisTableProps {
   onExpandedRowsChange?: (keys: Array<string | number>) => void
   /** Read a row's children to enable tree mode. */
   getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
+  /** Persist view state (sort/filters/column widths/page size) across remounts. */
+  persistState?: import('./types').IrisTablePersistConfig
   keyboardNavigation?: boolean
   cellRange?: boolean
   /** Range clipboard copy; copyWithFormat uses column formatter output. */

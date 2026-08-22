@@ -45,6 +45,8 @@
     IrisTableSortState,
     IrisTableColumnWidths,
     IrisTableDensity,
+    IrisTablePersistPiece,
+    IrisTablePersistedState,
   } from './types'
   import { createTableDragBridge } from './table-drag'
   import { createTableHandle } from './table-handle'
@@ -73,6 +75,7 @@
   import { applyDetectedTableTypes } from './table-columns'
   import { createPinnedDragMath } from './table-pinned-drag'
   import { createTableViewsController } from './table-views.svelte'
+  import { createTablePersistController } from './table-persist.svelte'
   import { TABLE_STYLES } from './table-styles'
   import TableSortIndicator from './TableSortIndicator.svelte'
   import TableStateRow from './TableStateRow.svelte'
@@ -158,6 +161,7 @@
     onUpdateSort,
     onRowClick,
     onCellEdit,
+    persistState,
     style,
     ...rest
   }: IrisTableProps = $props()
@@ -224,14 +228,19 @@
   let internalSort = $state<IrisTableSortState | null>(defaultSort ?? null)
   const effectiveSort = $derived(sort !== undefined ? sort : internalSort)
 
+  // The ONE sort funnel — named views AND persistState restores go through
+  // this throat (controlled/uncontrolled + remoteSort re-query). `remoteSort`
+  // and `proxyRef` are declared later in setup; calls only happen after mount.
+  function applySort(next: IrisTableSortState | null): void {
+    if (sort === undefined) internalSort = next
+    onUpdateSort?.(next)
+    if (remoteSort) proxyRef?.setParams({ sort: next })
+  }
+
   const tableViews = createTableViewsController({
     config: () => views,
     sort: () => effectiveSort,
-    applySort: (next) => {
-      if (sort === undefined) internalSort = next
-      onUpdateSort?.(next)
-      if (remoteSort) proxyRef?.setParams({ sort: next })
-    },
+    applySort,
     onActiveViewChange: (key) => onActiveViewChange?.(key),
   })
 
@@ -304,7 +313,25 @@
         proxyState = s
       })
       // autoLoad parity: kick the first request here (never during render).
-      if (proxyConfig?.autoLoad !== false) void src.request()
+      // Batch EJ (persistState): a restored pageSize hooks in BEFORE the
+      // first request — `onPageChange(1, restored)` + exactly ONE request
+      // with the restored size (react batch-AG / `request(partial)` applies
+      // the params and fires once; a plain `request()` would double-fetch).
+      // Applied only when `proxyConfig.onPageChange` exists (documented:
+      // pageSize is only meaningful with it) and nothing restored falls
+      // through to the normal autoLoad kick. `persistCtrl` is initialized
+      // later in setup — the parse happens once, before effects run.
+      const restoredPageSize = persistCtrl.parsed?.pageSize
+      if (
+        typeof restoredPageSize === 'number' &&
+        restoredPageSize > 0 &&
+        proxyConfig?.onPageChange
+      ) {
+        proxyConfig.onPageChange(1, restoredPageSize)
+        void src.request({ pageSize: restoredPageSize, page: 1 })
+      } else if (proxyConfig?.autoLoad !== false) {
+        void src.request()
+      }
       return src
     })
     return () => {
@@ -699,6 +726,97 @@
     const delta = e.key === 'ArrowRight' ? TABLE_CONST.RESIZE_STEP : -TABLE_CONST.RESIZE_STEP
     setColumnWidth(col.key, clampWidth(col, cur + delta))
   }
+
+  // ── Batch EJ (persistState): view-state persistence (iris 独有) ────────────
+  // Collector snapshot — what can be restored is what gets saved.
+  // columnVisibility/columnOrder have NO change channels in this Svelte
+  // bridge (controlled prop only / columnDrag.onReorder over the whole leaf
+  // array), so they are permanently inert in both directions — never
+  // collected, never replayed (mirror of react's per-piece callback gates).
+  // pageSize joins only in proxy mode; its restore is the documented special
+  // case (the proxy-creation effect applies it BEFORE the first query).
+  const persistSnapshot = $derived((): IrisTablePersistedState => {
+    const s: IrisTablePersistedState = {}
+    if (onUpdateSort) s.sort = effectiveSort
+    if (onFiltersChange) s.filters = filters
+    if (onColumnWidthsChange) s.columnWidths = effectiveWidths
+    // Read proxyState UNCONDITIONALLY so the snapshot tracks it — a branch
+    // that shortcuts before the read would never re-evaluate once the proxy
+    // effect lands `proxyRef` (deriveds only re-run on TRACKED changes).
+    const proxy = proxyState
+    if (proxyRef && proxy) s.pageSize = proxy.params.pageSize
+    return s
+  })
+
+  // Restore gate — one per-piece change callback + type guard (a tampered
+  // storage entry can't land raw values in the callbacks). `sort` reuses the
+  // SAME throat as named views (`applySort`): controlled/uncontrolled +
+  // remoteSort re-query in one funnel. `pageSize` only declares eligibility —
+  // the proxy-creation effect performs the actual restore pre-query.
+  function restorePersistPiece(piece: IrisTablePersistPiece, value: unknown): boolean {
+    switch (piece) {
+      case 'sort': {
+        if (!onUpdateSort) return false
+        if (value !== null && (typeof value !== 'object' || Array.isArray(value))) return false
+        applySort(value as IrisTableSortState | null)
+        return true
+      }
+      case 'filters': {
+        if (!onFiltersChange || typeof value !== 'object' || value === null || Array.isArray(value))
+          return false
+        onFiltersChange(value as Record<string, string>)
+        return true
+      }
+      case 'columnVisibility':
+        // No change channel (controlled prop only) — permanently inert.
+        return false
+      case 'columnOrder':
+        // No change channel (reorder runs through columnDrag.onReorder) — inert.
+        return false
+      case 'columnWidths': {
+        if (
+          !onColumnWidthsChange ||
+          typeof value !== 'object' ||
+          value === null ||
+          Array.isArray(value)
+        )
+          return false
+        onColumnWidthsChange(value as IrisTableColumnWidths)
+        return true
+      }
+      case 'pageSize':
+        // Applied by the proxy-creation effect before the first query;
+        // eligible only when a proxy with onPageChange exists (documented).
+        return proxyConfig?.onPageChange !== undefined && typeof value === 'number' && value > 0
+      default:
+        return false
+    }
+  }
+
+  // The coordinator: parse ONCE at setup (SSR window guard — a strict no-op
+  // server-side); the two effects below declare the mount ordering.
+  const persistCtrl = createTablePersistController({
+    config: () => persistState,
+    restorePiece: restorePersistPiece,
+  })
+
+  // Restore (mount, declared BEFORE the save subscription — react mount
+  // ordering: proxy effect → restore → save, so the mount commit keeps the
+  // RESTORED values via per-channel skip-first). Untracked on purpose: the
+  // callback dispatches must never re-trigger the restore.
+  $effect(() => {
+    untrack(() => persistCtrl.restore())
+  })
+
+  // Save: serialize the CURRENT pieces on every change — the reads inside
+  // persistSnapshot() are reactive, so any collected-piece change (plus a
+  // config swap) re-runs this; skip-first channels keep their RESTORED
+  // values and the whole-object write is atomic + JSON-deduped.
+  $effect(() => {
+    const cfg = persistState
+    const snapshot = persistSnapshot()
+    persistCtrl.save(cfg, snapshot)
+  })
 
   const pinnedDragMath = createPinnedDragMath({
     enabled: () => pinnedDrag,

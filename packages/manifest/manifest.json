@@ -37131,6 +37131,12 @@
           "description": "Annotation write channel (batch BB, iris 独有): receives the NEXT annotations map on every annotate-panel save — empty text removes the cell's key, non-empty sets it — and on remove (menu item or panel button). The map stays fully controlled: `annotations` remains the read source and the table holds no internal annotation state (same shape and ownership as `onFiltersChange`)."
         },
         {
+          "name": "exportAnnotations",
+          "type": "boolean",
+          "optional": true,
+          "description": "Annotation CSV export (batch DU, iris 独有 — vxe has no note concept, so no export parity): when true, `tableRef.current.exportAnnotationsCsv()` serializes every noted cell of the current view as CSV (`rowKey,column,annotation` — the same cellNoteState resolution as the render, hidden columns excluded). Additive — default off (fail-closed: without the prop the handle returns `''`)."
+        },
+        {
           "name": "presence",
           "type": "TableTypes.IrisTablePresenceEntry[]",
           "optional": true,
@@ -38321,6 +38327,12 @@
               "type": "(next: Record<string, string>) => void",
               "optional": true,
               "description": "Annotation write channel (batch BB, iris 独有): receives the NEXT annotations map on every annotate-panel save — empty text removes the cell's key, non-empty sets it — and on remove (menu item or panel button). The map stays fully controlled: `annotations` remains the read source and the table holds no internal annotation state (same shape and ownership as `onFiltersChange`)."
+            },
+            {
+              "name": "exportAnnotations",
+              "type": "boolean",
+              "optional": true,
+              "description": "Annotation CSV export (batch DU, iris 独有 — vxe has no note concept, so no export parity): when true, `tableRef.current.exportAnnotationsCsv()` serializes every noted cell of the current view as CSV (`rowKey,column,annotation` — the same cellNoteState resolution as the render, hidden columns excluded). Additive — default off (fail-closed: without the prop the handle returns `''`)."
             },
             {
               "name": "presence",
@@ -40051,7 +40063,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 199,
+        "propCount": 200,
         "eventCount": 32
       }
     },

@@ -183,6 +183,15 @@ export interface IrisTableQueryProps<
    */
   onAnnotationsChange?: (next: Record<string, string>) => void
   /**
+   * Annotation CSV export (batch DU, iris 独有 — vxe has no note concept, so
+   * no export parity): when true, `tableRef.current.exportAnnotationsCsv()`
+   * serializes every noted cell of the current view as CSV
+   * (`rowKey,column,annotation` — the same cellNoteState resolution as the
+   * render, hidden columns excluded). Additive — default off (fail-closed:
+   * without the prop the handle returns `''`).
+   */
+  exportAnnotations?: boolean
+  /**
    * Collaborative-presence cursors (batch BD, iris 独有 — vxe has no cursor
    * sharing): remote participants' selected cells. Each entry draws a 2px
    * colored outline on its cell (`data-iris-presence="true"`, outline in the

@@ -84,6 +84,18 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   exportComparisonCsv: () => string
   /** Export the audit trail as CSV (batch CO, iris 独有): spec-literal 6 columns `time,type,rowKey,column,old,new` — `time` = `formatClock(new Date(at))` (HH:MM:SS local — byte-identical to the audit panel's time cell, display/export consistency), the rest verbatim (undefined → '', typed numbers bare, strings RFC-4180-quoted + OWASP formula-neutralized via core `toCsv` — audit content is untrusted data); newest-first (ring order — the same view as `getAuditLog`); `auditLog` off → `''`, on but empty ring → header only (two states, caller distinguishes via `getAuditLog()`). */
   exportTimelineCsv: () => string
+  /** Export the annotated cells as CSV (batch DU, iris 独有 — vxe has no note
+   * concept, so no export parity): spec-literal 3 columns
+   * `rowKey,column,annotation`, one line per noted body cell in bodyData
+   * order; notes resolve through the SAME cellNoteState path as the cell
+   * render (dynamic `cellNote` wins over the static `annotations` map),
+   * hidden columns excluded via the view-columns list; values flow through
+   * core `toCsv` (RFC-4180 quoting + OWASP formula neutralization —
+   * annotation text is untrusted data). Fail-closed: `exportAnnotations`
+   * off → `''`; on but no notes on the current body → `''` (spec-literal
+   * 无批注返回空 — the two states are indistinguishable, mirroring
+   * `exportSelectionCsv`). */
+  exportAnnotationsCsv: () => string
   /** Export the CURRENT view state as JSON (batch BZ, iris 独有): all 9 spec
    * blocks — sort / filters / filterValues / columnVisibility / columnOrder /
    * columnWidths / pageSize / expandedKeys / query — captured by the SAME

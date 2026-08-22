@@ -364,6 +364,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   notePopover,
   annotationEditing,
   onAnnotationsChange,
+  exportAnnotations,
   presence,
   headerTooltipConfig,
   footerTooltipConfig,
@@ -816,6 +817,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // inert unless the `auditLog` prop is on (auditEnabledRef gate).
   const auditEnabledRef = React.useRef(auditLog)
   auditEnabledRef.current = auditLog
+  // Batch DU: export gate + latest annotation sources for the mount-time
+  // handle (exportAnnotationsCsv runs on demand, NOT during render — mirror
+  // pattern of filteredDataRef/bodyDataRef above). The annotations map and
+  // cellNote callback are props, render-scoped; without refs the mount
+  // closure would freeze the FIRST render's annotation state.
+  const exportAnnotationsRef = React.useRef(exportAnnotations)
+  exportAnnotationsRef.current = exportAnnotations
+  const annotationsRef = React.useRef(annotations)
+  annotationsRef.current = annotations
+  const cellNoteRef = React.useRef(cellNote)
+  cellNoteRef.current = cellNote
   const auditRef = React.useRef<AuditLog | null>(null)
   if (auditRef.current === null) {
     auditRef.current = createAuditLog()
@@ -3684,6 +3696,39 @@ export function IrisTable<Row extends Record<string, unknown>>({
           { key: 'new', title: 'new' },
         ],
       )
+    },
+    // Batch DU (iris 独有): export the ANNOTATED CELLS as CSV — spec-literal
+    // 3 columns rowKey,column,annotation, one line per noted body cell in
+    // bodyData order (the same row order as the view). Notes resolve through
+    // the SAME cellNoteState path as the cell render (dynamic cellNote wins
+    // over the static annotations map — render/export consistency), hidden
+    // columns excluded via viewColumnsRef (leaf display columns), keyless
+    // rows fall back to the row index (rowKeyOf parity). Serializer = core
+    // toCsv (RFC-4180 quoting + OWASP formula neutralization — annotation
+    // text is untrusted data). Fail-closed: exportAnnotations off → '' ; on
+    // but no notes on the current body → '' (spec-literal 无批注返回空 — the
+    // two states are indistinguishable, mirroring exportSelectionCsv).
+    exportAnnotationsCsv: () => {
+      if (!exportAnnotationsRef.current) return ''
+      const notes: Array<{
+        rowKey: string | number
+        column: string
+        annotation: string
+      }> = []
+      const viewCols = viewColumnsRef.current
+      bodyDataRef.current.forEach((row, i) => {
+        const k = rowKeyOf(row, i)
+        for (const col of viewCols) {
+          const noteInfo = cellNoteState(annotationsRef.current, cellNoteRef.current, row, col, k)
+          if (noteInfo.note) notes.push({ rowKey: k, column: col.key, annotation: noteInfo.note })
+        }
+      })
+      if (notes.length === 0) return ''
+      return toCsv(notes, [
+        { key: 'rowKey', title: 'rowKey' },
+        { key: 'column', title: 'column' },
+        { key: 'annotation', title: 'annotation' },
+      ])
     },
     // Batch BZ (iris 独有): export the FULL view state as JSON — the 9 spec
     // blocks (sort / filters / filterValues / columnVisibility / columnOrder /

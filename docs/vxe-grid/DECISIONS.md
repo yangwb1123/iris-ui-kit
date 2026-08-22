@@ -3024,3 +3024,8 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dt-gate.md [ok]: 批 DT Gate — PASS ✅: **Verdict**: `batch-dt-review.md` = **PASS** (feature landed at `61ec5418`, ancestor of HEAD; zero source changes needed; Gates re-run: | Gate | Result |; Test counts (fresh runs): - **core**: 104 files — **1597/1597** ✅; Doc update (`docs/vxe-grid-comparison.md`, iris 独有 section): - New **批 DT** row inserted after 批 DS in the 能力/说明 table: contract `IrisTableHandle.exportRowsCsv(keys: Array<string | ; Commit: - `b638a29db5a43828038d57943e9caabdcea83581`—`feat(table): grid 批 DT——表格导出选择（iris 独有）` (6 files, +115/−42; working tre
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-gate.md
+
+## 2026-08-22 05:57:42 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-du-baseline.md [ok]: What was verified (all anchors against HEAD `4bc9be0b`): - **DU not yet implemented** — `rg exportAnnotations` → zero hits across the monorepo; this is a forward design for the ; Key design decisions (documented in baseline): - `exportAnnotations?: boolean` = batched boolean feature gate (auditLog precedent, default off); `exportAnnotationsCsv(; File map + test plan: props/query.ts +1 prop · types/handle.ts +1 method · Table.tsx 4 points (~20 lines, zero new imports) · new `test/batch-
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-du-baseline.md

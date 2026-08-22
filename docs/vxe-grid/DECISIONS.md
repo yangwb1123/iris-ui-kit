@@ -3309,3 +3309,23 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-el-gate.md [ok]: Verdict: `docs/vxe-grid/batch-el-review.md` = **PASS**（solid 公式列字节镜像、8 编辑触点全守卫、咽喉传播 + useTableSort 去重归档、arch ratchet 2339 ≤ 2340）。; Gate results: | 门禁 | 结果 |; 184/184 turbo（142 cached + 42 实跑，无并发 flake）· audit:security 0 / audit:tokens exit 0 · gen:manifest + check:manifest nil diff（155×4/86 tokens）· format:check clean（prettier 校正 4 份流水线文档）· core framework-free 0。; Final test counts（逐包直跑实测）: solid 143 files / **1028** + hydration 38/38 · core 104 files / **1597** · react 3012 · vue 1588 · svelte 988+35。; Commit: **`<hash>`** — `feat(table): grid 批 EL——solid 同步：公式列（四框架对齐）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-el-gate.md
+
+## 2026-08-22 15:33:51 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-el-gate.md [ok]: Gate verdict: **PASS → committed** ✅: Review verdict (`batch-el-review.md`) was **PASS**. Full repo gate executed cleanly:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-el-gate.md
+
+## 2026-08-22 15:36:46 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-em-baseline.md [ok]: 交付：`/home/u1/iris-ui/docs/vxe-grid/batch-em-baseline.md`（101 行）: **核查结论**（HEAD `1a56c3f1`，批 EL solid 已合入）：公式列目前 **react + vue + solid**，svelte 零命中——仅 `IrisTable.svelte:375-376` 有 `& { f
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-em-baseline.md
+
+## 2026-08-22 15:43:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-em-adapt.md [ok]: Report: **SPEC**: svelte IrisTable 公式列同步——`column formula?: string`（core `evaluateFormula`/`memoizedFormulaValue` 桥接：计算值渲染 + 参与排; Files changed（5 源 + 1 测试 + 3 docs，+441/−18）: | File | Change |; Verification（全绿）: - svelte **typecheck 0 errors** · **test 1003/1003**（147 files，+15）+ hydration **35/35** · **lint 0 errors**; Counts: svelte 988 → **1003 tests**（+15 公式列）· hydration 35 不变 · manifest 155×4 / 86 tokens 不变。; What's left: - **四框架公式列对齐收口完成**（react AO → vue EK → solid EL → svelte EM）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-em-adapt.md
+
+## 2026-08-22 15:46:34 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-em-review.md [ok]: Summary: **All verification commands green:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-em-review.md

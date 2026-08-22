@@ -3264,3 +3264,23 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ej-gate.md [ok]: Review FAIL（单阻塞项 W2）→ 修复后 PASS: - **W2 阻塞已修**：`persist-state-harness.svelte` prettier 格式收口（`{columns}`/`{sort}`/`{filters}` 简写 + `query?` 单行 + EOF 换行，仅测试 harness、零行为变更）→ `format:check` 全仓零失败; - **全门禁实测**：turbo **184/184**（0 cached）· audit:security **0** · audit:tokens exit 0 · gen:manifest + check:manifest ✅（155×4、svelte persistState native、unavailable 0、nil diff）· core 零框架 import ✓; - **最终计数**：core **104 files/1597** · react **257 files/3012** · vue **165 files/1573** · solid **142 files/1013+38 hydration** · svelte **146 files/988+35 hydration=1023**（persist-state **19/19** = jsdom 18 + SSR 1）；W3 低危按审查接受（失败闭合方向/applySort 写内部态/baseline F1 惰性/注释措辞）；comparison 批 EJ 行 gate 注已补；提交仅含 EJ 批次自身文件（并行 aero-platform-console 工作树改动未动，DV/DW/…/ED 先例）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ej-gate.md
+
+## 2026-08-22 14:47:54 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ej-gate.md [ok]: 结论：**FAIL → 修复 → PASS → 已提交**: **Review 判定**：FAIL，单一阻塞项 W2——`persist-state-harness.svelte` 违反 `format:check`（prettier 要求简写 prop、`query?` 单行、EOF 换行）。4 条
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ej-gate.md
+
+## 2026-08-22 14:53:29 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ek-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ek-baseline.md
+
+## 2026-08-22 15:02:25 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ek-adapt.md [ok]: Report: **SPEC**: vue IrisTable 公式列同步——`column formula?: string`（core `evaluateFormula` 桥接，计算值渲染 + 参与排序/过滤），react 批 AO 语义逐字镜像、薄桥; Files changed（4 源 + 1 测试 + 2 docs）: | File | Change |; Verification（全绿）: - vue **typecheck** 0 errors; Constraints honored: Core untouched（零 framework import）；vue-bridge only；additive props only；单行函数/命名接口/类型卫生；CSS 零改动（无 token 风险）；≤4 changed fil; Fiats（baseline 8 条裁定）: 渲染+排序/过滤/汇总走咽喉免费获得；导出+剪贴板物化一并交付（mirror react）；`formulaTables`/`showCellRefs`/`sortType` 分批留后续；独立导出 `exportCsv`/`exportEx
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ek-adapt.md
+
+## 2026-08-22 15:06:36 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ek-review.md [ok]: Summary: | Check | Result |; Verification results (all independently rerun): | Check | Result |; Parity findings (all confirmed against react AO `16377f3d` byte semantics): - `getCellValue` 2-arg `memoizedFormulaValue` formula branch — identical; non-formula path unchanged (additive-only); Findings (non-blocking): - **F1 LOW**: vue `Table.ts` grew 2538→2546, crossing the arch ratchet baseline 2539 — new ratchet violation, but react/
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ek-review.md

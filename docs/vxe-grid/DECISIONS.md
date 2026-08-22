@@ -2974,3 +2974,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dr-gate.md [ok]: 批 DR（单元格编辑快捷键）gate 完成——review PASS（1 × P3 + 2 × INFO，无阻断）；full gate turbo 180/180（135 cached，1m59s）；audit 0；gen/check:manifest up to date（155×4 / 86 tokens，零 diff）；最终计数 react 246 files/2826（batch-dl-dt 21/21）· core 104 files/1597；comparison.md 新增 批 DR 行 + 构建状态追加；batch-dr-gate.md 重写为真实报告；纯文档收尾（DR 源码与 +4 测试已由 e4761d0c 携带），commit follows
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-gate.md
+
+## 2026-08-22 04:56:53 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-gate.md [ok]: 批 DR Gate 最终报告: | 门禁项 | 结果 |; 最终测试计数: | Suite | Files | Tests |; 文档更新（`docs/vxe-grid-comparison.md` iris 独有 节）: - 新增 **批 DR 行**：`editKeys?: Array<'F2'|'Enter'|'Space'>` 编辑键配置——`handleConfiguredEditKey` 单一咽喉（Table.tsx:4399-4416，keybo; Commit: **`fedc213e`** `feat(table): grid 批 DR——单元格编辑快捷键（iris 独有）` — 5 files, +81/−56（纯文档收尾；DR 源码与 +4 测试已由 `e4761d0c` adapt comm
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-gate.md
+
+## 2026-08-22 04:59:56 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ds-baseline.md [ok]: Baseline summary — 批 DS：列宽提示（iris 独有）: **Exact design** — spec（`widthHint?: boolean`——列宽拖拽时显示宽度数值提示（`data-iris-width-hint`，跟随指针）；测试（拖拽显示/隐藏））已在 HEAD `fedc213e`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-baseline.md
+
+## 2026-08-22 05:01:48 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ds-adapt.md [ok]: 批 DS：列宽提示（iris 独有）— 验证通过: Baseline 已确认本功能在 HEAD `fedc213e` 完整提交（DL–DT 批次 `61ec5418` 内落地）。本次为验证 + 全部门禁复跑，**零源码改动**，逐行锚点全部核实：; 状态判定: Baseline 已确认本功能在 HEAD `fedc213e` 完整提交（DL–DT 批次 `61ec5418` 内落地）。本次为验证 + 全部门禁复跑，**零源码改动**，逐行锚点全部核实：; 验证结果（全部绿）: | 门禁 | 结果 |; 文件变更: - **本次修改：无**（实现已在 HEAD 提交）。; What is left: - 无实现遗留。4 条 non-blocking 观察（键盘 resize 不显示 hint、pinned 边界列无负向测试、pointercancel/disabled 无断言、clamp/aria-hidden 无 a11y 基线断言）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-adapt.md
+
+## 2026-08-22 05:06:13 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ds-review.md [ok]: Summary: The DS implementation (列宽提示) was confirmed already committed in HEAD `fedc213e` (DL–DT batch `61ec5418`); this review ba
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-review.md
+
+## 2026-08-22 13:10:32 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ds-gate.md [ok]: 批 DS（列宽提示）gate 完成——review PASS（2 × P3 非阻断，无阻断）；full gate turbo 180/180（174 cached）；pnpm audit 0 known vulnerabilities；gen/check:manifest up to date（155×4 / 86 tokens，重新生成零 diff）；最终计数 react 246 files/2826（batch-dl-dt 21/21，DS 定向 case :464-483 显示 116px/隐藏两态）· core 104 files/1597；comparison.md iris 独有 新增 批 DS 行 + 构建状态追加；batch-ds-gate.md 重写为真实报告；纯文档收尾（DS 源码与测试已由 61ec5418 DL–DT 批次携带）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ds-gate.md

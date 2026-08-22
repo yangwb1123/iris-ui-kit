@@ -3019,3 +3019,8 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dt-review.md [ok]: Verdict: **PASS**: The DT capability (表格导出选择, iris 独有) landed in commit `61ec5418` (ancestor of HEAD `28d5fcf5`); this pass made zero sourc; Checks: - **Spec correctness** — `exportRowsCsv(keys)` contract at `types/handle.ts:38`; implementation `Table.tsx:3464-3472` by; Gates re-run: | Gate | Result |; Findings (all P3 non-blocking, inherited from baseline): 1. No negative-case tests (empty keys / unknown keys / duplicates) — `batch-dl-dt.test.tsx:485`.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-review.md
+
+## 2026-08-22 05:25:12 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dt-gate.md [ok]: 批 DT Gate — PASS ✅: **Verdict**: `batch-dt-review.md` = **PASS** (feature landed at `61ec5418`, ancestor of HEAD; zero source changes needed; Gates re-run: | Gate | Result |; Test counts (fresh runs): - **core**: 104 files — **1597/1597** ✅; Doc update (`docs/vxe-grid-comparison.md`, iris 独有 section): - New **批 DT** row inserted after 批 DS in the 能力/说明 table: contract `IrisTableHandle.exportRowsCsv(keys: Array<string | ; Commit: - `b638a29db5a43828038d57943e9caabdcea83581`—`feat(table): grid 批 DT——表格导出选择（iris 独有）` (6 files, +115/−42; working tre
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dt-gate.md

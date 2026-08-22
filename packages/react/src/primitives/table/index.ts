@@ -46,6 +46,7 @@ export {
   type IrisTableScrollbarConfig,
   type IrisTableEditDirtyConfig,
   type IrisTableAuditEntry,
+  type IrisTableAutoSaveStateConfig,
   type IrisTablePresenceEntry,
 } from './types'
 export { exportCsv, downloadCsv, parseCsv } from './exportCsv'

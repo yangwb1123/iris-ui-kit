@@ -38592,6 +38592,7 @@
             "IrisTableAggregateOp",
             "IrisTableAlign",
             "IrisTableAuditEntry",
+            "IrisTableAutoSaveStateConfig",
             "IrisTableCellClickParams",
             "IrisTableCellEditEvent",
             "IrisTableColumn",

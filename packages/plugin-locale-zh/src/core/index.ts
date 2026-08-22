@@ -110,6 +110,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.columnStats.empty': '暂无列访问',
   'table.compare.tooltip': '旧值: {old} → 新值: {new}',
   'table.compare.diff': '差异',
+  'table.mergeCompare': '合并差异',
   'table.batchEdit.column': '列',
   'table.batchEdit.apply': '应用',
   'table.views.save': '保存视图',

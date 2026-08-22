@@ -37256,6 +37256,12 @@
           "description": "Compare view (batch AU, iris 独有 — vxe has no compare capability): a snapshot the live rows are diffed against by `rowKey`. Every live row absent from the snapshot renders `data-iris-row-removed`, every live row present in both with ≥1 differing cell renders `data-iris-row-changed` with `data-iris-cell-changed` on the changed cells and a title tooltip `旧值: X → 新值: Y` (old = live value, new = snapshot value) that overrides the tooltipConfig title (compare wins, documented); snapshot- only rows are `added` in the core diff but have no rendered slot — the compare view renders the live dataset (documented). Core `diffRows` is framework-free; the memo is null without `compareWith` or `rowKey` — additive, default off."
         },
         {
+          "name": "mergeCompare",
+          "type": "boolean",
+          "optional": true,
+          "description": "One-click compare merge (batch ED, iris 独有 — vxe has no compare/merge capability): when true (with `compareWith` + `rowKey`, and a toolbar render — the gate admits `mergeCompare` like `undo`), the toolbar gains a text-label button (`data-iris-table-compare-merge`, i18n `table.mergeCompare`, en `Merge compare` / zh `合并差异`) that applies EVERY added/changed difference to the CURRENT data — changed rows get their differing cells replaced in place by the snapshot values (shallow copy of the live row — a live-only key absent from the snapshot is reset to `undefined`, so the merged row matches the snapshot exactly and a second click is a no-op), added rows are appended in snapshot order (shallow copy — snapshot elements are never aliased into liveData) — through the normal write-back channel `commitRowList(rows, 'merge')`, so the merge is audited (a single `merge` entry), undoable and versioned like any row-list commit. `removed` rows are untouched (spec: changed/added only). Disabled while there is nothing to apply (identical snapshot / removed-only diff); the handler early-returns the same way (double-safety, idempotent). Additive — default off."
+        },
+        {
           "name": "autoLink",
           "type": "boolean",
           "optional": true,
@@ -38494,6 +38500,12 @@
               "type": "Row[]",
               "optional": true,
               "description": "Compare view (batch AU, iris 独有 — vxe has no compare capability): a snapshot the live rows are diffed against by `rowKey`. Every live row absent from the snapshot renders `data-iris-row-removed`, every live row present in both with ≥1 differing cell renders `data-iris-row-changed` with `data-iris-cell-changed` on the changed cells and a title tooltip `旧值: X → 新值: Y` (old = live value, new = snapshot value) that overrides the tooltipConfig title (compare wins, documented); snapshot- only rows are `added` in the core diff but have no rendered slot — the compare view renders the live dataset (documented). Core `diffRows` is framework-free; the memo is null without `compareWith` or `rowKey` — additive, default off."
+            },
+            {
+              "name": "mergeCompare",
+              "type": "boolean",
+              "optional": true,
+              "description": "One-click compare merge (batch ED, iris 独有 — vxe has no compare/merge capability): when true (with `compareWith` + `rowKey`, and a toolbar render — the gate admits `mergeCompare` like `undo`), the toolbar gains a text-label button (`data-iris-table-compare-merge`, i18n `table.mergeCompare`, en `Merge compare` / zh `合并差异`) that applies EVERY added/changed difference to the CURRENT data — changed rows get their differing cells replaced in place by the snapshot values (shallow copy of the live row — a live-only key absent from the snapshot is reset to `undefined`, so the merged row matches the snapshot exactly and a second click is a no-op), added rows are appended in snapshot order (shallow copy — snapshot elements are never aliased into liveData) — through the normal write-back channel `commitRowList(rows, 'merge')`, so the merge is audited (a single `merge` entry), undoable and versioned like any row-list commit. `removed` rows are untouched (spec: changed/added only). Disabled while there is nothing to apply (identical snapshot / removed-only diff); the handler early-returns the same way (double-safety, idempotent). Additive — default off."
             },
             {
               "name": "autoLink",
@@ -40152,7 +40164,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 207,
+        "propCount": 208,
         "eventCount": 33
       }
     },

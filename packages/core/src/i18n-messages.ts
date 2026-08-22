@@ -125,6 +125,7 @@ export const defaultMessages: I18nMessages = {
   'table.columnStats.empty': 'No column activity yet',
   'table.compare.tooltip': 'Old: {old} → New: {new}',
   'table.compare.diff': 'Diff',
+  'table.mergeCompare': 'Merge compare',
   'table.batchEdit.column': 'Column',
   'table.batchEdit.apply': 'Apply',
   'table.views.save': 'Save view',

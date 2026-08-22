@@ -124,6 +124,27 @@ export interface IrisTableAdvancedProps<
    */
   compareWith?: Row[]
   /**
+   * One-click compare merge (batch ED, iris 独有 — vxe has no compare/merge
+   * capability): when true (with `compareWith` + `rowKey`, and a toolbar
+   * render — the gate admits `mergeCompare` like `undo`), the toolbar gains
+   * a text-label button (`data-iris-table-compare-merge`, i18n
+   * `table.mergeCompare`, en `Merge compare` / zh `合并差异`) that applies
+   * EVERY added/changed difference to the CURRENT data — changed rows get
+   * their differing cells replaced in place by the snapshot values (shallow
+   * copy of the live row — a live-only key absent from the snapshot is reset
+   * to `undefined`, so the merged row matches the snapshot exactly and a
+   * second click is a no-op), added rows are
+   * appended in snapshot order (shallow copy — snapshot elements are never
+   * aliased into liveData) — through the normal write-back channel
+   * `commitRowList(rows, 'merge')`, so the merge is audited (a single
+   * `merge` entry), undoable and versioned like any row-list commit.
+   * `removed` rows are untouched (spec: changed/added only). Disabled while
+   * there is nothing to apply (identical snapshot / removed-only diff); the
+   * handler early-returns the same way (double-safety, idempotent).
+   * Additive — default off.
+   */
+  mergeCompare?: boolean
+  /**
    * Cell auto-link (batch CA, iris 独有 — vxe has no URL/email auto-
    * detection): when true, text cells run their display chain
    * (mask → formatter ?? raw) through core `detectAutoLink`; a whole-text

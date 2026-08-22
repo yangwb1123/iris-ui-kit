@@ -1,4 +1,5 @@
 import type { IrisTableProxyQueryParams } from './base'
+import type { AuditLogType } from '@iris-ui-kit/core'
 
 export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
   /** Insert a row at `index` (default: end). A missing `rowKeyField` value gets an auto id. */
@@ -136,8 +137,8 @@ export interface IrisTableAuditEntry {
   seq: number
   /** Epoch ms when the entry was pushed. */
   at: number
-  /** Commit kind: edit / insert / remove / paste / batch / fill / undo / redo. */
-  type: 'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo'
+  /** Commit kind: any core {@link AuditLogType} (edit/insert/remove/paste/batch/fill/undo/redo/merge). */
+  type: AuditLogType
   /** Key of the first changed row (undefined when none could be resolved). */
   rowKey?: string | number
   /** Column key of the first changed cell (undefined for row-level ops). */
@@ -158,8 +159,8 @@ export interface IrisTableVersionEntry {
   index: number
   /** Epoch ms when the version was pushed. */
   at: number
-  /** Commit-kind hint: edit / insert / remove / paste / batch / fill / undo / redo. */
-  type: 'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo'
+  /** Commit-kind hint: any core {@link AuditLogType} (edit/insert/remove/paste/batch/fill/undo/redo/merge). */
+  type: AuditLogType
 }
 
 /**

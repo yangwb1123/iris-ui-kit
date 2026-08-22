@@ -592,6 +592,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   versionHistory,
   editSidebar,
   compareWith,
+  mergeCompare = false,
   autoLink = false,
   recentFilters = false,
   formulaTables,
@@ -7960,7 +7961,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         editSidebar ||
         shortcutHints ||
         densityToggle ||
-        columnStats) &&
+        columnStats ||
+        mergeCompare) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -8063,6 +8065,66 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ↷
               </button>
             </>
+          ) : null}
+          {/* Batch ED (iris 独有): one-click compare merge — applies every
+              added/changed diff (spec: never removed) to the CURRENT data:
+              changed rows get their differing cells replaced in place by the
+              snapshot values (shallow copy of the live row — a live-only key
+              absent from the snapshot is reset to `undefined`, so the merged
+              row matches the snapshot exactly), added rows append in snapshot
+              order (shallow
+              copy — snapshot elements never alias into liveData). Write-back
+              goes through the normal channel (commitRowList, type 'merge'),
+              so the merge is audited + undoable + versioned like any commit.
+              Disabled with nothing to apply; the handler early-returns the
+              same way (idempotent double-safety). */}
+          {mergeCompare && compareDiff ? (
+            <button
+              type="button"
+              data-iris-table-compare-merge=""
+              aria-label={t('table.mergeCompare')}
+              title={t('table.mergeCompare')}
+              disabled={compareDiff.added.length + compareDiff.changed.length === 0}
+              onClick={() => {
+                const diff = compareDiffRef.current
+                const snapshot = compareWithRef.current
+                if (!diff || !snapshot || !rowKeyRef.current) return
+                if (diff.added.length === 0 && diff.changed.length === 0) return
+                const keyOf = (row: Row): string | number | null | undefined =>
+                  row[rowKeyRef.current] as string | number | null | undefined
+                const merged: Row[] = (externalDataRef.current ?? []).map((row) => {
+                  const k = keyOf(row)
+                  if (k != null && diff.status.get(k) === 'changed') {
+                    const cells = diff.cellChanges.get(k)
+                    let next = { ...row }
+                    if (cells) {
+                      for (const [cellKey, change] of cells) {
+                        next = { ...next, [cellKey]: change.newValue }
+                      }
+                    }
+                    return next
+                  }
+                  return row
+                })
+                for (const s of snapshot) {
+                  const k = keyOf(s)
+                  if (k != null && diff.status.get(k) === 'added') merged.push({ ...s })
+                }
+                commitRowList(merged, 'merge')
+              }}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor:
+                  compareDiff.added.length + compareDiff.changed.length === 0
+                    ? 'default'
+                    : 'pointer',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
+            >
+              {t('table.mergeCompare')}
+            </button>
           ) : null}
           {/* Batch AI: the natural-language query input renders after the title
               (left side) whenever the controlled `query` prop is present. The

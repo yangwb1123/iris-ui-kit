@@ -14,15 +14,15 @@
  *
  * The IrisTable integration (batch AT, react) records ONE entry per
  * mutation commit: the type hint (edit / insert / remove / paste / batch /
- * fill / undo / redo) comes from the mutation site, while the row key +
- * first-changed-cell context comes from a light diff of the row lists.
+ * fill / undo / redo / merge) comes from the mutation site, while the row
+ * key + first-changed-cell context comes from a light diff of the row lists.
  *
  * Off the core path (`@iris-ui-kit/core/audit-log` — own subpath).
  */
 
 /** Commit kinds recorded by the audit trail. */
 export type AuditLogType =
-  'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo'
+  'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo' | 'merge'
 
 /**
  * One audit entry. `seq` and `at` are filled by the controller at push

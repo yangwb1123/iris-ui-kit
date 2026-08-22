@@ -18,7 +18,7 @@ Done. **Gate PASS path completed.**
 
 ## Commit
 
-- **Hash:** pending (reported in the gate summary)
+- **Hash:** `9fff46f16ec06eb385b8d54eee5807030f0d711f` — `feat(table): grid 批 DN——列头统计（iris 独有）`
 - **Message:** `feat(table): grid 批 DN——列头统计（iris 独有）`
 
 ## Final test counts

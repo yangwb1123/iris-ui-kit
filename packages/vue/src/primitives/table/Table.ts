@@ -80,8 +80,10 @@ import {
   cellId,
   computeVisibleColSet,
   getCellValue,
+  isEditableColumn,
   resolveInitialWidth,
   resolveSpan,
+  withComputedFormulaCells,
 } from './table-helpers'
 import type {
   IrisTableCellEditEvent,
@@ -242,12 +244,9 @@ export const IrisTable = defineComponent({
         detectTypesDone.value = true
         const next: Record<string, DetectedColumnType> = {}
         for (const column of flattenLeafColumns(props.columns)) {
-          const candidate = column as IrisTableColumn<Record<string, unknown>> & {
-            formula?: unknown
-          }
-          if (candidate.formula) continue
+          if (column.formula) continue
           next[column.key] = detectColumnType(
-            tableData.value.map((row) => getCellValue(row, candidate)),
+            tableData.value.map((row) => getCellValue(row, column)),
           )
         }
         detectedTypes.value = next
@@ -657,7 +656,8 @@ export const IrisTable = defineComponent({
       column: IrisTableColumn,
       rowIdent: string | number,
     ) => {
-      if (!column.editable) return
+      // Batch EK: a formula column is display-only — never enters cell mode.
+      if (!isEditableColumn(column)) return
       editingCellId.value = cellId(rowIdent, column.key)
       editingColumnKey.value = column.key
       const current = getCellValue(row, column)
@@ -781,7 +781,8 @@ export const IrisTable = defineComponent({
       focusColKey?: string,
     ): void => {
       const k = rowId(row, rowIndex)
-      const editableCols = leafColumns.value.filter((c) => c.editable)
+      // Batch EK: formula columns are display-only — row mode skips them.
+      const editableCols = leafColumns.value.filter(isEditableColumn)
       if (editableCols.length === 0) return
       const sessions = new Map<string, TableRowEditSession>()
       for (const col of editableCols) {
@@ -904,7 +905,7 @@ export const IrisTable = defineComponent({
     ): void => {
       if (rowEditing.value?.k === k) {
         const id = cellId(k, col.key)
-        if (col.editable && !rowSessions.value.has(id)) {
+        if (isEditableColumn(col) && !rowSessions.value.has(id)) {
           const current = getCellValue(row, col)
           rowSessions.value.set(id, {
             draft: current == null ? '' : String(current),
@@ -1447,9 +1448,16 @@ export const IrisTable = defineComponent({
         props.onDataChange?.(rows)
       },
       getFilteredData: () => [...bodyData.value],
-      exportCurrentViewCsv: () => serializeTableCsv(bodyData.value, leafColumns.value),
+      exportCurrentViewCsv: () =>
+        serializeTableCsv(
+          withComputedFormulaCells(bodyData.value, leafColumns.value),
+          leafColumns.value,
+        ),
       exportMultiCsv: () => {
-        const current = serializeTableCsv(bodyData.value, leafColumns.value)
+        const current = serializeTableCsv(
+          withComputedFormulaCells(bodyData.value, leafColumns.value),
+          leafColumns.value,
+        )
         const names = props.exportNames
         if (!names || names.length === 0) return current
         const segments = [`# current${current ? `\n${current}` : ''}`]
@@ -2169,7 +2177,7 @@ export const IrisTable = defineComponent({
           } else {
             content =
               cellSlot?.({ row, index, value: getCellValue(row, col) }) ??
-              tableDisplayText(row, col)
+              tableDisplayText(row, col, getCellValue)
           }
 
           // Tree mode: in the first data cell, prepend a depth-indent span that
@@ -2190,7 +2198,7 @@ export const IrisTable = defineComponent({
                 role: 'cell',
                 'data-iris-table-cell': col.key,
                 'data-iris-table-pinned': col.pinned,
-                'data-editable': col.editable ? '' : undefined,
+                'data-editable': isEditableColumn(col) ? '' : undefined,
                 'data-editing': isEditing ? '' : undefined,
                 'data-iris-input-hint': patternHint ? 'true' : undefined,
                 // Grid keyboard navigation (opt-in): grid coords + roving tabindex
@@ -2228,7 +2236,7 @@ export const IrisTable = defineComponent({
                   : {}),
                 onDblclick: rowMode.value
                   ? () => switchRowEdit(row, index, col.key)
-                  : col.editable
+                  : isEditableColumn(col)
                     ? () => beginEdit(row, col, id)
                     : undefined,
                 onClick: rowMode.value
@@ -2238,7 +2246,7 @@ export const IrisTable = defineComponent({
                         if (e.shiftKey) cellRangeCtrl.extendRange(index, ci)
                         else cellRangeCtrl.startRange(index, ci)
                       }
-                    : col.editable && props.editConfig?.trigger === 'click'
+                    : isEditableColumn(col) && props.editConfig?.trigger === 'click'
                       ? () => beginEdit(row, col, id)
                       : undefined,
                 onContextmenu: props.contextMenu
@@ -2259,7 +2267,7 @@ export const IrisTable = defineComponent({
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  cursor: col.editable ? 'cell' : 'default',
+                  cursor: isEditableColumn(col) ? 'cell' : 'default',
                   ...(props.cellRange && isInRange(index, ci)
                     ? { background: 'var(--iris-surface-selected, rgba(99,102,241,0.12))' }
                     : {}),

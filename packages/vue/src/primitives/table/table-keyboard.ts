@@ -7,6 +7,7 @@ import {
   type GridNavKey,
 } from '@iris-ui-kit/core'
 import type { IrisTableClipConfig, IrisTableColumn } from './types'
+import { withComputedFormulaCells } from './table-helpers'
 
 type Cell = { row: number; col: number }
 type Range = { start: Cell; end: Cell }
@@ -104,9 +105,13 @@ export function createTableKeyboard(options: {
     const range = activeCellRange()
     const clip = options.clipConfig()
     if (!range || clip?.copy === false) return
+    // Batch EK: formula columns are display-only — the range copy carries the
+    // COMPUTED value, materialized onto shadow rows (the core serializer reads
+    // `row[dataIndex]` directly; originals stay untouched).
+    const rows = withComputedFormulaCells(options.rows(), options.columns())
     void writeClipboardText(
       serializeTableRange(
-        options.rows(),
+        rows,
         options.columns(),
         range,
         clip?.copyFormat,

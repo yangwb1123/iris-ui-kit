@@ -391,6 +391,49 @@ export function serializeUrlTableState(state: IrisTableUrlState | null): string 
   return JSON.stringify(state)
 }
 
+// ── Batch EA back-to-top (iris 独有 — vxe has no back-to-top) ────────
+// The floating ↑ button appears once the effective scroller (the fixed-height
+// root, or the virtual-scroll viewport when present) passes this threshold — a
+// pure threshold flip, no per-pixel state churn (React bails out on a repeated
+// boolean).
+const SCROLL_TOP_VISIBLE_PX = 200
+
+/** Sticky zero-height endcap: pins the button to the bottom of the scroll
+ * viewport (an absolute box would ride the content — the BU watermark
+ * precedent); z 3 paints above the sticky header (z 2) / pinned columns
+ * (z 1) but below the floating panels. pointerEvents none — the zero-height
+ * strip never eats a click. */
+const BACK_TOP_ANCHOR_STYLE: React.CSSProperties = {
+  position: 'sticky',
+  insetBlockEnd: 0,
+  height: 0,
+  pointerEvents: 'none',
+  zIndex: 3,
+}
+
+/** 40×40 round ↑ button, bottom-right corner via logical inset props
+ * (RTL-safe), token-driven colors/shadow/font — the IrisBackTop recipe
+ * (scrollTo-with-fallback, reduced-motion → 'auto', backTop.label i18n)
+ * adapted to a container-anchored position. */
+const BACK_TOP_BUTTON_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  insetBlockEnd: 24,
+  insetInlineEnd: 24,
+  width: 40,
+  height: 40,
+  borderRadius: '50%',
+  border: '1px solid var(--iris-border)',
+  background: 'var(--iris-surface, var(--iris-background))',
+  color: 'var(--iris-foreground)',
+  cursor: 'pointer',
+  boxShadow: 'var(--iris-shadow-md)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 'var(--iris-font-size-xl, 18px)',
+  pointerEvents: 'auto',
+}
+
 /**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
  * can support future virtual scroll / column resize uniformly. Wires ARIA
@@ -444,6 +487,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   maxHeight,
   scrollbarConfig,
   scrollbarThumb = false,
+  scrollToTop = false,
   headerStats = false,
   editDirtyConfig,
   autoResize = false,
@@ -7592,6 +7636,50 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }
 
+  // ── Back-to-top (batch EA, iris 独有 — vxe has no back-to-top) ────────
+  // Boolean visibility state driven ONLY by the threshold crossing (a repeated
+  // boolean bails out, so scrolling never re-renders the table row-by-row).
+  // The listener attaches to the EFFECTIVE scroller — the virtual-scroll
+  // viewport when present, else the fixed-height root — the same resolution
+  // the paging keys use (line 5030 precedent), so a virtual table (root never
+  // scrolls) and a fixed-height table (no viewport) both work. When neither
+  // exists (overflow-hidden non-scrollable root) the listener never fires →
+  // lazy zero-node fail-closed. The deps cover scroller identity changes
+  // (virtualScroll config flips, fixedHeight engaging on measure).
+  const [scrollTopShown, setScrollTopShown] = React.useState(false)
+  React.useEffect(() => {
+    if (!scrollToTop) return
+    const root = rootRef.current
+    if (!root) return
+    const scroller = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]') ?? root
+    const onScroll = (): void => {
+      setScrollTopShown(scroller.scrollTop >= SCROLL_TOP_VISIBLE_PX)
+    }
+    scroller.addEventListener('scroll', onScroll)
+    onScroll()
+    return () => scroller.removeEventListener('scroll', onScroll)
+  }, [scrollToTop, Boolean(virtualScroll), fixedHeight])
+
+  // Click = scroll the same effective scroller back to top: scrollTo with a
+  // behavior that honors reduced motion, falling back to scrollTop = 0 (the
+  // IrisBackTop recipe — jsdom has no Element.scrollTo, so the fallback also
+  // covers test/SSR-like environments).
+  const scrollToTopOfTable = React.useCallback((): void => {
+    const root = rootRef.current
+    if (!root) return
+    const scroller = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]') ?? root
+    const behavior: ScrollBehavior = reducedMotion ? 'auto' : 'smooth'
+    if (typeof scroller.scrollTo === 'function') {
+      try {
+        scroller.scrollTo({ top: 0, behavior })
+        return
+      } catch {
+        // fall through to the scrollTop assignment
+      }
+    }
+    scroller.scrollTop = 0
+  }, [reducedMotion])
+
   const footerStack = (
     <TableFooterStack
       tableError={tableError}
@@ -9610,6 +9698,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
           footerData rows — whichever render, in that order; footerSpanMethod
           spans across it with a stack-wide 0-based rowIndex. */}
         {footerStack}
+
+        {/* Back-to-top anchor (batch EA, iris 独有): a sticky zero-height
+          endcap as the root's LAST child. The root is the fixed-height
+          scroll container, so the endcap pins to the bottom of the scroll
+          viewport (sticky — an absolute box anchored to the root would ride
+          the content up with it, the BU watermark precedent) and the button
+          is absolute against that pinned anchor: bottom-right corner,
+          logical inset props (RTL-safe), zero layout footprint / no dead
+          scroll tail. Presence-gated — off prop, below-threshold scroll,
+          non-scrollable root or printable → zero nodes. */}
+        {scrollToTop && scrollTopShown && !printable ? (
+          <div data-iris-back-top-anchor="" style={BACK_TOP_ANCHOR_STYLE}>
+            <button
+              type="button"
+              data-iris-back-top-table=""
+              aria-label={t('backTop.label')}
+              title={t('backTop.label')}
+              onClick={scrollToTopOfTable}
+              style={BACK_TOP_BUTTON_STYLE}
+            >
+              ↑
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {responsiveOverflow && !zoomed && !printable ? (

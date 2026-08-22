@@ -196,6 +196,21 @@ export interface IrisTableAdvancedProps<
   /** Batch DP (iris 独有): add token-driven custom thumb styling to the native
    * scrollbar while retaining native scrolling and accessibility. */
   scrollbarThumb?: boolean
+  /**
+   * Back-to-top (batch EA, iris 独有 — vxe has no floating back-to-top): when
+   * true, a 40×40 round ↑ button floats at the scroll viewport's bottom-right
+   * once the table's effective scroller scrolls past 200px (the fixed-height
+   * root, vxe-grid `height` parity, or the virtual-scroll viewport — the
+   * viewport wins when both exist, the same resolution the paging keys use).
+   * Clicking it scrolls back to the top (`scrollTo({ top: 0, behavior })` with
+   * a `scrollTop = 0` fallback; reduced-motion users get `'auto'`). The
+   * anchor is a sticky zero-height endcap (absolute-in-anchor corner button,
+   * z 3 above the sticky header / pinned columns) — zero layout footprint,
+   * no dead scroll tail — and the button disappears once the scroller returns
+   * above the threshold. Non-scrollable tables never show it (fail-closed);
+   * printable tables suppress it. Additive — default off.
+   */
+  scrollToTop?: boolean
   /** Batch DN (iris 独有): show count/average statistics for numeric columns
    * inside their leaf headers, separate from footer/column totals. */
   headerStats?: boolean

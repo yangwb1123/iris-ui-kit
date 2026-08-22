@@ -2839,3 +2839,18 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-dn-baseline.md [ok]: Baseline summary — 批 DN：列头统计（iris 独有）: **Exact design** — spec `headerStats?: boolean`（数值列表头小统计 count/avg，muted 小字，逐列表头内嵌，与列汇总条区分）verified as fully shipped at
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-baseline.md
+
+## 2026-08-22 03:17:31 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dn-adapt.md [ok]: Report: **Nature of the batch**: The baseline was written in **verification-style** — the feature (`headerStats`) was already fu
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-adapt.md
+
+## 2026-08-22 03:20:09 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dn-review.md [ok]: Summary: Verified the verification-style batch: feature (`headerStats`) was pre-shipped at `61ec5418`; DN commit `8258df80` adds
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-review.md
+
+## 2026-08-22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dn-gate.md [ok]: Verdict: `batch-dn-review.md` → PASS（验证式 adapt：功能已在 `61ec5418` 交付，`8258df80` 补 1 个分组叶回归 + 交付记录；本轮 gate 确认全绿）; Gate results: full repo gate `corepack pnpm turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**（135 cached）；`pnpm audit:security` → **0 vulns**、`audit:tokens` → clean；`pnpm gen:manifest` + `check:manifest` → **up to date**（155×4、86 tokens、`headerStats` ×2）; Docs updated（`docs/vxe-grid-comparison.md`，iris 独有 section）: 新增 批 DN 行（`headerStats` 列头小统计——props/advanced.ts:201 默认 off fail-closed、`headerStatsByKey` memo :3951-3967 经 `getCellValue` 只收有限数值、平面/分组叶表头 `n=N · avg=X.XX` + `data-iris-header-stats`/aria-label、与列汇总条 `columnTotals` 独立 :7935）+ 构建状态行追加 + DL–DT 记录表 DN 行措辞收敛；batch-dn-gate.md 重写为真实 gate 报告; Commit: Hash pending（将于后续记录回填）——`feat(table): grid 批 DN——列头统计（iris 独有）`; Final test counts: react 246 files/**2816** · core 104 files/**1597** · vue 165 files/1573 · solid 142 files/1013+38 hydration · svelte 144 files/969+35 hydration · turbo **180/180** · audit **0/clean**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dn-gate.md

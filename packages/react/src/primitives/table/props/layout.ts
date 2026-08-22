@@ -139,6 +139,18 @@ export interface IrisTableLayoutProps<
     column: TableTypes.IrisTableColumn<Row>,
     rowIndex: number,
   ) => React.CSSProperties
+  /**
+   * Unified event stream (batch DW, iris 独有 — vxe has no single event bus):
+   * cell/row click, sort, filter, edit and expand events merged into ONE
+   * subscription. The bus fires AFTER the matching dedicated callback (if
+   * wired) — a bridge, not a behavior, so gate parity holds by construction
+   * (no `onCellClick`/`rowMode` → no cell-click event). `type` is one of the
+   * closed `IrisTableEvent` palette; `detail` carries the SAME params the
+   * dedicated callback receives (reference-identical `detail.row`/`column`).
+   * Controllable proxy `sort` updates, snapshot restores and `expandAll` fire
+   * no bus event.
+   */
+  onTableEvent?: (event: { type: string; detail: unknown }) => void
   /** Cell click (vxe cell-click parity). Fired after internal handlers. */
   onCellClick?: (params: TableTypes.IrisTableCellClickParams<Row>) => void
   /** Cell double-click (vxe cell-dblclick parity). Fired AFTER the inline edit starts on editable columns; non-editable columns fire it too. */

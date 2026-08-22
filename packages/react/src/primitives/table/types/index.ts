@@ -1,4 +1,5 @@
 export * from './base'
 export * from './column'
+export * from './event'
 export * from './footer'
 export * from './handle'

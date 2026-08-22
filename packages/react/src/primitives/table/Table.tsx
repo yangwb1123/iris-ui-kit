@@ -453,6 +453,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerCellStyle,
   onCellClick,
   onCellDblClick,
+  onTableEvent,
   bordered = true,
   round = false,
   padding,
@@ -592,6 +593,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   ...rest
 }: IrisTableProps<Row>): React.ReactElement {
   const rowDragEnabled = rowDrag !== undefined || (rowDragBetween?.length ?? 0) > 0
+  // Batch DW (iris 独有): unified event stream — ONE subscription merging the
+  // cell/row/sort/filter/edit/expand event families. Mirror ref (established
+  // onEditStartRef pattern) so mount-time closures (useTableSort, cellEdit,
+  // the expansion model) always read the latest handler. The funnel emits
+  // AFTER each dedicated callback — a bridge, not a behavior.
+  const onTableEventRef = React.useRef(onTableEvent)
+  onTableEventRef.current = onTableEvent
+  const emitTableEvent = (type: string, detail: unknown): void => {
+    onTableEventRef.current?.({ type, detail })
+  }
   // Batch BN (iris 独有): ONE throat for per-row heights — `rowHeight` wins
   // over `virtualScroll.itemHeight`; unset = existing behavior byte-identical
   // (virtual mode falls back to the virtualizer's itemHeight, non-virtual
@@ -1103,6 +1114,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     defaultSort,
     onSortChange: (next) => {
       onSortChange?.(next)
+      emitTableEvent('sort-change', { sort: next })
       // remoteSort parity: sort changes re-query the server (page resets to 1
       // in the core controller, vxe behavior).
       if (remoteSort) proxyRef.current?.setParams({ sort: next })
@@ -1112,6 +1124,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     defaultMultiSort,
     onMultiSortChange: (next) => {
       onMultiSortChange?.(next)
+      emitTableEvent('multi-sort-change', { sorts: next })
       // remoteSort parity (multi mode): the FULL sort list re-queries the
       // server; the single `sort` param stays the single-column channel.
       if (remoteSort) proxyRef.current?.setParams({ sorts: next })
@@ -1345,7 +1358,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     expansionRef.current = createExpansion({
       mode: 'multiple',
       defaultExpanded: (defaultExpandedRowKeys ?? []).map(String),
-      onChange: (keys) => onExpandedRowsChange?.(keys),
+      onChange: (keys) => {
+        onExpandedRowsChange?.(keys)
+        emitTableEvent('expanded-rows-change', { expandedKeys: keys })
+      },
     })
   }
   const expansion = expansionRef.current
@@ -3210,7 +3226,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     setFilterPanelSeq((s) => s + 1)
   }
   const applyFilterValues = (colKey: string, values: string[]): void => {
-    onFilterValuesChange?.({ ...(filterValues ?? {}), [colKey]: values })
+    const next = { ...(filterValues ?? {}), [colKey]: values }
+    onFilterValuesChange?.(next)
+    emitTableEvent('filter-value-change', { filterValues: next })
     // Batch CB: record recent filters — non-empty sets only (an empty set is
     // the clear semantics, mergeFilterValues precedent). Records even without
     // an onFilterValuesChange handler (controlled-irrelevant).
@@ -3229,6 +3247,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const next = { ...(filterValues ?? {}) }
     delete next[colKey]
     onFilterValuesChange?.(next)
+    emitTableEvent('filter-value-change', { filterValues: next })
   }
   // Batch BW: 复制值 — the clicked cell's display text (mask → formatter →
   // String, the `contextCellText` chain shared with cellTooltip) via the
@@ -3388,18 +3407,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // Batch V (vxe edit-activated parity): the session is open — report the
     // cell coordinates (cell mode only).
     onEditStartRef.current?.({ row, column: col, rowIndex })
+    emitTableEvent('edit-start', { row, column: col, rowIndex })
   }
   const cancelEdit = () => {
     cellEdit.cancelEdit()
     // Batch V (vxe edit-closed parity): the session ended without a commit.
     const ctx = editCtxRef.current
-    if (ctx)
+    if (ctx) {
       onEditClosedRef.current?.({
         row: ctx.row,
         column: ctx.col,
         rowIndex: ctx.rowIndex,
         cancelled: true,
       })
+      emitTableEvent('edit-cancel', {
+        row: ctx.row,
+        column: ctx.col,
+        rowIndex: ctx.rowIndex,
+        cancelled: true,
+      })
+    }
   }
   const commitEdit = (): boolean => {
     const ok = commitWithSummaryIntent(cellEdit)
@@ -3407,14 +3434,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // Batch V (vxe edit-closed parity): committed — the store's validated
       // slot holds the coerced committed value (getDraft is cleared).
       const ctx = editCtxRef.current
-      if (ctx)
+      if (ctx) {
+        const value = cellEdit.getValidated()
         onEditClosedRef.current?.({
           row: ctx.row,
           column: ctx.col,
           rowIndex: ctx.rowIndex,
-          value: cellEdit.getValidated(),
+          value,
           cancelled: false,
         })
+        emitTableEvent('edit-commit', {
+          row: ctx.row,
+          column: ctx.col,
+          rowIndex: ctx.rowIndex,
+          value,
+          cancelled: false,
+        })
+      }
     }
     return ok
   }
@@ -3571,7 +3607,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     } else if (col.editable && !col.formula && editConfig?.trigger === 'click' && k != null) {
       beginEdit(row, col, k, idx)
     }
-    onCellClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
+    const params = { row, column: col, rowIndex: idx, columnIndex: ci }
+    onCellClick?.(params)
+    emitTableEvent('cell-click', params)
   }
 
   const setCurrentColumn = (col: IrisTableColumn<Row>): void => {
@@ -3880,8 +3918,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       expansion.toggle(keyStr)
       // vxe toggle-row-expand parity: events fire with the NEW state, and the
       // same channel as the corresponding render toggle (detail vs tree).
-      if (hasDetail) onExpandChange?.(row, !wasExpanded)
-      if (treeMode) onTreeExpandChange?.(row, !wasExpanded)
+      if (hasDetail) {
+        onExpandChange?.(row, !wasExpanded)
+        emitTableEvent('expand-change', { row, expanded: !wasExpanded })
+      }
+      if (treeMode) {
+        onTreeExpandChange?.(row, !wasExpanded)
+        emitTableEvent('tree-expand-change', { row, expanded: !wasExpanded })
+      }
     },
     clearSort: () => {
       // Multi mode owns the sort list; single mode the one-column state.
@@ -3893,7 +3937,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // the change handlers own the reset; without handlers the parent map
       // stays untouched (read-only table, documented).
       onFiltersChange?.({})
+      emitTableEvent('filter-change', { filters: {} })
       onFilterValuesChange?.({})
+      emitTableEvent('filter-value-change', { filterValues: {} })
     },
     setCurrentRow: (key) => {
       // Mirror the row-click path's veto guards: fire only when the row
@@ -6289,12 +6335,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-row-changed={compareDiff?.status.get(k) === 'changed' ? 'true' : undefined}
         onClick={() => {
           onRowClick?.(row, idx)
+          emitTableEvent('row-click', { row, rowIndex: idx })
           if (onCurrentRowChange && k != null) {
             if (beforeCurrentRowChange?.(k, row) !== false) onCurrentRowChange(k, row)
           }
         }}
         onDoubleClick={() => {
           onRowDblClick?.(row, idx)
+          emitTableEvent('row-dblclick', { row, rowIndex: idx })
         }}
         className={rowClassName?.(row, idx)}
         style={{
@@ -6374,7 +6422,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   e.stopPropagation()
                   expansion.toggle(String(k))
                   // vxe toggle-row-expand parity: `expanded` is the NEW state.
-                  onExpandChange?.(row, !expandedKeys.includes(String(k)))
+                  const nowExpanded = !expandedKeys.includes(String(k))
+                  onExpandChange?.(row, nowExpanded)
+                  emitTableEvent('expand-change', { row, expanded: nowExpanded })
                 }}
                 style={{
                   border: 'none',
@@ -6623,7 +6673,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       } else if (editableLive) {
                         beginEdit(row, col, k, idx)
                       }
-                      onCellDblClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
+                      const params = { row, column: col, rowIndex: idx, columnIndex: ci }
+                      onCellDblClick?.(params)
+                      emitTableEvent('cell-dblclick', params)
                     }
                   : undefined
               }
@@ -6729,7 +6781,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         if (treeMeta.hasChildren) {
                           expansion.toggle(treeMeta.key)
                           // vxe toggle-tree-expand parity: `expanded` is the NEW state.
-                          onTreeExpandChange?.(row, !treeMeta.expanded)
+                          const nowExpanded = !treeMeta.expanded
+                          onTreeExpandChange?.(row, nowExpanded)
+                          emitTableEvent('tree-expand-change', { row, expanded: nowExpanded })
                           return
                         }
                         // Lazy leaf: first expand fetches the children. Loading
@@ -6757,6 +6811,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                               expansion.toggle(treeMeta.key)
                               // Lazy load resolved children: the row just expanded.
                               onTreeExpandChange?.(row, true)
+                              emitTableEvent('tree-expand-change', { row, expanded: true })
                             }
                             clearLoading()
                           })

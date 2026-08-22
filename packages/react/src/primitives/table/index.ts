@@ -22,6 +22,7 @@ export {
   type IrisTableCellEditEvent,
   type IrisTableEditStartParams,
   type IrisTableEditClosedParams,
+  type IrisTableEvent,
   type IrisTableScrollParams,
   type IrisTableVirtualOptions,
   type IrisTableRenderDetail,

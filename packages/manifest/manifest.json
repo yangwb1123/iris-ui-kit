@@ -36461,6 +36461,12 @@
           "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
         },
         {
+          "name": "onTableEvent",
+          "type": "(event: { type: string; detail: unknown }) => void",
+          "optional": true,
+          "description": "Unified event stream (batch DW, iris 独有 — vxe has no single event bus): cell/row click, sort, filter, edit and expand events merged into ONE subscription. The bus fires AFTER the matching dedicated callback (if wired) — a bridge, not a behavior, so gate parity holds by construction (no `onCellClick`/`rowMode` → no cell-click event). `type` is one of the closed `IrisTableEvent` palette; `detail` carries the SAME params the dedicated callback receives (reference-identical `detail.row`/`column`). Controllable proxy `sort` updates, snapshot restores and `expandAll` fire no bus event."
+        },
+        {
           "name": "onCellClick",
           "type": "(params: TableTypes.IrisTableCellClickParams<Row>) => void",
           "optional": true,
@@ -37665,6 +37671,12 @@
               "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
             },
             {
+              "name": "onTableEvent",
+              "type": "(event: { type: string; detail: unknown }) => void",
+              "optional": true,
+              "description": "Unified event stream (batch DW, iris 独有 — vxe has no single event bus): cell/row click, sort, filter, edit and expand events merged into ONE subscription. The bus fires AFTER the matching dedicated callback (if wired) — a bridge, not a behavior, so gate parity holds by construction (no `onCellClick`/`rowMode` → no cell-click event). `type` is one of the closed `IrisTableEvent` palette; `detail` carries the SAME params the dedicated callback receives (reference-identical `detail.row`/`column`). Controllable proxy `sort` updates, snapshot restores and `expandAll` fire no bus event."
+            },
+            {
               "name": "onCellClick",
               "type": "(params: TableTypes.IrisTableCellClickParams<Row>) => void",
               "optional": true,
@@ -38607,6 +38619,7 @@
             "onSelectAllChange",
             "onSelectionChange",
             "onSortChange",
+            "onTableEvent",
             "onTreeExpandChange"
           ],
           "slots": [
@@ -38631,6 +38644,7 @@
             "IrisTableEditStartParams",
             "IrisTableEditor",
             "IrisTableEmptyState",
+            "IrisTableEvent",
             "IrisTableFilterOption",
             "IrisTableFilterValues",
             "IrisTableFooterMethodParams",
@@ -40043,6 +40057,7 @@
         "onCurrentRowChange",
         "onCurrentColumnChange",
         "onHeaderClick",
+        "onTableEvent",
         "onCellClick",
         "onCellDblClick",
         "onColumnWidthsChange",
@@ -40076,8 +40091,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 201,
-        "eventCount": 32
+        "propCount": 202,
+        "eventCount": 33
       }
     },
     {

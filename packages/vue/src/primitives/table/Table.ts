@@ -16,6 +16,7 @@ import {
   buildHeaderMatrix,
   compareStates,
   applyTableMask,
+  createAuditLog,
   createCellRange,
   createExpansion,
   createSelectionModel,
@@ -31,6 +32,7 @@ import {
   toCsvRows,
   validateEditRulesAsync,
   withSortedChildren,
+  type AuditLogType,
   type CellRangeState,
   type DetectedColumnType,
   type SortableRect,
@@ -50,6 +52,7 @@ import { mergeFilterValues, useTableProxy } from './useTableProxy'
 import { exportCsv as serializeTableCsv } from './exportCsv'
 import { renderFormSection, renderPagerSection, renderToolbarSection } from './table-sections'
 import { renderContextMenuSection, renderFilterPanelSection } from './table-overlays'
+import { auditDiff, renderAuditPanelSection } from './table-audit'
 import { renderImportPreviewSection } from './import-preview'
 import { renderTableSummaryRow } from './table-summary-renderer'
 import { renderTableStateRow } from './table-state-renderer'
@@ -444,6 +447,39 @@ export const IrisTable = defineComponent({
       return index
     }
 
+    // -------- Built-in audit log (iris 独有, batch EN — mirror react batch
+    // AT) --------
+    // A core createAuditLog keeps a bounded (200) ring of ONE entry per
+    // mutation commit. Three funnels record in the Vue adapter (insert/paste/
+    // fill/undo have no Vue entry points yet): writeCellValue (inline + row-
+    // mode cell commits) records DIRECTLY at the commit point (type 'edit' +
+    // rowKey + column + old→new — a single-cell entry byte-identical to
+    // React's diff for the same edit) instead of a list diff, because
+    // non-proxy edits never write the row table (props.data is immutable) —
+    // a stale-base diff would invert the second of two consecutive commits
+    // (batch-EN F1). removeRows diffs the pre/post lists (type 'remove');
+    // loadData diffs too (type 'edit' — react commitRowList default parity).
+    // The controller is created once and stays inert unless the `auditLog`
+    // prop is on (real-time gate — off = zero push).
+    const audit = createAuditLog()
+    // Previous row list for the light diff; kept in sync by EVERY row-list
+    // funnel (recordAudit assigns eagerly) AND by the tableData watch below
+    // (external re-feeds — parent `data` / proxy refetch / rowDrag reorder —
+    // re-baseline so the next commit diff doesn't read stale rows; those
+    // moves never record, react effect parity).
+    const auditRowsRef = ref<Array<Record<string, unknown>>>(tableData.value)
+    watch(tableData, (next) => {
+      auditRowsRef.value = next
+    })
+    const recordAudit = (next: Array<Record<string, unknown>>, type: AuditLogType): void => {
+      if (!props.auditLog) return
+      const entry = auditDiff(auditRowsRef.value, next, (r, i) => rowId(r, i))
+      if (entry) audit.push({ type, ...entry })
+      // Eager ref sync: a following commit in the SAME flush must diff against
+      // the true intermediate list (Vue defers the computed recompute).
+      auditRowsRef.value = next
+    }
+
     // -------- Tree rows (opt-in via getSubRows / lazyLoad) --------
     // Flatten the nested data into the visible rows honoring the (shared)
     // expansion model. `bodyData` is the row list the body, select-all, and
@@ -720,6 +756,21 @@ export const IrisTable = defineComponent({
       newValue: unknown,
     ) => {
       if (newValue === oldValue) return
+      // Batch EN (iris 独有): record ONE audit entry per inline/row edit
+      // commit AT the commit point — no list diff, because non-proxy edits
+      // never write the row table and a stale-base diff would invert the
+      // second of two consecutive commits (F1). The single-cell entry shape
+      // (type 'edit' + rowKey + column + old→new) is byte-identical to
+      // React's diff for the same edit.
+      if (props.auditLog) {
+        audit.push({
+          type: 'edit',
+          rowKey: rowId(row, rowIndex),
+          column: (column.dataIndex ?? column.key) as string,
+          oldValue,
+          newValue,
+        })
+      }
       emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
       if (proxyCtrl.proxy.value) {
         const id = rowId(row, rowIndex)
@@ -1419,6 +1470,10 @@ export const IrisTable = defineComponent({
 
     const tableExpose: IrisTableExpose<Record<string, unknown>> = {
       loadData: (rows) => {
+        // Batch EN: loadData replaces the live row list through a commit-like
+        // funnel — record the light diff (type 'edit', react commitRowList
+        // default parity) before the write flips the reactive source.
+        recordAudit(rows, 'edit')
         if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
         else localRowsOverride.value = rows
         props.onDataChange?.(rows)
@@ -1437,6 +1492,9 @@ export const IrisTable = defineComponent({
       removeRows: (keys) => {
         const { rows, removedKeys } = removeRowsFromList(tableData.value, props.rowKey, keys)
         if (removedKeys.size === 0) return
+        // Batch EN: record ONE 'remove' entry from the light diff (the first
+        // removed row key carries the structural context) before the write.
+        recordAudit(rows, 'remove')
         if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
         else localRowsOverride.value = rows
         const selected = displaySelection.value
@@ -1471,6 +1529,13 @@ export const IrisTable = defineComponent({
       compareStates,
       scrollToRow,
       goToRow,
+      // Batch EN (iris 独有): audit trail programmatic access — a snapshot
+      // (newest-first entries) and a wipe, both against the ref-once
+      // controller; the seq counter never resets on clear (audit integrity).
+      getAuditLog: () => audit.list(),
+      clearAuditLog: () => {
+        audit.clear()
+      },
     }
     expose(tableExpose)
 
@@ -1487,6 +1552,62 @@ export const IrisTable = defineComponent({
         handleFormSubmit,
         handleFormReset,
       })
+
+    // -------- Audit log panel (iris 独有, batch EN — mirror react batch
+    // AT) --------
+    // Floating panel opened from the toolbar trigger and positioned below it
+    // (useFloating bottom-end, flip off / shift on — react parity). Dismissal:
+    // Escape + outside pointer-down (useDismiss — the trigger is EXCLUDED so
+    // a press on it toggles instead of close-then-reopen) and any scroll
+    // (capture-phase document listener, context-menu precedent). The entry
+    // list refreshes IN PLACE via the panel component's own subscription —
+    // the table never re-renders from its own audit traffic (react
+    // useSyncExternalStore parity).
+    const auditOpen = ref(false)
+    const auditAnchorRef = ref<HTMLButtonElement | null>(null)
+    const auditPanelRef = ref<HTMLElement | null>(null)
+    const toggleAuditPanel = (): void => {
+      auditOpen.value = !auditOpen.value
+    }
+    const closeAuditPanel = (): void => {
+      auditOpen.value = false
+    }
+    const clearAudit = (): void => {
+      audit.clear()
+    }
+    const { floatingStyles: auditPanelStyles } = useFloating({
+      anchor: auditAnchorRef,
+      floating: auditPanelRef,
+      open: auditOpen,
+      placement: 'bottom-end',
+      flip: false,
+      shift: true,
+    })
+    useDismiss({
+      enabled: auditOpen,
+      exclude: [auditPanelRef, auditAnchorRef],
+      onDismiss: closeAuditPanel,
+    })
+    // Scroll anywhere closes the panel. Capture phase so scrolling inside any
+    // nested scroll container (or the table itself) also counts.
+    watch(auditOpen, (open) => {
+      if (typeof document === 'undefined') return
+      if (open) document.addEventListener('scroll', closeAuditPanel, true)
+      else document.removeEventListener('scroll', closeAuditPanel, true)
+    })
+    onScopeDispose(() => {
+      if (typeof document === 'undefined') return
+      document.removeEventListener('scroll', closeAuditPanel, true)
+    })
+    const buildAuditPanelSection = (): VNode | null =>
+      renderAuditPanelSection({
+        open: auditOpen,
+        audit,
+        styles: auditPanelStyles,
+        panelRef: auditPanelRef,
+        onClear: clearAudit,
+        t,
+      })
     const buildToolbarSection = (): VNode | null =>
       renderToolbarSection({
         toolbar: props.toolbar,
@@ -1499,6 +1620,12 @@ export const IrisTable = defineComponent({
         densityToggle: props.densityToggle,
         effectiveDensity: effectiveDensity.value,
         onDensityToggle: cycleDensity,
+        // Batch EN: the built-in audit trigger rides the toolbar (react
+        // parity — the toolbar gate admits auditLog on its own).
+        auditLog: props.auditLog,
+        auditOpen,
+        auditAnchorRef,
+        onAuditToggle: toggleAuditPanel,
       })
     const buildPagerSection = (): VNode | null =>
       renderPagerSection({ proxyCtrl, proxyConfig: props.proxyConfig })
@@ -2536,6 +2663,7 @@ export const IrisTable = defineComponent({
           : null,
         buildContextMenuSection(),
         buildFilterPanelSection(),
+        buildAuditPanelSection(),
       ].filter((n): n is VNode => n !== null)
       return rootNodes.length === 1 ? rootNodes[0] : rootNodes
     }

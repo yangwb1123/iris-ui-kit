@@ -133,6 +133,13 @@ export interface ToolbarSectionContext {
   densityToggle: boolean
   effectiveDensity: IrisTableDensity
   onDensityToggle: () => void
+  /** Batch EN: built-in audit trigger (iris 独有, mirror react batch AT).
+   * Renders the toolbar when `auditLog` is on even without a toolbar/density
+   * config (react parity — the toolbar gate admits auditLog). */
+  auditLog: boolean
+  auditOpen: Readonly<Ref<boolean>>
+  auditAnchorRef: Ref<HTMLButtonElement | null>
+  onAuditToggle: () => void
 }
 
 const toolbarBtnStyle = {
@@ -146,7 +153,9 @@ const toolbarBtnStyle = {
 /** Render the optional toolbar and its built-in refresh/export actions. */
 export function renderToolbarSection(ctx: ToolbarSectionContext): VNode | null {
   const tb = ctx.toolbar
-  if (!tb && !ctx.densityToggle) return null
+  // Batch EN: `auditLog` renders the toolbar on its own (like `densityToggle`
+  // — the built-in audit trigger rides the toolbar row).
+  if (!tb && !ctx.densityToggle && !ctx.auditLog) return null
   const toolChildren: VNode[] = []
   if (tb?.title) {
     toolChildren.push(
@@ -301,6 +310,31 @@ export function renderToolbarSection(ctx: ToolbarSectionContext): VNode | null {
           style: toolbarBtnStyle,
         },
         ctx.t(`table.density.${ctx.effectiveDensity}`),
+      ),
+    )
+  }
+  if (ctx.auditLog) {
+    // Batch EN: toolbar audit trigger (iris 独有) — react parity (same
+    // `data-iris-audit-trigger` + ☰, color reflects the open state). The ref
+    // callback feeds the floating anchor for the panel below.
+    toolChildren.push(
+      h(
+        'button',
+        {
+          ref: (el: unknown) => {
+            ctx.auditAnchorRef.value = (el ?? null) as HTMLButtonElement | null
+          },
+          type: 'button',
+          'data-iris-audit-trigger': '',
+          'aria-label': ctx.t('table.audit'),
+          title: ctx.t('table.audit'),
+          onClick: ctx.onAuditToggle,
+          style: {
+            ...toolbarBtnStyle,
+            color: ctx.auditOpen.value ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+          },
+        },
+        '☰',
       ),
     )
   }

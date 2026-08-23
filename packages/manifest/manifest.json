@@ -38998,6 +38998,12 @@
               "optional": true
             },
             {
+              "name": "auditLog",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "columnVisibility",
               "type": "IrisTableColumnVisibility",
               "optional": true

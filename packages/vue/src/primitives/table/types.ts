@@ -4,6 +4,7 @@ import type {
   TableViewConfig,
   TableViewSnapshot,
 } from '@iris-ui-kit/core'
+import type { AuditLogEntry } from '@iris-ui-kit/core'
 
 export type IrisTableSortDirection = 'asc' | 'desc'
 
@@ -339,4 +340,8 @@ export interface IrisTableExpose<Row = Record<string, unknown>> {
   scrollToRow: (key: string | number) => void
   /** Scroll and transiently highlight the rendered row with `key`; the target clears after 2s. */
   goToRow: (key: string | number) => void
+  /** Audit trail snapshot (batch EN, iris 独有 — mirror react batch AT): newest-first entries (seq/at/type/rowKey/column/old→new) — an empty array when `auditLog` is off or nothing was committed yet. */
+  getAuditLog: () => ReadonlyArray<AuditLogEntry>
+  /** Wipe every audit entry (batch EN, iris 独有): the seq counter never resets — audit integrity. No-op without `auditLog` (the ring is already empty). */
+  clearAuditLog: () => void
 }

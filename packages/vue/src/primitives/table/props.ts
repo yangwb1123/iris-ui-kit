@@ -152,6 +152,24 @@ export const tableProps = {
     type: Object as PropType<IrisTableToolbarConfig>,
     default: undefined,
   },
+  /** Audit log (batch EN, iris 独有 — mirror react batch AT): when true,
+   * every mutation commit appends ONE entry to a bounded (200) ring —
+   * inline/row cell edits (recorded directly at the commit point, type
+   * 'edit' + rowKey + column + old→new) and the row-list funnels available
+   * here (removeRows — list diff, type 'remove'; loadData — list diff, type
+   * 'edit', react commitRowList default parity). External re-feeds (parent
+   * data / proxy refetch / rowDrag reorder) re-baseline the diff snapshot
+   * and never record. The toolbar gains an audit trigger
+   * (`data-iris-audit-trigger`) opening a floating panel
+   * (`data-iris-audit-panel`, like the filter/context panels — Esc /
+   * outside / scroll close) listing newest-first entries (seq +
+   * `formatClock` time + type + rowKey + column + muted old→new);
+   * `getAuditLog()` / `clearAuditLog()` on the exposed handle access the
+   * trail programmatically (the seq never resets on clear — audit
+   * integrity). Requires a toolbar render (the gate admits `auditLog` like
+   * `densityToggle`). Additive — default off; off = zero push.
+   */
+  auditLog: { type: Boolean, default: false },
   columnVisibility: {
     type: Object as PropType<IrisTableColumnVisibility>,
     default: undefined,

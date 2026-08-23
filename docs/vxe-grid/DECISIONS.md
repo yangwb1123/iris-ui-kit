@@ -3329,3 +3329,28 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-em-review.md [ok]: Summary: **All verification commands green:**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-em-review.md
+
+## 2026-08-22 15:51:37 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-em-gate.md [ok]: 报告: **Verdict**: `batch-em-review.md` = **PASS** — 全仓库门禁执行通过并已提交。; 门禁结果: | Check | Result |; 最终测试计数（逐包直跑实测）: - **svelte** 147 files / **1003**（+15 批 EM formula.test.ts）+ hydration **35/35**; 文档更新（iris 独有四框架对齐节）: - `comparison.md` 批 EM 行：「验证（批 EM）」→「**gate 实测（批 EM）**」全仓库块（turbo/per-package/audit/manifest nil diff），review LOWs 收入
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-em-gate.md
+
+## 2026-08-22 15:57:09 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-en-baseline.md [ok]: 交付：`/home/u1/iris-ui/docs/vxe-grid/batch-en-baseline.md`（76 行）: **核查结论**（HEAD `91df1997`，批 EM svelte 已合入）：审计日志目前 **react-only**（批 AT）——vue/solid/svelte 全包零命中。react 批 AT 是直接先例（`AuditPan
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-baseline.md
+
+## 2026-08-22 16:07:02 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-en-adapt.md [ok]: Report — iris-ui grid 批 EN：vue 同步审计日志（四框架对齐）: **Commit:** `0564fa23` — `feat(vue): grid 批 EN——审计日志同步（auditLog 四框架对齐）`; Files changed (8, per batch-en-baseline file map — vue bridge only, no other framework touched): | File | Change |; Design (mirrors react batch AT exactly, via thin bridge): - **提交点直记 'edit'**（`writeCellValue` 单一咽喉，inline + row 模式逐格）——规避 vue 非 proxy `props.data` 不可变导致的 stale-base 反转（F1，测试守卫）；单; Tests added — 11 (mirror react's 9, minus `insertRow`/`undo` which have no vue entry points): 1. edit 提交记 1 条（type/rowKey/column/old→new + seq 1）· 2. **连续两笔无反转（F1 验收）** · 3. **row 模式逐格各 1 条** · 4. removeRows 'remov; Gate results: - `vue typecheck` ✅ clean
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-adapt.md
+
+## 2026-08-22 16:12:52 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-en-review.md [ok]: Verdict: **PASS**（3 LOW / 2 INFO，无阻塞项）→ `docs/vxe-grid/batch-en-review.md`; 验证明细: **变更范围核实**：`0564fa23` 仅触碰 `packages/vue` 6 文件 + `packages/manifest` 2 文件（重新生成）；core/react/solid/svelte 零改动，`check:framew; Findings 摘要: 1. **LOW** — 批次标题「select 编辑器」未交付；基线只定义 auditLog，select 编辑器仅 react 有（无对齐基线批），vue/solid/svelte 均缺 —— 建议独立批次
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-review.md
+
+## 2026-08-22 16:20:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md [ok]: 报告: **Verdict**: `batch-en-review.md` = **PASS**（3 LOW / 2 INFO，无阻塞项）— 全仓库门禁执行通过并已提交。; 门禁结果: | Check | Result |; 最终测试计数（逐包直跑实测）: - **vue** 167 files / **1599**（+11 批 EN audit-log.test.ts）+ SSR ✅
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md

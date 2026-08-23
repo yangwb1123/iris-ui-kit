@@ -1,5 +1,15 @@
 # cms-solid
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [dda2643]
+- Updated dependencies
+- Updated dependencies [dda2643]
+  - @iris-ui-kit/solid@0.2.3
+  - @iris-ui-kit/plugin-form-builder@2.0.2
+
 ## 0.0.3
 
 ### Patch Changes

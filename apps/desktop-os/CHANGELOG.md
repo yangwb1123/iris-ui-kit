@@ -1,5 +1,15 @@
 # desktop-os
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [dda2643]
+- Updated dependencies [dda2643]
+- Updated dependencies [dda2643]
+- Updated dependencies [dda2643]
+  - @iris-ui-kit/react@0.3.0
+
 ## 0.0.3
 
 ### Patch Changes

@@ -1,5 +1,43 @@
 # @iris-ui-kit/react
 
+## 0.3.0
+
+### Minor Changes
+
+- dda2643: feat(react): IrisCommandPalette 新增 opt-in `virtual` prop
+
+  - `virtual`（默认 `false`）开启后，结果列表经 `IrisVirtualScroll` 桥由 core `createVirtualizer` 窗口化渲染——10k 命令只挂载 ≤ 20 行 DOM，spacer 高度 = Σ 行高（header 28px / item 36px，`height="100%"` 保留 70vh 流式表面），键盘导航（↑/↓/环绕/查询重置/hover）把活动行滚入视口（core 钳制偏移）
+  - 列表模型复用：新增 flat→enabledIdx 记忆化映射，替换原 O(n²) `findIndex`（两条路径都受益，纯性能、DOM 不变）；共享 `renderRow` 供普通 map 与虚拟窗口；`keyOf` 精确复刻现有 header 键公式（`g-${label}-${i}`）防按键逐字重挂载
+  - 默认关闭：`virtual=false` 与改动前逐字节一致，既有 15 个 palette 测试零改动全绿（新增 A1–A8 验收：窗口挂载/精确 spacer/钳制滚动/环绕/查询重置/混合高度/禁用行/空态）
+  - 零新增导出、零 core 改动、零新依赖 ⇒ manifest/llms.txt 不变；Playground React 新增 10k 条目 palette 演示 + virtual 开关
+
+### Patch Changes
+
+- dda2643: feat(cascader): 四框架 IrisCascader 新增 opt-in `virtual` prop
+
+  - `virtual`（默认 `false`）开启后，每个打开的列经框架 `IrisVirtualScroll` 桥由 core `createVirtualizer` 窗口化渲染——10k 选项列只挂载 ≤ 20 行 DOM，spacer 高度 = count × 行高
+  - 固定确定性尺寸（零旋钮）：视口 240px（即现有 maxHeight）、行高按 size（sm 28 / md 34 / lg 40，solid 无 size 恒 34）、buffer 4
+  - react/solid 桥新增可透传 `role`（solid 补 `[key: string]: unknown` + rest 转发到滚动容器）；vue/svelte 桥经 attrs/rest 原样透传，零桥改动
+  - 默认关闭：`virtual=false` 与改动前逐字节一致，四框架既有 cascader 测试零改动全绿
+  - 零新增导出、零 core 改动、零新依赖 ⇒ manifest/llms.txt 不变
+
+- dda2643: feat(transfer): 四框架 IrisTransfer 新增 opt-in `virtual` prop（双面板窗口化）
+
+  - `virtual?: IrisTransferVirtualOptions { itemHeight; height?; buffer? }`（镜像 `IrisTableVirtualOptions`），开启后两个面板列表经各框架 `IrisVirtualScroll` 桥由 core `createVirtualizer` 窗口化渲染——10k 选项只挂载 ≤ 11 行 DOM，spacer 高度 = count × 行高
+  - `height` 默认 200（svelte 240，即其面板现有 max-height）；滚动容器保持 `flex:1` + `maxHeight` + content-box，与现有 ul/div 面板布局一致
+  - 行渲染共享：react/vue 虚拟路径行标签为 `div`（`li` 入 div 会破坏 HTML 合法性），solid 保留 `role="option"` + `aria-selected`（`li`/`div` 双拼），svelte 保留 `<label>` 行（`row` snippet 双路径复用）
+  - 空态、搜索过滤、全面板计数头、禁用项、value-keyed 选择（窗口化不丢勾选）在虚拟路径下行为不变；`data-iris-transfer-list` 经 rest/attrs 落到虚拟滚动根（react/vue）
+  - 默认关闭：不传 `virtual` 与改动前逐字节一致，四框架既有 transfer 测试零改动全绿（新增 V1–V7 验收 × 4 框架：窗口挂载/jsdom 缓冲窗/滚动驱动窗口至第 9993 项/移动/空态/搜索计数/禁用）
+  - 新增导出 `IrisTransferVirtualOptions`（四 barrel）⇒ manifest/llms.txt 与 docs components.md 已重新生成；零 core 改动、零新依赖
+
+- dda2643: feat(react): IrisTree 新增 opt-in `virtual` prop（窗口化渲染扁平节点列表）
+
+  - `virtual?: IrisTreeVirtualOptions { itemHeight; height; buffer? }`（镜像 `IrisTableVirtualOptions`），开启后经 `IrisVirtualScroll` 桥由 core `createVirtualizer` 只挂载可见窗口 + buffer 的 treeitem 行——5k 节点仅挂载 ≤ 23 行 DOM，spacer 高度 = count × 行高；`keyOf` 用节点 id，展开/折叠不丢滚动位置（R4）
+  - 滚动根即树根：`role="tree"` / `tabIndex={-1}` / `onKeyDown` / `data-iris-tree` / rest / style 全部落到虚拟滚动根，aria 树完整（role="tree" → 无角色包装 → role="treeitem"）
+  - 键盘导航滚动到活动行（scrollToIndex + refresh，不依赖原生 scroll 事件）；焦点跟随活动行跨窗口（仅键盘移动触发，rAF 重查 + 5 帧上限 + 过期链丢弃——避免旧链在目标行重新挂载时抢焦）
+  - `renderFlatNode` 抽取为共享行渲染器：虚拟/非虚拟两路径逐字节一致；不传 `virtual` 与改动前完全一致（28 个既有测试零改动全绿）
+  - 新增导出 `IrisTreeVirtualOptions`（tree barrel）+ `IrisVirtualScrollProps` 增加 `tabIndex`/`onKeyDown` 两个转发 prop（type-only，运行时不变量不变）；manifest/llms.txt 与 docs components.md 已重新生成；零 core 改动、零新依赖
+
 ## 0.2.2
 
 ### Patch Changes

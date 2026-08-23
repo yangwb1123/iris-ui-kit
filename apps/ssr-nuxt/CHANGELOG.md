@@ -1,5 +1,13 @@
 # ssr-nuxt
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [dda2643]
+- Updated dependencies [dda2643]
+  - @iris-ui-kit/vue@0.2.29
+
 ## 0.0.3
 
 ### Patch Changes

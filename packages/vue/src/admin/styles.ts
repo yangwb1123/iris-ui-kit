@@ -120,6 +120,32 @@ const CSS = `
   background: var(--iris-nav-item-active-hover, color-mix(in srgb, var(--iris-primary) 88%, black));
 }
 
+/* 水平模式：antd 风格选中态（下划线 + 文字色 + 透明背景），而非
+   vertical 的整块 primary 背景。hover 一律浅背景（active 项也响应）。 */
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-item) {
+  position: relative;
+}
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-item):hover {
+  background: var(--iris-nav-item-hover);
+}
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-item[data-active='true']) {
+  background: transparent;
+  color: var(--iris-primary);
+  font-weight: 600;
+}
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-item[data-active='true'])::after {
+  content: '';
+  position: absolute;
+  inset-inline: 12px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--iris-primary);
+}
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-item[data-active='true']):hover {
+  background: var(--iris-nav-item-hover);
+}
+
 :where(.iris-nav-menu-item[data-active-trail='true']) {
   color: var(--iris-primary);
   font-weight: 600;

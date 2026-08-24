@@ -112,9 +112,9 @@ coverage:
 size:
   # gzipped KB 预算（dist/index.js 的 gzip 后大小）
   budgets:
-    # Grid convergence rounds added shared form/data-view/window/controller
-    # engines; measured barrel is 49.2KB gzip (budget includes review headroom).
-    "@iris-ui-kit/core": 52
+    # Named table views/tabs and shared pinned-boundary math are now public core
+    # primitives; measured barrel is 53.7KB gzip with reviewable headroom.
+    "@iris-ui-kit/core": 55
     # Bumped 3→4 (2026-08-19): typography/spacing token family growth; the
     # measured barrel is 3.1KB gzip.
     "@iris-ui-kit/tokens": 4
@@ -122,11 +122,11 @@ size:
     "@iris-ui-kit/skins": 5
     # Unsafe SVG-node rejection and escaping added to the public SSR renderer.
     "@iris-ui-kit/icons": 7
-    # Grid parity rounds expanded the public adapter barrels; measured sizes
-    # are React 151.9KB, Vue 100.5KB, Solid 109.0KB gzip respectively.
+    # Grid parity rounds expanded the public adapter barrels; named views/tabs
+    # now measure React 154.1KB, Vue 108.8KB, Solid 117.0KB gzip respectively.
     "@iris-ui-kit/react": 160
-    "@iris-ui-kit/vue": 106
-    "@iris-ui-kit/solid": 115
+    "@iris-ui-kit/vue": 110
+    "@iris-ui-kit/solid": 120
     "@iris-ui-kit/svelte": 6
     "@iris-ui-kit/manifest": 2
   budget_baseline_path: "scripts/size-baseline.json"

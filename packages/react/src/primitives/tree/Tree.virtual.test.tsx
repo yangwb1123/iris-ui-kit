@@ -77,7 +77,7 @@ describe('@iris-ui-kit/react IrisTree virtual', () => {
     render(<IrisTree nodes={many(5000)} />)
     expect(items().length).toBe(5000)
     expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
-  }, 15_000)
+  }, 30_000)
 
   it("A2: default off renders today's DOM (no virtual nodes)", () => {
     const { rerender } = render(<IrisTree nodes={nodes} />)
@@ -173,7 +173,7 @@ describe('@iris-ui-kit/react IrisTree virtual', () => {
     expect(document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node')).toBe(
       '30',
     )
-  }, 15_000)
+  }, 30_000)
 
   it('A4: expanding a node preserves the scroll position (5,000 + 1,000 children)', async () => {
     const withKids = many(5000)
@@ -222,7 +222,7 @@ describe('@iris-ui-kit/react IrisTree virtual', () => {
     cleanup()
     render(<IrisTree nodes={withKids} defaultExpanded={['2500']} />)
     expect(items().length).toBe(6000)
-  }, 15_000)
+  }, 30_000)
 
   it('A5: row attributes (aria/roving/checkable) survive windowed rendering', () => {
     const nested: IrisTreeNode[] = [

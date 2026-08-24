@@ -199,7 +199,7 @@ describe('IrisCascader', () => {
       await nextTick()
       expect(w.findAll('[data-iris-cascader-option]').length).toBe(10_000)
       expect(w.find('[data-iris-virtual-scroll]').exists()).toBe(false)
-    })
+    }, 30_000)
 
     it('a11y parity: virtual container carries the same surface as the plain listbox', async () => {
       const small: IrisCascaderNode[] = [

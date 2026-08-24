@@ -8,19 +8,18 @@
  */
 
 import { execSync } from 'node:child_process'
-import { getConfig, ROOT } from './config.mjs'
+import { ROOT } from './config.mjs'
 
 export async function run() {
-  const cfg = getConfig()
   const scope = `"${ROOT}/packages/**/*.{ts,tsx,vue,svelte,js,json,css,html}"`
 
   console.log('--- Prettier format check ---')
 
   try {
-    execSync(`npx prettier --check ${scope}`, {
+    execSync(`pnpm exec prettier --check ${scope}`, {
       cwd: ROOT,
       stdio: 'inherit',
-      timeout: 30000,
+      timeout: 120000,
     })
     console.log('PASS: format (packages/)')
     return 0

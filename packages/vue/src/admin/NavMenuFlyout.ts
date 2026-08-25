@@ -17,7 +17,9 @@ export interface NavMenuFlyoutCtx {
   emitSelect: (key: string, node: NavNode) => void
 }
 
-const HOVER_OPEN_DELAY_VAL = 60
+// Hover 打开延迟 40ms：低于人眼可感知的 66ms，提升"hover 即开"的跟手
+// 感（用户反馈 hover 不显示子菜单的感知问题主要来自延迟+边缘抖动）。
+const HOVER_OPEN_DELAY_VAL = 40
 const HOVER_CLOSE_DELAY_VAL = 150
 
 export function createNavMenuFlyout(ctx: NavMenuFlyoutCtx) {

@@ -81,6 +81,22 @@ describe('IrisNavMenu interactions (A-series, antd parity)', () => {
     ).toEqual([])
   })
 
+  it('opens a horizontal submenu when items arrive after mount', async () => {
+    const w = mount(IrisNavMenu, {
+      props: { items: [] as NavNode[], orientation: 'horizontal' },
+    })
+
+    await w.setProps({ items })
+    const group = w.find('[data-iris-nav-group]')
+    const children = group.find('[data-iris-nav-children]')
+
+    await group.trigger('mouseenter')
+    await hoverSettle()
+    expect(children.attributes('aria-hidden')).toBeUndefined()
+    expect(group.attributes('data-open')).toBe('true')
+    w.unmount()
+  })
+
   it('shows a horizontal submenu on hover and keeps it open while leaving the trigger', async () => {
     const w = mount(IrisNavMenu, { props: { items, orientation: 'horizontal' } })
     const group = w.find('[data-iris-nav-group]')

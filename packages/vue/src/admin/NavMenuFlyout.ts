@@ -8,11 +8,14 @@ import { findNavPath, isBranch, type NavNode } from '@iris-ui-kit/core'
  * ant-design-vue Menu menubar semantics (A2/A3/A6/A9/A10).
  */
 export interface NavMenuFlyoutCtx {
-  items: NavNode[]
-  tree: { value: NavNode[] }
-  expanded: { value: string[] }
-  flyoutMode: { value: boolean }
-  collapsed: boolean
+  // These are refs rather than snapshots: admin menus commonly arrive after
+  // authentication, and the flyout depth/visibility model must use the same
+  // current tree that NavMenu renders.
+  items: { readonly value: NavNode[] }
+  tree: { readonly value: NavNode[] }
+  expanded: { readonly value: string[] }
+  flyoutMode: { readonly value: boolean }
+  collapsed: { readonly value: boolean }
   toggle: (key: string) => void
   emitSelect: (key: string, node: NavNode) => void
 }
@@ -80,14 +83,14 @@ export function createNavMenuFlyout(ctx: NavMenuFlyoutCtx) {
     const rect = trigger.getBoundingClientRect()
     const dir = getComputedStyle(trigger).direction
     panel.style.position = 'fixed'
-    panel.style.top = `${ctx.collapsed ? rect.top : rect.bottom}px`
+    panel.style.top = `${ctx.collapsed.value ? rect.top : rect.bottom}px`
     if (dir === 'rtl') {
       // Rail: popup opens on the inline-start side (left in RTL).
       panel.style.left = ''
-      panel.style.right = `${window.innerWidth - (ctx.collapsed ? rect.left : rect.right)}px`
+      panel.style.right = `${window.innerWidth - (ctx.collapsed.value ? rect.left : rect.right)}px`
     } else {
       panel.style.right = ''
-      panel.style.left = `${ctx.collapsed ? rect.right : rect.left}px`
+      panel.style.left = `${ctx.collapsed.value ? rect.right : rect.left}px`
     }
   }
 
@@ -102,9 +105,9 @@ export function createNavMenuFlyout(ctx: NavMenuFlyoutCtx) {
    * so a pinned popup never coexists with a sibling hover popup and clicking
    * a sibling branch visibly switches the open popup. */
   const isolateAtDepth = (key: string): void => {
-    const depth = findNavPath(ctx.items, key).length - 1
+    const depth = findNavPath(ctx.items.value, key).length - 1
     const isSameDepthOther = (k: string): boolean =>
-      k !== key && findNavPath(ctx.items, k).length - 1 === depth
+      k !== key && findNavPath(ctx.items.value, k).length - 1 === depth
     for (const state of [hoveredBranches, clickedBranches, focusedBranches]) {
       if (state.value.some(isSameDepthOther)) {
         state.value = state.value.filter((k) => !isSameDepthOther(k))
@@ -191,7 +194,7 @@ export function createNavMenuFlyout(ctx: NavMenuFlyoutCtx) {
   }
 
   const interactionKeyAtDepth = (keys: string[], depth: number): string | undefined =>
-    keys.find((key) => findNavPath(ctx.items, key).length === depth + 1)
+    keys.find((key) => findNavPath(ctx.items.value, key).length === depth + 1)
 
   const horizontalBranchVisible = (key: string, depth: number): boolean => {
     const hoveredAtDepth = interactionKeyAtDepth(hoveredBranches.value, depth)

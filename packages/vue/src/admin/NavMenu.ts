@@ -63,6 +63,7 @@ export const IrisNavMenu = defineComponent({
   setup(props, { emit, attrs }) {
     installNavMenuStyles()
     const { t } = useI18n()
+    const menuItems = computed(() => props.items)
     const tree = computed(() => visibleNav(props.items))
     const activePath = computed(() =>
       props.activeKey ? findNavPath(props.items, props.activeKey).map((n) => n.key) : [],
@@ -119,11 +120,13 @@ export const IrisNavMenu = defineComponent({
 
     // Flyout 状态机（hover/click 钉住/视口定位/键盘可见性）——NavMenuFlyout.ts
     const flyout = createNavMenuFlyout({
-      items: props.items,
+      // Keep the flyout controller in sync with async navigation data and
+      // layout changes; passing .value here would freeze the initial state.
+      items: menuItems,
       tree,
       expanded,
-      flyoutMode: { value: flyoutMode.value },
-      collapsed: props.collapsed,
+      flyoutMode,
+      collapsed: computed(() => props.collapsed),
       toggle,
       emitSelect: (key: string, node: NavNode) => emit('select', key, node),
     })

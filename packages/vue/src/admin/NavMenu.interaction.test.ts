@@ -221,12 +221,12 @@ describe('IrisNavMenu interactions (A-series, antd parity)', () => {
     ).toEqual(['ops'])
   })
 
-  it('uses down arrows only for top-level horizontal branches', () => {
+  it('uses down arrows for closed sidebar branches and down arrows for horizontal roots', () => {
     const horizontal = mount(IrisNavMenu, {
       props: { items: nestedItems, orientation: 'horizontal' },
     })
     const vertical = mount(IrisNavMenu, {
-      props: { items: nestedItems, activeKey: 'users', orientation: 'vertical' },
+      props: { items: nestedItems, orientation: 'vertical' },
     })
 
     expect(horizontal.find('[data-key="sys"] [data-iris-icon="chevron-down"]').exists()).toBe(true)
@@ -236,40 +236,41 @@ describe('IrisNavMenu interactions (A-series, antd parity)', () => {
     expect(horizontal.find('[data-key="admin"] [data-iris-icon="chevron-down"]').exists()).toBe(
       false,
     )
-    expect(vertical.findAll('[data-iris-icon="chevron-right"]')).toHaveLength(2)
-    expect(vertical.find('[data-iris-icon="chevron-down"]').exists()).toBe(false)
+    expect(vertical.findAll('[data-iris-icon="chevron-down"]')).toHaveLength(2)
+    expect(vertical.find('[data-iris-icon="chevron-right"]').exists()).toBe(false)
+    expect(vertical.find('[data-iris-icon="chevron-up"]').exists()).toBe(false)
   })
 
-  it('reverses a branch arrow while active, hovered, open, or on the active trail', async () => {
+  it('uses click, not hover, to open sidebar branches and points the arrow up', async () => {
     const vertical = mount(IrisNavMenu, { props: { items } })
     const branch = vertical.find('[data-key="sys"]')
+    const children = vertical.find('[data-iris-nav-group][data-depth="0"] [data-iris-nav-children]')
     const arrow = () => branch.find('.iris-nav-menu-arrow')
 
-    expect(arrow().attributes('data-reversed')).toBeUndefined()
+    expect(arrow().attributes('data-iris-icon')).toBe('chevron-down')
+    expect(children.attributes('aria-hidden')).toBe('true')
+
     await branch.trigger('mouseenter')
-    expect(arrow().attributes('data-reversed')).toBe('true')
-    await branch.trigger('mouseleave')
-    expect(arrow().attributes('data-reversed')).toBeUndefined()
+    expect(arrow().attributes('data-iris-icon')).toBe('chevron-down')
+    expect(children.attributes('aria-hidden')).toBe('true')
 
     await branch.trigger('click')
-    expect(arrow().attributes('data-reversed')).toBe('true')
+    expect(arrow().attributes('data-iris-icon')).toBe('chevron-up')
+    expect(children.attributes('aria-hidden')).toBeUndefined()
 
-    const activeBranch = mount(IrisNavMenu, {
-      props: { items, activeKey: 'sys' },
-    })
-    expect(
-      activeBranch.find('[data-key="sys"] .iris-nav-menu-arrow').attributes('data-reversed'),
-    ).toBe('true')
+    await branch.trigger('click')
+    expect(arrow().attributes('data-iris-icon')).toBe('chevron-down')
+    expect(children.attributes('aria-hidden')).toBe('true')
 
     const activeTrail = mount(IrisNavMenu, {
       props: { items: nestedItems, activeKey: 'users' },
     })
     expect(
-      activeTrail.find('[data-key="sys"] .iris-nav-menu-arrow').attributes('data-reversed'),
-    ).toBe('true')
+      activeTrail.find('[data-key="sys"] .iris-nav-menu-arrow').attributes('data-iris-icon'),
+    ).toBe('chevron-up')
     expect(
-      activeTrail.find('[data-key="admin"] .iris-nav-menu-arrow').attributes('data-reversed'),
-    ).toBe('true')
+      activeTrail.find('[data-key="admin"] .iris-nav-menu-arrow').attributes('data-iris-icon'),
+    ).toBe('chevron-up')
   })
 
   it('keeps a horizontal arrow reversed while its hover flyout remains visible', async () => {

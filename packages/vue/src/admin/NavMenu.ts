@@ -190,6 +190,7 @@ export const IrisNavMenu = defineComponent({
     const renderItem = (node: NavNode, depth: number): VNode => {
       const branch = isBranch(node)
       const horizontal = flyoutMode.value
+      const verticalAccordion = props.orientation === 'vertical' && !props.collapsed
       const open = expanded.value.includes(node.key)
       const shown = horizontal ? horizontalBranchVisible(node.key, depth) : open
       const active = node.key === props.activeKey
@@ -197,7 +198,17 @@ export const IrisNavMenu = defineComponent({
       // A6: keep the row highlighted while its flyout stays open (pointer has
       // moved from the trigger into the popup).
       const rowHovered = hovered.value === node.key || (horizontal && shown)
-      const arrowReversed = branch && !node.disabled && (active || trail || shown || rowHovered)
+      // In the expanded sidebar, arrow direction is the actual accordion state:
+      // hover must not alter it. Flyout modes retain the menubar rotation model.
+      const arrowReversed =
+        !verticalAccordion && branch && !node.disabled && (active || trail || shown || rowHovered)
+      const arrowName = verticalAccordion
+        ? open
+          ? 'chevron-up'
+          : 'chevron-down'
+        : horizontal && depth === 0 && !props.collapsed
+          ? 'chevron-down'
+          : 'chevron-right'
 
       // Top-level flyout popups are pinned to the viewport (fixed) so they
       // escape ancestor overflow; their trigger + panel refs feed that.
@@ -273,8 +284,7 @@ export const IrisNavMenu = defineComponent({
           badgeNode(node),
           branch && !(props.collapsed && depth === 0)
             ? h(IrisIcon, {
-                name:
-                  horizontal && depth === 0 && !props.collapsed ? 'chevron-down' : 'chevron-right',
+                name: arrowName,
                 size: 16,
                 class: 'iris-nav-menu-arrow',
                 'data-reversed': arrowReversed ? 'true' : undefined,

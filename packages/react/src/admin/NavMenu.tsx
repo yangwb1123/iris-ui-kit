@@ -115,15 +115,26 @@ export function IrisNavMenu({
     boxSizing: 'border-box',
     border: 'none',
     borderRadius: 'var(--iris-radius-md, 6px)',
-    background: opts.active
-      ? opts.hovered && !opts.disabled
-        ? 'var(--iris-nav-item-active-hover, color-mix(in srgb, var(--iris-primary) 88%, black))'
-        : 'var(--iris-primary)'
-      : opts.hovered && !opts.disabled
-        ? 'var(--iris-surface-hover, var(--iris-surface))'
-        : 'transparent',
+    background:
+      opts.hovered && !opts.disabled
+        ? horizontal && opts.depth === 0
+          ? 'var(--iris-surface-hover, var(--iris-surface))'
+          : opts.active
+            ? 'var(--iris-nav-item-active-hover, color-mix(in srgb, var(--iris-primary) 88%, black))'
+            : 'var(--iris-surface-hover, var(--iris-surface))'
+        : opts.active && !(horizontal && opts.depth === 0)
+          ? 'var(--iris-primary)'
+          : 'transparent',
+    // antd 风格：水平模式选中 = 底部下划线（boxShadow 模拟）+ 文字色，
+    // 背景透明（hover 时浅背景，与 vertical 整块 primary 区分）
+    boxShadow:
+      horizontal && opts.depth === 0 && opts.active
+        ? 'inset 0 -2px 0 0 var(--iris-primary)'
+        : undefined,
     color: opts.active
-      ? 'var(--iris-primary-foreground, #fff)'
+      ? horizontal && opts.depth === 0
+        ? 'var(--iris-primary)'
+        : 'var(--iris-primary-foreground, #fff)'
       : opts.trail
         ? 'var(--iris-primary)'
         : 'var(--iris-foreground)',

@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/icons",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Built-in Feather-style icon set (structured nodes) + icon-set interface for Iris UI",
   "license": "MIT",
   "type": "module",

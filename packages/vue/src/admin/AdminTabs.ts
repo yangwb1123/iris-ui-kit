@@ -197,6 +197,7 @@ export const IrisAdminTabs = defineComponent({
             IrisDropdownTrigger,
             {
               'aria-label': tr('admin.tabActions'),
+              'data-iris-tab-actions': '',
               style: {
                 display: 'inline-flex',
                 alignItems: 'center',

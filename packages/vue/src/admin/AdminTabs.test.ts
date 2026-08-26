@@ -14,6 +14,14 @@ describe('IrisAdminTabs', () => {
     expect(active.text()).toContain('A')
   })
 
+  it('marks the trailing actions trigger for host layout styling', () => {
+    const nav = createTabsNav({ tabs: [{ key: 'home', title: 'Home', pinned: true }] })
+    const w = mount(IrisAdminTabs, { props: { nav } })
+
+    expect(w.find('[data-iris-tab-actions]').exists()).toBe(true)
+    expect(w.find('[data-iris-tab-actions]').attributes('aria-label')).toBeTruthy()
+  })
+
   it('clicking a tab activates it and emits change', async () => {
     const nav = createTabsNav()
     nav.open({ key: 'a', title: 'A' })

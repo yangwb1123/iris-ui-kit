@@ -1,5 +1,6 @@
 export {
   useGridCore,
+  useGridClipboard,
   useGridColumns,
   useGridEditing,
   useGridExpansion,
@@ -10,6 +11,8 @@ export {
   useGridSorting,
   useGridVirtual,
   type UseGridCoreOptions,
+  type UseGridClipboardOptions,
+  type UseGridClipboardResult,
   type UseGridColumnsOptions,
   type UseGridEditingOptions,
   type UseGridEditingResult,

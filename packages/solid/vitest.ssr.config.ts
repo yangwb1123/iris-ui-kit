@@ -28,7 +28,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/hydration.test.tsx'],
+    include: ['src/hydration.test.tsx', 'src/primitives/table/batch-ft.ssr.test.tsx'],
     globals: false,
     isolate: true,
     // Inline solid + workspace deps so they are transformed by the SSR

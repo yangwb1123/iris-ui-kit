@@ -21,10 +21,10 @@ import {
   flattenLeafColumns,
   flattenTree,
   mergeFormFilters,
+  reconcileTreeRows,
   reorderTreeRows,
   withSortedChildren,
   nextGridCell,
-  serializeTableRange,
   seedFormValues,
   tableDisplayText,
   toCsvRows,
@@ -38,6 +38,7 @@ import {
 } from '@iris-ui-kit/core'
 import {
   useGridCore,
+  useGridClipboard,
   useGridEditing,
   useGridExpansion,
   useGridFiltering,
@@ -69,6 +70,7 @@ import { TableFlatHeader, TableGroupedHeader } from './table-header'
 import { TableSummary } from './table-summary'
 import { createTableDrag } from './table-drag'
 import { computeTableResponsiveColumns } from './table-responsive'
+import { TableScrollTop } from './table-scroll-top'
 import { TableFilterTrigger } from './table-filter-trigger'
 import { applyDetectedTableTypes } from './table-columns'
 import { createTableRowTarget } from './table-row-target'
@@ -82,6 +84,18 @@ export type { IrisTableProps } from './props'
 
 const DEFAULT_MIN_WIDTH = 60
 const DRAG_COL_WIDTH = 40
+
+/** Read clipboard text; null when the browser API is unavailable or denied. */
+async function readClipboardText(): Promise<string | null> {
+  if (typeof navigator === 'undefined') return null
+  const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
+  if (!nav.clipboard?.readText) return null
+  try {
+    return await nav.clipboard.readText()
+  } catch {
+    return null
+  }
+}
 
 /** One open row-edit session (vxe editConfig.mode='row' parity): its own
  * draft/error pair, resolved at commit time against the current row. */
@@ -117,6 +131,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       editConfig: undefined as import('./types').IrisTableEditConfig | undefined,
       columnVirtualization: false,
       multiSort: false,
+      scrollToTop: false,
       seq: false,
     },
     props,
@@ -570,6 +585,38 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   })
   const bodyRows = createMemo<Row[]>(() => bodyEntries().map((e) => e.row))
   const materializedRows = (): Row[] => withComputedFormulaCells(bodyRows(), leafColumns())
+
+  /** Map clipboard's effective-row projection back to the Core row source. */
+  const reconcileClipboardRows = (
+    sourceRows: readonly Row[],
+    previousRows: readonly Row[],
+    rows: readonly Row[],
+  ): Row[] => {
+    const visibleKeys = new Map<Row, string | number>()
+    bodyRows().forEach((row, index) => visibleKeys.set(row, rowId(row, index)))
+    const keyOf = (row: Row, index: number, source?: readonly Row[]): string | number => {
+      const visibleKey = visibleKeys.get(row)
+      if (visibleKey !== undefined) return visibleKey
+      const sourceIndex = source?.indexOf(row) ?? -1
+      return rowId(row, sourceIndex >= 0 ? sourceIndex : index)
+    }
+    const patches = new Map<string | number, Row>()
+    rows.forEach((row, index) => {
+      if (Object.is(row, previousRows[index])) return
+      const previous = previousRows[index]
+      if (!previous) return
+      const sourceIndex = sourceRows.indexOf(previous)
+      patches.set(keyOf(previous, sourceIndex >= 0 ? sourceIndex : index, sourceRows), row)
+    })
+    const getChildren = props.getSubRows
+    if (getChildren) {
+      return reconcileTreeRows(sourceRows, patches, {
+        getRowKey: (row, index) => keyOf(row, index),
+        getChildren,
+      })
+    }
+    return sourceRows.map((row, index) => patches.get(keyOf(row, index, sourceRows)) ?? row)
+  }
 
   // ---- Selection ----
   // Row-selection logic (single/multi toggle, dedup, select-all) is single-sourced
@@ -1166,6 +1213,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     cell?.focus()
   }
   const { model: cellRangeCtrl, range: activeCellRange } = useGridRange(gridCore)
+  const { serialize: serializeGridRange, paste: pasteGridRange } = useGridClipboard<Row>(gridCore, {
+    getRows: bodyRows,
+    getColumns: () => leafColumns(),
+    rowKeyField: merged.rowKey,
+    resolveValue: (row, column) => getTableCellValue(row, column as IrisTableColumn<Row>),
+    setValue: (row, column, value) => ({
+      ...row,
+      [(column.dataIndex ?? column.key) as string]: value,
+    }),
+    isCellEditable: (_row, column) => !(column as IrisTableColumn<Row>).formula,
+    reconcileRows: reconcileClipboardRows,
+    onPaste: (change) => merged.onDataChange?.([...change.rows]),
+  })
 
   const isInRange = (row: number, col: number): boolean => {
     const range = activeCellRange()
@@ -1206,22 +1266,35 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const copyActiveRange = (): void => {
     const range = activeCellRange()
     if (!range || merged.clipConfig?.copy === false) return
-    void writeClipboardText(
-      serializeTableRange<Row>(
-        materializedRows(),
-        leafColumns(),
-        range,
-        merged.clipConfig?.copyFormat,
-        merged.clipConfig?.copyWithFormat === true,
-      ),
+    const text = serializeGridRange(
+      merged.clipConfig?.copyFormat,
+      merged.clipConfig?.copyWithFormat === true,
     )
+    if (text !== null) void writeClipboardText(text)
+  }
+  const pasteActiveRange = (range: {
+    start: { row: number; col: number }
+    end: { row: number; col: number }
+  }): void => {
+    void readClipboardText().then((text) => {
+      if (text !== null) pasteGridRange(text, range)
+    })
   }
   const handleClipboardKey = (e: KeyboardEvent): void => {
     if (!merged.cellRange || !merged.clipConfig || e.defaultPrevented) return
-    if (e.key.toLowerCase() !== 'c' || (!e.ctrlKey && !e.metaKey)) return
-    if (merged.clipConfig.copy === false || !activeCellRange()) return
-    e.preventDefault()
-    copyActiveRange()
+    if (!e.ctrlKey && !e.metaKey) return
+    const key = e.key.toLowerCase()
+    const range = activeCellRange()
+    if (!range) return
+    if (key === 'c') {
+      if (merged.clipConfig.copy === false) return
+      e.preventDefault()
+      copyActiveRange()
+    } else if (key === 'v') {
+      if (merged.clipConfig.paste === false) return
+      e.preventDefault()
+      pasteActiveRange(range)
+    }
   }
 
   const SELECTION_COL_WIDTH = 40
@@ -2313,6 +2386,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           }}
           onPageChange={props.proxyConfig?.onPageChange}
           t={t}
+        />
+        <TableScrollTop
+          root={() => rootRef}
+          enabled={() => merged.scrollToTop === true && !merged.printable}
+          hasVirtual={() => merged.virtualScroll !== undefined}
+          rows={() => bodyRows().length}
+          loading={() => tableLoading()}
+          error={() => tableError()}
         />
       </div>
 

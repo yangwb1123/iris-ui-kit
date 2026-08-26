@@ -11,6 +11,7 @@
     flattenLeafColumns,
     flattenTree,
     mergeFormFilters,
+    reconcileTreeRows,
     reorderTreeRows,
     seedFormValues,
     tableDisplayText,
@@ -24,6 +25,7 @@
   import { useI18n } from '../../i18n'
   import {
     useGridCore,
+    useGridClipboard,
     useGridEditing,
     useGridExpansion,
     useGridFiltering,
@@ -85,6 +87,19 @@
   import { TABLE_STYLES } from './table-styles'
   import TableSortIndicator from './TableSortIndicator.svelte'
   import TableStateRow from './TableStateRow.svelte'
+  import TableScrollTop from './TableScrollTop.svelte'
+
+  /** Read clipboard text; null when the browser API is unavailable or denied. */
+  async function readClipboardText(): Promise<string | null> {
+    if (typeof navigator === 'undefined') return null
+    const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
+    if (!nav.clipboard?.readText) return null
+    try {
+      return await nav.clipboard.readText()
+    } catch {
+      return null
+    }
+  }
   const EMPTY_PROXY_STATE: RemoteTableSourceState<Record<string, unknown>> = {
     data: [],
     total: 0,
@@ -140,6 +155,7 @@
     loading = false,
     error = false,
     printable = false,
+    scrollToTop = false,
     importPreview = false,
     emptyState,
     loadingState,
@@ -679,6 +695,41 @@
   )
   const bodyData = $derived(flatTree ? flatTree.map((tr) => tr.row) : filteredRows())
 
+  /** Map clipboard's effective-row projection back to the Core row source. */
+  const reconcileClipboardRows = (
+    sourceRows: readonly Record<string, unknown>[],
+    previousRows: readonly Record<string, unknown>[],
+    rows: readonly Record<string, unknown>[],
+  ): Record<string, unknown>[] => {
+    const visibleKeys = new Map<Record<string, unknown>, string | number>()
+    bodyData.forEach((row, index) => visibleKeys.set(row, rowId(row, index)))
+    const keyOf = (
+      row: Record<string, unknown>,
+      index: number,
+      source?: readonly Record<string, unknown>[],
+    ): string | number => {
+      const visibleKey = visibleKeys.get(row)
+      if (visibleKey !== undefined) return visibleKey
+      const sourceIndex = source?.indexOf(row) ?? -1
+      return rowId(row, sourceIndex >= 0 ? sourceIndex : index)
+    }
+    const patches = new Map<string | number, Record<string, unknown>>()
+    rows.forEach((row, index) => {
+      if (Object.is(row, previousRows[index])) return
+      const previous = previousRows[index]
+      if (!previous) return
+      const sourceIndex = sourceRows.indexOf(previous)
+      patches.set(keyOf(previous, sourceIndex >= 0 ? sourceIndex : index, sourceRows), row)
+    })
+    if (getSubRows) {
+      return reconcileTreeRows(sourceRows, patches, {
+        getRowKey: (row, index) => keyOf(row, index),
+        getChildren: getSubRows,
+      })
+    }
+    return sourceRows.map((row, index) => patches.get(keyOf(row, index, sourceRows)) ?? row)
+  }
+
   const allRowIds = $derived(bodyData.map((r, i) => rowId(r, i)))
   const allSelected = $derived(
     allRowIds.length > 0 && allRowIds.every((id) => displaySelection.includes(id)),
@@ -1067,6 +1118,20 @@
   const handleDragPointerUp = dragBridge.pointerUp
 
   const { model: cellRangeCtrl, range: selectedRange } = useGridRange(gridCore)
+  const { serialize: serializeGridRange, paste: pasteGridRange } = useGridClipboard<
+    Record<string, unknown>
+  >(gridCore, {
+    getRows: () => bodyData,
+    getColumns: () => leafColumns,
+    resolveValue: (row, column) => getCellValue(row, column as IrisTableColumn),
+    setValue: (row, column, value) => ({
+      ...row,
+      [(column.dataIndex ?? column.key) as string]: value,
+    }),
+    isCellEditable: (_row, column) => !(column as IrisTableColumn).formula,
+    reconcileRows: reconcileClipboardRows,
+    onPaste: (change) => onDataChange?.([...change.rows]),
+  })
 
   const keyboard = createTableKeyboard({
     keyboardNavigation: () => keyboardNavigation,
@@ -1079,6 +1144,12 @@
     setFocused: (next) => (focusedCell = next),
     range: cellRangeCtrl,
     getRange: () => $selectedRange,
+    serializeRange: serializeGridRange,
+    pasteRange: (range) => {
+      void readClipboardText().then((text) => {
+        if (text !== null) pasteGridRange(text, range)
+      })
+    },
   })
   const { handleRootKeyDown, cellTabIndex, isInRange, activeCellRange, copyActiveRange } = keyboard
 
@@ -1655,6 +1726,15 @@
       {getCellValue}
     />
   {/if}
+
+  <TableScrollTop
+    root={rootEl}
+    enabled={scrollToTop && !printable}
+    hasVirtual={useVirtual}
+    rows={bodyData.length}
+    loading={tableLoading}
+    error={tableError}
+  />
 </div>
 {#if responsive && responsiveOverflow && !printable}
   <div

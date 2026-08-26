@@ -123,6 +123,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   error?: boolean
   /** Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS. */
   printable?: boolean
+  /** Show a token-styled back-to-top button after the effective scroller passes 200px. */
+  scrollToTop?: boolean
   /** Show a confirmation preview before the toolbar CSV import callback. */
   importPreview?: boolean
   emptyState?: JSX.Element

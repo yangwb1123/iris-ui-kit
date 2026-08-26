@@ -39410,6 +39410,12 @@
               "description": "Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS."
             },
             {
+              "name": "scrollToTop",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a token-styled back-to-top button after the effective scroller passes 200px."
+            },
+            {
               "name": "importPreview",
               "type": "boolean",
               "optional": true,
@@ -39914,6 +39920,13 @@
               "type": "boolean",
               "optional": true,
               "description": "Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS.",
+              "default": "false"
+            },
+            {
+              "name": "scrollToTop",
+              "type": "boolean",
+              "optional": true,
+              "description": "Show a token-styled back-to-top button after the effective scroller passes 200px.",
               "default": "false"
             },
             {

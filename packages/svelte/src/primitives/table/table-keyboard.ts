@@ -1,13 +1,12 @@
 import {
   nextGridCell,
-  serializeTableRange,
   writeClipboardText,
   type CellRange,
   type CellRangeController,
   type GridNavKey,
 } from '@iris-ui-kit/core'
+import type { TableCopyFormat } from '@iris-ui-kit/core'
 import type { IrisTableClipConfig, IrisTableColumn } from './types'
-import { withComputedFormulaCells } from './tableUtils'
 
 type CellAddress = { row: number; col: number }
 type TableRange = CellRange
@@ -23,6 +22,8 @@ export function createTableKeyboard(options: {
   setFocused: (cell: CellAddress) => void
   range: CellRangeController
   getRange: () => CellRange | null
+  serializeRange: (format?: TableCopyFormat, copyWithFormat?: boolean) => string | null
+  pasteRange: (range: TableRange) => void
 }): {
   handleRootKeyDown: (event: KeyboardEvent) => void
   handleGridKey: (event: KeyboardEvent) => void
@@ -104,27 +105,25 @@ export function createTableKeyboard(options: {
     const range = activeCellRange()
     const clip = options.clipConfig()
     if (!range || clip?.copy === false) return
-    // Batch EM: formula columns are display-only — the range copy carries the
-    // COMPUTED value, materialized onto shadow rows (the core serializer reads
-    // `row[dataIndex]` directly; originals stay untouched).
-    const rows = withComputedFormulaCells(options.rows(), options.columns())
-    void writeClipboardText(
-      serializeTableRange(
-        rows,
-        options.columns(),
-        range,
-        clip?.copyFormat,
-        clip?.copyWithFormat === true,
-      ),
-    )
+    const text = options.serializeRange(clip?.copyFormat, clip?.copyWithFormat === true)
+    if (text !== null) void writeClipboardText(text)
   }
   const handleClipboardKey = (event: KeyboardEvent): void => {
     const clip = options.clipConfig()
     if (!options.cellRange() || !clip || event.defaultPrevented) return
-    if (event.key.toLowerCase() !== 'c' || (!event.ctrlKey && !event.metaKey)) return
-    if (clip.copy === false || !activeCellRange()) return
-    event.preventDefault()
-    copyActiveRange()
+    if (!event.ctrlKey && !event.metaKey) return
+    const key = event.key.toLowerCase()
+    const range = activeCellRange()
+    if (!range) return
+    if (key === 'c') {
+      if (clip.copy === false) return
+      event.preventDefault()
+      copyActiveRange()
+    } else if (key === 'v') {
+      if (clip.paste === false) return
+      event.preventDefault()
+      options.pasteRange(range)
+    }
   }
   const handleRootKeyDown = (event: KeyboardEvent): void => {
     handleGridKey(event)

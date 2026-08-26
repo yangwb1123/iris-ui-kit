@@ -538,6 +538,20 @@ transaction。未注入 factory 时仍保持 batch-O 丢弃语义，多格矩形
 10/10、React Grid/clipboard 定向 51/51 通过，四框架 typecheck 通过；`GridClipboardOverflowContext` 同步从
 `@iris-ui-kit/core/grid` 公共 barrel 导出，便于宿主 factory 保持类型契约。
 
+本次续批补齐 clipboard 的三端薄桥：Vue、Solid、Svelte 新增 `useGridClipboard`，与 React 共用同一个
+`createGridClipboardFeature` model；三套 Table 的范围复制现在只把有效行/列投影和格式参数交给 Core，
+`writeClipboardText`、快捷键、按钮和浏览器 clipboard I/O 继续留在各适配器。公式列仍通过不可变 shadow rows
+复制计算值，CSV/HTML/TSV 格式、formatter/mask 与无 range 的 fail-closed 行为保持原契约；bridge 也暴露
+`paste`，为后续三端粘贴接入保留同一方法边界。Vue/Solid/Svelte bridge + copy 定向回归分别为 4/4、5/5、4/4，
+三端公式/主表回归分别为 94/94、73/73、71/71，四端 typecheck 与格式检查通过。
+
+本次续批把 `clipConfig.paste` 接入 Vue、Solid、Svelte Table：适配器只负责读取异步系统剪贴板和快捷键的
+preventDefault，Core `paste` 负责 TSV 行列解析、公式列拒写、`dataIndex` 字段写入，以及将排序/过滤/静态树的
+有效投影按 key reconciliation 回原始 rows source；成功写回仍只产生一次 rows transaction，并由适配器触发
+`onDataChange`。无剪贴板权限、禁用 paste、无 range 和全 formula 目标均 fail-closed；粘贴值保持原有 raw string
+语义。三端新增 paste 回归各 2/2，连同既有公式/主表回归为 Vue 99/99、Solid 75/75、Svelte 73/73，四端
+typecheck、lint、格式检查通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

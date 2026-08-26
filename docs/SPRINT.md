@@ -252,6 +252,24 @@ arch-check:ratchet` 当前无阻断项。
 - React 全量当前重跑为 268 files、3,015/3,051 passed；剩余 36 项均为既有 `IrisTree`/Tree contract 的
   `Maximum update depth exceeded`，本批未触碰该路径，Grid/Table 定向项保持通过。
 
+## 2026-08-26 Grid Core clipboard bridge continuation（当前工作树）
+
+- Vue、Solid、Svelte 新增 `useGridClipboard` 薄桥，三端 Table 的范围复制统一委托同一
+  `createGridClipboardFeature`；Core 负责投影序列化，适配器继续负责 keyboard/button wiring 与系统
+  clipboard I/O。公式列的 computed shadow rows、TSV/CSV/HTML、formatter/mask 与无 range fail-closed
+  语义保持不变；bridge 同时暴露 `paste`，为后续三端粘贴接入保留一致 API。
+- bridge + copy 定向回归为 Vue 4/4、Solid 5/5、Svelte 4/4；Vue/Solid/Svelte 公式与主表回归为
+  94/94、73/73、71/71；Core 与四框架 typecheck、格式检查通过。
+
+## 2026-08-26 Grid Core clipboard paste continuation（当前工作树）
+
+- Vue、Solid、Svelte Table 的 `clipConfig.paste` 已接入各自 `useGridClipboard` bridge。异步系统 clipboard
+  read 与快捷键仍归适配器，Core 统一负责 raw TSV 解析、formula/dataIndex policy、排序/过滤/静态树投影
+  reconciliation 与一次 rows transaction；成功提交通过 `onDataChange` 回传。
+- 三端 paste 定向回归各 2/2；Vue/Solid/Svelte paste + copy/formula/主表回归为 99/99、75/75、73/73，
+  四端 typecheck、lint、Prettier、build 与 `git diff --check` 通过。Vue lint 仅保留既有 Table complexity
+  warning；未调整 arch ratchet baseline。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

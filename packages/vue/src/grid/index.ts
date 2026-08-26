@@ -461,6 +461,11 @@ export function useGridVirtual<
 
 export type { GridColumnPin, GridCore, GridFeature, GridRowsCommitOptions }
 export {
+  useGridClipboard,
+  type UseGridClipboardOptions,
+  type UseGridClipboardResult,
+} from './useGridClipboard'
+export {
   useGridEditing,
   type UseGridEditingOptions,
   type UseGridEditingResult,

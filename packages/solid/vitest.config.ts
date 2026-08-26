@@ -21,7 +21,12 @@ export default defineConfig({
     // (`vitest.ssr.config.ts`: server resolve condition + `generate: 'ssr'`).
     // Under this default (browser-condition, DOM-compiled) config
     // `renderToString` is an unsupported stub, so exclude it here.
-    exclude: ['src/hydration.test.tsx', '**/node_modules/**', '**/dist/**'],
+    exclude: [
+      'src/hydration.test.tsx',
+      'src/primitives/table/batch-ft.ssr.test.tsx',
+      '**/node_modules/**',
+      '**/dist/**',
+    ],
     globals: false,
     isolate: true,
   },

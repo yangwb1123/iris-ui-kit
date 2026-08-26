@@ -24,6 +24,7 @@ import {
   flattenLeafColumns,
   flattenTree,
   mergeFormFilters,
+  reconcileTreeRows,
   reorderTreeRows,
   seedFormValues,
   tableDisplayText,
@@ -40,6 +41,7 @@ import {
 import { useI18n } from '../../i18n'
 import {
   useGridCore,
+  useGridClipboard,
   useGridEditing,
   useGridExpansion,
   useGridFiltering,
@@ -133,6 +135,18 @@ const BACK_TOP_BUTTON_STYLE: Record<string, string> = {
   justifyContent: 'center',
   fontSize: 'var(--iris-font-size-xl, 18px)',
   pointerEvents: 'auto',
+}
+
+/** Read clipboard text; null when the browser API is unavailable or denied. */
+async function readClipboardText(): Promise<string | null> {
+  if (typeof navigator === 'undefined') return null
+  const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
+  if (!nav.clipboard?.readText) return null
+  try {
+    return await nav.clipboard.readText()
+  } catch {
+    return null
+  }
 }
 
 function prefersReducedMotion(): boolean {
@@ -681,6 +695,43 @@ export const IrisTable = defineComponent({
     const bodyData = computed(() =>
       flatTree.value ? flatTree.value.map((t) => t.row) : filteredData.value,
     )
+
+    /** Map clipboard's effective-row projection back to the Core row source. */
+    const reconcileClipboardRows = (
+      sourceRows: readonly Record<string, unknown>[],
+      previousRows: readonly Record<string, unknown>[],
+      rows: readonly Record<string, unknown>[],
+    ): Record<string, unknown>[] => {
+      const visibleKeys = new Map<Record<string, unknown>, string | number>()
+      bodyData.value.forEach((row, index) => {
+        visibleKeys.set(row, rowId(row, index))
+      })
+      const keyOf = (
+        row: Record<string, unknown>,
+        index: number,
+        source?: readonly Record<string, unknown>[],
+      ): string | number => {
+        const visibleKey = visibleKeys.get(row)
+        if (visibleKey !== undefined) return visibleKey
+        const sourceIndex = source?.indexOf(row) ?? -1
+        return rowId(row, sourceIndex >= 0 ? sourceIndex : index)
+      }
+      const patches = new Map<string | number, Record<string, unknown>>()
+      rows.forEach((row, index) => {
+        if (Object.is(row, previousRows[index])) return
+        const previous = previousRows[index]
+        if (!previous) return
+        const sourceIndex = sourceRows.indexOf(previous)
+        patches.set(keyOf(previous, sourceIndex >= 0 ? sourceIndex : index, sourceRows), row)
+      })
+      if (props.getSubRows) {
+        return reconcileTreeRows(sourceRows, patches, {
+          getRowKey: (row, index) => keyOf(row, index),
+          getChildren: props.getSubRows,
+        })
+      }
+      return sourceRows.map((row, index) => patches.get(keyOf(row, index, sourceRows)) ?? row)
+    }
 
     const cascadingTreeSelection = computed(
       () => props.treeSelectionCascade && props.selectable === 'multi' && treeMode.value,
@@ -1293,6 +1344,27 @@ export const IrisTable = defineComponent({
     // Range state shares the per-table Grid Core; Vue retains only the
     // reactive snapshot plus pointer/keyboard/render wiring.
     const { model: cellRangeCtrl, state: cellRangeState } = useGridRange(gridCore)
+    const { serialize: serializeGridRange, paste: pasteGridRange } = useGridClipboard<
+      Record<string, unknown>
+    >(gridCore, {
+      getRows: () => bodyData.value,
+      getColumns: () => leafColumns.value,
+      rowKeyField: props.rowKey,
+      resolveValue: (row, column) =>
+        getCellValue(row, column as IrisTableColumn<Record<string, unknown>>),
+      setValue: (row, column, value) => ({
+        ...row,
+        [(column.dataIndex ?? column.key) as string]: value,
+      }),
+      isCellEditable: (_row, column) =>
+        !(column as IrisTableColumn<Record<string, unknown>>).formula,
+      reconcileRows: reconcileClipboardRows,
+      onPaste: (change) => {
+        const rows = [...change.rows]
+        recordAudit(rows, 'paste')
+        props.onDataChange?.(rows)
+      },
+    })
     const rootRef = ref<HTMLElement | null>(null)
 
     // -------- Back-to-top (batch FS, iris 独有) --------
@@ -1412,6 +1484,12 @@ export const IrisTable = defineComponent({
       focused: focusedCell,
       range: cellRangeCtrl,
       rangeState: cellRangeState,
+      serializeRange: serializeGridRange,
+      pasteRange: (range) => {
+        void readClipboardText().then((text) => {
+          if (text !== null) pasteGridRange(text, range)
+        })
+      },
     })
     const { handleRootKeyDown, isInRange, activeCellRange, copyActiveRange } = keyboard
 

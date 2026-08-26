@@ -45173,6 +45173,12 @@
           "description": "Stable key per item. Falls back to index."
         },
         {
+          "name": "virtualizer",
+          "type": "Virtualizer",
+          "optional": true,
+          "description": "Optional Grid Core-owned controller. When omitted, this component owns one."
+        },
+        {
           "name": "renderItem",
           "type": "(item: T, index: number) => React.ReactNode",
           "optional": false,
@@ -45258,6 +45264,12 @@
               "type": "(item: T, index: number) => string | number",
               "optional": true,
               "description": "Stable key per item. Falls back to index."
+            },
+            {
+              "name": "virtualizer",
+              "type": "Virtualizer",
+              "optional": true,
+              "description": "Optional Grid Core-owned controller. When omitted, this component owns one."
             },
             {
               "name": "renderItem",
@@ -45524,7 +45536,7 @@
         "renderItem"
       ],
       "quality": {
-        "propCount": 14,
+        "propCount": 15,
         "eventCount": 3
       }
     },

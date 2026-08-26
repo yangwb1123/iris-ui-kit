@@ -110,13 +110,19 @@ const BUDGETS = {
   // Bumped 80→160 (2026-08-19): grid parity rounds expanded the public
   // adapter barrel (table editing, export, range/presence state and shared
   // controller bridges). The measured barrel is 151.9KB gzip.
-  react: 160,
+  // Bumped 160→161 (2026-08-22): the React Grid Core bridge now exposes the
+  // complete rows/columns/selection/expansion/sort/filter/pagination surface
+  // from the adapter barrel; measured 160.4KB gzip.
+  react: 161,
   // Bumped 88→106 (2026-08-19): Vue grid parity and the shared table
   // controller bridge now ship in the barrel. The measured size is 100.5KB.
   // Bumped 106→110 (2026-08-20): named table views/tabs and pinned-boundary
   // drag rendering are now native Vue Grid capabilities. Measured size is
   // 108.7KB gzip with reviewable headroom.
-  vue: 110,
+  // Bumped 110→113 (2026-08-22): Vue now ships the complete thin Grid Core
+  // bridge and IrisTable selection/expansion delegates to the shared instance;
+  // measured barrel 111.4KB gzip.
+  vue: 113,
   // Bumped 85→87 (v3 R10): the adapters re-export core's new createVirtualizer
   // through their barrel; react/vue had headroom, solid sat at the edge.
   // Bumped 87→90 (2026-07-17): IrisTree gained lazy-loaded children
@@ -196,7 +202,9 @@ const DIRECTORY_PAYLOAD_BUDGETS = {
     // Bumped 255→268 (2026-08-20): the native Svelte table import-preview
     // bridge adds a CSV file-preview modal/controller to the published surface;
     // measured payload is 256.3KB, with reviewable headroom for the new files.
-    budgetKb: 268,
+    // Bumped 268→274 (2026-08-22): Svelte now publishes the Grid Core bridge
+    // and IrisTable selection/expansion delegation; measured payload 270.4KB.
+    budgetKb: 274,
   },
 }
 

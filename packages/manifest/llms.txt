@@ -1100,11 +1100,11 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 13 props, 1 events
 - IrisVirtualScroll [react/solid/svelte/vue] — layer-2
   Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number, a `(index) => px` function for variable-height rows, or `'auto'` to measure rendered rows.
-  react: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?, role?, tabIndex?, onKeyDown?; events onKeyDown, onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
+  react: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, virtualizer?, renderItem, onScroll?, onRangeChange?, style?, className?, role?, tabIndex?, onKeyDown?; events onKeyDown, onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
   solid: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, ref?; events onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
   svelte: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, onScroll?, onRangeChange?, item?, style?; events onRangeChange, onScroll; slots item; types IrisVirtualScrollAlign, IrisVirtualScrollHandle
   vue: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?; events rangeChange, scroll; slots item; types IrisVirtualScrollAlign, IrisVirtualScrollExposed
-  quality: 14 props, 3 events
+  quality: 15 props, 3 events
 - IrisVisuallyHidden [react/solid/svelte/vue] — layer-1
   Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`.
   react: types IrisVisuallyHiddenProps

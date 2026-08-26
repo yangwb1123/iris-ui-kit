@@ -61,6 +61,8 @@ export function useGridClipboard<Row extends Record<string, unknown> = Record<st
       createGridClipboardFeature<Row>({
         getRows: () => latest.current.getRows?.() ?? core.invoke<Row[]>('getRows'),
         getColumns: () => latest.current.getColumns(),
+        rowKeyField: latest.current.rowKeyField,
+        overflowRows: (context) => latest.current.overflowRows?.(context),
         resolveValue: (row, column) => {
           const resolve = latest.current.resolveValue
           return resolve ? resolve(row, column) : defaultValue(row, column)

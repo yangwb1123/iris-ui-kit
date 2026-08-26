@@ -376,8 +376,8 @@ rows/columns/selection 相同的 Grid Core 实例。React 只订阅 anchor/activ
 第六批补齐 `useGridClipboard` React 薄桥，并把 IrisTable 的 TSV/CSV/HTML range 序列化与普通 bounded TSV paste 委托给
 同一 Grid Core。clipboard feature 新增有效行投影、投影回写协调器、自定义值解析和 adapter transaction metadata 注入：
 range 坐标继续对应排序/过滤/扁平树后的可见行，修改按原 row key 合回 rows feature 的原始行序；公式值无需物化进源行即可
-参与复制，公式/locked/readonly 单元格继续拒绝粘贴。异步 Clipboard API、快捷键、成功闪烁和 `insertIfOverflow` 所需的建行/
-主键策略仍保留在 React。主文件按 arch-check 口径 10,163 → 10,075 行；bridge 2/2、排序投影/公式集成 3/3、clipboard 相关回归 121/121、
+参与复制，公式/locked/readonly 单元格继续拒绝粘贴。异步 Clipboard API、快捷键和成功闪烁仍属于适配器；`insertIfOverflow` 所需的建行/
+主键策略通过后续显式 factory 注入，不进入 Core 默认路径。主文件按 arch-check 口径 10,163 → 10,075 行；bridge 2/2、排序投影/公式集成 3/3、clipboard 相关回归 121/121、
 React 全量 3,038/3,038 均通过。
 
 第七批新增 Vue `useGridRange` 薄桥，IrisTable 不再直接创建/订阅 `createCellRange()`，而是从与 selection/expansion
@@ -529,6 +529,13 @@ Solid 146/146、1,035/1,035 + hydration 38/38，Svelte 150/150、1,009/1,009 + h
 `git diff --check` 通过（仅保留既有 warning）。删除树父节点时 Core 现在同时报告整棵可达子树的 key，
 四端与插件可据此一次性清理已消失的 descendant selection/session 状态；replacement 缺少 children 字段时
 也不会在 path reconciliation 中丢弃折叠子树。
+
+本次续批把单格 `insertIfOverflow` 收口为 Core clipboard 的可选 `overflowRows` factory：Core 只在单格
+paste 耗尽有效 body 后收集 split cells，factory 负责宿主行形状与锁定/只读策略，Core 负责按
+`rowKeyField` 复用 `insertRowInList` 的 max+1（无 key 时从 1 起）以及与普通 paste 相同的一次 rows
+transaction。未注入 factory 时仍保持 batch-O 丢弃语义，多格矩形永不触发；新增行同时计入
+`changedRows/changedCells`，React 的 audit/history/onDataChange metadata 继续由既有 `commitOptions` 注入；本批 core 定向
+10/10、React Grid/clipboard 定向 51/51 通过，四框架 typecheck 通过。
 
 ## 8. 合并门
 

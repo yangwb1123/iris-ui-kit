@@ -1,5 +1,6 @@
 import type { GridFeature, GridMethod } from './grid'
 import type { GridRowsCommitOptions } from './grid-rows'
+import { insertRowInList } from './table-rows'
 import {
   resolveTableValue,
   serializeTableRange,
@@ -29,6 +30,22 @@ export interface GridClipboardPasteChange<Row extends Record<string, unknown>> {
 export type GridClipboardChange<Row extends Record<string, unknown>> =
   GridClipboardCopyChange | GridClipboardPasteChange<Row>
 
+export interface GridClipboardOverflowContext<Row extends Record<string, unknown>> {
+  /** Clipboard lines that start after the effective body rows are exhausted. */
+  readonly lines: readonly (readonly string[])[]
+  readonly range: TableClipboardRange
+  readonly columns: readonly TableClipboardColumn<Row>[]
+  readonly parseValue: (text: string, row: Row, column: TableClipboardColumn<Row>) => unknown
+  readonly isCellEditable: (
+    row: Row,
+    column: TableClipboardColumn<Row>,
+    rowIndex: number,
+    columnIndex: number,
+  ) => boolean
+  readonly setValue: (row: Row, column: TableClipboardColumn<Row>, value: unknown) => Row
+  readonly rowKeyField: string
+}
+
 export const GRID_CLIPBOARD_CHANGE_EVENT = 'clipboard:change'
 
 export interface GridClipboardFeatureOptions<Row extends Record<string, unknown>> {
@@ -38,6 +55,8 @@ export interface GridClipboardFeatureOptions<Row extends Record<string, unknown>
   readonly getColumns: () => readonly TableClipboardColumn<Row>[]
   readonly copyFormat?: TableCopyFormat
   readonly copyWithFormat?: boolean
+  /** Field used to auto-key rows returned by `overflowRows`; defaults to `id`. */
+  readonly rowKeyField?: string
   /** Reads computed/projected values without materializing them into the row source. */
   readonly resolveValue?: TableClipboardValueResolver<Row>
   readonly parseValue?: (text: string, row: Row, column: TableClipboardColumn<Row>) => unknown
@@ -48,6 +67,8 @@ export interface GridClipboardFeatureOptions<Row extends Record<string, unknown>
     rowIndex: number,
     columnIndex: number,
   ) => boolean
+  /** Creates rows for single-cell paste lines beyond the effective body. */
+  readonly overflowRows?: (context: GridClipboardOverflowContext<Row>) => readonly Row[] | undefined
   /**
    * Maps edited effective rows back into the standard row source. Useful when
    * range coordinates address a sorted, filtered, or flattened projection.
@@ -139,6 +160,20 @@ function defaultSetValue<Row extends Record<string, unknown>>(
 ): Row {
   const key = column.dataIndex ?? column.key
   return { ...row, [key]: value }
+}
+
+function countOverflowCells<Row extends Record<string, unknown>>(
+  row: Row,
+  range: TableClipboardRange,
+  columns: readonly TableClipboardColumn<Row>[],
+): number {
+  let count = 0
+  for (let columnIndex = range.start.col; columnIndex < columns.length; columnIndex += 1) {
+    const column = columns[columnIndex]!
+    const key = column.dataIndex ?? column.key
+    if (Object.prototype.hasOwnProperty.call(row, key)) count += 1
+  }
+  return count
 }
 
 class GridClipboardEngine<Row extends Record<string, unknown>> implements GridClipboardModel {
@@ -244,6 +279,49 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
     return true
   }
 
+  private collectOverflowLines(
+    lines: readonly string[],
+    rowOffset: number,
+    multiCell: boolean,
+  ): string[][] {
+    if (multiCell) return []
+    return lines.slice(rowOffset).map((line) => line.split('\t'))
+  }
+
+  private appendOverflowRows(
+    current: GridClipboardContext<Row>,
+    lines: readonly (readonly string[])[],
+    nextRows: Row[],
+  ): { rowCount: number; cellCount: number } {
+    const factory = this.options.overflowRows
+    if (!factory || lines.length === 0) return { rowCount: 0, cellCount: 0 }
+    const rowKeyField = this.options.rowKeyField ?? 'id'
+    const overflowRows = factory({
+      lines,
+      range: current.range,
+      columns: current.columns,
+      parseValue: this.options.parseValue ?? ((text) => text),
+      isCellEditable: this.options.isCellEditable ?? (() => true),
+      setValue: this.options.setValue ?? defaultSetValue,
+      rowKeyField,
+    })
+    if (!overflowRows || overflowRows.length === 0) return { rowCount: 0, cellCount: 0 }
+
+    let rowsForKeys = current.sourceRows
+    let rowCount = 0
+    let cellCount = 0
+    for (const row of overflowRows) {
+      const inserted = insertRowInList(rowsForKeys, rowKeyField, row)
+      const insertedRow = inserted[inserted.length - 1]
+      if (!insertedRow) continue
+      rowsForKeys = inserted
+      nextRows.push(insertedRow)
+      rowCount += 1
+      cellCount += countOverflowCells(row, current.range, current.columns)
+    }
+    return { rowCount, cellCount }
+  }
+
   paste(text: string, range?: TableClipboardRange): boolean {
     const current = this.context(range)
     if (!current) return false
@@ -256,9 +334,13 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
     const nextRows = [...current.rows]
     const changedRowIndexes = new Set<number>()
     let changedCells = 0
+    let overflowLines: string[][] = []
     for (let rowOffset = 0; rowOffset < lines.length; rowOffset += 1) {
       const rowIndex = current.range.start.row + rowOffset
-      if (rowIndex > maxRow) break
+      if (rowIndex > maxRow) {
+        overflowLines = this.collectOverflowLines(lines, rowOffset, multiCell)
+        break
+      }
       const values = lines[rowOffset]!.split('\t')
       const result = this.pasteRow(
         nextRows[rowIndex]!,
@@ -272,8 +354,16 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
       changedCells += result.changedCells
       if (result.changedCells > 0) changedRowIndexes.add(rowIndex)
     }
-    if (changedCells === 0) return false
-    return this.commitPaste(current, nextRows, changedRowIndexes.size, changedCells)
+
+    const overflow = this.appendOverflowRows(current, overflowLines, nextRows)
+    changedCells += overflow.cellCount
+    if (changedCells === 0 && overflow.rowCount === 0) return false
+    return this.commitPaste(
+      current,
+      nextRows,
+      changedRowIndexes.size + overflow.rowCount,
+      changedCells,
+    )
   }
 }
 

@@ -125,11 +125,73 @@ describe('createGridClipboardFeature', () => {
     )
   })
 
+  it('drops single-cell overflow when no row factory is installed', () => {
+    const rowChanges: GridRowsTransaction<Row>[] = []
+    const grid = createClipboardGrid({ getColumns: () => columns })
+    grid.on<GridRowsTransaction<Row>>(GRID_ROWS_CHANGE_EVENT, (change) => rowChanges.push(change))
+    grid.invoke('startCellRange', 0, 0)
+
+    expect(grid.invoke<boolean>('pasteGridRange', 'A\nB\nC')).toBe(true)
+    expect(grid.invoke<Row[]>('getRows')).toEqual([
+      { id: 1, name: 'A', age: 30 },
+      { id: 2, name: 'B', age: 40 },
+    ])
+    expect(rowChanges).toHaveLength(1)
+  })
+
+  it('creates overflow rows through one transaction with core auto ids', () => {
+    const onPaste = vi.fn()
+    const rowChanges: GridRowsTransaction<Row>[] = []
+    const overflowRows = vi.fn(
+      ({ lines, range, columns: contextColumns, parseValue, setValue, rowKeyField }) => {
+        expect(lines).toEqual([
+          ['Linus', '41'],
+          ['Grace', '51'],
+        ])
+        expect(range).toEqual({ start: { row: 1, col: 0 }, end: { row: 1, col: 0 } })
+        expect(contextColumns).toBe(columns)
+        expect(rowKeyField).toBe('id')
+        return lines.map((cells) => {
+          let row = {} as Row
+          cells.forEach((text, index) => {
+            const column = contextColumns[index]!
+            row = setValue(row, column, parseValue(text, row, column))
+          })
+          return row
+        })
+      },
+    )
+    const grid = createClipboardGrid({
+      getColumns: () => columns,
+      rowKeyField: 'id',
+      parseValue: (text, _row, column) => (column.key === 'age' ? Number(text) : text),
+      overflowRows,
+      onPaste,
+    })
+    grid.on<GridRowsTransaction<Row>>(GRID_ROWS_CHANGE_EVENT, (change) => rowChanges.push(change))
+    grid.invoke('startCellRange', 1, 0)
+
+    expect(grid.invoke<boolean>('pasteGridRange', 'Ada\t31\nLinus\t41\nGrace\t51')).toBe(true)
+    expect(grid.invoke<Row[]>('getRows')).toEqual([
+      { id: 1, name: 'Ada', age: 30 },
+      { id: 2, name: 'Ada', age: 31 },
+      { id: 3, name: 'Linus', age: 41 },
+      { id: 4, name: 'Grace', age: 51 },
+    ])
+    expect(overflowRows).toHaveBeenCalledOnce()
+    expect(rowChanges).toHaveLength(1)
+    expect(onPaste).toHaveBeenCalledWith(
+      expect.objectContaining({ changedRows: 3, changedCells: 6 }),
+    )
+  })
+
   it('clips multi-cell paste to the rectangle and skips locked cells', () => {
+    const overflowRows = vi.fn()
     const grid = createClipboardGrid({
       getColumns: () => columns,
       parseValue: (text, _row, column) => (column.key === 'age' ? Number(text) : text),
       isCellEditable: (row, column) => !(row.id === 2 && column.key === 'name'),
+      overflowRows,
     })
     grid.invoke('startCellRange', 0, 0)
     grid.invoke('extendCellRange', 1, 1)
@@ -139,6 +201,7 @@ describe('createGridClipboardFeature', () => {
       { id: 1, name: 'A', age: 31 },
       { id: 2, name: '=SUM(A1)', age: 41 },
     ])
+    expect(overflowRows).not.toHaveBeenCalled()
   })
 
   it('reconciles an effective row projection and forwards adapter transaction metadata', () => {

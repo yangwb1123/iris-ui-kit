@@ -68,7 +68,6 @@ import {
   createCellEdit,
   createSortable,
   detectColumnType,
-  insertRowInList,
   matchTableKey,
   normalizeKeymap,
   type IrisTableKeymap,
@@ -5457,6 +5456,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const { serialize: serializeGridRange, paste: pasteGridRange } = useGridClipboard<Row>(gridCore, {
     getRows: () => liveBodyRef.current,
     getColumns: () => liveLeafRef.current,
+    rowKeyField: rowKey,
+    overflowRows:
+      pasteOptions?.insertIfOverflow === true
+        ? ({ lines, range, columns, parseValue, setValue }) => {
+            return lines.map((cells) => {
+              let row = {} as Row
+              for (let offset = 0; offset < cells.length; offset += 1) {
+                const column = columns[range.start.col + offset]
+                if (!column) break
+                const tableColumn = column as IrisTableColumn<Row>
+                if (isCellLocked(row, tableColumn) || isCellReadonly(row, tableColumn)) continue
+                row = setValue(row, column, parseValue(cells[offset]!, row, column))
+              }
+              return row
+            })
+          }
+        : undefined,
     resolveValue: (row, column) => getCellValue(row, column as IrisTableColumn<Row>),
     setValue: (row, column, value) => ({ ...row, [columnValueKey(column)]: value }),
     isCellEditable: (row, column) => {
@@ -5480,7 +5496,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
         const key = previous ? (rowPatchKey(previous, index) ?? null) : null
         if (key != null) changed.set(key, row)
       })
-      return reconcileRowPatches(sourceRows, changed)
+      let next = reconcileRowPatches(sourceRows, changed)
+      // Overflow rows are already part of the effective `rows` snapshot. The
+      // Core rows source still needs them appended after projected edits are
+      // reconciled; keep that source-side insertion here without rebuilding
+      // any clipboard rows in the adapter.
+      if (rows.length > previousRows.length) {
+        next = [...next, ...rows.slice(previousRows.length)]
+      }
+      return next
     },
     commitOptions: {
       meta: { auditType: 'paste', recordHistory: true, notifyDataChange: true },
@@ -5492,59 +5516,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (!rowKey) return
       const text = await readClipboardText()
       if (text == null) return
-      const multiCell = range.end.row > range.start.row || range.end.col > range.start.col
-      // Normal bounded paste, including every multi-cell rectangle, belongs
-      // entirely to Grid Core. Only the opt-in single-cell overflow policy
-      // remains here because it needs the adapter's row factory/key strategy.
-      if (!pasteOptions?.insertIfOverflow || multiCell) {
-        pasteGridRange(text, range)
-        return
-      }
-      const body = liveBodyRef.current
-      const cols = liveLeafRef.current
-      if (body.length === 0 || cols.length === 0) return
-      const lines = text.split(/\r?\n/)
-      const byKey = new Map<string | number, Partial<Row>>()
-      const newRows: Record<string, unknown>[] = []
-      let overflowStart = -1
-      for (let i = 0; i < lines.length; i += 1) {
-        const rowIdx = range.start.row + i
-        if (rowIdx >= body.length) {
-          overflowStart = i
-          break
-        }
-        const row = body[rowIdx]!
-        const cells = lines[i]!.split('\t')
-        for (let j = 0; j < cells.length; j += 1) {
-          const colIdx = range.start.col + j
-          if (colIdx >= cols.length) break
-          const key = rowPatchKey(row, rowIdx)
-          if (key == null) continue
-          const col = cols[colIdx]!
-          if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
-          byKey.set(key, {
-            ...byKey.get(key),
-            [columnValueKey(col)]: cells[j]!,
-          } as Partial<Row>)
-        }
-      }
-      for (let i = overflowStart; i >= 0 && i < lines.length; i += 1) {
-        const cells = lines[i]!.split('\t')
-        const row: Record<string, unknown> = {}
-        for (let j = 0; j < cells.length; j += 1) {
-          const col = cols[range.start.col + j]
-          if (!col) break
-          if (isCellLocked(row as Row, col) || isCellReadonly(row as Row, col)) continue
-          row[columnValueKey(col)] = cells[j]!
-        }
-        newRows.push(row)
-      }
-      if (byKey.size === 0 && newRows.length === 0) return
-      let next = reconcileRowPatches(externalDataRef.current ?? [], materializeRowPatches(byKey))
-      for (const nr of newRows) next = insertRowInList(next, rowKey, nr as Row)
-      commitRowList(next, 'paste')
+      pasteGridRange(text, range)
     },
-    [rowKey, commitRowList, pasteOptions, pasteGridRange],
+    [rowKey, pasteGridRange],
   )
 
   // ── Batch BG keymap (iris 独有): the EFFECTIVE shortcut bindings = the

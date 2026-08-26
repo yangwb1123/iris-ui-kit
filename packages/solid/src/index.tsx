@@ -2,6 +2,7 @@
 // component names + semantics as @iris-ui-kit/react and @iris-ui-kit/vue.
 
 export { useStore, useStoreSelector } from './useStore'
+export * from './grid'
 export { useMachine } from './useMachine'
 export { useReconnectingSource } from './useReconnectingSource'
 export { useResilientFetcher } from './useResilientFetcher'

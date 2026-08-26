@@ -6,6 +6,7 @@ import type { IrisTableColumn, IrisTableHandle } from './types'
 afterEach(() => vi.restoreAllMocks())
 
 type Row = { id: number; name: string }
+type TreeRow = Row & { children?: TreeRow[] }
 
 const columns: IrisTableColumn<Row>[] = [{ key: 'name', title: 'Name' }]
 
@@ -85,5 +86,26 @@ describe('IrisTable handle.removeRows', () => {
     tableRef.current!.removeRows([404, 405])
     expect(container.querySelectorAll('[data-iris-table-row=""]')).toHaveLength(3)
     expect(onDataChange).not.toHaveBeenCalled()
+  })
+
+  it('removes a static tree child through the shared rows transaction', () => {
+    const treeData: TreeRow[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'Child' }] }]
+    const tableRef: { current: IrisTableHandle<TreeRow> | null } = { current: null }
+    const onDataChange = vi.fn()
+    render(() => (
+      <IrisTable
+        columns={columns as IrisTableColumn<TreeRow>[]}
+        data={treeData}
+        rowKey="id"
+        getSubRows={(row) => row.children}
+        tableRef={tableRef}
+        onDataChange={onDataChange}
+      />
+    ))
+
+    tableRef.current!.removeRows([2])
+
+    expect(onDataChange).toHaveBeenCalledWith([{ id: 1, name: 'Root', children: [] }])
+    expect(treeData[0]?.children).toHaveLength(1)
   })
 })

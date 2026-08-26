@@ -55,7 +55,7 @@ export function createExpansion<K extends string | number = string>(
     const value = normalizeKeys(next, mode)
     store.setState(value)
     syncIndex(value)
-    config.onChange?.(value)
+    config.onChange?.([...value])
   }
 
   function has(key: K): boolean {
@@ -64,7 +64,7 @@ export function createExpansion<K extends string | number = string>(
 
   return {
     store,
-    get: store.getState,
+    get: () => [...store.getState()],
     isExpanded: has,
     toggle(key) {
       if (has(key)) {

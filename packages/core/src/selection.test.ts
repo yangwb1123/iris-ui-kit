@@ -54,6 +54,61 @@ describe('createSelectionModel — multiple', () => {
   })
 })
 
+describe('createSelectionModel — boundary safety', () => {
+  it('returns an independent get snapshot', () => {
+    const sel = createSelectionModel()
+    sel.set(['a', 'b'])
+
+    const snapshot = sel.get()
+    snapshot.splice(0, 1)
+    snapshot.push('polluted')
+
+    expect(sel.get()).toEqual(['a', 'b'])
+    expect(sel.isSelected('a')).toBe(true)
+    expect(sel.isSelected('polluted')).toBe(false)
+  })
+
+  it('does not retain mutable set or sync inputs', () => {
+    const sel = createSelectionModel()
+    const setInput = ['a']
+    sel.set(setInput)
+    setInput.push('set-polluted')
+    expect(sel.get()).toEqual(['a'])
+
+    const syncInput = ['b']
+    sel.sync(syncInput)
+    syncInput.splice(0, 1, 'sync-polluted')
+    expect(sel.get()).toEqual(['b'])
+
+    const toggleAllInput = ['c']
+    sel.toggleAll(toggleAllInput)
+    toggleAllInput.push('toggle-all-polluted')
+    expect(sel.get()).toEqual(['b', 'c'])
+  })
+
+  it('isolates onChange mutations from state and later events', () => {
+    const received: string[][] = []
+    const sel = createSelectionModel({
+      onChange(keys) {
+        received.push(keys)
+        keys.push('polluted')
+      },
+    })
+
+    sel.select('a')
+    expect(sel.get()).toEqual(['a'])
+    expect(sel.isSelected('a')).toBe(true)
+    expect(sel.isSelected('polluted')).toBe(false)
+
+    sel.select('b')
+    expect(sel.get()).toEqual(['a', 'b'])
+    expect(received).toHaveLength(2)
+    expect(received[0]).toEqual(['a', 'polluted'])
+    expect(received[1]).toEqual(['a', 'b', 'polluted'])
+    expect(received[0]).not.toBe(received[1])
+  })
+})
+
 describe('createSelectionModel — single', () => {
   it('keeps at most one key; re-toggle clears', () => {
     const sel = createSelectionModel({ mode: 'single' })

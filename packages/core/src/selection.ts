@@ -121,12 +121,12 @@ export function createSelectionModel<K extends SelectionKey = string>(
     storeVersion++
     store.setState(value)
     lastState = value
-    config.onChange?.(value)
+    config.onChange?.([...value])
   }
 
   return {
     store,
-    get: store.getState,
+    get: () => [...store.getState()],
     isSelected: (key) => {
       ensureIndex()
       return index.has(key)

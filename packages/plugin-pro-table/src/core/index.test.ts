@@ -273,6 +273,34 @@ describe('createProTableStore — tree rows', () => {
     expect(table.getState().rows[0]?.descendants).toEqual([])
   })
 
+  it('prunes selected descendants when deleting a tree parent', async () => {
+    type TreeUser = User & { children?: TreeUser[] }
+    const table = createProTableStore<TreeUser>({
+      columns,
+      rowKey: 'id',
+      data: [
+        {
+          id: 1,
+          name: 'Root',
+          age: 40,
+          children: [
+            { id: 2, name: 'Child', age: 20, children: [{ id: 3, name: 'Leaf', age: 10 }] },
+          ],
+        },
+      ],
+      pageSize: 10,
+      tree: { getChildren: (row) => row.children },
+    })
+
+    table.toggleRow('2')
+    table.toggleRow('3')
+    expect(table.getState().selectedKeys).toEqual(['2', '3'])
+
+    await expect(table.deleteRow('1')).resolves.toBe(true)
+    expect(table.getState().rows).toEqual([])
+    expect(table.getState().selectedKeys).toEqual([])
+  })
+
   it('creates one new root through the same tree rows transaction', async () => {
     type TreeUser = User & { children?: TreeUser[] }
     const table = createProTableStore<TreeUser>({

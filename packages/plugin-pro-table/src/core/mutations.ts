@@ -8,7 +8,7 @@ interface MutationToolsOptions<Row extends Record<string, unknown>> {
   treeRoots: Row[] | null
   allRowsForEdit: Row[]
   rowKeyOf: (row: Row) => string
-  removeRowsFromModel?: (keys: ReadonlySet<string>) => void
+  removeRowsFromModel?: (keys: ReadonlySet<string>) => readonly string[]
 }
 
 interface ProTableMutationTools<Row extends Record<string, unknown>> {
@@ -19,7 +19,7 @@ interface ProTableMutationTools<Row extends Record<string, unknown>> {
     mutateOptions?: Pick<ProTableMutateOptions<Row>, 'optimistic' | 'skipReload'>,
   ): Promise<T>
   resourceHandlerRequired(kind: Exclude<ProTableMutationKind, 'custom'>): Error
-  removeClientRows(keys: ReadonlySet<string>): void
+  removeClientRows(keys: ReadonlySet<string>): readonly string[]
 }
 
 /** Shared resource-mutation lifecycle and in-memory reconciliation helpers. */
@@ -76,21 +76,35 @@ class ProTableMutationToolsEngine<Row extends Record<string, unknown>> {
         `[iris-ui] ProTable ${kind} requires config.mutations.${kind === 'bulk-delete' ? 'bulkDelete' : kind} in server mode`,
       )
 
-    const removeClientRows = (keys: ReadonlySet<string>): void => {
+    const removeClientRows = (keys: ReadonlySet<string>): readonly string[] => {
       if (removeRowsFromModel) {
-        removeRowsFromModel(keys)
-        return
+        return removeRowsFromModel(keys)
       }
+      const removed = new Set<string>()
       for (let index = allRows.length - 1; index >= 0; index--) {
-        if (keys.has(rowKeyOf(allRows[index]!))) allRows.splice(index, 1)
+        const rowKey = rowKeyOf(allRows[index]!)
+        if (keys.has(rowKey)) {
+          removed.add(rowKey)
+          allRows.splice(index, 1)
+        }
       }
-      if (!treeRoots) return
-      for (let index = treeRoots.length - 1; index >= 0; index--) {
-        if (keys.has(rowKeyOf(treeRoots[index]!))) treeRoots.splice(index, 1)
+      if (treeRoots) {
+        for (let index = treeRoots.length - 1; index >= 0; index--) {
+          const rowKey = rowKeyOf(treeRoots[index]!)
+          if (keys.has(rowKey)) {
+            removed.add(rowKey)
+            treeRoots.splice(index, 1)
+          }
+        }
       }
       for (let index = allRowsForEdit.length - 1; index >= 0; index--) {
-        if (keys.has(rowKeyOf(allRowsForEdit[index]!))) allRowsForEdit.splice(index, 1)
+        const rowKey = rowKeyOf(allRowsForEdit[index]!)
+        if (keys.has(rowKey)) {
+          removed.add(rowKey)
+          allRowsForEdit.splice(index, 1)
+        }
       }
+      return [...removed]
     }
 
     this.tools = { runMutation, resourceHandlerRequired, removeClientRows }

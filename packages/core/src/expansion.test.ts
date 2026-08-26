@@ -29,6 +29,61 @@ describe('createExpansion — multiple', () => {
   })
 })
 
+describe('createExpansion — boundary safety', () => {
+  it('returns an independent get snapshot', () => {
+    const e = createExpansion()
+    e.set(['a', 'b'])
+
+    const snapshot = e.get()
+    snapshot.splice(0, 1)
+    snapshot.push('polluted')
+
+    expect(e.get()).toEqual(['a', 'b'])
+    expect(e.isExpanded('a')).toBe(true)
+    expect(e.isExpanded('polluted')).toBe(false)
+  })
+
+  it('does not retain mutable set, merge, or expandAll inputs', () => {
+    const e = createExpansion()
+    const setInput = ['a']
+    e.set(setInput)
+    setInput.push('set-polluted')
+    expect(e.get()).toEqual(['a'])
+
+    const mergeInput = ['b']
+    e.merge(mergeInput)
+    mergeInput.push('merge-polluted')
+    expect(e.get()).toEqual(['a', 'b'])
+
+    const expandAllInput = ['c']
+    e.expandAll(expandAllInput)
+    expandAllInput.splice(0, 1, 'expand-all-polluted')
+    expect(e.get()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('isolates onChange mutations from state and later events', () => {
+    const received: string[][] = []
+    const e = createExpansion({
+      onChange(keys) {
+        received.push(keys)
+        keys.push('polluted')
+      },
+    })
+
+    e.expand('a')
+    expect(e.get()).toEqual(['a'])
+    expect(e.isExpanded('a')).toBe(true)
+    expect(e.isExpanded('polluted')).toBe(false)
+
+    e.expand('b')
+    expect(e.get()).toEqual(['a', 'b'])
+    expect(received).toHaveLength(2)
+    expect(received[0]).toEqual(['a', 'polluted'])
+    expect(received[1]).toEqual(['a', 'b', 'polluted'])
+    expect(received[0]).not.toBe(received[1])
+  })
+})
+
 describe('createExpansion — single (accordion)', () => {
   it('keeps at most one open', () => {
     const e = createExpansion({ mode: 'single' })

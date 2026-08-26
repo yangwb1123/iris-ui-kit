@@ -7,7 +7,11 @@ import {
   For,
   type JSX,
 } from 'solid-js'
-import { createTreeSelection, type TreeSelectionNode } from '@iris-ui-kit/core'
+import {
+  createTreeSelection,
+  flattenTreeSelectionNodes,
+  type TreeSelectionNode,
+} from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { TreeNodeItem } from './TreeNode'
@@ -146,16 +150,11 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
   // cascade is correct even for collapsed branches, and drive it with the core
   // `createTreeSelection`. Also includes lazy-cached children.
   const checkNodes = (): TreeSelectionNode[] => {
-    const out: TreeSelectionNode[] = []
-    const walk = (ns: IrisTreeNode[], parentKey: string | undefined) => {
-      for (const node of ns) {
-        out.push({ key: node.id, parentKey, disabled: node.disabled })
-        const kids = node.children ?? lazyCache().get(node.id)
-        if (kids && kids.length > 0) walk(kids, node.id)
-      }
-    }
-    walk(local.nodes, undefined)
-    return out
+    return flattenTreeSelectionNodes(local.nodes, {
+      getKey: (node) => node.id,
+      getChildren: (node) => node.children ?? lazyCache().get(node.id),
+      isDisabled: (node) => node.disabled === true,
+    })
   }
 
   const checkModel = createTreeSelection({

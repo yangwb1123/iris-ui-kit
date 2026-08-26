@@ -29,6 +29,52 @@ export interface TreeSelectionConfig<K extends SelectionKey = string> {
   onChange?: (keys: K[]) => void
 }
 
+/** Options for deriving selection nodes from a nested row tree. */
+export interface TreeSelectionRowsOptions<Row, K extends SelectionKey = string> {
+  /** Resolve a stable key; `index` is the pre-order index across the whole tree. */
+  getKey: (row: Row, index: number) => K
+  /** Read a row's nested children. */
+  getChildren: (row: Row) => readonly Row[] | undefined
+  /** Mark a row as excluded from parent/child cascade. */
+  isDisabled?: (row: Row) => boolean
+}
+
+/**
+ * Convert a nested row tree into the flat parentage consumed by
+ * `createTreeSelection`.
+ *
+ * The traversal is pre-order and cycle/duplicate guarded. The global index is
+ * intentionally stable with the old table fallback-key semantics: adapters
+ * that derive a key from position can keep using the same ordinal regardless
+ * of nesting depth or collapsed rendering state.
+ */
+export function flattenTreeSelectionNodes<Row, K extends SelectionKey = string>(
+  roots: readonly Row[],
+  options: TreeSelectionRowsOptions<Row, K>,
+): TreeSelectionNode<K>[] {
+  const out: TreeSelectionNode<K>[] = []
+  const seenKeys = new Set<K>()
+  const seenRows = new Set<Row>()
+  let index = 0
+
+  const walk = (rows: readonly Row[], parentKey: K | undefined): void => {
+    for (const row of rows) {
+      const key = options.getKey(row, index)
+      index += 1
+      if (seenRows.has(row) || seenKeys.has(key)) continue
+      seenRows.add(row)
+      seenKeys.add(key)
+      const disabled = options.isDisabled?.(row) === true
+      out.push(disabled ? { key, parentKey, disabled: true } : { key, parentKey })
+      const children = options.getChildren(row)
+      if (children?.length) walk(children, key)
+    }
+  }
+
+  walk(roots, undefined)
+  return out
+}
+
 export interface TreeSelectionModel<K extends SelectionKey = string> {
   /** Underlying selection model (checked keys); its store drives reactivity. */
   selection: SelectionModel<K>

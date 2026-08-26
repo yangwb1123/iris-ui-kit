@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createTreeSelection, type TreeSelectionNode } from '@iris-ui-kit/core'
+  import { createTreeSelection, flattenTreeSelectionNodes } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 
@@ -110,20 +110,13 @@
   // Checkable mode: flatten the FULL tree (every node, not just the visible
   // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
   // for collapsed branches, and drive it with the core `createTreeSelection`.
-  function flattenCheckNodes(
-    nodeList: IrisTreeNode[],
-    parentKey: string | undefined,
-  ): TreeSelectionNode[] {
-    const out: TreeSelectionNode[] = []
-    for (const node of nodeList) {
-      out.push({ key: node.id, parentKey, disabled: node.disabled })
-      const kids = node.children ?? childrenCache.get(node.id)
-      if (kids && kids.length > 0) out.push(...flattenCheckNodes(kids, node.id))
-    }
-    return out
-  }
-
-  const checkNodes = $derived(flattenCheckNodes(nodes, undefined))
+  const checkNodes = $derived(
+    flattenTreeSelectionNodes(nodes, {
+      getKey: (node) => node.id,
+      getChildren: (node) => node.children ?? childrenCache.get(node.id),
+      isDisabled: (node) => node.disabled === true,
+    }),
+  )
 
   // Rebuild the cascade model when the tree shape changes; `defaultChecked`
   // re-seeds then. The model owns its checked-set store.

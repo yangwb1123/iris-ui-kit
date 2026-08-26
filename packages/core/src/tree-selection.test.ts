@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createTreeSelection, type TreeSelectionNode } from './tree-selection'
+import {
+  createTreeSelection,
+  flattenTreeSelectionNodes,
+  type TreeSelectionNode,
+} from './tree-selection'
 
 //   root
 //   ├─ a            (branch)
@@ -98,5 +102,25 @@ describe('createTreeSelection — cascade', () => {
       ],
     })
     expect(() => t.check('p')).not.toThrow()
+  })
+
+  it('flattens nested rows with global indexes and cycle/duplicate guards', () => {
+    type Row = { id?: string; children?: Row[]; disabled?: boolean }
+    const root: Row = { children: [] }
+    const child: Row = { id: 'child', disabled: true }
+    const duplicate: Row = { id: 'child' }
+    root.children = [child]
+    child.children = [root]
+
+    const rows = flattenTreeSelectionNodes([root, duplicate], {
+      getKey: (row, index) => row.id ?? `index-${index}`,
+      getChildren: (row) => row.children,
+      isDisabled: (row) => row.disabled === true,
+    })
+
+    expect(rows).toEqual([
+      { key: 'index-0', parentKey: undefined },
+      { key: 'child', parentKey: 'index-0', disabled: true },
+    ])
   })
 })

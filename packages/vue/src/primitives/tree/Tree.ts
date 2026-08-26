@@ -9,7 +9,12 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createTreeSelection, nextEnabledIndex, type TreeSelectionNode } from '@iris-ui-kit/core'
+import {
+  createTreeSelection,
+  flattenTreeSelectionNodes,
+  nextEnabledIndex,
+  type TreeSelectionNode,
+} from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
@@ -157,16 +162,11 @@ export const IrisTree = defineComponent({
     // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
     // for collapsed branches, and drive it with the core `createTreeSelection`.
     const checkNodes = computed<TreeSelectionNode[]>(() => {
-      const out: TreeSelectionNode[] = []
-      const walk = (nodes: IrisTreeNode[], parentKey: string | undefined) => {
-        for (const node of nodes) {
-          out.push({ key: node.id, parentKey, disabled: node.disabled })
-          const kids = node.children ?? lazyCache.value.get(node.id)
-          if (kids && kids.length > 0) walk(kids, node.id)
-        }
-      }
-      walk(props.nodes, undefined)
-      return out
+      return flattenTreeSelectionNodes(props.nodes, {
+        getKey: (node) => node.id,
+        getChildren: (node) => node.children ?? lazyCache.value.get(node.id),
+        isDisabled: (node) => node.disabled === true,
+      })
     })
 
     // Rebuild the model whenever the tree shape changes; `defaultChecked`

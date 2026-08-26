@@ -1,5 +1,9 @@
 import * as React from 'react'
-import { createTreeSelection, type TreeSelectionNode } from '@iris-ui-kit/core'
+import {
+  createTreeSelection,
+  flattenTreeSelectionNodes,
+  type TreeSelectionNode,
+} from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 import { IrisVirtualScroll, type IrisVirtualScrollHandle } from '../virtual-scroll/VirtualScroll'
@@ -160,16 +164,11 @@ export function IrisTree({
   // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
   // for collapsed branches, and drive it with the core `createTreeSelection`.
   const checkNodes = React.useMemo<TreeSelectionNode[]>(() => {
-    const out: TreeSelectionNode[] = []
-    const walk = (ns: IrisTreeNode[], parentKey: string | undefined) => {
-      for (const node of ns) {
-        out.push({ key: node.id, parentKey, disabled: node.disabled })
-        const kids = node.children ?? lazyCache.get(node.id)
-        if (kids && kids.length > 0) walk(kids, node.id)
-      }
-    }
-    walk(safeNodes, undefined)
-    return out
+    return flattenTreeSelectionNodes(safeNodes, {
+      getKey: (node) => node.id,
+      getChildren: (node) => node.children ?? lazyCache.get(node.id),
+      isDisabled: (node) => node.disabled === true,
+    })
   }, [safeNodes, lazyCache])
 
   const onCheckedRef = React.useRef(onCheckedChange)

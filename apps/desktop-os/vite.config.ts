@@ -21,6 +21,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/core/clipboard-history': src('core/src/clipboard-history.ts'),
             '@iris-ui-kit/core/fs': src('core/src/fs.ts'),
             '@iris-ui-kit/core/undo': src('core/src/undo.ts'),
+            '@iris-ui-kit/core/grid': src('core/src/grid.ts'),
             '@iris-ui-kit/core': src('core/src/index.ts'),
             '@iris-ui-kit/tokens': src('tokens/src/index.ts'),
             '@iris-ui-kit/theme': src('theme/src/index.ts'),

@@ -34,6 +34,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/core/clipboard-history': coreSubpath('clipboard-history'),
             '@iris-ui-kit/core/fs': coreSubpath('fs'),
             '@iris-ui-kit/core/undo': coreSubpath('undo'),
+            '@iris-ui-kit/core/grid': coreSubpath('grid'),
             '@iris-ui-kit/core': src('core'),
             '@iris-ui-kit/tokens': src('tokens'),
             '@iris-ui-kit/svelte': src('svelte'),

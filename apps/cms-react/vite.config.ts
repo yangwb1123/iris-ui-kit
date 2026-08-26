@@ -51,6 +51,7 @@ export default defineConfig(({ command }) => ({
             // (used internally by `@iris-ui-kit/react`'s undo module) would resolve
             // against that file instead of `src/undo.ts` and fail to load.
             '@iris-ui-kit/core/undo': srcSubpath('core', 'undo'),
+            '@iris-ui-kit/core/grid': srcSubpath('core', 'grid'),
             '@iris-ui-kit/core': src('core'),
             '@iris-ui-kit/tokens': src('tokens'),
             '@iris-ui-kit/theme': src('theme'),

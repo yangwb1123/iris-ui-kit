@@ -43,6 +43,9 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/core/undo': fileURLToPath(
               new URL('../../packages/core/src/undo.ts', import.meta.url),
             ),
+            '@iris-ui-kit/core/grid': fileURLToPath(
+              new URL('../../packages/core/src/grid.ts', import.meta.url),
+            ),
             '@iris-ui-kit/core': src('core'),
             '@iris-ui-kit/tokens': src('tokens'),
             '@iris-ui-kit/solid': src('solid'),

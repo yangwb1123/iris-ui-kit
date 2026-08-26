@@ -222,6 +222,21 @@ arch-check:ratchet` 当前无阻断项。
   Core、四框架适配器与 plugin-pro-table 完整 `typecheck`/build 通过（build 仅保留既有未使用外部导入
   warning），plugin lint、manifest 与 `git diff --check` 通过。
 
+## 2026-08-26 Grid Core tree row-drag continuation（当前工作树）
+
+- Core 新增 `reorderTreeRows` 纯函数：从扁平可见拖拽投影解析两个 key，在同一父级 sibling list 内执行与 flat
+  适配器一致的 remove→insert，并只重建变更节点的 ancestor path；源树、子数组与未触及 row 保持引用。跨父级拖放、
+  缺失 key、重复/循环节点或无法写回 computed children 时 fail-closed，不把子行写入根数组。
+- React/Vue/Solid/Svelte Table 的静态 `getSubRows` row-drag 均改为提交 Core 生成的 canonical root tree；lazy children
+  仍保持 adapter-owned，不能表达稳定 `setChildren` 路径时拒绝写回。flat 表格保留原有可见列表排序与 callback
+  语义，React 仍由父组件拥有最终数据，只是不会再把静态树的扁平投影冒充根数组。
+- 回归：Core 全量 112/112 files、1,680/1,680 tests；React 268/268、3,050/3,050，Vue 170/170、1,609/1,609，
+  Solid 146/146、1,035/1,035、hydration 38/38，Svelte 150/150、1,009/1,009 + hydration 35/35；四端新增
+  静态树 drag 回归通过，plugin-pro-table client tree mutation 75/75；四端 typecheck/build 与
+  `git diff --check` 通过（既有 warning 保持，不新增 error）。删除树父节点时 Core 现在同时报告整棵可达
+  子树的 key，四端与插件可据此一次性清理已消失的 descendant selection/session 状态；replacement 缺少
+  children 字段时也不会在 path reconciliation 中丢弃折叠子树。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

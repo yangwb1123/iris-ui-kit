@@ -14,6 +14,7 @@ export interface GridTreeMutationResult<Row> {
   readonly matched: boolean
   readonly changed: boolean
   readonly blocked: boolean
+  /** Keys physically removed; deleting a parent includes reachable descendants. */
   readonly removed: ReadonlySet<GridRowKey>
 }
 
@@ -115,7 +116,17 @@ export function reconcileTreeRows<Row extends Record<string, unknown>>(
       if (children?.length) {
         const childResult = reconcile(children)
         if (childResult.changed) {
-          const replaced = replaceChildren(nextRow, children, childResult.rows, options.setChildren)
+          // A visible projection may replace a row with a shallow object that
+          // omits collapsed children. Resolve the child slot against the
+          // source row as a fallback so a nested patch cannot accidentally
+          // drop descendants merely because the replacement omitted them.
+          const replaced = replaceChildren(
+            nextRow,
+            children,
+            childResult.rows,
+            options.setChildren,
+            row,
+          )
           if (replaced) {
             nextRow = replaced
             rowChanged = true
@@ -134,16 +145,162 @@ export function reconcileTreeRows<Row extends Record<string, unknown>>(
   return reconcile(nodes).rows
 }
 
+/**
+ * Reorder two keyed rows that belong to the same sibling list.
+ *
+ * Row drag handles are rendered from a flattened visible projection, while
+ * the rows feature owns the nested source tree.  A flat `splice` on that
+ * projection would either erase the hierarchy or write a child into the root
+ * list.  This helper resolves both keys in the source tree, performs the same
+ * remove-then-insert operation used by the flat adapters, and rebuilds only
+ * the ancestor path of that sibling list.  Cross-parent moves are deliberately
+ * blocked until a future drop-position contract can describe re-parenting.
+ *
+ * The source rows, sibling arrays, and untouched row objects are never
+ * mutated.  Duplicate row objects/keys and cycles share the same guard as the
+ * other tree walkers. `position` is useful when the source order differs from
+ * the visible projection (for example while a tree level is sorted); `auto`
+ * preserves the historical remove-then-insert direction.
+ */
+export function reorderTreeRows<Row extends Record<string, unknown>>(
+  nodes: readonly Row[],
+  fromKey: GridRowKey,
+  toKey: GridRowKey,
+  options: GridTreeRowsOptions<Row>,
+  position: 'auto' | 'before' | 'after' = 'auto',
+): GridTreeMutationResult<Row> {
+  if (Object.is(fromKey, toKey)) {
+    return {
+      rows: nodes as Row[],
+      matched: false,
+      changed: false,
+      blocked: false,
+      removed: new Set(),
+    }
+  }
+
+  type Ancestor = {
+    readonly siblings: readonly Row[]
+    readonly index: number
+    readonly row: Row
+    readonly children: readonly Row[]
+  }
+  type Location = {
+    readonly siblings: readonly Row[]
+    readonly index: number
+    readonly ancestors: readonly Ancestor[]
+  }
+
+  const seenKeys = new Set<GridRowKey>()
+  const seenRows = new Set<Row>()
+  let from: Location | undefined
+  let to: Location | undefined
+
+  const visit = (siblings: readonly Row[], ancestors: readonly Ancestor[]): void => {
+    for (const [index, row] of siblings.entries()) {
+      const rowKey = options.getRowKey(row, index)
+      if (wasSeen(row, rowKey, seenKeys, seenRows)) continue
+      if (!from && Object.is(rowKey, fromKey)) {
+        from = { siblings, index, ancestors }
+      } else if (!to && Object.is(rowKey, toKey)) {
+        to = { siblings, index, ancestors }
+      }
+      const children = options.getChildren(row)
+      if (children?.length && (!from || !to)) {
+        visit(children, [...ancestors, { siblings, index, row, children }])
+      }
+      if (from && to) return
+    }
+  }
+  visit(nodes, [])
+
+  if (!from || !to) {
+    return {
+      rows: nodes as Row[],
+      matched: false,
+      changed: false,
+      blocked: false,
+      removed: new Set(),
+    }
+  }
+  if (!Object.is(from.siblings, to.siblings)) {
+    return {
+      rows: nodes as Row[],
+      matched: true,
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
+
+  const reordered = [...from.siblings]
+  const [moved] = reordered.splice(from.index, 1)
+  if (!moved) {
+    return {
+      rows: nodes as Row[],
+      matched: true,
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
+  const targetIndex = to.index - (from.index < to.index ? 1 : 0)
+  const insertionIndex =
+    position === 'after' ? targetIndex + 1 : position === 'before' ? targetIndex : to.index
+  reordered.splice(insertionIndex, 0, moved)
+  const sourceSiblings = from.siblings
+  if (reordered.every((row, index) => Object.is(row, sourceSiblings[index]))) {
+    return {
+      rows: nodes as Row[],
+      matched: true,
+      changed: false,
+      blocked: false,
+      removed: new Set(),
+    }
+  }
+
+  let rebuilt: Row[] = reordered
+  for (let index = from.ancestors.length - 1; index >= 0; index -= 1) {
+    const ancestor = from.ancestors[index]!
+    const replaced = replaceChildren(ancestor.row, ancestor.children, rebuilt, options.setChildren)
+    if (!replaced) {
+      return {
+        rows: nodes as Row[],
+        matched: true,
+        changed: false,
+        blocked: true,
+        removed: new Set(),
+      }
+    }
+    const parentSiblings = [...ancestor.siblings]
+    parentSiblings[ancestor.index] = replaced
+    rebuilt = parentSiblings
+  }
+
+  return {
+    rows: rebuilt,
+    matched: true,
+    changed: true,
+    blocked: false,
+    removed: new Set(),
+  }
+}
+
 function replaceChildren<Row extends Record<string, unknown>>(
   row: Row,
   currentChildren: readonly Row[],
   children: Row[],
   setChildren?: (row: Row, children: Row[]) => Row,
+  sourceRow?: Row,
 ): Row | undefined {
   if (setChildren) return setChildren(row, children)
-  const childKey = Object.keys(row).find(
-    (key) => (row as Record<string, unknown>)[key] === currentChildren,
-  )
+  const childKey =
+    Object.keys(row).find((key) => (row as Record<string, unknown>)[key] === currentChildren) ??
+    (sourceRow
+      ? Object.keys(sourceRow).find(
+          (key) => (sourceRow as Record<string, unknown>)[key] === currentChildren,
+        )
+      : undefined)
   if (!childKey) return undefined
   return { ...row, [childKey]: children } as Row
 }
@@ -230,7 +387,15 @@ function removeNodes<Row extends Record<string, unknown>>(
       continue
     }
     if (rowKey !== undefined && keys.has(rowKey)) {
+      // Removing a parent removes its complete reachable subtree. Report all
+      // descendant keys as part of the same result so selection/lookup
+      // consumers can prune keys that disappeared with the parent; walking
+      // with the shared guard keeps malformed cyclic or duplicate trees safe.
       removed.add(rowKey)
+      const children = options.getChildren(row)
+      if (children?.length) {
+        collectRemovedKeys(children, options, seenKeys, seenRows, removed)
+      }
       changed = true
       continue
     }
@@ -263,6 +428,22 @@ function removeNodes<Row extends Record<string, unknown>>(
     changed,
     blocked,
     removed,
+  }
+}
+
+function collectRemovedKeys<Row extends Record<string, unknown>>(
+  nodes: readonly Row[],
+  options: Pick<GridTreeRowsOptions<Row>, 'getRowKey' | 'getChildren'>,
+  seenKeys: Set<GridRowKey>,
+  seenRows: Set<Row>,
+  removed: Set<GridRowKey>,
+): void {
+  for (const [index, row] of nodes.entries()) {
+    const rowKey = options.getRowKey(row, index)
+    if (wasSeen(row, rowKey, seenKeys, seenRows)) continue
+    if (rowKey !== undefined) removed.add(rowKey)
+    const children = options.getChildren(row)
+    if (children?.length) collectRemovedKeys(children, options, seenKeys, seenRows, removed)
   }
 }
 

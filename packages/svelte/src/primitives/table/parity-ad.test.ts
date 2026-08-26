@@ -90,6 +90,42 @@ describe('IrisTable batch AD — Svelte row/column drag', () => {
     expect(bodyNames(container)).toEqual(['Bob', 'Charlie', 'Alice'])
   })
 
+  it('reorders static tree siblings through the Core source tree', async () => {
+    stubDragRects()
+    type TreeRow = { id: number; name: string; children?: TreeRow[] }
+    const childA: TreeRow = { id: 2, name: 'A' }
+    const childB: TreeRow = { id: 3, name: 'B' }
+    const root: TreeRow = { id: 1, name: 'Root', children: [childA, childB] }
+    const onReorder = vi.fn()
+    const onDataChange = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns: [{ key: 'name', title: 'Name' }],
+        data: [root],
+        rowKey: 'id',
+        getSubRows: (row) => row.children,
+        defaultExpandedRowKeys: [1],
+        rowDrag: { onReorder },
+        onDataChange,
+      },
+    })
+    const tableRoot = container.querySelector('[data-iris-table]')!
+    const childHandle = container.querySelector('[data-iris-row-drag-handle="2"]')!
+
+    await pointer(childHandle, 'pointerDown', 0, 40)
+    await pointer(tableRoot, 'pointerMove', 0, 100)
+    await pointer(tableRoot, 'pointerUp', 0, 100)
+
+    expect(bodyNames(container)).toEqual(['▶ Root', 'B', 'A'])
+    expect(onReorder).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 1, children: [childB, childA] }),
+    ])
+    expect(onDataChange).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 1, children: [childB, childA] }),
+    ])
+    expect(root.children).toEqual([childA, childB])
+  })
+
   it('does not reorder on a press-and-release tap', async () => {
     stubDragRects()
     const onReorder = vi.fn()

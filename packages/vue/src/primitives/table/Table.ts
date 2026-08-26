@@ -24,6 +24,7 @@ import {
   flattenLeafColumns,
   flattenTree,
   mergeFormFilters,
+  reorderTreeRows,
   seedFormValues,
   tableDisplayText,
   toCsvRows,
@@ -1453,16 +1454,53 @@ export const IrisTable = defineComponent({
       }
       const { activeId, overId } = rowDragCtrl.end()
       if (activeId !== null && overId !== null && activeId !== overId) {
-        const rows = [...bodyData.value] as Array<Record<string, unknown>>
-        const from = rows.findIndex((r, i) => String(rowId(r, i)) === activeId)
-        const to = rows.findIndex((r, i) => String(rowId(r, i)) === overId)
-        if (from >= 0 && to >= 0 && from !== to) {
-          const [moved] = rows.splice(from, 1)
-          rows.splice(to, 0, moved)
-          // Adapter-owned gesture; Grid Core owns the row-list transaction.
-          gridRows.model.commit(rows, { reason: 'row-drag' })
-          props.onDataChange?.(rows)
-          props.rowDrag.onReorder(rows)
+        // A static tree must be reordered in the source tree. The visible
+        // flattened list is only a drag projection and must never be
+        // committed as roots. Lazy children remain adapter-owned until a
+        // persisted re-parenting contract can describe their source path.
+        if (props.getSubRows !== undefined && props.lazyLoad === undefined) {
+          const visibleKeys = new Map(
+            bodyData.value.map((row, index) => [row, String(rowId(row, index))]),
+          )
+          const fromVisible = bodyData.value.findIndex(
+            (row, index) => String(rowId(row, index)) === activeId,
+          )
+          const toVisible = bodyData.value.findIndex(
+            (row, index) => String(rowId(row, index)) === overId,
+          )
+          if (fromVisible >= 0 && toVisible >= 0) {
+            const result = reorderTreeRows(
+              gridRows.model.get(),
+              activeId,
+              overId,
+              {
+                // Every drop target is visible; leave hidden descendants keyless
+                // so a synthetic sibling index cannot mask a visible target.
+                getRowKey: (row) => visibleKeys.get(row),
+                getChildren: props.getSubRows,
+              },
+              fromVisible < toVisible ? 'after' : 'before',
+            )
+            if (result.changed) {
+              const rows = result.rows
+              // Adapter-owned gesture; Grid Core owns the row-list transaction.
+              gridRows.model.commit(rows, { reason: 'row-drag' })
+              props.onDataChange?.(rows)
+              props.rowDrag.onReorder(rows)
+            }
+          }
+        } else if (props.lazyLoad === undefined) {
+          const rows = [...bodyData.value] as Array<Record<string, unknown>>
+          const from = rows.findIndex((r, i) => String(rowId(r, i)) === activeId)
+          const to = rows.findIndex((r, i) => String(rowId(r, i)) === overId)
+          if (from >= 0 && to >= 0 && from !== to) {
+            const [moved] = rows.splice(from, 1)
+            rows.splice(to, 0, moved)
+            // Adapter-owned gesture; Grid Core owns the row-list transaction.
+            gridRows.model.commit(rows, { reason: 'row-drag' })
+            props.onDataChange?.(rows)
+            props.rowDrag.onReorder(rows)
+          }
         }
       }
       rowRectsRef.value = []

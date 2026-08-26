@@ -237,6 +237,13 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         for (const key of keys) {
           if (result.removed.has(key) && !removed.includes(key)) removed.push(key)
         }
+        // Removing a parent also removes every reachable descendant. Keep
+        // requested keys first for legacy ordering, then append descendant
+        // keys so adapters can prune selection/lookup state for the entire
+        // subtree in the same transaction.
+        result.removed.forEach((key) => {
+          if (!removed.includes(key)) removed.push(key)
+        })
         return removed
       }
       const removedIndexes = new Set<number>()

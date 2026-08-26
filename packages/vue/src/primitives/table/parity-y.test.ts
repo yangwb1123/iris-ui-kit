@@ -323,6 +323,42 @@ describe('IrisTable batch Y — columnVisibility / filters / seq / spanMethod / 
     expect(onDataChange).toHaveBeenCalledWith([rows[1], rows[2], rows[0]])
   })
 
+  it('rowDrag reorders static tree siblings through the Core source tree', async () => {
+    stubRowRects()
+    type TreeRow = { id: number; name: string; children?: TreeRow[] }
+    const childA: TreeRow = { id: 2, name: 'A' }
+    const childB: TreeRow = { id: 3, name: 'B' }
+    const root: TreeRow = { id: 1, name: 'Root', children: [childA, childB] }
+    const onReorder = vi.fn()
+    const onDataChange = vi.fn()
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: [{ key: 'name', title: 'Name' }],
+        data: [root],
+        rowKey: 'id',
+        getSubRows: (row: TreeRow) => row.children,
+        defaultExpandedRowKeys: [1],
+        rowDrag: { onReorder },
+        onDataChange,
+      },
+      attachTo: host,
+    })
+
+    pointer(wrapper.find('[data-iris-row-drag-handle="2"]').element, 'pointerdown', 20, 60)
+    pointer(wrapper.element, 'pointermove', 20, 100)
+    pointer(wrapper.element, 'pointerup', 20, 100)
+    await nextTick()
+
+    expect(nameCells(wrapper)).toEqual(['▶Root', 'B', 'A'])
+    expect(onReorder).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 1, children: [childB, childA] }),
+    ])
+    expect(onDataChange).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 1, children: [childB, childA] }),
+    ])
+    expect(root.children).toEqual([childA, childB])
+  })
+
   it('expose.loadData replaces rows without a query; a parent data re-feed wins again', async () => {
     const onDataChange = vi.fn()
     const wrapper = mount(IrisTable, {

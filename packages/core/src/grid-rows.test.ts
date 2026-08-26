@@ -4,6 +4,7 @@ import {
   createGridCore,
   createGridRowsFeature,
   GRID_ROWS_CHANGE_EVENT,
+  reorderTreeRows,
   reconcileTreeRows,
   type GridRowKey,
   type GridRowsModel,
@@ -237,6 +238,27 @@ describe('createGridRowsFeature', () => {
     expect(events).toHaveLength(2)
   })
 
+  it('reports every key removed with a tree parent in one transaction', () => {
+    type TreeRow = Row & { children?: TreeRow[] }
+    const child: TreeRow = { id: 2, name: 'Child', children: [{ id: 3, name: 'Grandchild' }] }
+    const root: TreeRow = { id: 1, name: 'Root', children: [child] }
+    const core = createGridCore<TreeRow>({
+      features: [
+        createGridRowsFeature<TreeRow>({
+          defaultRows: [root, { id: 4, name: 'Sibling' }],
+          getRowKey: (row) => row.id,
+          getChildren: (row) => row.children,
+        }),
+      ],
+    })
+
+    expect(core.invoke<readonly GridRowKey[]>('removeRows', [1])).toEqual([1, 2, 3])
+    // The requested key remains first in the public operation order; descendant
+    // keys are also reported because they disappeared with the parent.
+    expect(core.invoke<TreeRow[]>('getRows')).toEqual([{ id: 4, name: 'Sibling' }])
+    expect(core.invoke<readonly GridRowKey[]>('removeRows', [2, 3])).toEqual([])
+  })
+
   it('collects reachable tree rows once and stops on cycles or duplicate keys', () => {
     type TreeRow = { id: number; children?: TreeRow[] }
     const root: TreeRow = { id: 1 }
@@ -277,6 +299,102 @@ describe('createGridRowsFeature', () => {
         getChildren: (row) => row.children,
       }),
     ).toBe(source)
+  })
+
+  it('keeps collapsed children when a replacement row omits the child slot', () => {
+    type TreeRow = { id: number; name: string; children?: TreeRow[] }
+    const child: TreeRow = { id: 2, name: 'Child' }
+    const root: TreeRow = { id: 1, name: 'Root', children: [child] }
+    const patchedRoot: TreeRow = { id: 1, name: 'Renamed' }
+    const patchedChild: TreeRow = { id: 2, name: 'Updated child' }
+
+    const next = reconcileTreeRows(
+      [root],
+      new Map([
+        [1, patchedRoot],
+        [2, patchedChild],
+      ]),
+      {
+        getRowKey: (row) => row.id,
+        getChildren: (row) => row.children,
+      },
+    )
+
+    expect(next[0]).not.toBe(patchedRoot)
+    expect(next[0]).toMatchObject({ id: 1, name: 'Renamed' })
+    expect(next[0]?.children?.[0]).toBe(patchedChild)
+    expect(root.children?.[0]).toBe(child)
+  })
+
+  it('reorders same-parent tree rows without flattening or mutating the source', () => {
+    type TreeRow = { id: number; name: string; children?: TreeRow[] }
+    const childA: TreeRow = { id: 2, name: 'A' }
+    const childB: TreeRow = { id: 3, name: 'B' }
+    const root: TreeRow = { id: 1, name: 'Root', children: [childA, childB] }
+    const sibling: TreeRow = { id: 4, name: 'Sibling' }
+    const source = [root, sibling]
+
+    const next = reorderTreeRows(source, '2', '3', {
+      getRowKey: (row) => String(row.id),
+      getChildren: (row) => row.children,
+    })
+
+    expect(next).toMatchObject({ matched: true, changed: true, blocked: false })
+    expect(next.rows.map((row) => row.id)).toEqual([1, 4])
+    expect(next.rows[0]?.children?.map((row) => row.id)).toEqual([3, 2])
+    expect(next.rows[0]).not.toBe(root)
+    expect(next.rows[0]?.children).not.toBe(root.children)
+    expect(next.rows[0]?.children?.[0]).toBe(childB)
+    expect(source[0]).toBe(root)
+    expect(source[0]?.children).toEqual([childA, childB])
+  })
+
+  it('honors visible drop direction when source siblings are sorted differently', () => {
+    type TreeRow = { id: number; children?: TreeRow[] }
+    const first: TreeRow = { id: 2 }
+    const second: TreeRow = { id: 3 }
+    const third: TreeRow = { id: 4 }
+    const root: TreeRow = { id: 1, children: [second, third, first] }
+
+    const next = reorderTreeRows(
+      [root],
+      2,
+      3,
+      {
+        getRowKey: (row) => row.id,
+        getChildren: (row) => row.children,
+      },
+      'after',
+    )
+
+    expect(next.changed).toBe(true)
+    expect(next.rows[0]?.children?.map((row) => row.id)).toEqual([3, 2, 4])
+  })
+
+  it('blocks cross-parent moves and computed child lists without changing roots', () => {
+    type TreeRow = { id: number; name: string; descendants: TreeRow[] }
+    const firstChild = { id: 2, name: 'A', descendants: [] as TreeRow[] }
+    const secondChild = { id: 3, name: 'B', descendants: [] as TreeRow[] }
+    const first = { id: 1, name: 'First', descendants: [firstChild] }
+    const second = { id: 4, name: 'Second', descendants: [secondChild] }
+    const source = [first, second]
+    const options = {
+      getRowKey: (row: TreeRow) => row.id,
+      getChildren: (row: TreeRow) => row.descendants,
+    }
+
+    expect(reorderTreeRows(source, 2, 3, options)).toMatchObject({
+      matched: true,
+      changed: false,
+      blocked: true,
+    })
+    expect(reorderTreeRows(source, 2, 99, options)).toMatchObject({
+      matched: false,
+      changed: false,
+      blocked: false,
+    })
+    expect(source[0]?.descendants).toEqual([firstChild])
+    expect(source[1]?.descendants).toEqual([secondChild])
   })
 
   it('uses a custom child setter and guards duplicate/cyclic branches', () => {

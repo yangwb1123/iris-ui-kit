@@ -162,6 +162,65 @@ describe('IrisTable rowDrag (core createSortable composition)', () => {
     const next = onReorder.mock.calls[0][0] as { id: number }[]
     expect(next.map((r) => r.id)).toEqual([2, 1, 3])
   })
+
+  it('reorders static-tree siblings in the canonical root tree', () => {
+    type TreeRow = Row & { children?: TreeRow[] }
+    const childA: TreeRow = { id: 11, name: 'A', age: 11 }
+    const childB: TreeRow = { id: 12, name: 'B', age: 12 }
+    const root: TreeRow = { id: 1, name: 'Root', age: 1, children: [childA, childB] }
+    const sibling: TreeRow = { id: 2, name: 'Sibling', age: 2 }
+    const source = [root, sibling]
+    const onReorder = vi.fn()
+    const { container } = render(
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={source}
+        rowKey="id"
+        getSubRows={(row) => row.children}
+        defaultExpandedRowKeys={[1]}
+        rowDrag={{ onReorder }}
+      />,
+    )
+    const handles = [...container.querySelectorAll('[data-iris-table-cell="__drag"]')]
+    const table = container.querySelector('[data-iris-table]')!
+    const rowsEl = [...container.querySelectorAll('[data-iris-table-row]')]
+    rowsEl.forEach((el, i) => {
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        top: i * 40,
+        width: 200,
+        height: 40,
+        right: 200,
+        bottom: (i + 1) * 40,
+        x: 0,
+        y: i * 40,
+        toJSON: () => ({}),
+      })
+    })
+    const pointer = (type: string, init: Record<string, unknown>): Event => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.assign(event, init)
+      return event
+    }
+
+    // Child A is the second body row; drop below child B. The
+    // callback must receive the two roots with only their child sibling order
+    // changed — never the flattened [root, child, child, sibling] projection.
+    act(() => {
+      handles[1]!.dispatchEvent(pointer('pointerdown', { button: 0, clientX: 10, clientY: 10 }))
+      table.dispatchEvent(pointer('pointermove', { clientX: 12, clientY: 14 }))
+      table.dispatchEvent(pointer('pointermove', { clientX: 12, clientY: 150 }))
+      table.dispatchEvent(pointer('pointerup', { clientX: 12, clientY: 150 }))
+    })
+
+    expect(onReorder).toHaveBeenCalledTimes(1)
+    const next = onReorder.mock.calls[0]![0] as TreeRow[]
+    expect(next.map((row) => row.id)).toEqual([1, 2])
+    expect(next[0]?.children?.map((row) => row.id)).toEqual([12, 11])
+    expect(next[0]).not.toBe(root)
+    expect(source).toEqual([root, sibling])
+    expect(root.children).toEqual([childA, childB])
+  })
 })
 
 describe('IrisTable seq + spanMethod (vxe-grid parity)', () => {

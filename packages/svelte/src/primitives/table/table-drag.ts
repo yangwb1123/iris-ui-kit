@@ -9,6 +9,8 @@ export interface TableDragBridgeOptions {
   isGrouped: () => boolean
   getRowDrag: () => IrisTableRowDrag | undefined
   getColumnDrag: () => IrisTableColumnDrag | undefined
+  /** Resolve a drag into canonical source rows; `null` rejects the drop. */
+  reorderRows?: (activeId: string, overId: string) => Array<Record<string, unknown>> | null
   commitRows: (rows: Array<Record<string, unknown>>) => void
 }
 
@@ -73,12 +75,22 @@ export function createTableDragBridge(options: TableDragBridgeOptions): TableDra
     }
     const { activeId, overId } = rowController.end()
     if (activeId !== null && overId !== null && activeId !== overId) {
-      const rows = [...options.getRows()]
-      const from = rows.findIndex((row, index) => String(options.getRowId(row, index)) === activeId)
-      const to = rows.findIndex((row, index) => String(options.getRowId(row, index)) === overId)
-      if (from >= 0 && to >= 0 && from !== to) {
-        const [moved] = rows.splice(from, 1)
-        rows.splice(to, 0, moved!)
+      const rows = options.reorderRows
+        ? options.reorderRows(activeId, overId)
+        : (() => {
+            const next = [...options.getRows()]
+            const from = next.findIndex(
+              (row, index) => String(options.getRowId(row, index)) === activeId,
+            )
+            const to = next.findIndex(
+              (row, index) => String(options.getRowId(row, index)) === overId,
+            )
+            if (from < 0 || to < 0 || from === to) return null
+            const [moved] = next.splice(from, 1)
+            next.splice(to, 0, moved!)
+            return next
+          })()
+      if (rows) {
         options.commitRows(rows)
         config.onReorder(rows)
       }

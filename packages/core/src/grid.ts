@@ -396,6 +396,7 @@ export {
 export {
   collectTreeRows,
   findTreeRow,
+  reorderTreeRows,
   reconcileTreeRows,
   removeTreeRows,
   updateTreeRows,

@@ -11,6 +11,7 @@
     flattenLeafColumns,
     flattenTree,
     mergeFormFilters,
+    reorderTreeRows,
     seedFormValues,
     tableDisplayText,
     toCsvRows,
@@ -1006,6 +1007,42 @@
     isGrouped: () => grouped,
     getRowDrag: () => rowDrag,
     getColumnDrag: () => columnDrag,
+    reorderRows: (activeId, overId) => {
+      const getChildren = getSubRows
+      if (getChildren !== undefined) {
+        // Reorder the canonical source tree, never the flattened visible
+        // projection. A cross-parent drop is rejected until a persisted
+        // re-parenting contract is available.
+        const visibleKeys = new Map(bodyData.map((row, index) => [row, String(rowId(row, index))]))
+        const fromVisible = bodyData.findIndex(
+          (row, index) => String(rowId(row, index)) === activeId,
+        )
+        const toVisible = bodyData.findIndex((row, index) => String(rowId(row, index)) === overId)
+        if (fromVisible < 0 || toVisible < 0) return null
+        const result = reorderTreeRows(
+          gridRows.get(),
+          activeId,
+          overId,
+          {
+            // Every drop target is visible; leave hidden descendants keyless so
+            // a synthetic sibling index cannot mask a visible target.
+            getRowKey: (row) => visibleKeys.get(row),
+            getChildren,
+          },
+          fromVisible < toVisible ? 'after' : 'before',
+        )
+        return result.changed ? result.rows : null
+      }
+      // Keep the flat bridge's historical source-list behavior when no tree
+      // accessor is supplied.
+      const rows = [...baseData]
+      const from = rows.findIndex((row, index) => String(rowId(row, index)) === activeId)
+      const to = rows.findIndex((row, index) => String(rowId(row, index)) === overId)
+      if (from < 0 || to < 0 || from === to) return null
+      const [moved] = rows.splice(from, 1)
+      rows.splice(to, 0, moved!)
+      return rows
+    },
     commitRows: (rows) => {
       gridRows.commit(rows, { reason: 'row-drag' })
       onDataChange?.(rows)

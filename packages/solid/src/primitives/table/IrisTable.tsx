@@ -21,6 +21,7 @@ import {
   flattenLeafColumns,
   flattenTree,
   mergeFormFilters,
+  reorderTreeRows,
   withSortedChildren,
   nextGridCell,
   serializeTableRange,
@@ -918,6 +919,51 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     rows: bodyRows,
     columns: leafColumns,
     rowId,
+    reorderRows: (activeId, overId) => {
+      // Lazy children are adapter-owned and cannot safely be flattened into
+      // roots, even when a static accessor is also supplied (the cache wins
+      // in that mode). Flat tables retain the previous visible-list reorder.
+      if (props.lazyLoad !== undefined) return null
+      const getChildren = props.getSubRows
+      if (getChildren !== undefined) {
+        // A static tree must be reordered in the source tree. The visible
+        // flattened list is only a drag projection and must never be
+        // committed as roots. A cross-parent drop is rejected until a
+        // re-parenting contract can describe the destination path.
+        const visibleKeys = new Map(
+          bodyRows().map((row, index) => [row, String(rowId(row, index))]),
+        )
+        const visibleRows = bodyRows()
+        const fromVisible = visibleRows.findIndex(
+          (row, index) => String(rowId(row, index)) === activeId,
+        )
+        const toVisible = visibleRows.findIndex(
+          (row, index) => String(rowId(row, index)) === overId,
+        )
+        if (fromVisible < 0 || toVisible < 0) return null
+        const result = reorderTreeRows(
+          gridRows.get(),
+          activeId,
+          overId,
+          {
+            // Every drop target is visible; leave hidden descendants keyless so
+            // a synthetic sibling index cannot mask a visible target when no
+            // rowKey is configured.
+            getRowKey: (row) => visibleKeys.get(row),
+            getChildren,
+          },
+          fromVisible < toVisible ? 'after' : 'before',
+        )
+        return result.changed ? result.rows : null
+      }
+      const rows = [...bodyRows()]
+      const from = rows.findIndex((row, index) => String(rowId(row, index)) === activeId)
+      const to = rows.findIndex((row, index) => String(rowId(row, index)) === overId)
+      if (from < 0 || to < 0 || from === to) return null
+      const [moved] = rows.splice(from, 1)
+      rows.splice(to, 0, moved!)
+      return rows
+    },
     onDataChange: (rows) => {
       gridRows.commit(rows, { reason: 'row-drag' })
       merged.onDataChange?.(rows)

@@ -15,6 +15,7 @@ import {
   groupRows,
   mergeFormFilters,
   parseTableQuery,
+  reorderTreeRows,
   reconcileTreeRows,
   seedFormValues,
   withSortedChildren,
@@ -3204,6 +3205,45 @@ export function IrisTable<Row extends Record<string, unknown>>({
     )
   }
 
+  /**
+   * Resolve a static-tree drag against the canonical source rows. The DOM
+   * drag controller intentionally works on `bodyData` (a flattened visible
+   * projection), but handing that projection to the parent would promote
+   * children to roots. Visible rows are mapped to string keys here so the
+   * source-tree walker can remain fail-closed for collapsed descendants and
+   * preserve the existing callback ownership contract.
+   */
+  const reorderTreeDragRows = (
+    activeId: string,
+    overId: string,
+    position: 'before' | 'after',
+  ): Row[] | null => {
+    const getChildren = getSubRowsRef.current
+    if (getChildren === undefined || lazyLoad !== undefined) return null
+    const visibleRows = bodyDataRef.current
+    const visibleKeys = new Map(
+      visibleRows.map((row, index) => [row, String(rowKeyOf(row, index))]),
+    )
+    const fromVisible = visibleRows.findIndex(
+      (row, index) => String(rowKeyOf(row, index)) === activeId,
+    )
+    const toVisible = visibleRows.findIndex((row, index) => String(rowKeyOf(row, index)) === overId)
+    if (fromVisible < 0 || toVisible < 0) return null
+    const result = reorderTreeRows(
+      rowsModel.get(),
+      activeId,
+      overId,
+      {
+        // Every drop target is visible; hidden descendants stay keyless so a
+        // synthetic sibling-index fallback cannot collide with a target.
+        getRowKey: (row) => visibleKeys.get(row),
+        getChildren,
+      },
+      position,
+    )
+    return result.changed ? result.rows : null
+  }
+
   const handleRowDragPointerUp = (e?: Pick<PointerEvent, 'clientX' | 'clientY'>) => {
     if (!rowDragEnabled) return
     if (rowDragCtrl.isPending()) {
@@ -3244,10 +3284,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
         rows,
         (row, index) => String(rowKeyOf(row, index)),
       )
-      if (resolved && from >= 0 && from !== resolved.insertIndex) {
-        const [moved] = rows.splice(from, 1)
-        rows.splice(resolved.insertIndex, 0, moved)
-        rowDrag?.onReorder(rows)
+      if (resolved && from >= 0 && lazyLoad === undefined) {
+        if (getSubRowsRef.current !== undefined) {
+          const treeRows = reorderTreeDragRows(
+            activeId,
+            overId,
+            resolved.side === 'below' ? 'after' : 'before',
+          )
+          if (treeRows) rowDrag?.onReorder(treeRows)
+        } else if (from !== resolved.insertIndex) {
+          const [moved] = rows.splice(from, 1)
+          rows.splice(resolved.insertIndex, 0, moved)
+          rowDrag?.onReorder(rows)
+        }
       }
     }
     rowRectsRef.current = []
@@ -4098,18 +4147,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
     },
     removeRow: (key) => {
       // Let the rows model resolve the key so static tree children are
-      // addressable exactly like roots. The model returns false for a miss,
-      // keeping the old zero-side-effect behavior without a root-only probe.
-      const removed = rowsModel.remove(key, {
+      // addressable exactly like roots. `removeMany([key])` also returns the
+      // descendant keys removed with a tree parent, allowing selection and
+      // dirty-session state to be pruned for the whole disappeared subtree.
+      const removedKeys = rowsModel.removeMany([key], {
         reason: 'remove',
         meta: { auditType: 'remove', recordHistory: true, notifyDataChange: true },
       })
-      if (!removed) return
-      if (displaySelectionRef.current.includes(key)) {
+      if (removedKeys.length === 0) return
+      const removed = new Set(removedKeys)
+      const selectedNow = displaySelectionRef.current
+      if (selectable !== 'none' && selectedNow.some((selectedKey) => removed.has(selectedKey))) {
         rebaseToProp()
-        selModel.toggle(key)
+        for (const removedKey of removedKeys) {
+          if (selectedNow.includes(removedKey)) selModel.toggle(removedKey)
+        }
       }
-      pruneDirtyFor(key)
+      for (const removedKey of removedKeys) pruneDirtyFor(removedKey)
     },
     removeRows: (keys) => {
       // Batch remove (vxe removeRows parity, batch J): compose the core helper

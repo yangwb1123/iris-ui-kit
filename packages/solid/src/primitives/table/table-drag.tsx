@@ -10,6 +10,8 @@ type TableDragConfig<Row extends Record<string, unknown>> = {
   rows: Accessor<Row[]>
   columns: Accessor<IrisTableColumn<Row>[]>
   rowId: (row: Row, index: number) => string | number
+  /** Resolve a drag into the canonical source rows; `null` rejects the drop. */
+  reorderRows?: (activeId: string, overId: string) => Row[] | null
   onDataChange?: (rows: Row[]) => void
 }
 
@@ -81,12 +83,20 @@ export function createTableDrag<Row extends Record<string, unknown>>(
     }
     const { activeId, overId } = rowController.end()
     if (activeId !== null && overId !== null && activeId !== overId) {
-      const rows = [...options.rows()]
-      const from = rows.findIndex((row, index) => String(options.rowId(row, index)) === activeId)
-      const to = rows.findIndex((row, index) => String(options.rowId(row, index)) === overId)
-      if (from >= 0 && to >= 0 && from !== to) {
-        const [moved] = rows.splice(from, 1)
-        rows.splice(to, 0, moved)
+      const rows = options.reorderRows
+        ? options.reorderRows(activeId, overId)
+        : (() => {
+            const next = [...options.rows()]
+            const from = next.findIndex(
+              (row, index) => String(options.rowId(row, index)) === activeId,
+            )
+            const to = next.findIndex((row, index) => String(options.rowId(row, index)) === overId)
+            if (from < 0 || to < 0 || from === to) return null
+            const [moved] = next.splice(from, 1)
+            next.splice(to, 0, moved)
+            return next
+          })()
+      if (rows) {
         options.onDataChange?.(rows)
         options.rowDrag()?.onReorder(rows)
       }

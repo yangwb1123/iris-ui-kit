@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   createGridClipboardFeature,
+  createGridClipboardModel,
   createGridCore,
   createGridRangeFeature,
   createGridRowsFeature,
@@ -280,6 +281,31 @@ describe('createGridClipboardFeature', () => {
       reason: 'clipboard-paste',
       meta: { auditType: 'paste' },
     })
+  })
+
+  it('isolates a mutable binding row snapshot from paste observers', () => {
+    const sourceRows = rows.map((row) => ({ ...row }))
+    let committedRows = sourceRows
+    const onPaste = vi.fn((change: GridClipboardChange<Row>) => {
+      if (change.type !== 'paste') return
+      ;(change.previousRows as Row[]).push({ id: 99, name: 'observer', age: 0 })
+    })
+    const model = createGridClipboardModel(
+      { getColumns: () => columns, getRows: () => sourceRows, onPaste },
+      {
+        getRows: () => sourceRows,
+        setRows: (next) => {
+          committedRows = next
+          return true
+        },
+        getRange: () => null,
+      },
+    )
+
+    expect(model.paste('Grace', { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } })).toBe(true)
+    expect(sourceRows).toHaveLength(2)
+    expect(sourceRows[0]?.name).toBe('Ada')
+    expect(committedRows[0]?.name).toBe('Grace')
   })
 
   it('clamps out-of-bounds ranges and keeps no-range/no-change operations inert', () => {

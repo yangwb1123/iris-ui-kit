@@ -193,7 +193,11 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
     rangeOverride?: TableClipboardRange,
     allowEmptyRows = false,
   ): GridClipboardContext<Row> | null {
-    const sourceRows = this.bindings.getRows()
+    // Bindings may expose a live mutable array (for example a legacy adapter
+    // mirrors its source rows in place). Keep the transaction's source
+    // snapshot private so a paste observer cannot mutate the host-owned list
+    // while inspecting `previousRows`.
+    const sourceRows = [...this.bindings.getRows()]
     const rows = [...(this.options.getRows?.() ?? sourceRows)]
     const columns = this.options.getColumns()
     const range = clampRange(

@@ -57,4 +57,29 @@ describe('IrisTable handle methods (vxe parity, batch T)', () => {
     expect(document.querySelector('[data-iris-table-row="111"]')).not.toBeNull()
     expect(onTreeExpandChange).toHaveBeenLastCalledWith(child, true)
   })
+
+  it('prunes selected descendants when a tree parent is removed', () => {
+    const leaf = { id: 111, name: 'leaf', age: 111 }
+    const child = { id: 11, name: 'child', age: 11, children: [leaf] }
+    const root = { id: 1, name: 'root', age: 1, children: [child] }
+    const ref: { current: IrisTableHandle<typeof root> | null } = { current: null }
+    const onSelectionChange = vi.fn()
+    render(
+      <IrisTable
+        columns={baseColumns as IrisTableColumn<typeof root>[]}
+        data={[root]}
+        rowKey="id"
+        tableRef={ref}
+        getSubRows={(row) => row.children}
+        selectable="multi"
+        defaultSelection={[11, 111]}
+        onSelectionChange={onSelectionChange}
+      />,
+    )
+
+    act(() => ref.current!.removeRow(11))
+
+    expect(onSelectionChange).toHaveBeenLastCalledWith([])
+    expect(root.children?.[0]).toBe(child)
+  })
 })

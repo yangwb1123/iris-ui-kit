@@ -230,7 +230,7 @@ arch-check:ratchet` 当前无阻断项。
 - React/Vue/Solid/Svelte Table 的静态 `getSubRows` row-drag 均改为提交 Core 生成的 canonical root tree；lazy children
   仍保持 adapter-owned，不能表达稳定 `setChildren` 路径时拒绝写回。flat 表格保留原有可见列表排序与 callback
   语义，React 仍由父组件拥有最终数据，只是不会再把静态树的扁平投影冒充根数组。
-- 回归：Core 全量 112/112 files、1,680/1,680 tests；React 268/268、3,050/3,050，Vue 170/170、1,609/1,609，
+- 回归：Core 全量 112/112 files、1,680/1,680 tests；React 268/268、3,051/3,051，Vue 170/170、1,609/1,609，
   Solid 146/146、1,035/1,035、hydration 38/38，Svelte 150/150、1,009/1,009 + hydration 35/35；四端新增
   静态树 drag 回归通过，plugin-pro-table client tree mutation 75/75；四端 typecheck/build 与
   `git diff --check` 通过（既有 warning 保持，不新增 error）。删除树父节点时 Core 现在同时报告整棵可达

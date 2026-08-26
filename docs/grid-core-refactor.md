@@ -523,7 +523,7 @@ sibling list 内执行 remove→insert，并只重建变更节点的 ancestor pa
 缺失 key、重复/循环节点或 computed children 无法通过 `setChildren` 写回时 fail-closed，绝不把扁平子行提交为根数组。
 React/Vue/Solid/Svelte Table 的静态 `getSubRows` row-drag 统一提交该 canonical root tree；lazy children 仍保持
 adapter-owned，flat 表格保留旧的可见列表排序与 callback 语义，React 仍由父组件拥有最终数据。
-Core 全量 112/112 files、1,680/1,680 tests；React 268/268、3,050/3,050，Vue 170/170、1,609/1,609，
+Core 全量 112/112 files、1,680/1,680 tests；React 268/268、3,051/3,051，Vue 170/170、1,609/1,609，
 Solid 146/146、1,035/1,035 + hydration 38/38，Svelte 150/150、1,009/1,009 + hydration 35/35；四端新增
 静态树 drag 回归通过，plugin-pro-table client tree mutation 75/75；四端 typecheck/build 与
 `git diff --check` 通过（仅保留既有 warning）。删除树父节点时 Core 现在同时报告整棵可达子树的 key，

@@ -13,6 +13,7 @@ export default defineConfig({
     'src/undo.ts',
     'src/audit-log.ts',
     'src/perf-stats.ts',
+    'src/grid.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

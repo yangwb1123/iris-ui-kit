@@ -62,6 +62,11 @@
       "types": "./dist/perf-stats.d.ts",
       "import": "./dist/perf-stats.js",
       "require": "./dist/perf-stats.cjs"
+    },
+    "./grid": {
+      "types": "./dist/grid.d.ts",
+      "import": "./dist/grid.js",
+      "require": "./dist/grid.cjs"
     }
   },
   "files": [

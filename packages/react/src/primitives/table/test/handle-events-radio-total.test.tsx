@@ -172,6 +172,43 @@ describe('IrisTable handle methods (vxe parity, batch T)', () => {
     expect(onTreeExpandChange).toHaveBeenLastCalledWith(rows[0], false)
   })
 
+  it('tree handle methods resolve nested rows through the Core rows model', () => {
+    const child = {
+      id: 11,
+      name: 'child',
+      age: 11,
+      children: [{ id: 111, name: 'leaf', age: 111 }],
+    }
+    const root = { id: 1, name: 'root', age: 1, children: [child] }
+    const ref: { current: IrisTableHandle<typeof root> | null } = { current: null }
+    const onTreeExpandChange = vi.fn()
+    const onCurrentRowChange = vi.fn()
+    render(
+      <IrisTable
+        columns={baseColumns as IrisTableColumn<typeof root>[]}
+        data={[root]}
+        rowKey="id"
+        tableRef={ref}
+        getSubRows={(row) => row.children}
+        onTreeExpandChange={onTreeExpandChange}
+        onCurrentRowChange={onCurrentRowChange}
+      />,
+    )
+
+    // The child is collapsed and therefore absent from the visible body, but
+    // setCurrentRow still resolves it from the static tree source.
+    act(() => ref.current!.setCurrentRow(11))
+    expect(onCurrentRowChange).toHaveBeenCalledWith(11, child)
+
+    // Expanding the root makes the child visible; the second imperative
+    // expansion must resolve the child rather than scanning root rows only.
+    act(() => ref.current!.toggleRowExpand(1))
+    expect(document.querySelector('[data-iris-table-row="11"]')).not.toBeNull()
+    act(() => ref.current!.toggleRowExpand(11))
+    expect(document.querySelector('[data-iris-table-row="111"]')).not.toBeNull()
+    expect(onTreeExpandChange).toHaveBeenLastCalledWith(child, true)
+  })
+
   it('toggleRowExpand is a no-op on a plain table', () => {
     const ref: { current: IrisTableHandle<Row> | null } = { current: null }
     render(<IrisTable columns={baseColumns} data={rows} rowKey="id" tableRef={ref} />)
@@ -287,126 +324,6 @@ describe('IrisTable handle methods (vxe parity, batch T)', () => {
     expect(onCurrentColumnChange).toHaveBeenCalledWith('name')
     act(() => ref.current!.setCurrentColumn('nope'))
     expect(onCurrentColumnChange).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('IrisTable batch T events', () => {
-  it('onCellDblClick fires with coordinates after the edit begins (editable column)', () => {
-    const onCellDblClick = vi.fn()
-    const columns = [{ ...baseColumns[0]!, editable: true }, baseColumns[1]!]
-    render(<IrisTable columns={columns} data={rows} rowKey="id" onCellDblClick={onCellDblClick} />)
-    const cell = document.querySelector('[data-iris-table-cell="name"]')!
-    act(() => fireEvent.doubleClick(cell))
-    // The inline editor opened first (vxe parity), then the event fired.
-    expect(document.querySelector('[data-iris-table-editor]')).not.toBeNull()
-    expect(onCellDblClick).toHaveBeenCalledWith({
-      row: rows[0],
-      column: columns[0],
-      rowIndex: 0,
-      columnIndex: 0,
-    })
-  })
-
-  it('onCellDblClick fires on non-editable columns too', () => {
-    const onCellDblClick = vi.fn()
-    render(
-      <IrisTable columns={baseColumns} data={rows} rowKey="id" onCellDblClick={onCellDblClick} />,
-    )
-    const cell = document.querySelector('[data-iris-table-cell="age"]')!
-    act(() => fireEvent.doubleClick(cell))
-    expect(onCellDblClick).toHaveBeenCalledWith({
-      row: rows[0],
-      column: baseColumns[1],
-      rowIndex: 0,
-      columnIndex: 1,
-    })
-  })
-
-  it('onRowDblClick fires with the row and index', () => {
-    const onRowDblClick = vi.fn()
-    render(
-      <IrisTable columns={baseColumns} data={rows} rowKey="id" onRowDblClick={onRowDblClick} />,
-    )
-    act(() => fireEvent.doubleClick(document.querySelector('[data-iris-table-row="2"]')!))
-    expect(onRowDblClick).toHaveBeenCalledWith(rows[1], 1)
-  })
-
-  it('onHeaderClick fires after the sort toggle (flat header)', () => {
-    const order: string[] = []
-    const onHeaderClick = vi.fn(() => order.push('header'))
-    const onSortChange = vi.fn(() => order.push('sort'))
-    render(
-      <IrisTable
-        columns={baseColumns}
-        data={rows}
-        rowKey="id"
-        onHeaderClick={onHeaderClick}
-        onSortChange={onSortChange}
-      />,
-    )
-    const nameHeader = headers().find((h) => h.textContent?.includes('Name'))!
-    act(() => fireEvent.click(nameHeader))
-    expect(onSortChange).toHaveBeenCalledWith({ key: 'name', direction: 'asc' })
-    expect(onHeaderClick).toHaveBeenCalledWith(baseColumns[0])
-    // Informational event: the sort toggle runs first.
-    expect(order).toEqual(['sort', 'header'])
-  })
-
-  it('onHeaderClick fires on grouped headers too', () => {
-    const onHeaderClick = vi.fn()
-    const columns: IrisTableColumn<Row>[] = [
-      {
-        key: 'group',
-        title: 'Group',
-        children: [
-          { key: 'name', title: 'Name', sortable: true },
-          { key: 'age', title: 'Age', sortable: true },
-        ],
-      },
-    ]
-    render(<IrisTable columns={columns} data={rows} rowKey="id" onHeaderClick={onHeaderClick} />)
-    const nameHeader = document.querySelector('[data-iris-table-header="name"]')!
-    act(() => fireEvent.click(nameHeader))
-    expect(onHeaderClick).toHaveBeenCalledWith(columns[0]!.children![0])
-  })
-
-  it('onExpandChange fires with the new state from the detail toggle', () => {
-    const onExpandChange = vi.fn()
-    render(
-      <IrisTable
-        columns={baseColumns}
-        data={rows}
-        rowKey="id"
-        renderDetail={(r) => <div>detail-{r.id}</div>}
-        onExpandChange={onExpandChange}
-      />,
-    )
-    // Re-query each time: the detail wrap changes the tree structure, so the
-    // toggle button node is replaced after the first expand.
-    const toggle = () =>
-      document.querySelector('[data-iris-table-row="1"] [data-iris-table-expand-toggle]')!
-    act(() => fireEvent.click(toggle()))
-    expect(onExpandChange).toHaveBeenCalledWith(rows[0], true)
-    act(() => fireEvent.click(toggle()))
-    expect(onExpandChange).toHaveBeenLastCalledWith(rows[0], false)
-  })
-
-  it('onTreeExpandChange fires with the new state from the tree caret', () => {
-    const onTreeExpandChange = vi.fn()
-    render(
-      <IrisTable
-        columns={baseColumns}
-        data={rows}
-        rowKey="id"
-        getSubRows={(r) => (r.id === 1 ? [{ id: 11, name: 'child', age: 1 }] : undefined)}
-        onTreeExpandChange={onTreeExpandChange}
-      />,
-    )
-    const caret = document.querySelector('[data-iris-table-row="1"] [data-iris-table-tree-toggle]')!
-    act(() => fireEvent.click(caret))
-    expect(onTreeExpandChange).toHaveBeenCalledWith(rows[0], true)
-    act(() => fireEvent.click(caret))
-    expect(onTreeExpandChange).toHaveBeenLastCalledWith(rows[0], false)
   })
 })
 

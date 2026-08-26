@@ -215,6 +215,7 @@ export {
   writeClipboardText,
   type TableClipboardColumn,
   type TableClipboardRange,
+  type TableClipboardValueResolver,
   type TableCopyFormat,
 } from './table-clipboard'
 export { detectAutoLink } from './auto-link'
@@ -239,9 +240,11 @@ export {
 } from './selection'
 export {
   createTreeSelection,
+  flattenTreeSelectionNodes,
   type TreeSelectionModel,
   type TreeSelectionConfig,
   type TreeSelectionNode,
+  type TreeSelectionRowsOptions,
 } from './tree-selection'
 export {
   nextEnabledIndex,
@@ -436,6 +439,7 @@ export {
   type PluginRegistry,
   type CollectedRegistrations,
 } from './plugin'
+export * from './grid'
 export {
   createCellRange,
   type CellAddress,

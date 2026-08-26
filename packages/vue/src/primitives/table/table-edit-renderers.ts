@@ -9,7 +9,8 @@ export interface TableRowEditSession {
 export interface TableEditorRenderContext {
   rowEditorRefs: Map<string, HTMLInputElement | null>
   editorInputRef: Ref<HTMLInputElement | null>
-  editingDraft: Ref<string>
+  editingDraft: Readonly<Ref<string>>
+  setEditingDraft: (draft: string) => void
   editError: Readonly<Ref<string | null>>
   commitEdit: (row: Record<string, unknown>, col: IrisTableColumn, index: number) => void
   cancelEdit: () => void
@@ -138,7 +139,7 @@ export function renderCellEditContent(
     'aria-invalid': error ? 'true' : undefined,
     'aria-describedby': error ? `${editCellId}-error` : undefined,
     onInput: (e: Event) => {
-      ctx.editingDraft.value = (e.target as HTMLInputElement).value
+      ctx.setEditingDraft((e.target as HTMLInputElement).value)
     },
     onKeydown: (e: KeyboardEvent) => {
       if (e.key === 'Enter') {

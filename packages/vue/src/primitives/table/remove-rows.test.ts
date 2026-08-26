@@ -7,6 +7,7 @@ import type { IrisTableColumn, IrisTableExpose } from './types'
 enableAutoUnmount(afterEach)
 
 type Row = { id: number; name: string }
+type TreeRow = Row & { children?: TreeRow[] }
 
 const columns: IrisTableColumn<Row>[] = [{ key: 'name', title: 'Name' }]
 const rows: Row[] = [
@@ -70,5 +71,27 @@ describe('IrisTable expose.removeRows', () => {
     await nextTick()
     expect(wrapper.findAll('[data-iris-table-row=""]').length).toBe(3)
     expect(onDataChange).not.toHaveBeenCalled()
+  })
+
+  it('removes a static tree child through the shared rows transaction', async () => {
+    const treeData: TreeRow[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'Child' }] }]
+    const onDataChange = vi.fn()
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: treeData,
+        rowKey: 'id',
+        getSubRows: (row) => row.children,
+        tableRef: undefined,
+        onDataChange,
+      },
+    })
+    const expose = wrapper.vm as unknown as IrisTableExpose<TreeRow>
+
+    expose.removeRows([2])
+    await nextTick()
+
+    expect(onDataChange).toHaveBeenCalledWith([{ id: 1, name: 'Root', children: [] }])
+    expect(treeData[0]?.children).toHaveLength(1)
   })
 })

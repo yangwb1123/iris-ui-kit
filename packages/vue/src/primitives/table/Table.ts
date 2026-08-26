@@ -17,23 +17,19 @@ import {
   compareStates,
   applyTableMask,
   createAuditLog,
-  createCellRange,
-  createExpansion,
-  createSelectionModel,
   createSortable,
   detectColumnType,
   createTreeSelection,
+  flattenTreeSelectionNodes,
   flattenLeafColumns,
   flattenTree,
   mergeFormFilters,
-  removeRowsFromList,
   seedFormValues,
   tableDisplayText,
   toCsvRows,
   validateEditRulesAsync,
   withSortedChildren,
   type AuditLogType,
-  type CellRangeState,
   type DetectedColumnType,
   type SortableRect,
   type SortableState,
@@ -41,13 +37,23 @@ import {
   type TreeRow,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import {
+  useGridCore,
+  useGridEditing,
+  useGridExpansion,
+  useGridFiltering,
+  useGridRange,
+  useGridRows,
+  useGridSelection,
+  useGridSorting,
+} from '../../grid'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
 import { useDismiss } from '../floating/useDismiss'
 import { useFloating } from '../floating/useFloating'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import { tableProps } from './props'
-import { useTableSort } from './useTableSort'
+import { buildMultiSortComparator } from './useTableSort'
 import { mergeFilterValues, useTableProxy } from './useTableProxy'
 import { exportCsv as serializeTableCsv } from './exportCsv'
 import { renderFormSection, renderPagerSection, renderToolbarSection } from './table-sections'
@@ -257,27 +263,18 @@ export const IrisTable = defineComponent({
       { immediate: true },
     )
 
-    const {
-      sortState: internalSort,
-      cycleSort,
-      setSort,
-      sortComparator,
-      sortedData: sortedRows,
-      multiSortState,
-      cycleMultiSort,
-    } = useTableSort<Record<string, unknown>>(tableData, {
-      leafColumns,
-      sort: computed(() => props.sort as IrisTableSortState | null | undefined),
+    const gridCore = useGridCore<Record<string, unknown>>()
+
+    const sorting = useGridSorting<Record<string, unknown>>(gridCore, {
+      mode: props.multiSort ? 'multiple' : 'single',
       defaultSort: props.defaultSort,
+      defaultMultiSort: props.defaultMultiSort,
       onSortChange: (next) => {
         emit('update:sort', next)
         // remoteSort parity: sort changes re-query the server (page resets
         // to 1 in the core controller, vxe behavior).
         if (remoteSort.value) proxyCtrl.setParams({ sort: next })
       },
-      multiSort: () => props.multiSort,
-      multiSortState: () => props.multiSortState,
-      defaultMultiSort: props.defaultMultiSort,
       onMultiSortChange: (next) => {
         emit('update:multiSortState', next)
         emit('multiSortChange', next)
@@ -285,6 +282,44 @@ export const IrisTable = defineComponent({
         // server; the single `sort` param stays the single-column channel.
         if (remoteSort.value) proxyCtrl.setParams({ sorts: next })
       },
+    })
+
+    watch(
+      () => props.sort,
+      (next) => next !== undefined && sorting.model.syncSort(next ?? null),
+      { immediate: true },
+    )
+    watch(
+      () => props.multiSortState,
+      (next) => next !== undefined && sorting.model.syncMultiSort(next ?? []),
+      { immediate: true },
+    )
+
+    const internalSort = computed<IrisTableSortState | null>(() =>
+      props.sort !== undefined ? (props.sort ?? null) : sorting.sort.value,
+    )
+    const multiSortState = computed<IrisTableSortState[]>(() =>
+      props.multiSortState !== undefined ? props.multiSortState : sorting.multiSort.value,
+    )
+    const setSort = (next: IrisTableSortState | null): void => sorting.model.setSort(next)
+    const cycleSort = (column: IrisTableColumn): void => {
+      if (column.sortable) sorting.model.cycleSort(column.key)
+    }
+    const cycleMultiSort = (column: IrisTableColumn): void => {
+      if (column.sortable) sorting.model.cycleMultiSort(column.key)
+    }
+    const sortComparator = computed<
+      ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
+    >(() =>
+      buildMultiSortComparator(leafColumns.value, internalSort.value ? [internalSort.value] : []),
+    )
+    const multiSortComparator = computed<
+      ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
+    >(() => buildMultiSortComparator(leafColumns.value, multiSortState.value))
+    const sortedRows = computed(() => {
+      if (remoteSort.value) return tableData.value
+      const compare = props.multiSort ? multiSortComparator.value : sortComparator.value
+      return compare ? [...tableData.value].sort(compare) : tableData.value
     })
 
     const tableViews = createTableViewsController({
@@ -295,6 +330,30 @@ export const IrisTable = defineComponent({
     })
     // remoteSort parity: the server owns the ordering — never re-sort locally.
     const sortedData = computed(() => (remoteSort.value ? tableData.value : sortedRows.value))
+
+    // Filtering state is feature-owned; formApplied remains adapter-owned
+    // because form keystrokes are draft-only until submit/reset.
+    const filtering = useGridFiltering<Record<string, unknown>>(gridCore, {
+      defaultFilters: props.filters,
+      defaultFilterValues: props.filterValues,
+      onFilterValuesChange: (next) => props.onFilterValuesChange?.(next),
+    })
+    watch(
+      () => props.filters,
+      (next) => next !== undefined && filtering.model.syncFilters(next),
+      { immediate: true },
+    )
+    watch(
+      () => props.filterValues,
+      (next) => next !== undefined && filtering.model.syncFilterValues(next),
+      { immediate: true },
+    )
+    const effectiveFilters = computed<Record<string, string>>(() =>
+      props.filters !== undefined ? props.filters : filtering.filters.value,
+    )
+    const effectiveFilterValues = computed(() =>
+      props.filterValues !== undefined ? props.filterValues : filtering.filterValues.value,
+    )
     // remoteSort parity: hand the sort state to the server. Header clicks are
     // pushed via the onSortChange/onMultiSortChange wrappers above; these
     // watches cover controlled `sort`/`multiSortState` prop updates from the
@@ -339,7 +398,7 @@ export const IrisTable = defineComponent({
     // checked filter sets, merged into ONE map (vxe filter-multiple remote
     // serialization parity, React parity).
     const mergedProxyFilters = (form: Record<string, string>): Record<string, string> =>
-      mergeFilterValues(mergeFormFilters(props.filters ?? {}, form), props.filterValues ?? {})
+      mergeFilterValues(mergeFormFilters(effectiveFilters.value, form), effectiveFilterValues.value)
     const handleFormSubmit = (): void => {
       const values = buildFormValues(props.formConfig?.fields, formDraft.value)
       props.formConfig?.onSearch?.(values)
@@ -371,7 +430,7 @@ export const IrisTable = defineComponent({
     // form state so `formApplied` is referenced; setParams dedupes unchanged
     // filters.
     watch(
-      [formApplied, () => props.filters, () => props.filterValues],
+      [formApplied, effectiveFilters, effectiveFilterValues],
       () => {
         if (proxyCtrl.proxy.value && remoteFilter.value) {
           proxyCtrl.setParams({
@@ -382,29 +441,49 @@ export const IrisTable = defineComponent({
       { immediate: true },
     )
 
-    // -------- Selection (single-sourced via core createSelectionModel) --------
+    // -------- Selection (single-sourced via the shared Grid Core feature) --------
     // The model owns the selected-key set plus the toggle / dedup / select-all
     // logic; the table keeps only its controlled-or-uncontrolled value shape
     // (`Array<string | number>`) and the row-id mapping. It runs in the default
     // `multiple` mode so `selectable` stays runtime-reactive — single-select is a
     // replace (`set`) and multi-select a `toggle`, matching the previous behavior.
+    const gridRows = useGridRows(gridCore, tableData.value, {
+      getRowKey: (row, index) => rowId(row, index),
+      // Static tree children share the Core rows mutation boundary. Lazy
+      // children remain adapter-owned because they live in a cache map.
+      getChildren: props.getSubRows,
+      onRowsChange: (transaction) => {
+        if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = [...transaction.rows]
+        else localRowsOverride.value = [...transaction.rows]
+      },
+    })
+    watch(tableData, (rows) => gridRows.model.sync(rows))
     const selControlled = computed(() => props.selection !== undefined)
-    const selectionModel = createSelectionModel<string | number>({
-      defaultSelected: props.selection ?? props.defaultSelection ?? [],
+    const { model: selectionModel, selection: selectedKeys } = useGridSelection<
+      Record<string, unknown>,
+      string | number
+    >(gridCore, {
+      mode: 'multiple',
+      value: props.selection,
+      defaultValue: props.defaultSelection,
       onChange: (keys) => emit('update:selection', keys),
     })
-    const selectedKeys = shallowRef<Array<string | number>>(selectionModel.get())
-    onBeforeUnmount(
-      selectionModel.store.subscribe((keys) => {
-        selectedKeys.value = keys
-      }),
-    )
-    // Controlled: mirror the prop into the model without re-emitting onChange.
+    // The bridge is installed once in setup; keep its feature-owned model in
+    // sync with later prop changes too. This preserves the latest controlled
+    // value when a table switches back to uncontrolled mode.
     watch(
       () => props.selection,
-      (sel) => {
-        if (sel !== undefined) selectionModel.sync(sel)
+      (selection) => {
+        if (selection === undefined) return
+        const current = selectionModel.get()
+        if (
+          current.length !== selection.length ||
+          current.some((key, index) => !Object.is(key, selection[index]))
+        ) {
+          selectionModel.sync(selection)
+        }
       },
+      { immediate: true },
     )
     // Controlled tables RENDER from the prop (true controlled semantics): a local
     // toggle emits update:selection, but the displayed selection only changes when
@@ -421,23 +500,17 @@ export const IrisTable = defineComponent({
       if (selControlled.value) selectionModel.sync(props.selection as Array<string | number>)
     }
 
-    // -------- Expandable detail rows (single-sourced via core createExpansion) --------
+    // -------- Expandable detail rows (single-sourced via the shared Grid Core) --------
     // A leading toggle column + a full-width detail panel beneath an expanded
     // row, driven by the framework-agnostic expansion model (multiple-open). The
     // keys are the row keys as strings (matching React). Mirrors the selection
     // pattern: shallowRef + subscribe so toggling re-renders.
     const hasDetail = computed(() => props.renderDetail !== undefined)
-    const expansion = createExpansion({
+    const { model: expansion, expandedKeys } = useGridExpansion(gridCore, {
       mode: 'multiple',
-      defaultExpanded: (props.defaultExpandedRowKeys ?? []).map(String),
+      defaultValue: (props.defaultExpandedRowKeys ?? []).map(String),
       onChange: (keys) => emit('expandedRowsChange', keys),
     })
-    const expandedKeys = shallowRef<string[]>(expansion.get())
-    onBeforeUnmount(
-      expansion.store.subscribe((keys) => {
-        expandedKeys.value = keys
-      }),
-    )
     const isRowExpandable = (row: Record<string, unknown>, idx: number): boolean =>
       hasDetail.value && (props.rowExpandable ? props.rowExpandable(row, idx) : true)
 
@@ -542,12 +615,12 @@ export const IrisTable = defineComponent({
     const filteredData = computed(() => {
       if (remoteFilter.value) return sortedData.value
       const merged: Record<string, string> = proxyCtrl.proxy.value
-        ? (props.filters ?? {})
-        : mergeFormFilters(props.filters ?? {}, formApplied.value)
+        ? effectiveFilters.value
+        : mergeFormFilters(effectiveFilters.value, formApplied.value)
       const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
       // Batch Z: per-column checked sets OR-match the raw String(value); a set
       // applies only when non-empty. AND-ed with the text channel below.
-      const checkedEntries = Object.entries(props.filterValues ?? {}).filter(
+      const checkedEntries = Object.entries(effectiveFilterValues.value).filter(
         ([, values]) => values.length > 0,
       )
       if (active.length === 0 && checkedEntries.length === 0) return sortedData.value
@@ -577,23 +650,14 @@ export const IrisTable = defineComponent({
     const treeSelectionNodes = computed<TreeSelectionNode<string | number>[]>(() => {
       const getChildren = props.getSubRows
       if (!cascadingTreeSelection.value || !getChildren) return []
-
-      const nodes: TreeSelectionNode<string | number>[] = []
-      const seen = new Set<string | number>()
       let rowIndex = 0
-      const walk = (rows: Array<Record<string, unknown>>, parentKey?: string | number): void => {
-        for (const row of rows) {
-          const key = rowId(row, rowIndex)
-          rowIndex += 1
-          if (seen.has(key)) continue
-          seen.add(key)
-          nodes.push({ key, parentKey })
-          const children = getChildren(row)
-          if (children && children.length > 0) walk(children, key)
-        }
-      }
-      walk(sortedData.value)
-      return nodes
+      return flattenTreeSelectionNodes(sortedData.value, {
+        // Keep the legacy fallback key's global pre-order ordinal. The core
+        // helper owns recursion and duplicate/cycle protection; this closure
+        // only supplies the table's existing row-id policy.
+        getKey: (row) => rowId(row, rowIndex++),
+        getChildren,
+      })
     })
     const compactTreeSelectionSeed = (keys: Array<string | number>): Array<string | number> => {
       const selected = new Set(keys)
@@ -679,82 +743,15 @@ export const IrisTable = defineComponent({
       selectionModel.set([...allRowIds.value])
     }
 
-    // -------- Inline editing --------
-    /** Encode a unique cell identity: row id + column key. */
-    const editingCellId = ref<string | null>(null)
-    const editingColumnKey = ref<string | null>(null)
-    const editingDraft = ref<string>('')
-    const editError = ref<string | null>(null)
+    // -------- Inline editing (cell mode is Grid Core-owned) --------
     const editorInputRef = ref<HTMLInputElement | null>(null)
-
-    const beginEdit = (
-      row: Record<string, unknown>,
-      column: IrisTableColumn,
-      rowIdent: string | number,
-    ) => {
-      // Batch EK: a formula column is display-only — never enters cell mode.
-      if (!isEditableColumn(column)) return
-      editingCellId.value = cellId(rowIdent, column.key)
-      editingColumnKey.value = column.key
-      const current = getCellValue(row, column)
-      editingDraft.value = current == null ? '' : String(current)
-      editError.value = null
-      void nextTick(() => editorInputRef.value?.focus())
-    }
-
-    const commitEdit = (
-      row: Record<string, unknown>,
-      column: IrisTableColumn,
-      rowIndex: number,
-    ) => {
-      if (editingCellId.value === null) return
-      const oldValue = getCellValue(row, column)
-      const draft = editingDraft.value
-      const newValue =
-        column.editor === 'number'
-          ? draft === '' || Number.isNaN(Number(draft))
-            ? oldValue
-            : Number(draft)
-          : draft
-      // Declarative editRules run async; the legacy validate callback stays sync.
-      if (column.editRules && column.editRules.length > 0) {
-        const context = { rows: tableData.value, columnKey: column.key }
-        validateEditRulesAsync(column.editRules, draft, row, false, context).then((r) => {
-          if (!r.valid) {
-            editError.value = r.messages[0] ?? null
-            return
-          }
-          finishCommit(row, column, rowIndex, oldValue, newValue)
-        })
-        return
-      }
-      // A column validator keeps the editor open until the draft is valid.
-      if (column.validate) {
-        const error = column.validate(newValue, row)
-        if (error) {
-          editError.value = error
-          return
-        }
-      }
-      finishCommit(row, column, rowIndex, oldValue, newValue)
-      editError.value = null
-      editingCellId.value = null
-      if (newValue !== oldValue) {
-        emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
-      }
-    }
-
-    /** Shared write-back for a committed value (both edit modes, batch Z):
-     * emits `cellEdit` and patches the proxy live copy (React liveData
-     * parity — committed edits survive until the next refetch replaces the
-     * list wholesale). */
-    const writeCellValue = (
+    const recordCellCommit = (
       row: Record<string, unknown>,
       column: IrisTableColumn,
       rowIndex: number,
       oldValue: unknown,
       newValue: unknown,
-    ) => {
+    ): void => {
       if (newValue === oldValue) return
       // Batch EN (iris 独有): record ONE audit entry per inline/row edit
       // commit AT the commit point — no list diff, because non-proxy edits
@@ -772,38 +769,98 @@ export const IrisTable = defineComponent({
         })
       }
       emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
-      if (proxyCtrl.proxy.value) {
-        const id = rowId(row, rowIndex)
-        const idx = proxyCtrl.liveData.value.findIndex((r, i) => rowId(r, i) === id)
-        if (idx >= 0) {
-          const key = (column.dataIndex ?? column.key) as string
-          const next = { ...proxyCtrl.liveData.value[idx], [key]: newValue }
-          proxyCtrl.liveData.value = [
-            ...proxyCtrl.liveData.value.slice(0, idx),
-            next,
-            ...proxyCtrl.liveData.value.slice(idx + 1),
-          ]
+    }
+
+    const cellEditing = useGridEditing<Record<string, unknown>>(gridCore, {
+      getRowKey: (row, index) => rowId(row, index),
+      getRowIndex: (rowKey) => {
+        const index = bodyData.value.findIndex((row, rowIndex) =>
+          Object.is(rowId(row, rowIndex), rowKey),
+        )
+        return index >= 0 ? index : undefined
+      },
+      getRules: (columnKey) =>
+        leafColumns.value.find((column) => column.key === columnKey)?.editRules,
+      getValue: (row, columnKey) => {
+        const column = leafColumns.value.find((candidate) => candidate.key === columnKey)
+        return column ? getCellValue(row, column) : row[columnKey]
+      },
+      setValue: (row, columnKey, value) => {
+        const column = leafColumns.value.find((candidate) => candidate.key === columnKey)
+        const key = (column?.dataIndex ?? column?.key ?? columnKey) as string
+        return { ...row, [key]: value }
+      },
+      coerce: (draft, row, columnKey) => {
+        const column = leafColumns.value.find((candidate) => candidate.key === columnKey)
+        if (column?.editor !== 'number') return draft
+        const text = String(draft ?? '')
+        if (text === '' || Number.isNaN(Number(text))) {
+          return column ? getCellValue(row, column) : draft
         }
+        return Number(text)
+      },
+      validate: (value, row, columnKey) => {
+        const column = leafColumns.value.find((candidate) => candidate.key === columnKey)
+        return column?.validate?.(value, row) ?? null
+      },
+      isEditable: (_row, columnKey) => {
+        const column = leafColumns.value.find((candidate) => candidate.key === columnKey)
+        return Boolean(column && isEditableColumn(column))
+      },
+      onCommit: (commit) => {
+        const column = leafColumns.value.find((candidate) => candidate.key === commit.columnKey)
+        if (column)
+          recordCellCommit(commit.row, column, commit.rowIndex, commit.oldValue, commit.value)
+      },
+    })
+    const editingState = cellEditing.state
+    const editingCellId = computed(() => {
+      const target = editingState.value.editing
+      return target ? cellId(target.rowKey, target.columnKey) : null
+    })
+    const editingColumnKey = computed(() => editingState.value.editing?.columnKey ?? null)
+    const editingDraft = computed(() => String(editingState.value.draft ?? ''))
+    const editError = computed(() => editingState.value.error)
+    const setEditingDraft = (draft: string): void => cellEditing.setCellDraft(draft)
+
+    const beginEdit = (
+      row: Record<string, unknown>,
+      column: IrisTableColumn,
+      rowIdent: string | number,
+    ): void => {
+      // Batch EK: a formula column is display-only — never enters cell mode.
+      if (!isEditableColumn(column)) return
+      const current = getCellValue(row, column)
+      if (cellEditing.startCellEdit(rowIdent, column.key, current == null ? '' : String(current))) {
+        void nextTick(() => editorInputRef.value?.focus())
       }
     }
 
-    const finishCommit = (
+    const commitEdit = (
+      _row: Record<string, unknown>,
+      _column: IrisTableColumn,
+      _rowIndex: number,
+    ): void => {
+      cellEditing.commitCellEdit()
+    }
+    const cancelEdit = (): void => cellEditing.cancelCellEdit()
+
+    /** Shared write-back for a committed value (row mode, batch Z): emits
+     * `cellEdit` and patches the proxy live copy. Cell mode commits update
+     * the same source through the Grid Core rows feature. */
+    const writeCellValue = (
       row: Record<string, unknown>,
       column: IrisTableColumn,
       rowIndex: number,
       oldValue: unknown,
       newValue: unknown,
     ) => {
-      editError.value = null
-      editingCellId.value = null
-      editingColumnKey.value = null
-      writeCellValue(row, column, rowIndex, oldValue, newValue)
-    }
-
-    const cancelEdit = () => {
-      editError.value = null
-      editingCellId.value = null
-      editingColumnKey.value = null
+      if (newValue === oldValue) return
+      recordCellCommit(row, column, rowIndex, oldValue, newValue)
+      if (proxyCtrl.proxy.value) {
+        const key = (column.dataIndex ?? column.key) as string
+        gridRows.model.update(rowId(row, rowIndex), { [key]: newValue }, { reason: 'cell-edit' })
+      }
     }
 
     // -------- Row edit mode (vxe editConfig.mode='row' parity, batch Z) --------
@@ -824,7 +881,9 @@ export const IrisTable = defineComponent({
     /** Resolve the CURRENT row object by key (a committed column's write-back
      * replaces the proxy live row, so later commits must see the fresh object). */
     const currentRowFor = (k: string | number): Record<string, unknown> | undefined =>
-      bodyData.value.find((r, i) => rowId(r, i) === k)
+      // Static tree children are indexed by the shared Core rows model. Keep
+      // the visible-body fallback for proxy/lazy rows owned by this adapter.
+      gridRows.model.find(k) ?? bodyData.value.find((r, i) => rowId(r, i) === k)
 
     const beginRowEdit = (
       row: Record<string, unknown>,
@@ -973,6 +1032,7 @@ export const IrisTable = defineComponent({
       rowEditorRefs,
       editorInputRef,
       editingDraft,
+      setEditingDraft,
       editError,
       commitEdit,
       cancelEdit,
@@ -1164,7 +1224,7 @@ export const IrisTable = defineComponent({
       renderTableFilterTrigger({
         column: col,
         leaf,
-        active: (props.filterValues?.[col.key]?.length ?? 0) > 0,
+        active: (effectiveFilterValues.value[col.key]?.length ?? 0) > 0,
         open: filterPanelState.value?.open === true && filterPanelState.value.colKey === col.key,
         label: t('table.filter'),
         onOpen: openFilterPanel,
@@ -1192,15 +1252,9 @@ export const IrisTable = defineComponent({
     })
 
     // -------- Cell-range selection (opt-in via `cellRange`) --------
-    // The controller is created once and bridged into Vue reactivity via a
-    // shallowRef subscribed to the store.
-    const cellRangeCtrl = createCellRange()
-    const cellRangeState = shallowRef<CellRangeState>(cellRangeCtrl.getState())
-    onBeforeUnmount(
-      cellRangeCtrl.subscribe((s) => {
-        cellRangeState.value = s
-      }),
-    )
+    // Range state shares the per-table Grid Core; Vue retains only the
+    // reactive snapshot plus pointer/keyboard/render wiring.
+    const { model: cellRangeCtrl, state: cellRangeState } = useGridRange(gridCore)
     const rootRef = ref<HTMLElement | null>(null)
     let responsiveObserver: ResizeObserver | null = null
     const measureResponsiveWidth = (): void => {
@@ -1405,11 +1459,8 @@ export const IrisTable = defineComponent({
         if (from >= 0 && to >= 0 && from !== to) {
           const [moved] = rows.splice(from, 1)
           rows.splice(to, 0, moved)
-          // Reorder through the LOCAL rows ref (proxy liveData / local
-          // override) so the table renders the new order immediately, then
-          // report through onDataChange + the config callback (React parity).
-          if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
-          else localRowsOverride.value = rows
+          // Adapter-owned gesture; Grid Core owns the row-list transaction.
+          gridRows.model.commit(rows, { reason: 'row-drag' })
           props.onDataChange?.(rows)
           props.rowDrag.onReorder(rows)
         }
@@ -1474,8 +1525,7 @@ export const IrisTable = defineComponent({
         // funnel — record the light diff (type 'edit', react commitRowList
         // default parity) before the write flips the reactive source.
         recordAudit(rows, 'edit')
-        if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
-        else localRowsOverride.value = rows
+        gridRows.model.loadData(rows)
         props.onDataChange?.(rows)
       },
       reloadData: () => {
@@ -1490,15 +1540,16 @@ export const IrisTable = defineComponent({
         return { page: s.params.page, pageSize: s.params.pageSize, total: s.total }
       },
       removeRows: (keys) => {
-        const { rows, removedKeys } = removeRowsFromList(tableData.value, props.rowKey, keys)
-        if (removedKeys.size === 0) return
+        const removedKeys = gridRows.model.removeMany(keys)
+        if (removedKeys.length === 0) return
+        const rows = gridRows.model.get()
         // Batch EN: record ONE 'remove' entry from the light diff (the first
-        // removed row key carries the structural context) before the write.
+        // removed row key carries the structural context) after the core
+        // transaction has produced its immutable next snapshot.
         recordAudit(rows, 'remove')
-        if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
-        else localRowsOverride.value = rows
         const selected = displaySelection.value
-        const nextSelection = selected.filter((key) => !removedKeys.has(key))
+        const removed = new Set(removedKeys)
+        const nextSelection = selected.filter((key) => !removed.has(key))
         if (nextSelection.length !== selected.length) {
           rebaseToProp()
           selectionModel.set(nextSelection)
@@ -1735,7 +1786,7 @@ export const IrisTable = defineComponent({
       // Never let the trigger click reach the header cell (which would sort).
       e.stopPropagation()
       filterAnchorRef.value = e.currentTarget as HTMLButtonElement
-      filterDraft.value = [...(props.filterValues?.[colKey] ?? [])]
+      filterDraft.value = [...(effectiveFilterValues.value[colKey] ?? [])]
       filterPanelState.value = { open: true, colKey }
     }
     const filterPanelOpen = computed(() => filterPanelState.value?.open === true)
@@ -1760,12 +1811,10 @@ export const IrisTable = defineComponent({
       document.removeEventListener('scroll', closeFilterPanel, true)
     })
     const applyFilterValues = (colKey: string, values: string[]): void => {
-      props.onFilterValuesChange?.({ ...(props.filterValues ?? {}), [colKey]: values })
+      filtering.model.setFilterValues({ ...effectiveFilterValues.value, [colKey]: values })
     }
     const clearFilterValues = (colKey: string): void => {
-      const next = { ...(props.filterValues ?? {}) }
-      delete next[colKey]
-      props.onFilterValuesChange?.(next)
+      filtering.model.clearColumnFilterValues(colKey)
     }
     const toggleFilterDraft = (value: string): void => {
       filterDraft.value = filterDraft.value.includes(value)
@@ -1780,7 +1829,7 @@ export const IrisTable = defineComponent({
         panelRef: filterPanelRef,
         filterDraft,
         columns: displayColumns.value,
-        filterValues: props.filterValues,
+        filterValues: effectiveFilterValues.value,
         t,
         close: closeFilterPanel,
         toggle: toggleFilterDraft,

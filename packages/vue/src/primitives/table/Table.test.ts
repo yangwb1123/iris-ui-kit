@@ -300,6 +300,33 @@ describe('IrisTable', () => {
     expect(emitted.at(-1)).toEqual([])
   })
 
+  it('keeps the latest controlled selection when switching back to uncontrolled mode', async () => {
+    const emitted: Array<Array<string | number>> = []
+    const value = ref<Array<string | number>>([1])
+    const controlled = ref(true)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns,
+            data: rows,
+            rowKey: 'id',
+            selectable: 'multi',
+            selection: controlled.value ? value.value : undefined,
+            'onUpdate:selection': (next: Array<string | number>) => emitted.push(next),
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    controlled.value = false
+    await nextTick()
+
+    const bodyCheckboxes = () =>
+      wrapper.findAll<HTMLInputElement>('[data-iris-table-row] [data-iris-checkbox] input')
+    await bodyCheckboxes()[1]!.trigger('change')
+    expect(emitted.at(-1)).toEqual([1, 2])
+  })
+
   it('select-all checkbox input carries a default aria-label of "Select all"', () => {
     const wrapper = mount(IrisTable, {
       props: { columns, data: rows, rowKey: 'id', selectable: 'multi' },

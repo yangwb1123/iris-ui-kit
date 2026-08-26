@@ -24,6 +24,7 @@
 
 // ── Layer 0 ──────────────────────────────────────────────────────────────────
 export { useStore, useStoreSelector } from './useStore'
+export * from './grid'
 export { useReconnectingSource } from './useReconnectingSource'
 export { useResilientFetcher } from './useResilientFetcher'
 export { useDisposableScope } from './useDisposableScope'

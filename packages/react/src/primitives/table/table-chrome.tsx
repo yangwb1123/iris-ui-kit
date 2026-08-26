@@ -1,14 +1,13 @@
 import * as React from 'react'
-import type { RemoteTableParams, RemoteTableSourceState } from '@iris-ui-kit/core'
+import type { GridPaginationState } from '@iris-ui-kit/core/grid'
 import { IrisButton } from '../button/Button'
 import { IrisFormField } from '../form-field/FormField'
 import { IrisInput } from '../input/Input'
 import { IrisPagination } from '../pagination'
 import { IrisSelect } from '../select/Select'
 import type { UseI18nReturn } from '../../i18n'
-import type { IrisTableFormConfig, IrisTablePagerConfig, IrisTableProxyConfig } from './props'
+import type { IrisTableFormConfig, IrisTablePagerConfig } from './props'
 
-type Row = Record<string, unknown>
 type Translate = UseI18nReturn['t']
 
 export interface TableFormProps {
@@ -75,21 +74,21 @@ export function TableForm({ config, draft, setValue, onSubmit, onReset, t }: Tab
 }
 
 export interface TablePagerProps {
-  proxyState: RemoteTableSourceState<Row>
+  pagination: GridPaginationState
   config: IrisTablePagerConfig | undefined
   borderTop: string
-  setParams: (partial: Partial<RemoteTableParams>) => void
-  onPageChange: IrisTableProxyConfig<Row>['onPageChange'] | undefined
+  setPage: (page: number) => void
+  setPageSize: (pageSize: number) => void
   t: Translate
 }
 
 /** Server-side pager chrome for a live proxy source. */
 export function TablePager({
-  proxyState,
+  pagination,
   config,
   borderTop,
-  setParams,
-  onPageChange,
+  setPage,
+  setPageSize,
   t,
 }: TablePagerProps) {
   return (
@@ -110,7 +109,7 @@ export function TablePager({
             data-iris-table-total=""
             style={{ color: 'var(--iris-muted)', whiteSpace: 'nowrap' }}
           >
-            {t('table.total', { total: proxyState.total })}
+            {t('table.total', { total: pagination.total })}
           </span>
         ) : null}
         {config?.pageSizes && config.pageSizes.length > 0 ? (
@@ -119,23 +118,18 @@ export function TablePager({
               value: String(size),
               label: `${size} / ${t('table.page')}`,
             }))}
-            value={String(proxyState.params.pageSize)}
+            value={String(pagination.pageSize)}
             onValueChange={(value) => {
-              const size = Number(value)
-              setParams({ pageSize: size, page: 1 })
-              onPageChange?.(1, size)
+              setPageSize(Number(value))
             }}
             aria-label={t('table.pageSize')}
           />
         ) : null}
         <IrisPagination
-          total={proxyState.total}
-          pageSize={proxyState.params.pageSize}
-          value={proxyState.params.page}
-          onValueChange={(page) => {
-            setParams({ page })
-            onPageChange?.(page, proxyState.params.pageSize)
-          }}
+          total={pagination.total}
+          pageSize={pagination.pageSize}
+          value={pagination.page}
+          onValueChange={setPage}
         />
       </div>
     </div>

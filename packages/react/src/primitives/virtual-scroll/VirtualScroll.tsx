@@ -27,6 +27,8 @@ export interface IrisVirtualScrollProps<T = unknown> {
   buffer?: number
   /** Stable key per item. Falls back to index. */
   keyOf?: (item: T, index: number) => string | number
+  /** Optional Grid Core-owned controller. When omitted, this component owns one. */
+  virtualizer?: Virtualizer
   /** Render a single item. */
   renderItem: (item: T, index: number) => React.ReactNode
   onScroll?: (scrollTop: number) => void
@@ -62,6 +64,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     height = 400,
     buffer = 4,
     keyOf,
+    virtualizer: providedVirtualizer,
     renderItem,
     onScroll,
     onRangeChange,
@@ -117,9 +120,22 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   // One stateful controller, rebuilt only when count or sizing MODE changes.
   // Sizing CHANGES within a mode (a new user fn / a measurement) are pushed via
   // remeasure below — recreating on every render would drop scroll state.
-  const virtualizer = React.useMemo<Virtualizer>(
-    () =>
-      createVirtualizer({
+  const internalVirtualizerRef = React.useRef<{
+    model: Virtualizer
+    count: number
+    buffer: number
+    variable: boolean
+  } | null>(null)
+  const internal = internalVirtualizerRef.current
+  if (
+    providedVirtualizer === undefined &&
+    (internal === null ||
+      internal.count !== items.length ||
+      internal.buffer !== buffer ||
+      internal.variable !== variable)
+  ) {
+    internalVirtualizerRef.current = {
+      model: createVirtualizer({
         count: items.length,
         estimateSize: (index: number) => estimateRef.current(index),
         getItemKey: (index: number) => {
@@ -128,14 +144,15 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
           return fn && it !== undefined ? fn(it, index) : index
         },
         buffer,
+        fixedSize: variable ? null : fixedHeight,
         viewportSize: typeof height === 'number' ? height : 0,
       }),
-    // Keyed on count / buffer / sizing-mode only: sizing CHANGES within a mode
-    // are pushed via remeasure below so scroll state survives. `estimateSize` /
-    // `getItemKey` / `height` are read live through refs, hence intentionally
-    // not deps (recreating would reset the controller's scroll + cache).
-    [items.length, buffer, variable],
-  )
+      count: items.length,
+      buffer,
+      variable,
+    }
+  }
+  const virtualizer = providedVirtualizer ?? internalVirtualizerRef.current!.model
 
   // Push sizing changes (new user fn, a fresh measurement, or estimate change)
   // into the controller without recreating it: drop the cache + rebuild the
@@ -165,21 +182,15 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   const heightOf = (i: number): number =>
     variable ? (itemInState(i)?.size ?? estimateRef.current(i)) : fixedHeight
 
-  // Render window. Fixed: closed-form (preserves the exact uniform-height
-  // window). Variable/auto: the controller's measured window (offset-tree walk).
+  // The feature-owned controller is the single render-window source for fixed,
+  // variable and auto-measured rows. Fixed sizing still produces the same
+  // closed-form bounds; the core controller performs that offset-tree walk.
   const range = React.useMemo(() => {
-    if (variable) return { start: vstate.startIndex, end: vstate.endIndex + 1 }
-    // Clamp the stale scrollTop against the CURRENT total: when items shrink
-    // mid-scroll (a tree node or detail panel collapsed while scrolled deep),
-    // the fixed window must not open past the last item — the re-clamp effect
-    // below then lands the DOM scrollTop (and the state) on the same bound.
-    const maxScroll = Math.max(0, totalHeight - viewportHeight)
-    const startRaw = Math.floor(Math.min(scrollTop, maxScroll) / Math.max(1, fixedHeight))
-    const visibleCount = fixedHeight <= 0 ? 0 : Math.ceil(viewportHeight / fixedHeight)
-    const start = Math.max(0, startRaw - buffer)
-    const end = Math.min(items.length, startRaw + visibleCount + buffer)
-    return { start, end }
-  }, [variable, vstate, scrollTop, viewportHeight, fixedHeight, buffer, items.length, totalHeight])
+    return {
+      start: vstate.startIndex,
+      end: vstate.endIndex < 0 ? 0 : vstate.endIndex + 1,
+    }
+  }, [vstate.startIndex, vstate.endIndex])
 
   // Emit range change without firing onScroll's effect prematurely.
   const rangeRef = React.useRef(range)

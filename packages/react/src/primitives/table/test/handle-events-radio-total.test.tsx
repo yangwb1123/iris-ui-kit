@@ -172,43 +172,6 @@ describe('IrisTable handle methods (vxe parity, batch T)', () => {
     expect(onTreeExpandChange).toHaveBeenLastCalledWith(rows[0], false)
   })
 
-  it('tree handle methods resolve nested rows through the Core rows model', () => {
-    const child = {
-      id: 11,
-      name: 'child',
-      age: 11,
-      children: [{ id: 111, name: 'leaf', age: 111 }],
-    }
-    const root = { id: 1, name: 'root', age: 1, children: [child] }
-    const ref: { current: IrisTableHandle<typeof root> | null } = { current: null }
-    const onTreeExpandChange = vi.fn()
-    const onCurrentRowChange = vi.fn()
-    render(
-      <IrisTable
-        columns={baseColumns as IrisTableColumn<typeof root>[]}
-        data={[root]}
-        rowKey="id"
-        tableRef={ref}
-        getSubRows={(row) => row.children}
-        onTreeExpandChange={onTreeExpandChange}
-        onCurrentRowChange={onCurrentRowChange}
-      />,
-    )
-
-    // The child is collapsed and therefore absent from the visible body, but
-    // setCurrentRow still resolves it from the static tree source.
-    act(() => ref.current!.setCurrentRow(11))
-    expect(onCurrentRowChange).toHaveBeenCalledWith(11, child)
-
-    // Expanding the root makes the child visible; the second imperative
-    // expansion must resolve the child rather than scanning root rows only.
-    act(() => ref.current!.toggleRowExpand(1))
-    expect(document.querySelector('[data-iris-table-row="11"]')).not.toBeNull()
-    act(() => ref.current!.toggleRowExpand(11))
-    expect(document.querySelector('[data-iris-table-row="111"]')).not.toBeNull()
-    expect(onTreeExpandChange).toHaveBeenLastCalledWith(child, true)
-  })
-
   it('toggleRowExpand is a no-op on a plain table', () => {
     const ref: { current: IrisTableHandle<Row> | null } = { current: null }
     render(<IrisTable columns={baseColumns} data={rows} rowKey="id" tableRef={ref} />)

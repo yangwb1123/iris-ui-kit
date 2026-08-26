@@ -186,6 +186,36 @@ describe('IrisTable built-in undo/redo', () => {
     expect(cellValue(1, 'age')).toContain('25')
   })
 
+  it('row-mode writes through a column dataIndex instead of the display key', () => {
+    type AliasRow = Row & { displayName: string }
+    const aliasRows: AliasRow[] = [
+      { id: 1, name: 'Charlie', age: 25, displayName: 'C' },
+      { id: 2, name: 'Alice', age: 32, displayName: 'A' },
+    ]
+    const aliasColumns: IrisTableColumn<AliasRow>[] = [
+      { key: 'displayName', dataIndex: 'name', title: 'Name', editable: true },
+    ]
+
+    render(
+      <IrisTable
+        columns={aliasColumns}
+        data={aliasRows}
+        rowKey="id"
+        editConfig={{ mode: 'row' }}
+      />,
+    )
+    act(() => fireEvent.click(cell(1, 'displayName')))
+    const input = editor()
+    expect(input).not.toBeNull()
+    act(() => {
+      fireEvent.change(input!, { target: { value: 'Renamed' } })
+      fireEvent.keyDown(input!, { key: 'Enter' })
+    })
+
+    expect(cellValue(1, 'displayName')).toContain('Renamed')
+    expect(cellValue(1, 'displayName')).not.toContain('C')
+  })
+
   it('is inert without the undo prop', () => {
     render(<IrisTable columns={editableCols} data={rows} rowKey="id" />)
     editCell(1, 'name', 'Renamed')

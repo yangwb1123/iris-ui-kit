@@ -254,6 +254,31 @@ describe('@iris-ui-kit/react IrisTable handle.removeRows (batch J)', () => {
       document.querySelectorAll('[data-iris-table-row]:not([data-iris-table-row="header"])').length,
     ).toBe(4)
   })
+
+  it('removes a static tree child through the shared rows transaction', () => {
+    const treeData: Row[] = [
+      { id: 1, name: 'root', age: 1, children: [{ id: 2, name: 'child', age: 2 }] },
+    ]
+    const ref = { current: null as IrisTableHandle<Row> | null }
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={treeData}
+        rowKey="id"
+        getSubRows={(row) => row.children}
+        tableRef={ref}
+        onDataChange={onDataChange}
+      />,
+    )
+
+    act(() => {
+      ref.current?.removeRows([2])
+    })
+
+    expect(onDataChange).toHaveBeenCalledWith([{ id: 1, name: 'root', age: 1, children: [] }])
+    expect(treeData[0]?.children).toHaveLength(1)
+  })
 })
 
 describe('@iris-ui-kit/react IrisTable Tab edit navigation (batch J)', () => {

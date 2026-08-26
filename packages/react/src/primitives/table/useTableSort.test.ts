@@ -1,7 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { IrisTableColumn, IrisTableSortState } from './types'
-import { useTableSort } from './useTableSort'
+import { useGridCore, useGridSorting, type UseGridSortingOptions } from '../../grid'
+
+function useTableSort<Row extends Record<string, unknown>>(
+  data: Row[],
+  options: UseGridSortingOptions<Row>,
+) {
+  const core = useGridCore<Row>()
+  return useGridSorting(core, data, options)
+}
 
 interface TestRow {
   id: number

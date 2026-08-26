@@ -1,5 +1,6 @@
 import * as React from 'react'
 import type { CellEdit } from '@iris-ui-kit/core'
+import type { GridEditingKey } from '@iris-ui-kit/core/grid'
 import { useStore } from '../../useStore'
 import { applyCellMask } from './exportCsv'
 import type { IrisTableColumn } from './types'
@@ -8,7 +9,7 @@ import { CHAR_COUNT_STYLE, EDIT_PREVIEW_STYLE } from './styles'
 interface EditorSurfaceProps<Row extends Record<string, unknown>> {
   /** The edit session driving this editor (cell mode: the singleton; row
    *  mode: that column's own session). */
-  session: CellEdit
+  session: CellEdit<GridEditingKey>
   col: IrisTableColumn<Row>
   /** Shared draft coercion, including formula/value resolution, owned by the table. */
   coerceDraft: (row: Row, col: IrisTableColumn<Row>, draft: unknown) => unknown
@@ -53,7 +54,8 @@ interface EditorSurfaceProps<Row extends Record<string, unknown>> {
 }
 
 /**
- * Shared inline-editor surface for cell AND row edit modes (batch K).
+ * Shared inline-editor surface for Grid Core cell mode and adapter-owned row
+ * edit mode (batch K).
  * Subscribes to the session's core store so draft/error changes re-render
  * just the editor; the three editor branches (text/number input, select,
  * textarea) are the pre-batch-K UI, just parameterized by the session. Enter

@@ -498,6 +498,46 @@ describe('@iris-ui-kit/react IrisTable inline editing', () => {
     expect(editor()).toBeNull()
   })
 
+  it('commits an expanded tree child through Core and reports its visible index', () => {
+    const child = { id: 2, name: 'Child', age: 8 }
+    const tree = [{ id: 1, name: 'Root', age: 10, children: [child] }]
+    const onCellEdit = vi.fn()
+    const columns: IrisTableColumn<(typeof tree)[number]>[] = [
+      { key: 'displayName', dataIndex: 'name', title: 'Name', editable: true },
+      { key: 'age', title: 'Age' },
+    ]
+    render(
+      <IrisTable
+        columns={columns}
+        data={tree}
+        rowKey="id"
+        getSubRows={(row) => row.children}
+        defaultExpandedRowKeys={[1]}
+        onCellEdit={onCellEdit}
+      />,
+    )
+
+    act(() => {
+      fireEvent.doubleClick(cell(2, 'displayName'))
+    })
+    expect(editor()?.value).toBe('Child')
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: 'Updated child' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+
+    expect(onCellEdit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        oldValue: 'Child',
+        newValue: 'Updated child',
+        rowIndex: 1,
+        column: expect.objectContaining({ key: 'displayName', dataIndex: 'name' }),
+      }),
+    )
+    expect(cell(2, 'displayName').textContent).toContain('Updated child')
+    expect(child.name).toBe('Child')
+  })
+
   it('Escape cancels without emitting', () => {
     const onCellEdit = vi.fn()
     render(<IrisTable columns={editableCols} data={rows} onCellEdit={onCellEdit} />)

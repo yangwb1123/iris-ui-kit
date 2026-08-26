@@ -26,11 +26,11 @@ export interface UseTableColumnsOptions<Row extends Record<string, unknown>> {
   autoDetectTypes?: boolean
   columnOrder?: string[]
   columnVisibility?: Record<string, boolean>
-  columnWidths?: IrisTableColumnWidths
-  defaultColumnWidths?: IrisTableColumnWidths
-  onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
-  pinnedColumns?: Record<string, 'left' | 'right' | null>
-  onColumnPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
+  columnWidths: IrisTableColumnWidths
+  setColumnWidth: (key: string, width: number) => void
+  resetColumnWidths: () => void
+  pinnedColumns: Record<string, 'left' | 'right' | null>
+  setColumnPinned: (key: string, side: 'left' | 'right' | null) => void
 }
 
 export interface UseTableColumnsResult<Row extends Record<string, unknown>> {
@@ -57,50 +57,24 @@ export interface UseTableColumnsResult<Row extends Record<string, unknown>> {
   headerMatrix: HeaderCell<IrisTableColumn<Row>>[][] | null
 }
 
-/** Owns column declaration, width/pin state, visibility, and responsive fit. */
+/** Derives column declarations and responsive layout from Grid-owned state. */
 export function useTableColumns<Row extends Record<string, unknown>>(
   options: UseTableColumnsOptions<Row>,
 ): UseTableColumnsResult<Row> {
   const hasDetail = options.renderDetail !== undefined
   const safeColumns = React.useMemo(() => options.columns ?? [], [options.columns])
 
-  const widthsControlled = options.columnWidths !== undefined
-  const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
-    options.defaultColumnWidths ?? {},
-  )
-  const columnWidths = widthsControlled
-    ? (options.columnWidths as IrisTableColumnWidths)
-    : widthsInternal
-  const setColumnWidth = (key: string, width: number): void => {
-    const next = { ...columnWidths, [key]: width }
-    if (!widthsControlled) setWidthsInternal(next)
-    options.onColumnWidthsChange?.(next)
-  }
-  const resetColumnWidths = (): void => {
-    if (!widthsControlled) setWidthsInternal({})
-    options.onColumnWidthsChange?.({})
-  }
-
-  const pinsControlled = options.pinnedColumns !== undefined
-  const [pinsInternal, setPinsInternal] = React.useState<Record<string, 'left' | 'right' | null>>(
-    {},
-  )
+  const columnWidths = options.columnWidths
+  const setColumnWidth = options.setColumnWidth
+  const resetColumnWidths = options.resetColumnWidths
   const pinOf = React.useCallback(
     (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
-      if (pinsControlled) {
-        return options.pinnedColumns && col.key in options.pinnedColumns
-          ? options.pinnedColumns[col.key]
-          : (col.pinned ?? null)
-      }
-      if (pinsInternal[col.key] !== undefined) return pinsInternal[col.key]
+      if (col.key in options.pinnedColumns) return options.pinnedColumns[col.key]
       return col.pinned ?? null
     },
-    [pinsControlled, options.pinnedColumns, pinsInternal],
+    [options.pinnedColumns],
   )
-  const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
-    if (!pinsControlled) setPinsInternal((previous) => ({ ...previous, [key]: side }))
-    options.onColumnPinnedChange?.(key, side)
-  }
+  const setColumnPinned = options.setColumnPinned
 
   const columnOrderIndex = React.useMemo(() => {
     const map = new Map<string, number>()

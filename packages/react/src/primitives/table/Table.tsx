@@ -4,9 +4,6 @@ import {
   buildFormValues,
   computeVirtualRange,
   compareValues,
-  createCellRange,
-  createExpansion,
-  createSelectionModel,
   createUndoStack,
   createAuditLog,
   createPerfStats,
@@ -17,21 +14,18 @@ import {
   formatClock,
   groupRows,
   mergeFormFilters,
-  matchesRule,
   parseTableQuery,
+  reconcileTreeRows,
   seedFormValues,
   withSortedChildren,
   nextGridCell,
   nowMs,
   rangeStats,
   type CellRange,
-  type CellRangeController,
-  type ExpansionModel,
   type GridCell,
   type GridNavKey,
   type ParsedTableQuery,
   type PerfStats,
-  type SelectionModel,
   type TreeRow,
   type UndoStack,
   type AuditLog,
@@ -48,6 +42,26 @@ import { IrisInput } from '../input/Input'
 import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
+  toGridColumnsOptions,
+  toGridExpansionOptions,
+  toGridFilteringOptions,
+  toGridRowsOptions,
+  toGridSelectionOptions,
+  toGridSortingOptions,
+  useGridClipboard,
+  useGridColumns,
+  useGridCore,
+  useGridExpansion,
+  useGridRows,
+  useGridRange,
+  useGridSelection,
+  useGridVirtual,
+} from '../../grid'
+import { useGridEditing } from '../../grid/useGridEditing'
+import { useGridFiltering } from '../../grid/useGridFiltering'
+import { useGridSorting } from '../../grid/useGridSorting'
+import { useTablePagination } from './useTablePagination'
+import {
   cloneRowInList,
   columnLetter,
   createCellEdit,
@@ -58,13 +72,10 @@ import {
   normalizeKeymap,
   type IrisTableKeymap,
   parseCsv,
-  removeRowFromList,
-  setCellValue,
   toCsv,
-  toHtml,
-  updateRowInList,
   validateEditRulesAsync,
   type CellEdit,
+  type GridEditingKey,
   type DetectedColumnType,
   type FormulaTables,
   type SortableRect,
@@ -72,7 +83,7 @@ import {
 import { useI18n } from '../../i18n'
 import { usePrefersReducedMotion } from '../../motion'
 import { TableForm, TablePager } from './table-chrome'
-import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
+import { IrisVirtualScroll, type IrisVirtualScrollHandle } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableDensity, IrisTableProps } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
@@ -153,7 +164,6 @@ import {
   isEditableColumn,
   sameRowList,
   serializeRefRows,
-  tsvCell,
   withComputedFormulaCells,
 } from './table-value-helpers'
 import { mergeFilterValues, mergeQueryIntoFilters, nextRowMajorCell } from './table-query-helpers'
@@ -215,13 +225,18 @@ import {
   coerceEditDraft,
 } from './table-constants'
 
+interface TableRowsCommitMeta {
+  readonly auditType: AuditLogType
+  readonly recordHistory: boolean
+  readonly notifyDataChange: boolean
+}
+
 // Layout measurement must happen before paint in the browser, but React's
 // server renderer cannot encode useLayoutEffect. Keep the tooltip bridge
 // SSR-safe without weakening its client-side timing.
 const useIsomorphicLayoutEffect =
   typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
 
-import { useTableSort } from './useTableSort'
 import { usePersistState } from './usePersistState'
 import { useTableViews } from './useTableViews'
 import { TableContextMenu } from './ContextMenu'
@@ -526,7 +541,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onColumnWidthsChange,
   columnWidthsReset,
   columnPinMenu,
-  pinnedColumns,
+  pinnedColumns: pinnedColumnsProp,
   onColumnPinnedChange,
   pinnedDrag = false,
   onPinnedCountChange,
@@ -557,10 +572,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   rowDrag,
   rowDragBetween,
   columnDrag,
-  columnVisibility,
+  columnVisibility: columnVisibilityProp,
   onColumnVisibilityChange,
   columnFade = false,
-  columnOrder,
+  columnOrder: columnOrderProp,
   onColumnOrderChange,
   filters,
   onFiltersChange,
@@ -661,7 +676,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const rowDragEnabled = rowDrag !== undefined || (rowDragBetween?.length ?? 0) > 0
   // Batch DW (iris 独有): unified event stream — ONE subscription merging the
   // cell/row/sort/filter/edit/expand event families. Mirror ref (established
-  // onEditStartRef pattern) so mount-time closures (useTableSort, cellEdit,
+  // onEditStartRef pattern) so mount-time closures (grid sorting, cellEdit,
   // the expansion model) always read the latest handler. The funnel emits
   // AFTER each dedicated callback — a bridge, not a behavior.
   const onTableEventRef = React.useRef(onTableEvent)
@@ -672,6 +687,36 @@ export function IrisTable<Row extends Record<string, unknown>>({
   ): void => {
     onTableEventRef.current?.({ type, detail })
   }
+  // One per-table Grid Core owns every standard state capability. Column
+  // declarations/rendering stay in React; their four mutable channels live in
+  // the columns feature and retain the legacy controlled/uncontrolled policy.
+  const gridCore = useGridCore<Row>()
+  const columnsFeature = useGridColumns(
+    gridCore,
+    toGridColumnsOptions({
+      columnVisibility: columnVisibilityProp,
+      onColumnVisibilityChange,
+      columnOrder: columnOrderProp,
+      onColumnOrderChange,
+      columnWidths: columnWidthsProp,
+      defaultColumnWidths,
+      onColumnWidthsChange,
+      pinnedColumns: pinnedColumnsProp,
+      onColumnPinnedChange,
+    }),
+  )
+  const columnVisibility = columnsFeature.state.visibility
+  const columnOrder = columnsFeature.state.order
+  const {
+    setVisibility: setColumnVisibility,
+    toggleVisibility: toggleColumnVisibility,
+    setOrder: setColumnOrder,
+    clearOrder: clearColumnOrder,
+    setWidths: setColumnWidths,
+    setWidth: setGridColumnWidth,
+    resetWidths: resetGridColumnWidths,
+    setPinned: setGridColumnPinned,
+  } = columnsFeature
   // Batch BN (iris 独有): ONE throat for per-row heights — `rowHeight` wins
   // over `virtualScroll.itemHeight`; unset = existing behavior byte-identical
   // (virtual mode falls back to the virtualizer's itemHeight, non-virtual
@@ -839,6 +884,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // means the responsive observer measures the exact element that receives
   // the overflow style below.
   const rootRef = React.useRef<HTMLDivElement | null>(null)
+  const virtualScrollHandleRef = React.useRef<IrisVirtualScrollHandle | null>(null)
+  const virtualRowIndexRef = React.useRef<Map<string | number, number>>(new Map())
   // Batch EC (iris 独有): adaptiveRowHeight — when NO fixed row height is set
   // the data rows grow to their content. `adaptiveHeights` pins each data row
   // to its MEASURED natural height (keyed by the SAME identity
@@ -972,11 +1019,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     autoDetectTypes,
     columnOrder,
     columnVisibility: effectiveColumnVisibility,
-    columnWidths: columnWidthsProp,
-    defaultColumnWidths,
-    onColumnWidthsChange,
-    pinnedColumns,
-    onColumnPinnedChange,
+    columnWidths: columnsFeature.state.widths,
+    setColumnWidth: setGridColumnWidth,
+    resetColumnWidths: resetGridColumnWidths,
+    pinnedColumns: columnsFeature.state.pinned,
+    setColumnPinned: setGridColumnPinned,
   })
   // Batch DY: expand the overlay — keyed by TOP-LEVEL column keys (matching
   // `columnVisibility`) — down to leaf keys, so a grouped parent's fade
@@ -1142,8 +1189,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return () => window.clearInterval(id)
   }, [hasProxy, intervalMs])
 
-  // Editable write-back (vxe-grid parity): the table owns a live copy of the
-  // data so committed edits survive WITHOUT the parent re-feeding `data`.
+  // Editable write-back (vxe-grid parity): the Grid Core rows feature owns the
+  // live copy so committed edits survive WITHOUT the parent re-feeding `data`.
   // External `data` reference changes still win (controlled mode); in proxy
   // mode the source of truth is the proxy's loaded page — liveData holds
   // local edit write-backs until the next refetch replaces them.
@@ -1153,8 +1200,47 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // it receives; keepSource just decouples the initial seed from the prop
   // reference. Later controlled re-feeds (new `data` reference) keep the
   // hand-off below unchanged.
-  const [liveData, setLiveData] = React.useState<Row[]>(
-    keepSource ? [...(data ?? [])] : (data ?? []),
+  // The per-table core owns rows plus every optional view capability. The
+  // rows transaction metadata stays adapter-owned: core forwards it without
+  // learning about undo/audit/history/onDataChange semantics.
+  const legacyRows = toGridRowsOptions<Row, TableRowsCommitMeta>({
+    data,
+    keepSource,
+    rowKeyField: rowKey,
+    getRowKey: (row, index) => rowKeyOf(row, index),
+    beforeChange: ({ rows, meta }) => {
+      const next = rows as Row[]
+      const type = meta?.auditType ?? 'edit'
+      if (meta?.recordHistory !== false && !historySuppressRef.current) recordHistory(type)
+      recordUndo(next)
+      recordAudit(next, type)
+    },
+    onChange: ({ rows, meta }) => {
+      const next = rows as Row[]
+      externalDataRef.current = next
+      if (meta?.notifyDataChange !== false) onDataChangeRef.current?.(next)
+    },
+  })
+  const { rows: liveData, model: rowsModel } = useGridRows<Row, TableRowsCommitMeta>(
+    gridCore,
+    legacyRows.initialRows,
+    {
+      ...legacyRows.options,
+      // Keep the legacy no-`keepSource` seed identity while the core feature
+      // defaults to defensive ownership for standalone consumers.
+      cloneDefaultRows: keepSource === true,
+      // Static tree children are part of the same rows source. Lazy children
+      // stay adapter-owned until their cache can be represented immutably.
+      getChildren: getSubRows,
+    },
+  )
+  // The feature owns pagination methods/events; this thin bridge keeps proxy
+  // requests and the legacy notification callback in the adapter.
+  const { pagination, setPage, setPageSize } = useTablePagination(
+    gridCore,
+    proxy ? proxyState : null,
+    proxyConfig,
+    proxyRef,
   )
   const externalDataRef = React.useRef(data)
   // Latest live row list (batch K): row-edit sessions resolve the CURRENT row
@@ -1168,10 +1254,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // POST-change states (the core convention — undo() returns the state
   // before the last mutation, redo() the state after it), so recordUndo
   // receives the row list that WILL become current: commitRowList passes its
-  // `next`, commitValue passes the setCellValue-computed list (cell/row
-  // edits write back through setLiveData directly and never reach
-  // commitRowList — the second funnel). undo/redo replay through a dedicated
-  // path that flips restoringRef so the replay's commitRowList never
+  // `next`, while row-mode commitValue reads the rows feature snapshot after
+  // its update (cell/row edits and row-list operations all commit through
+  // Grid Core rows). Undo /
+  // redo replay goes through a dedicated path that flips restoringRef so the replay's commitRowList never
   // re-pushes (no undo-of-undo). vxe undoRedoHistory parity: external data
   // re-feeds re-baseline the stack ONLY while it is untouched (no user
   // mutation yet); once the user has mutated, history stays
@@ -1190,7 +1276,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const undoStack = undoStackRef.current
   // The stack is a plain controller (no observable store) — every
   // push/undo/redo bumps this tick so the toolbar buttons re-render and
-  // re-read canUndo/canRedo. Every mutation also re-renders via setLiveData,
+  // re-read canUndo/canRedo. Every mutation also re-renders via the rows store,
   // so the tick is belt-and-braces for no-op pushes / undos at the tip.
   const [, setUndoTick] = React.useState(0)
   const bumpUndoTick = React.useCallback(() => setUndoTick((n) => n + 1), [])
@@ -1212,7 +1298,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (next !== lastExternalRef.current) {
       lastExternalRef.current = next
       externalDataRef.current = next
-      setLiveData(next ?? [])
+      rowsModel.sync(next ?? [])
       // Batch AL: an external re-feed re-baselines the undo stack only while
       // it is untouched (no user mutation yet) — vxe undoRedoHistory parity.
       // Once the user has mutated, history stays interaction-scoped.
@@ -1231,7 +1317,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       setLazyLoading(new Set())
       lazyEpochRef.current += 1
     }
-  }, [proxy, proxyState, data])
+  }, [proxy, proxyState, data, rowsModel])
 
   // Batch AS (iris 独有): freshness stamp — every liveData change (initial
   // arrival via the sync effect above, refetch, edit commits, row ops / paste
@@ -1276,7 +1362,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // paste, fill, range clear, fnr, batch edit, undo/redo replay) diffs the
   // PREVIOUS row list (auditRowsRef) against `next` via the module-scope
   // auditDiff helper and pushes the first changed row/cell; commitValue
-  // (inline cell/row edits that bypass commitRowList) pushes the same diff
+  // (row-mode inline edits that bypass commitRowList) pushes the same diff
   // over its computed nextList. undo/redo replay records type 'undo'/'redo'
   // — the replay IS a user-visible change and belongs in the trail. The
   // controller is created once (ref-once, mirroring undoStackRef) and stays
@@ -1299,14 +1385,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     auditRef.current = createAuditLog()
   }
   const audit = auditRef.current
-  // Previous rows for the light diff. Kept in sync by EVERY write-back
-  // funnel (recordAudit assigns eagerly — React defers the setLiveData
-  // updaters) AND by the live-data effect below (external re-feeds
+  // Previous rows for the light diff. Kept in sync by every rows transaction
+  // (recordAudit assigns eagerly) AND by the live-data effect below (external re-feeds
   // re-baseline so the next commit diff doesn't read stale rows).
   const auditRowsRef = React.useRef<Row[]>(liveData)
-  // Ref mirror for commitValue (defined above the recordAudit helper):
-  // assigned every render from the helper's definition site.
-  const recordAuditRef = React.useRef<((next: Row[], type: AuditLogType) => void) | null>(null)
   // External re-feeds (parent `data` / proxy refetch / undo baseline restore)
   // move liveData WITHOUT a commit — re-baseline the diff snapshot so the
   // NEXT user commit doesn't diff against stale rows (the fresh rows become
@@ -1334,7 +1416,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // ── Built-in version history (iris 独有, batch BA) ────────────────────
   // A core createVersionHistory keeps a bounded (default 20) ring of the
   // PRE-change row list per row-list commit — the same funnel and type hint
-  // as the batch-AT audit (commitRowList only; commitValue inline edits do
+  // as the batch-AT audit (commitRowList only; row-mode inline edits do
   // NOT create versions — restore replaces the whole row list, so row-level
   // commits are the coherent unit, documented). The controller is created
   // once (ref-once, max from the first render — mirrors auditRef) and stays
@@ -1385,7 +1467,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [liveData, compareWith, rowKey],
   )
 
-  // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
+  // The same per-table core owns sorting, selection, expansion, and filtering.
   const {
     sortState: sort,
     cycleSort,
@@ -1396,29 +1478,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
     cycleMultiSort,
     setMultiSort,
     multiSortComparator,
-  } = useTableSort<Row>(liveData, {
-    leafColumns,
-    sort: sortProp,
-    defaultSort,
-    onSortChange: (next) => {
-      onSortChange?.(next)
-      emitTableEvent('sort-change', { sort: next })
-      // remoteSort parity: sort changes re-query the server (page resets to 1
-      // in the core controller, vxe behavior).
-      if (remoteSort) proxyRef.current?.setParams({ sort: next })
-    },
-    multiSort,
-    multiSortState: multiSortStateProp,
-    defaultMultiSort,
-    onMultiSortChange: (next) => {
-      onMultiSortChange?.(next)
-      emitTableEvent('multi-sort-change', { sorts: next })
-      // remoteSort parity (multi mode): the FULL sort list re-queries the
-      // server; the single `sort` param stays the single-column channel.
-      if (remoteSort) proxyRef.current?.setParams({ sorts: next })
-    },
-    formulaTables,
-  })
+  } = useGridSorting<Row>(
+    gridCore,
+    liveData,
+    toGridSortingOptions<Row>({
+      columns: leafColumns,
+      sort: sortProp,
+      defaultSort,
+      onSortChange: (next) => {
+        onSortChange?.(next)
+        emitTableEvent('sort-change', { sort: next })
+        // remoteSort parity: sort changes re-query the server (page resets to 1
+        // in the core controller, vxe behavior).
+        if (remoteSort) proxyRef.current?.setParams({ sort: next })
+      },
+      multiSort,
+      multiSortState: multiSortStateProp,
+      defaultMultiSort,
+      onMultiSortChange: (next) => {
+        onMultiSortChange?.(next)
+        emitTableEvent('multi-sort-change', { sorts: next })
+        // remoteSort parity (multi mode): the FULL sort list re-queries the
+        // server; the single `sort` param stays the single-column channel.
+        if (remoteSort) proxyRef.current?.setParams({ sorts: next })
+      },
+      formulaTables,
+    }),
+  )
   // remoteSort parity: the server owns the ordering — never re-sort locally.
   const sortedData = remoteSort ? liveData : localSortedData
 
@@ -1584,47 +1670,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
     proxyRef.current?.setParams({ filters: mergedProxyFilters(formApplied) })
   }, [proxy, remoteFilter, filters, filterValues, formApplied, queryParsed])
 
-  // Row-selection logic (single/multiple toggle, dedup, select-all,
-  // controlled/uncontrolled) is single-sourced in the core model; keys are the
-  // string|number row keys. The sort / edit / resize / virtual logic below is
-  // untouched. Mode is fixed at creation from `selectable` (as ToggleGroup
-  // fixes its mode from `type`).
-  const selControlled = selectionProp !== undefined
-  const selModelRef = React.useRef<SelectionModel<string | number> | null>(null)
-  if (selModelRef.current === null) {
-    selModelRef.current = createSelectionModel<string | number>({
-      mode: selectable === 'single' ? 'single' : 'multiple',
-      defaultSelected: selControlled
-        ? (selectionProp as Array<string | number>)
-        : (defaultSelection ?? []),
-      onChange: (next) => onSelectionChange?.(next),
-    })
-  }
-  const selModel = selModelRef.current
-  const selection = useStore(selModel.store)
-
-  // Controlled: mirror the prop into the model without re-emitting onChange.
-  React.useEffect(() => {
-    if (selControlled) selModel.sync(selectionProp as Array<string | number>)
-  }, [selectionProp, selControlled, selModel])
-
-  // Controlled tables RENDER from the prop (true controlled semantics): a local
-  // toggle emits onSelectionChange, but the displayed selection only changes when
-  // the parent writes `selection` back — so a parent that validates/rejects a
-  // change no longer sees the row flip optimistically. Uncontrolled renders from
-  // the model store as before.
-  const displaySelection = selControlled ? (selectionProp as Array<string | number>) : selection
+  const {
+    model: selModel,
+    selection: displaySelection,
+    controlled: selControlled,
+    rebase: rebaseToProp,
+  } = useGridSelection(
+    gridCore,
+    toGridSelectionOptions({
+      selectable,
+      selection: selectionProp as Array<string | number> | undefined,
+      defaultSelection,
+      onSelectionChange,
+    }),
+  )
   // Handle methods run against the MOUNT-time closure (tableRef is assigned once), so
   // a selection snapshot would go stale — mirror the latest value for them instead.
   const displaySelectionRef = React.useRef(displaySelection)
   displaySelectionRef.current = displaySelection
-  // Re-base the model on the controlled prop before a toggle so the emitted next
-  // value is computed against what the parent actually holds (not a prior,
-  // possibly-rejected, optimistic value).
-  const rebaseToProp = (): void => {
-    if (selControlled) selModel.sync(selectionProp as Array<string | number>)
-  }
-
   // Checkbox range-selection anchor (vxe checkboxConfig isShiftKey parity,
   // batch G): the row key of the last clicked row checkbox. Shift-click toggles
   // every checkMethod-eligible row between the anchor and the target (in
@@ -1632,8 +1695,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // select-all resets it.
   const checkboxAnchorRef = React.useRef<string | number | null>(null)
 
-  // Expandable detail rows: a leading toggle column + a full-width detail panel,
-  // driven by the framework-agnostic createExpansion (multiple-open).
+  // Expansion is a second opt-in feature on the SAME per-table Grid Core.
   // (batch CY: the hasDetail declaration itself now lives above the column
   // memos — the responsive width model reads it there; same value.)
   // Batch BY: shared expandability probe for the persistState collector AND
@@ -1641,19 +1703,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // region) so the snapshot logic can live before it. A flat table has no
   // expansion capability: nothing is saved and a seeded snapshot is inert.
   const expandableMode = hasDetail || getSubRows !== undefined || lazyLoad !== undefined
-  const expansionRef = React.useRef<ExpansionModel | null>(null)
-  if (expansionRef.current === null) {
-    expansionRef.current = createExpansion({
-      mode: 'multiple',
-      defaultExpanded: (defaultExpandedRowKeys ?? []).map(String),
+  const { model: expansion, expandedKeys } = useGridExpansion(
+    gridCore,
+    toGridExpansionOptions({
+      defaultExpandedRowKeys,
       onChange: (keys) => {
         onExpandedRowsChange?.(keys)
         emitTableEvent('expanded-rows-change', { expandedKeys: keys })
       },
-    })
-  }
-  const expansion = expansionRef.current
-  const expandedKeys = useStore(expansion.store)
+    }),
+  )
   const isRowExpandable = (row: Row, idx: number): boolean =>
     hasDetail && (rowExpandable ? rowExpandable(row, idx) : true)
 
@@ -1770,8 +1829,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (onMultiSortChange && multiSort) s.multiSortState = multiSortState
     if (onFiltersChange) s.filters = filters
     if (onFilterValuesChange) s.filterValues = filterValues
-    if (onColumnVisibilityChange) s.columnVisibility = columnVisibility
-    if (onColumnOrderChange) s.columnOrder = columnOrder
+    if (onColumnVisibilityChange && columnVisibilityProp !== undefined) {
+      s.columnVisibility = columnVisibilityProp
+    }
+    if (onColumnOrderChange && columnOrderProp !== undefined) s.columnOrder = columnOrderProp
     if (onColumnWidthsChange) s.columnWidths = columnWidths
     if (proxy) s.pageSize = proxyState.params.pageSize
     // Batch BY: expanded keys (detail panels + tree carets) join the snapshot
@@ -1842,15 +1903,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
           return true
         case 'columnVisibility':
           if (!onColumnVisibilityChange || typeof value !== 'object' || value === null) return false
-          onColumnVisibilityChange(value as Record<string, boolean>)
+          setColumnVisibility(value as Record<string, boolean>)
           return true
         case 'columnOrder':
           if (!onColumnOrderChange || !Array.isArray(value)) return false
-          onColumnOrderChange(value as string[])
+          setColumnOrder(value as string[])
           return true
         case 'columnWidths':
           if (!onColumnWidthsChange || typeof value !== 'object' || value === null) return false
-          onColumnWidthsChange(value as IrisTableColumnWidths)
+          setColumnWidths(value as IrisTableColumnWidths)
           return true
         case 'expandedKeys':
           // Batch BY: FULL-SET restore — a snapshot is the complete expanded
@@ -1883,6 +1944,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
       onColumnVisibilityChange,
       onColumnOrderChange,
       onColumnWidthsChange,
+      setColumnVisibility,
+      setColumnOrder,
+      setColumnWidths,
       proxyConfig,
       expansion,
       expandableMode,
@@ -2154,9 +2218,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
 
   // Inline editing: one cell at a time, keyed by `${rowKey}::${colKey}`. The
-  // whole draft/validate/coerce session lives in the framework-agnostic
-  // createCellEdit controller (core); the adapter only bridges the editor
-  // element and resolves the row/column context for the session callbacks.
+  // whole cell-mode draft/validate/coerce session lives in the
+  // framework-agnostic Grid Core editing feature; row-mode keeps one
+  // adapter-owned session per editable column for its existing multi-session
+  // interaction contract. The adapter only bridges editor elements and
+  // resolves the row/column context for callbacks.
   // Both the text/number <input> and the select editor focus through this ref
   // (callback refs because a single union-typed ref can't bind to both tags).
   const editorRef = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(
@@ -2175,9 +2241,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onEditStartRef.current = onEditStart
   const onEditClosedRef = React.useRef(onEditClosed)
   onEditClosedRef.current = onEditClosed
-  // Batch BQ (iris 独有): editAutosave — commitValue is captured by the
-  // cellEdit useMemo([]) closure, so the feature switch + callback must be
-  // read through refs (auditEnabledRef same shape).
+  // Batch BQ (iris 独有): editAutosave — the cell-mode Grid Core feature and
+  // row-mode sessions are installed once, so the feature switch + callback
+  // must be read through refs (auditEnabledRef same shape).
   const editAutosaveRef = React.useRef(editAutosave)
   editAutosaveRef.current = editAutosave
   const onAutosaveRef = React.useRef(onAutosave)
@@ -2243,84 +2309,36 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // apart on a future editor type.
   const coerceValueFor = (row: Row, col: IrisTableColumn<Row>, draft: unknown): unknown =>
     coerceEditDraft(row, col, draft)
-  const coerceValue = (col: IrisTableColumn<Row>, draft: unknown): unknown =>
-    coerceValueFor(editCtxRef.current!.row, col, draft)
   /** Current row object for a row key (row edit mode resolves at commit time). */
   const currentRowFor = (rowIdent: string | number): Row | undefined =>
-    liveDataRef.current.find((r, i) => rowKeyOf(r, i) === rowIdent)
-  /** Batch BQ (iris 独有): the post-commit row list payload for onAutosave.
-   *  The eager block already syncs externalDataRef to the next list for
-   *  rowKey rows; rowId rows cannot be found by that field lookup, so this
-   *  mirrors the setLiveData updater's fallback (locate by computed key,
-   *  clone, set). Unreachable without a resolvable key → current list. */
-  const autosaveRows = (
-    ctx: { col: IrisTableColumn<Row> },
-    k: string | number,
-    value: unknown,
-  ): Row[] => {
-    const current = externalDataRef.current ?? []
-    const next = setCellValue(current, rowKey, k, ctx.col.key, value)
-    if (next !== current) return next
-    if (!rowId) return current
-    const at = current.findIndex((r, i) => rowKeyOf(r, i) === k)
-    if (at < 0) return current
-    const viaId = current.slice()
-    viaId[at] = { ...viaId[at]!, [ctx.col.key]: value }
-    return viaId
-  }
-  /** Shared commit write-back for cell AND row edit sessions (batch K): the
-   *  live data update + onCellEdit fire, skipping no-op commits. `ctx.row` is
-   *  the CURRENT row object (row sessions resolve it by key). */
+    // Grid Core traverses configured static tree children. Keep the live
+    // snapshot fallback for proxy/lazy rows whose children are intentionally
+    // adapter-owned and therefore not visible to the core model.
+    rowsModel.find(rowIdent) ?? liveDataRef.current.find((r, i) => rowKeyOf(r, i) === rowIdent)
+  /** Shared commit write-back for row edit sessions (batch K): the live data
+   *  update + onCellEdit fire, skipping no-op commits. Cell-mode commits use
+   *  the Grid Core editing feature's rows transaction. `ctx.row` is the
+   *  CURRENT row object (row sessions resolve it by key). */
   const commitValue = (
     ctx: { row: Row; col: IrisTableColumn<Row>; rowIndex: number },
     value: unknown,
   ): void => {
     const oldValue = getCellValue(ctx.row, ctx.col)
     if (value === oldValue) return
-    // Batch AL: cell/row edit commits bypass commitRowList (they write back
-    // through setLiveData directly), so the POST-change snapshot is recorded
-    // here too — otherwise undo would silently miss every inline edit. The
-    // eager ref sync keeps a following commitValue in the SAME event
-    // (row-mode switchRowEdit commits several columns) snapshotting the true
-    // intermediate list — React defers the setLiveData updaters, so without
-    // it every snapshot in one event would capture the same stale list.
     const k = rowKeyOf(ctx.row, ctx.rowIndex)
+    let nextRows = externalDataRef.current ?? []
     if (k != null) {
-      const current = externalDataRef.current ?? []
-      const nextList = setCellValue(current, rowKey, k, ctx.col.key, value)
-      recordUndo(nextList)
-      // Batch AT: record ONE audit entry per inline edit commit (type
-      // 'edit') — the SAME light diff the commitRowList funnel uses, so the
-      // trail stays consistent across both write-back paths.
-      recordAuditRef.current?.(nextList, 'edit')
-      if (nextList !== current) externalDataRef.current = nextList
-    }
-    // Batch Q: dirty write-back for editDirtyConfig (cell AND row edit modes
-    // both funnel through here).
-    if (k != null) trackDirty(k, ctx.col.key, oldValue, value)
-    // Write the committed value back into the live data so the edit survives
-    // without the parent re-feeding `data` (controlled mode overrides via the
-    // data-reference sync above).
-    if (k != null) {
-      setLiveData((prev) => {
-        const next = setCellValue(prev, rowKey, k, ctx.col.key, value)
-        if (next !== prev) {
-          externalDataRef.current = next
-          return next
-        }
-        // rowId rows (batch R): the key lives outside the `rowKey` field, so
-        // the field lookup above cannot find the row — locate it by the
-        // computed key instead. Without `rowId` this path is unreachable
-        // (field rows always resolve above), keeping behavior byte-identical.
-        if (!rowId) return prev
-        const at = prev.findIndex((r, i) => rowKeyOf(r, i) === k)
-        if (at < 0) return prev
-        const viaId = prev.slice()
-        viaId[at] = { ...viaId[at]!, [ctx.col.key]: value }
-        externalDataRef.current = viaId
-        return viaId
+      const valueKey = (ctx.col.dataIndex ?? ctx.col.key) as string
+      const changed = rowsModel.update(k, { [valueKey]: value } as Partial<Row>, {
+        reason: 'cell-edit',
+        meta: { auditType: 'edit', recordHistory: false, notifyDataChange: false },
       })
+      if (changed) nextRows = rowsModel.getData()
     }
+    // Batch Q: dirty write-back for editDirtyConfig in the adapter-owned
+    // row-mode session. Cell-mode commits update the same ledger from the
+    // Grid Core onCommit callback above.
+    if (k != null) trackDirty(k, ctx.col.key, oldValue, value)
     onCellEditRef.current?.({
       row: ctx.row,
       column: ctx.col,
@@ -2333,17 +2351,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // is the feature switch (onAutosave alone is inert); the value ===
     // oldValue early-return above already filtered no-ops. Row-list write-
     // backs (paste/fill/FNR/batch ops) never funnel through here.
-    if (editAutosaveRef.current) onAutosaveRef.current?.(autosaveRows(ctx, k, value))
+    if (editAutosaveRef.current) onAutosaveRef.current?.(nextRows)
   }
   // Batch BR (iris 独有): validationSummary — editRules commit-outcome
   // ledger. ok = a commit that passed editRules validation and landed
-  // (counted in the onCommit wrapper, cell and row modes); fail = a commit
-  // attempt rejected by editRules (counted in the validate wrapper's Promise
-  // `.then`). The cellEdit/createRowSession memos run with [] deps, so the
-  // feature switch is read through a ref mirror (editAutosaveRef precedent);
-  // the commit-intent marker distinguishes a REAL commit attempt (set by the
-  // commit wrappers, consumed synchronously by the validate wrapper) from
-  // setDraft typing validation and startEdit seeds — neither ever counts.
+  // (counted in the Grid Core onCommit callback and row-session callback);
+  // fail = a commit attempt rejected by editRules (counted by the Grid Core
+  // validation callback or the row-session validator). The commit flag
+  // distinguishes a REAL commit attempt from setDraft typing validation and
+  // startEdit seeds — neither ever counts.
   // Re-enabling the switch resets the ledger (fresh start per session).
   const [validationCounts, setValidationCounts] = React.useState({ ok: 0, fail: 0 })
   const validationSummaryRef = React.useRef(validationSummary)
@@ -2356,7 +2372,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
    *  the outcome — the marker is consumed synchronously inside commitEdit(),
    *  and cleared again when nothing was actually committed so a stray intent
    *  can never leak into the next validation (idle commitEdit is a no-op). */
-  const commitWithSummaryIntent = React.useCallback((s: CellEdit): boolean => {
+  const commitWithSummaryIntent = React.useCallback((s: CellEdit<GridEditingKey>): boolean => {
     validationIntentRef.current = true
     const ok = s.commitEdit()
     if (!ok) validationIntentRef.current = false
@@ -2369,51 +2385,70 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!validationSummaryRef.current) return
     setValidationCounts((prev) => ({ ...prev, [kind]: prev[kind] + 1 }))
   }, [])
-  const cellEdit = React.useMemo(
-    () =>
-      createCellEdit({
-        validate: (draft, _target) => {
-          const ctx = editCtxRef.current
-          if (!ctx) return null
-          // Batch BR: consume the commit-intent marker — set by the commit
-          // wrappers immediately before a real commit attempt. setDraft
-          // typing validation and startEdit seeds carry no intent and never
-          // count; the marker is cleared synchronously on the very next
-          // validate invocation, so it cannot leak across calls.
-          const commitIntent = validationIntentRef.current
-          validationIntentRef.current = false
-          // Declarative editRules run async (they may contain async validators);
-          // the legacy validate callback stays synchronous for the sync commit
-          // path.
-          if (hasEditRules(ctx.col)) {
-            return validateEditRulesAsync(ctx.col.editRules, draft, ctx.row, false, {
-              rows: externalDataRef.current ?? [],
-              columnKey: ctx.col.key,
-            }).then((r) => {
-              if (commitIntent && !r.valid) bumpValidationCount('fail')
-              return r.valid ? null : (r.messages[0] ?? null)
-            })
-          }
-          if (ctx.col.validate) {
-            return ctx.col.validate(coerceValue(ctx.col, draft), ctx.row) ?? null
-          }
-          return null
-        },
-        coerce: (draft, _target) => {
-          const ctx = editCtxRef.current
-          return ctx ? coerceValue(ctx.col, draft) : draft
-        },
-        onCommit: (_target, value) => {
-          const ctx = editCtxRef.current
-          if (!ctx) return
-          // Batch BR: a commit that PASSED editRules validation and landed.
-          if (hasEditRules(ctx.col)) bumpValidationCount('ok')
-          commitValue(ctx, value)
-        },
-      }),
-    [],
-  )
-  const editTarget = useStore(cellEdit.store)
+  const cellEditBridge = useGridEditing<Row>(gridCore, {
+    getRowKey: (row, index) => {
+      const value = (row as Record<string, unknown>)[rowKey]
+      if (value != null) return value as string | number
+      return (rowId?.(row, index) ?? index) as string | number
+    },
+    getRowIndex: (rowKey) => {
+      const index = bodyDataRef.current.findIndex((row, rowIndex) =>
+        Object.is(rowKeyOf(row, rowIndex), rowKey),
+      )
+      return index >= 0 ? index : undefined
+    },
+    getRules: (columnKey) => leafColumns.find((column) => column.key === columnKey)?.editRules,
+    getValue: (row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return column ? getCellValue(row, column) : row[columnKey]
+    },
+    setValue: (row, columnKey, value) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return { ...row, [columnValueKey(column ?? { key: columnKey })]: value }
+    },
+    coerce: (draft, row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return column ? coerceValueFor(row, column, draft) : draft
+    },
+    validate: (value, row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return column?.validate ? (column.validate(value, row) ?? null) : null
+    },
+    isEditable: (row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return Boolean(
+        column &&
+        isEditableColumn(column) &&
+        !isCellLocked(row, column) &&
+        !isCellReadonly(row, column),
+      )
+    },
+    commitOptions: {
+      meta: { auditType: 'edit', recordHistory: false, notifyDataChange: false },
+    },
+    onValidation: (validation) => {
+      if (!validation.commit) return
+      validationIntentRef.current = false
+      const column = leafColumns.find((candidate) => candidate.key === validation.columnKey)
+      if (column && hasEditRules(column) && !validation.valid) bumpValidationCount('fail')
+    },
+    onCommit: (commit) => {
+      const column = leafColumns.find((candidate) => candidate.key === commit.columnKey)
+      if (!column) return
+      if (hasEditRules(column)) bumpValidationCount('ok')
+      trackDirty(commit.rowKey, commit.columnKey, commit.oldValue, commit.value)
+      onCellEditRef.current?.({
+        row: commit.row,
+        column,
+        oldValue: commit.oldValue,
+        newValue: commit.value,
+        rowIndex: commit.rowIndex,
+      })
+      if (editAutosaveRef.current) onAutosaveRef.current?.(rowsModel.get())
+    },
+  })
+  const cellEdit = cellEditBridge.model
+  const editTarget = cellEditBridge.state
   const editingTarget = editTarget.editing
   // Batch DH: pattern-edit hint (iris 独有) — resolve the active column + live
   // draft from the shared cell-edit store once per render, so every matching
@@ -2436,7 +2471,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // EditorSurface per open column subscribes to its session store and reports
   // back when the session goes idle (committed) so just THAT column's editor
   // closes — row mode commits per cell, never the whole row at once.
-  const [rowSessions, setRowSessions] = React.useState<Map<string, CellEdit>>(new Map())
+  const [rowSessions, setRowSessions] = React.useState<Map<string, CellEdit<GridEditingKey>>>(
+    new Map(),
+  )
   const [rowEditing, setRowEditing] = React.useState<{ k: string | number; idx: number } | null>(
     null,
   )
@@ -2466,18 +2503,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rowIdent: string | number,
     col: IrisTableColumn<Row>,
     rowIndex: number,
-  ): CellEdit => {
+  ): CellEdit<GridEditingKey> => {
     // Batch EB (iris 独有): ONE edit count per row session opened — row-mode
     // fan-out counts per editable column (locked/readonly rows never reach
     // here — the callers filter first), and the single-column reopen counts
     // again. Escape still counts (the bump happens at OPEN, not commit).
     if (columnStatsEnabledRef.current) bumpColumnStats(col.key, 'edit')
-    return createCellEdit({
+    return createCellEdit<GridEditingKey>({
       validate: (draft) => {
         const row = currentRowFor(rowIdent)
         if (!row) return null
-        // Batch BR: same commit-intent consumption as the cell session — the
-        // row sessions' commit sites (Enter/Tab/row-switch) set the marker.
+        // Batch BR: row-session commit sites (Enter/Tab/row-switch) set the
+        // marker; the Grid Core cell session reports the same intent through
+        // its validation callback.
         const commitIntent = validationIntentRef.current
         validationIntentRef.current = false
         if (hasEditRules(col)) {
@@ -2515,7 +2553,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (editableCols.length === 0) return
     pendingNavRef.current = null
     rowEditorRefs.current = new Map()
-    const sessions = new Map<string, CellEdit>()
+    const sessions = new Map<string, CellEdit<GridEditingKey>>()
     for (const col of editableCols) {
       const id = cellId(k, col.key)
       const session = createRowSession(k, col, rowIndex)
@@ -2730,7 +2768,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // the natural subset), while free-zone reorders stay onReorder-only
           // (byte-identical preservation). Full new key list — never undefined.
           if (!grouped && pinOf(moved) !== null && onColumnOrderChange) {
-            onColumnOrderChange(next.map((c) => c.key))
+            setColumnOrder(next.map((c) => c.key))
           }
         }
       }
@@ -2932,11 +2970,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
     window.addEventListener('keydown', onWindowKey)
     return () => window.removeEventListener('keydown', onWindowKey)
   }, [importPreviewRows])
-  const toggleColumnVisibility = (key: string) => {
-    const next = { ...(columnVisibility ?? {}) }
-    next[key] = !(columnVisibility?.[key] !== false)
-    onColumnVisibilityChange?.(next)
-  }
   // ── Custom column panel (vxe customConfig parity, batch S) ─────────────
   // The toolbar button opens the full panel in place of the old checkbox
   // menu: a search box (display-only), a drag-sort list over a local draft
@@ -3050,12 +3083,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const handleCustomConfirm = () => {
     setColumnSettingsOpen(false)
-    onColumnOrderChange?.(draftOrder)
+    setColumnOrder(draftOrder)
   }
 
   const handleCustomReset = () => {
-    onColumnVisibilityChange?.({ ...(visibilitySnapshotRef.current ?? {}) })
-    onColumnOrderChange?.(undefined)
+    setColumnVisibility({ ...(visibilitySnapshotRef.current ?? {}) })
+    clearColumnOrder()
     setDraftOrder(safeColumns.map((c) => c.key))
     setCustomSearch('')
   }
@@ -3377,7 +3410,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // callback; the cursor coordinates live in a virtual floating anchor (a fake
   // element whose getBoundingClientRect returns the zero-size cursor rect).
   // Cross-page note: the selection model is created once in a ref and the
-  // proxy page change only calls setLiveData — nothing resets displaySelection,
+  // proxy page change only synchronizes the rows feature — nothing resets displaySelection,
   // so selections survive page flips (vxe reserve semantics is our default;
   // covered by the cross-page test in context-menu-select.test.tsx).
   const [contextMenuState, setContextMenuState] = React.useState<{
@@ -3575,8 +3608,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   const applyFilterValues = (colKey: string, values: string[]): void => {
     const next = { ...(filterValues ?? {}), [colKey]: values }
-    onFilterValuesChange?.(next)
-    emitTableEvent('filter-value-change', { filterValues: next })
+    filtering.setFilterValues(next)
     // Batch CB: record recent filters — non-empty sets only (an empty set is
     // the clear semantics, mergeFilterValues precedent). Records even without
     // an onFilterValuesChange handler (controlled-irrelevant).
@@ -3594,8 +3626,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const clearFilterValues = (colKey: string): void => {
     const next = { ...(filterValues ?? {}) }
     delete next[colKey]
-    onFilterValuesChange?.(next)
-    emitTableEvent('filter-value-change', { filterValues: next })
+    filtering.setFilterValues(next)
   }
   // Batch BW: 复制值 — the clicked cell's display text (mask → formatter →
   // String, the `contextCellText` chain shared with cellTooltip) via the
@@ -3610,9 +3641,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const { row, column, rowIndex } = params
     if (isCellLocked(row, column) || isCellReadonly(row, column)) return
     const current = externalDataRef.current ?? []
-    const k = rowKeyOf(row, rowIndex)
-    const next = setCellValue(current, rowKey, k, column.key, '')
-    if (next !== current) commitRowList(next)
+    const k = rowPatchKey(row, rowIndex)
+    if (k == null) return
+    const next = reconcileRowPatches(
+      current,
+      new Map([[k, { ...row, [columnValueKey(column)]: '' }]]),
+    )
+    if (next.some((entry, index) => !Object.is(entry, current[index]))) commitRowList(next)
   }
   // Batch DO: format the live cell range (or the clicked cell when no range is
   // active) in one write-back. Formula, locked and readonly cells are
@@ -3627,11 +3662,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const rows = bodyDataRef.current
     const cols = liveLeafRef.current
     const current = externalDataRef.current ?? []
-    let next = current
+    const patches = new Map<string | number, Row>()
     for (let rowIndex = start.row; rowIndex <= end.row; rowIndex += 1) {
       const row = rows[rowIndex]
       if (!row) continue
-      const key = rowKeyOf(row, rowIndex)
+      const key = rowPatchKey(row, rowIndex)
       if (key == null) continue
       for (let columnIndex = start.col; columnIndex <= end.col; columnIndex += 1) {
         const col = cols[columnIndex]
@@ -3645,10 +3680,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : typeof value === 'string'
               ? value.toUpperCase()
               : value
-        if (formatted !== value) next = setCellValue(next, rowKey, key, col.key, formatted)
+        if (formatted !== value) {
+          const previous = patches.get(key) ?? row
+          patches.set(key, { ...previous, [columnValueKey(col)]: formatted })
+        }
       }
     }
-    if (next !== current) commitRowList(next)
+    if (patches.size === 0) return
+    const next = reconcileRowPatches(current, patches)
+    if (next.some((entry, index) => !Object.is(entry, current[index]))) commitRowList(next)
   }
   const handleContextMenu = (
     e: React.MouseEvent,
@@ -3756,7 +3796,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     pendingNavRef.current = null
     editCtxRef.current = { row, col, rowIndex }
     const current = getCellValue(row, col)
-    cellEdit.startEdit(cellId(rowIdent, col.key), col.key, current == null ? '' : String(current))
+    cellEdit.startEdit(rowIdent, col.key, current == null ? '' : String(current))
     // Batch V (vxe edit-activated parity): the session is open — report the
     // cell coordinates (cell mode only).
     onEditStartRef.current?.({ row, column: col, rowIndex })
@@ -3886,18 +3926,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   // Batch AT: record ONE audit entry per mutation commit. A plain function
   // (not a useCallback — it closes over rowKeyOf, which is declared just
-  // above, and the stable refs/controller). Exposed to commitValue (defined
-  // earlier in the body) through the recordAuditRef mirror assigned here.
+  // above, and the stable refs/controller). The rows feature reads the latest
+  // render's function through useGridRows' callback mirror.
   const recordAudit = (next: Row[], type: AuditLogType): void => {
     if (!auditEnabledRef.current) return
     const entry = auditDiff(auditRowsRef.current, next, (r, i) => rowKeyOf(r, i))
     if (entry) audit.push({ type, ...entry })
     // Eager ref sync: a following commit in the SAME event must diff against
-    // the true intermediate list (React defers the setLiveData updaters).
+    // the true intermediate list before React renders the updated rows store.
     auditRowsRef.current = next
   }
-  recordAuditRef.current = recordAudit
-
   // Batch BA: one version per row-list commit — the PRE-change rows (the
   // exact state a restore returns to) + the same type hint the batch-AT
   // funnel records. Runs BEFORE recordAudit's eager auditRowsRef sync so the
@@ -3984,26 +4022,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onDataChangeRef.current = onDataChange
   const commitRowList = React.useCallback(
     (next: Row[], type: AuditLogType = 'edit') => {
-      // Batch BA: push the PRE-change rows + the type hint into the version
-      // ring BEFORE recordAudit overwrites the diff snapshot. restoreVersion
-      // flips historySuppressRef so its own replay never pushes a new version
-      // (it IS audited + undoable — consistent with undo/redo replay).
-      if (!historySuppressRef.current) recordHistory(type)
-      recordUndo(next)
-      // Batch AT: ONE audit entry per commit — the type hint comes from the
-      // mutation site (insert/remove/paste/batch/fill/undo/redo; default
-      // 'edit' covers inline-equivalent writes like updateRow, find-replace,
-      // range clear and the Delete shortcut); rowKey + first changed cell
-      // come from the light diff against the previous rows.
-      recordAudit(next, type)
-      setLiveData(next)
-      externalDataRef.current = next
-      onDataChangeRef.current?.(next)
+      rowsModel.commit(next, {
+        reason: type,
+        meta: { auditType: type, recordHistory: true, notifyDataChange: true },
+      })
     },
-    [recordUndo, recordAudit, recordHistory],
+    [rowsModel],
   )
   // Replay a snapshot (undo or redo) through the same write-back channel as
-  // every other mutation — one commitRowList (setLiveData + onDataChange).
+  // every other mutation — one Grid Core rows transaction + onDataChange.
   // restoringRef is flipped around the replay so recordUndo (called inside
   // commitRowList) is a no-op — history never re-pushes its own replay.
   // Selection: keys that no longer exist in the restored list are pruned
@@ -4059,7 +4086,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const handleRef = React.useRef<IrisTableHandle<Row> | null>(null)
   handleRef.current = {
     insertRow: (row, index) => {
-      commitRowList(insertRowInList(externalDataRef.current ?? [], rowKey, row, index), 'insert')
+      rowsModel.insert(row, index, {
+        reason: 'insert',
+        meta: { auditType: 'insert', recordHistory: true, notifyDataChange: true },
+      })
     },
     cloneRow: (key, index) => {
       const rows = externalDataRef.current ?? []
@@ -4067,32 +4097,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (next !== rows) commitRowList(next, 'insert')
     },
     removeRow: (key) => {
-      const rows = externalDataRef.current ?? []
-      const next = removeRowFromList(rows, rowKey, key)
-      if (next !== rows) {
-        if (displaySelectionRef.current.includes(key)) {
-          rebaseToProp()
-          selModel.toggle(key)
-        }
-        pruneDirtyFor(key)
-        commitRowList(next, 'remove')
+      // Let the rows model resolve the key so static tree children are
+      // addressable exactly like roots. The model returns false for a miss,
+      // keeping the old zero-side-effect behavior without a root-only probe.
+      const removed = rowsModel.remove(key, {
+        reason: 'remove',
+        meta: { auditType: 'remove', recordHistory: true, notifyDataChange: true },
+      })
+      if (!removed) return
+      if (displaySelectionRef.current.includes(key)) {
+        rebaseToProp()
+        selModel.toggle(key)
       }
+      pruneDirtyFor(key)
     },
     removeRows: (keys) => {
       // Batch remove (vxe removeRows parity, batch J): compose the core helper
       // per key, skipping missing ones; prune the selection of the keys that
       // were ACTUALLY removed; commit + onDataChange exactly once.
-      let rows = externalDataRef.current ?? []
-      const removed = new Set<string | number>()
-      for (const key of keys) {
-        const next = removeRowFromList(rows, rowKey, key)
-        if (next !== rows) {
-          removed.add(key)
-          rows = next
-        }
-      }
-      if (removed.size === 0) return
-      for (const key of removed) pruneDirtyFor(key)
+      const removedKeys = rowsModel.removeMany(keys, {
+        reason: 'remove',
+        meta: { auditType: 'remove', recordHistory: true, notifyDataChange: true },
+      })
+      if (removedKeys.length === 0) return
+      const removed = new Set(removedKeys)
+      for (const key of removedKeys) pruneDirtyFor(key)
       const selectedNow = displaySelectionRef.current
       if (selectable !== 'none' && selectedNow.some((k) => removed.has(k))) {
         rebaseToProp()
@@ -4100,10 +4129,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           if (selectedNow.includes(key)) selModel.toggle(key)
         }
       }
-      commitRowList(rows, 'remove')
     },
     updateRow: (key, patch) => {
-      commitRowList(updateRowInList(externalDataRef.current ?? [], rowKey, key, patch))
+      rowsModel.update(key, patch, {
+        reason: 'edit',
+        meta: { auditType: 'edit', recordHistory: true, notifyDataChange: true },
+      })
     },
     refetch: () => {
       proxyRef.current?.refetch()
@@ -4115,7 +4146,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // (fires onDataChange). The core remote table source has no setData,
       // so the proxy state (total/page) stays unchanged until the next
       // query replaces the page (documented in the handle type).
-      commitRowList(rows)
+      rowsModel.loadData(rows, {
+        reason: 'edit',
+        meta: { auditType: 'edit', recordHistory: true, notifyDataChange: true },
+      })
     },
     reloadData: () => {
       proxyRef.current?.refetch()
@@ -4234,7 +4268,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // locator with goToRow (batch CZ).
       const root = rootRef.current
       if (!root) return
-      findTableRowEl(root, key)?.scrollIntoView?.({ block: 'nearest' })
+      const row = findTableRowEl(root, key)
+      if (row) {
+        row.scrollIntoView?.({ block: 'nearest' })
+        return
+      }
+      const virtualIndex = virtualRowIndexRef.current.get(key)
+      if (virtualIndex !== undefined) virtualScrollHandleRef.current?.scrollToIndex(virtualIndex)
     },
     goToRow: (key) => {
       // Batch CZ (iris 独有 — vxe has no locate flash): scroll the row into
@@ -4262,9 +4302,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // Tree mode and detail mode share the single expansion model — both
       // render toggles route through expansion.toggle. No-op for plain tables.
       if (!treeMode && !hasDetail) return
-      const idx = liveDataRef.current.findIndex((r, i) => rowKeyOf(r, i) === key)
-      if (idx < 0) return
-      const row = liveDataRef.current[idx]
+      // Resolve static tree descendants through Core rows. The visible-body
+      // index remains preferred for rowExpandable/event parity; a collapsed
+      // descendant gets its root snapshot index as a stable callback fallback.
+      const visibleIdx = bodyDataRef.current.findIndex((r, i) => rowKeyOf(r, i) === key)
+      const rootIdx = liveDataRef.current.findIndex((r, i) => rowKeyOf(r, i) === key)
+      const row = rowsModel.find(key) ?? (rootIdx >= 0 ? liveDataRef.current[rootIdx] : undefined)
+      if (row === undefined) return
+      const idx = visibleIdx >= 0 ? visibleIdx : rootIdx >= 0 ? rootIdx : 0
       // Mirror the row-click path's gate: detail expansion respects rowExpandable.
       if (hasDetail && !isRowExpandable(row, idx)) return
       const keyStr = String(key)
@@ -4292,18 +4337,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else setSort(null)
     },
     clearFilter: () => {
-      // Both filter channels are CONTROLLED (no internal mode — batch I), so
-      // the change handlers own the reset; without handlers the parent map
-      // stays untouched (read-only table, documented).
-      onFiltersChange?.({})
-      emitTableEvent('filter-change', { filters: {} })
-      onFilterValuesChange?.({})
-      emitTableEvent('filter-value-change', { filterValues: {} })
+      filtering.clear()
     },
     setCurrentRow: (key) => {
       // Mirror the row-click path's veto guards: fire only when the row
       // exists AND the handler is provided (no-op otherwise, documented).
-      const row = liveDataRef.current.find((r, i) => rowKeyOf(r, i) === key)
+      const row = rowsModel.find(key) ?? liveDataRef.current.find((r, i) => rowKeyOf(r, i) === key)
       if (row !== undefined && onCurrentRowChange) {
         if (beforeCurrentRowChange?.(key, row) !== false) onCurrentRowChange(key, row)
       }
@@ -4574,82 +4613,28 @@ export function IrisTable<Row extends Record<string, unknown>>({
       lazyLoading,
     ],
   )
-  // Client-side filters (vxe filterConfig parity, local mode): core filterSort
-  // applied to the sorted data before paging/virtualizing (flat mode). With
-  // remoteFilter, the server owns filtering — rows are never hidden locally.
-  // The search form's applied values merge over the `filters` prop (form wins,
-  // neither input is mutated); in proxy mode the server owns form filtering,
-  // so only the prop map filters the loaded page (batch C behavior preserved).
-  const filteredData = React.useMemo(() => {
-    if (remoteFilter) return querySortedData
-    const merged: Record<string, string> = proxy
-      ? (filters ?? {})
-      : mergeFormFilters(filters ?? {}, formApplied)
-    // Batch AI: the parsed query's substring channel (`=`/`contains`) AND-merges
-    // over the prop/form filters — the query wins on key collision (last-typed
-    // wins, same as the form). In proxy mode without remoteFilter the loaded
-    // page is still filtered locally (batch C behavior preserved).
-    for (const [key, value] of Object.entries(queryParsed.filters)) {
-      if (value !== '') merged[key] = value
-    }
-    const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
-    // Batch I: per-column checked sets OR-match the raw String(value); a set
-    // applies only when non-empty. AND-ed with the text channel below.
-    const checkedEntries = Object.entries(filterValues ?? {}).filter(
-      ([, values]) => values.length > 0,
-    )
-    // Batch AI: the parsed `in` lists join the checked-set channel (OR-match
-    // against the raw String(value) — the same semantics as filterValues).
-    const queryInEntries = Object.entries(queryParsed.inValues).filter(
-      ([, values]) => values.length > 0,
-    )
-    if (
-      active.length === 0 &&
-      checkedEntries.length === 0 &&
-      queryInEntries.length === 0 &&
-      queryParsed.rules.length === 0
-    ) {
-      return querySortedData
-    }
-    return querySortedData.filter((row) => {
-      const textOk = active.every(([key, value]) => {
-        const col = displayColumns.find((c) => c.key === key)
-        if (!col) return true
-        const raw = getCellValue(row, col)
-        if (col.filterMethod) return col.filterMethod(raw, row, value)
-        return String(raw ?? '')
-          .toLowerCase()
-          .includes(value.toLowerCase())
-      })
-      const setsOk = checkedEntries.every(([key, values]) => {
-        const col = displayColumns.find((c) => c.key === key)
-        if (!col) return true
-        return values.includes(String(getCellValue(row, col) ?? ''))
-      })
-      // Batch AI: query `in` lists (OR-match) + typed relational rules AND-ed
-      // with the channels above (core matchesRule = filterSort semantics).
-      const queryInOk = queryInEntries.every(([key, values]) => {
-        const col = displayColumns.find((c) => c.key === key)
-        if (!col) return true
-        return values.includes(String(getCellValue(row, col) ?? ''))
-      })
-      const rulesOk = queryParsed.rules.every((rule) => {
-        const col = displayColumns.find((c) => c.key === rule.key)
-        if (!col) return true
-        return matchesRule(getCellValue(row, col), rule)
-      })
-      return textOk && setsOk && queryInOk && rulesOk
-    })
-  }, [
+  const { model: filtering, filteredData } = useGridFiltering(
+    gridCore,
     querySortedData,
-    filters,
-    formApplied,
-    displayColumns,
-    remoteFilter,
-    proxy,
-    filterValues,
-    queryParsed,
-  ])
+    toGridFilteringOptions({
+      columns: displayColumns,
+      getValue: getCellValue,
+      filters,
+      onFiltersChange: (next) => {
+        onFiltersChange?.(next)
+        emitTableEvent('filter-change', { filters: next })
+      },
+      filterValues,
+      onFilterValuesChange: (next) => {
+        onFilterValuesChange?.(next)
+        emitTableEvent('filter-value-change', { filterValues: next })
+      },
+      formFilters: formApplied,
+      query: queryParsed,
+      proxy,
+      remoteFilter,
+    }),
+  )
   // Batch W: mirror the latest filtered rows for the mount-time handle
   // (getFilteredData / exportCurrentViewCsv must see post-rerender state,
   // not the mount render's memo).
@@ -4756,6 +4741,63 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // post-rerender rows — same pattern as filteredDataRef above).
   const bodyDataRef = React.useRef(bodyData)
   bodyDataRef.current = bodyData
+  // Tree accessors/maps are render-derived, while range/clipboard handlers
+  // intentionally keep stable callbacks. Mirror both so a later data refresh
+  // or row-id map rebuild is visible to an already-mounted handler.
+  const treeKeyMapRef = React.useRef(treeKeyMap)
+  treeKeyMapRef.current = treeKeyMap
+  const getSubRowsRef = React.useRef(getSubRows)
+  getSubRowsRef.current = getSubRows
+
+  /** Resolve a projected row to the same key used by the Core rows tree. */
+  function rowPatchKey(row: Row, _index?: number): string | number | undefined {
+    const fieldKey = rowKeyOf(row)
+    if (fieldKey != null) return fieldKey
+    const treeKey = treeKeyMapRef.current?.get(row)
+    if (treeKey != null) return treeKey
+    // Index keys are intentionally not used for patch write-back. They are
+    // only a rendering fallback for keyless rows and cannot address the same
+    // row after sorting/filtering or across nested siblings.
+    return undefined
+  }
+
+  /** Resolve the source field written by an editable/display column. */
+  function columnValueKey(column: Pick<IrisTableColumn<Row>, 'dataIndex' | 'key'>): string {
+    return (column.dataIndex ?? column.key) as string
+  }
+
+  /** Apply full row replacements back to the Core-owned root/tree source. */
+  function reconcileRowPatches(
+    sourceRows: readonly Row[],
+    patches: ReadonlyMap<string | number, Row>,
+  ): Row[] {
+    const getChildren = getSubRowsRef.current
+    if (getChildren !== undefined) {
+      return reconcileTreeRows(sourceRows, patches, {
+        getRowKey: (row, index) => rowPatchKey(row, index),
+        getChildren,
+      })
+    }
+    const next = sourceRows.map((row, index) => patches.get(rowPatchKey(row, index)!) ?? row)
+    return next.every((row, index) => Object.is(row, sourceRows[index]))
+      ? (sourceRows as Row[])
+      : next
+  }
+
+  /** Materialize keyed field patches as full rows before tree reconciliation. */
+  function materializeRowPatches(
+    patches: ReadonlyMap<string | number, Partial<Row>>,
+  ): Map<string | number, Row> {
+    const out = new Map<string | number, Row>()
+    for (const [key, patch] of patches) {
+      const base =
+        bodyDataRef.current.find((row, index) => rowPatchKey(row, index) === key) ??
+        rowsModel.find(key)
+      if (base) out.set(key, { ...base, ...patch })
+    }
+    return out
+  }
+
   // Batch BV: mirror the latest compare state for the mount-time handle
   // (exportComparisonCsv runs on demand, NOT during render — the same
   // ref-mirror pattern as filteredDataRef/bodyDataRef above; the diff memo
@@ -5082,21 +5124,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // inline height when `autoResize` is on and no explicit `height` is set.
   const [autoSize, setAutoSize] = React.useState<{ width: number; height: number } | null>(null)
 
-  // Cell-range selection (opt-in via `cellRange`). The controller lives in a
-  // ref so it is never re-created; we bridge it to React via
-  // useSyncExternalStore through the controller's getState/subscribe API.
-  const cellRangeRef = React.useRef<CellRangeController | null>(null)
-  if (cellRangeRef.current === null) {
-    cellRangeRef.current = createCellRange()
-  }
-  const cellRangeCtrl = cellRangeRef.current
-  // Subscribe React to the range store — re-renders whenever anchor/active changes.
-  // `cellRangeState` drives re-renders; `isInRange` reads fresh state at render time.
-  const cellRangeState = React.useSyncExternalStore(
-    cellRangeCtrl.subscribe,
-    cellRangeCtrl.getState,
-    cellRangeCtrl.getState,
-  )
+  // Cell-range state belongs to the same per-table Grid Core as rows/columns;
+  // React keeps only the subscribed snapshot and pointer/keyboard DOM wiring.
+  const { model: cellRangeCtrl, state: cellRangeState } = useGridRange(gridCore)
   // Derive a stable isInRange function from the subscribed snapshot so that
   // TypeScript treats `cellRangeState` as consumed and every cell reads the
   // current range (computed from anchor/active in the snapshot, not a closure).
@@ -5322,8 +5352,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       e.preventDefault()
       if (isCellLocked(row, col) || isCellReadonly(row, col)) return
       const current = externalDataRef.current ?? []
-      const next = setCellValue(current, rowKey, k, col.key, '')
-      if (next !== current) commitRowList(next)
+      const key = rowPatchKey(row, cell.row)
+      if (key == null) return
+      const next = reconcileRowPatches(
+        current,
+        new Map([[key, { ...row, [columnValueKey(col)]: '' }]]),
+      )
+      if (next.some((entry, index) => !Object.is(entry, current[index]))) commitRowList(next)
     }
   }
 
@@ -5361,191 +5396,101 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }, [])
 
-  // Batch BP (iris 独有): the copy OUTPUT format dispatcher — one throat for
-  // BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制). Three
-  // serializers, zero new ones: `'tsv'` → `tsvCell`, `'csv'` → `csvRangeCell`
-  // (RFC-4180, headerless range fiat — same serializer as the 导出 CSV
-  // download), `'html'` → core `toHtml` over the range's column subset
-  // (`leafColumns.slice(start.col, end.col + 1)`) with synthesized rows keyed
-  // by the SAME effective read key toHtml uses (string `dataIndex` else
-  // `key` — the exportCsv shadow-row convention verbatim). The column mask
-  // applies identically across all three formats (batch-AY invariant); a
-  // number masked into a string loses toHtml's numeric right-alignment
-  // (fiat). Unset / invalid format fail-closed to the batch-O TSV
-  // (byte-identical, existing copy tests stay green).
-  // Batch CU (iris 独有 — vxe clipboard-config always copies raw values, no
-  // format-preserving copy): `copyWithFormat` swaps formatter columns onto the
-  // `contextCellText` display chain (mask → formatter → String — the SAME chain
-  // as the context-menu 复制值), so the range copy carries the formatted text;
-  // non-formatter columns stay byte-identical on the batch-AY mask/exportRaw
-  // path. The formatted STRING still flows through the same serializers below
-  // (RFC-4180 quoting + OWASP neutralization apply to formatted text too).
-  const buildRangeCopy = React.useCallback(
-    (range: CellRange, format: 'tsv' | 'csv' | 'html', copyWithFormat: boolean): string => {
-      const body = liveBodyRef.current
-      const cols = liveLeafRef.current
-      if (format === 'html') {
-        const rangeCols = cols.slice(range.start.col, range.end.col + 1)
-        const exportCols = rangeCols.map((col) => ({
-          key: col.key,
-          title: col.title,
-          dataIndex: typeof col.dataIndex === 'string' ? col.dataIndex : undefined,
-        }))
-        const rows: Record<string, unknown>[] = []
-        for (let r = range.start.row; r <= range.end.row; r += 1) {
-          const row = body[r]
-          const out: Record<string, unknown> = {}
-          for (let c = range.start.col; c <= range.end.col; c += 1) {
-            const col = cols[c]
-            if (!row || !col) continue
-            // Batch AY: the copy HTML applies the column mask unless
-            // `exportRaw` opts out — all three copy formats agree. Batch CU:
-            // `copyWithFormat` supersedes `exportRaw`'s copy-path skip on
-            // formatter columns only (mask → formatter always — the
-            // formatter input contract, batch AY); non-formatter columns keep
-            // the byte-identical path.
-            const value = getCellValue(row, col)
-            // The row is keyed by the SAME effective read key toHtml uses
-            // (string `dataIndex` else `key` — exportCsv shadow-row
-            // convention verbatim; a numeric dataIndex falls back to `key`).
-            out[typeof col.dataIndex === 'string' ? col.dataIndex : col.key] =
-              copyWithFormat && col.formatter
-                ? contextCellText(row, col, getCellValue)
-                : col.exportRaw
-                  ? value
-                  : applyCellMask(value, col)
-          }
-          rows.push(out)
-        }
-        return toHtml(rows, exportCols)
-      }
-      const lines: string[] = []
-      for (let r = range.start.row; r <= range.end.row; r += 1) {
-        const row = body[r]
-        const cells: string[] = []
-        for (let c = range.start.col; c <= range.end.col; c += 1) {
-          const col = cols[c]
-          if (!row || !col) {
-            cells.push('')
-            continue
-          }
-          // Batch AY: the copy TSV/CSV applies the column mask unless
-          // `exportRaw` opts out — clipboard and CSV export agree. Batch CU:
-          // `copyWithFormat` swaps formatter columns to the display-text chain
-          // (`contextCellText`), then the formatted STRING still goes through
-          // the same serializers (RFC-4180 quoting + OWASP neutralization
-          // apply to formatted text too); non-formatter columns stay
-          // byte-identical (a raw negative number still bypasses
-          // neutralization — the formatter-gate blast radius).
-          const value = getCellValue(row, col)
-          const masked = col.exportRaw ? value : applyCellMask(value, col)
-          const cellText =
-            copyWithFormat && col.formatter ? contextCellText(row, col, getCellValue) : masked
-          cells.push(format === 'csv' ? csvRangeCell(cellText) : tsvCell(cellText))
-        }
-        lines.push(cells.join(format === 'csv' ? ',' : '\t'))
-      }
-      return lines.join('\n')
+  // The shared Grid clipboard feature owns range serialization and bounded
+  // TSV application. Effective rows follow the rendered sort/filter/tree
+  // projection; reconcileRows maps changed projected rows back to the core
+  // row source by the original key. Browser clipboard I/O stays below.
+  const { serialize: serializeGridRange, paste: pasteGridRange } = useGridClipboard<Row>(gridCore, {
+    getRows: () => liveBodyRef.current,
+    getColumns: () => liveLeafRef.current,
+    resolveValue: (row, column) => getCellValue(row, column as IrisTableColumn<Row>),
+    setValue: (row, column, value) => ({ ...row, [columnValueKey(column)]: value }),
+    isCellEditable: (row, column) => {
+      const tableColumn = column as IrisTableColumn<Row>
+      return (
+        rowKeyOf(row) != null &&
+        !tableColumn.formula &&
+        !isCellLocked(row, tableColumn) &&
+        !isCellReadonly(row, tableColumn)
+      )
     },
-    [],
-  )
+    reconcileRows: (sourceRows, previousRows, rows) => {
+      const changed = new Map<string | number, Row>()
+      rows.forEach((row, index) => {
+        if (Object.is(row, previousRows[index])) return
+        const previous = previousRows[index]
+        // Prefer the stable field key; rowId-backed tree rows use the same
+        // object→key map as flattenTree so a projected child can be resolved
+        // back into the Core-owned root source without relying on its visible
+        // (flattened) index.
+        const key = previous ? (rowPatchKey(previous, index) ?? null) : null
+        if (key != null) changed.set(key, row)
+      })
+      return reconcileRowPatches(sourceRows, changed)
+    },
+    commitOptions: {
+      meta: { auditType: 'paste', recordHistory: true, notifyDataChange: true },
+    },
+  })
 
   const pasteIntoRange = React.useCallback(
     async (range: CellRange): Promise<void> => {
       if (!rowKey) return
       const text = await readClipboardText()
       if (text == null) return
+      const multiCell = range.end.row > range.start.row || range.end.col > range.start.col
+      // Normal bounded paste, including every multi-cell rectangle, belongs
+      // entirely to Grid Core. Only the opt-in single-cell overflow policy
+      // remains here because it needs the adapter's row factory/key strategy.
+      if (!pasteOptions?.insertIfOverflow || multiCell) {
+        pasteGridRange(text, range)
+        return
+      }
       const body = liveBodyRef.current
       const cols = liveLeafRef.current
       if (body.length === 0 || cols.length === 0) return
       const lines = text.split(/\r?\n/)
-      const byKey = new Map<string | number, Record<string, string>>()
+      const byKey = new Map<string | number, Partial<Row>>()
       const newRows: Record<string, unknown>[] = []
-      // Batch AK (iris 独有): a multi-cell selection fills EXACTLY its
-      // rectangle from the top-left — clipboard smaller → top-left fill, the
-      // rest of the rectangle unchanged; larger → clipped to the rectangle
-      // AND the table bounds (out-of-table rows/cols ignored). A single-cell
-      // selection keeps the batch-O streaming behavior (anchor onward), so
-      // existing paste tests stay green. Either way ONE batched commitRowList
-      // and values stay strings.
-      const multiCell = range.end.row > range.start.row || range.end.col > range.start.col
-      if (multiCell) {
-        const lastRow = Math.min(range.end.row, body.length - 1)
-        const lastCol = Math.min(range.end.col, cols.length - 1)
-        for (let r = range.start.row; r <= lastRow; r += 1) {
-          const row = body[r]!
-          const k = rowKeyOf(row)
-          if (k == null) continue
-          const cells = lines[r - range.start.row]
-          if (!cells) continue
-          const values = cells.split('\t')
-          let patch: Record<string, string> | undefined
-          for (let c = range.start.col; c <= lastCol; c += 1) {
-            const value = values[c - range.start.col]
-            if (value === undefined) continue
-            const col = cols[c]!
-            // Batch BE: locked cells are read-only — the paste skips them
-            // (the rest of the rectangle still lands, one batched commit).
-            if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
-            patch = { ...patch, [col.key]: value }
-          }
-          if (patch) byKey.set(k, { ...byKey.get(k), ...patch })
+      let overflowStart = -1
+      for (let i = 0; i < lines.length; i += 1) {
+        const rowIdx = range.start.row + i
+        if (rowIdx >= body.length) {
+          overflowStart = i
+          break
         }
-      } else {
-        // Line i / cell j of the clipboard lands at (anchor.row + i, anchor.col + j);
-        // cells beyond the last row/col are ignored. With `pasteOptions
-        // .insertIfOverflow` (iris 独有 batch DF) lines past the last table row are
-        // APPENDED as brand-new rows (auto-id keys via insertRowInList); otherwise
-        // overflow is dropped (batch-O default).
-        let overflowStart = -1
-        for (let i = 0; i < lines.length; i += 1) {
-          const rowIdx = range.start.row + i
-          if (rowIdx >= body.length) {
-            overflowStart = i
-            break
-          }
-          const row = body[rowIdx]!
-          const cells = lines[i]!.split('\t')
-          for (let j = 0; j < cells.length; j += 1) {
-            const colIdx = range.start.col + j
-            if (colIdx >= cols.length) break
-            const k = rowKeyOf(row)
-            if (k == null) continue
-            const col = cols[colIdx]!
-            // Batch BE: locked cells stay read-only under a single-cell paste.
-            if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
-            const prev = byKey.get(k)
-            byKey.set(k, { ...prev, [col.key]: cells[j]! })
-          }
-        }
-        // Batch DF: append overflow clipboard lines as new rows when enabled.
-        if (pasteOptions?.insertIfOverflow && overflowStart >= 0) {
-          for (let i = overflowStart; i < lines.length; i += 1) {
-            const cells = lines[i]!.split('\t')
-            const nr: Record<string, unknown> = {}
-            for (let j = 0; j < cells.length; j += 1) {
-              const colIdx = range.start.col + j
-              if (colIdx >= cols.length) break
-              const col = cols[colIdx]!
-              // Batch BE: locked cells stay read-only under an overflow-inserted row.
-              if (isCellLocked(nr as Row, col) || isCellReadonly(nr as Row, col)) continue
-              nr[col.key] = cells[j]!
-            }
-            newRows.push(nr)
-          }
+        const row = body[rowIdx]!
+        const cells = lines[i]!.split('\t')
+        for (let j = 0; j < cells.length; j += 1) {
+          const colIdx = range.start.col + j
+          if (colIdx >= cols.length) break
+          const key = rowPatchKey(row, rowIdx)
+          if (key == null) continue
+          const col = cols[colIdx]!
+          if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
+          byKey.set(key, {
+            ...byKey.get(key),
+            [columnValueKey(col)]: cells[j]!,
+          } as Partial<Row>)
         }
       }
+      for (let i = overflowStart; i >= 0 && i < lines.length; i += 1) {
+        const cells = lines[i]!.split('\t')
+        const row: Record<string, unknown> = {}
+        for (let j = 0; j < cells.length; j += 1) {
+          const col = cols[range.start.col + j]
+          if (!col) break
+          if (isCellLocked(row as Row, col) || isCellReadonly(row as Row, col)) continue
+          row[columnValueKey(col)] = cells[j]!
+        }
+        newRows.push(row)
+      }
       if (byKey.size === 0 && newRows.length === 0) return
-      const keyField = rowKey
-      let next = (externalDataRef.current ?? []).map((r) => {
-        const k = (r as Record<string, unknown>)[keyField]
-        const patch = k != null ? byKey.get(k as string | number) : undefined
-        return patch ? { ...r, ...patch } : r
-      })
+      let next = reconcileRowPatches(externalDataRef.current ?? [], materializeRowPatches(byKey))
       for (const nr of newRows) next = insertRowInList(next, rowKey, nr as Row)
       commitRowList(next, 'paste')
     },
-    [rowKey, commitRowList, pasteOptions],
+    [rowKey, commitRowList, pasteOptions, pasteGridRange],
   )
 
   // ── Batch BG keymap (iris 独有): the EFFECTIVE shortcut bindings = the
@@ -5662,9 +5607,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
         e.preventDefault()
         // Batch CE: the flash gates on actual copy SUCCESS (any of the three
         // writer channels) — spec “复制成功后”.
-        void writeClipboardText(
-          buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv', !!clipConfig?.copyWithFormat),
-        ).then((ok) => {
+        const text = serializeGridRange(
+          clipConfig?.copyFormat ?? 'tsv',
+          !!clipConfig?.copyWithFormat,
+        )
+        if (text == null) return
+        void writeClipboardText(text).then((ok) => {
           if (ok) flashCopyFeedback(range)
         })
       } else if (matchTableKey(e, keyBindings.paste)) {
@@ -5678,7 +5626,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [
     clipConfig,
     cellRangeCtrl,
-    buildRangeCopy,
+    serializeGridRange,
     pasteIntoRange,
     keyBindings,
     flashCopyFeedback,
@@ -5830,11 +5778,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (endRow === range.end.row && endCol === range.end.col) return
       const rangeRows = range.end.row - range.start.row + 1
       const rangeCols = range.end.col - range.start.col + 1
-      const byKey = new Map<string | number, Record<string, unknown>>()
+      const byKey = new Map<string | number, Partial<Row>>()
       for (let r = range.start.row; r <= endRow; r += 1) {
         const row = body[r]
         if (!row) continue
-        const k = rowKeyOf(row)
+        const k = rowPatchKey(row, r)
         if (k == null) continue
         for (let c = range.start.col; c <= endCol; c += 1) {
           // Source-range cells keep their values (nothing to fill there) and
@@ -5852,16 +5800,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
           const srcCol = cols[((c - range.start.col) % rangeCols) + range.start.col]
           if (!srcRow || !srcCol) continue
           const value = getCellValue(srcRow, srcCol)
-          byKey.set(k, { ...byKey.get(k), [col.key]: value })
+          byKey.set(k, { ...byKey.get(k), [columnValueKey(col)]: value } as Partial<Row>)
         }
       }
       if (byKey.size === 0) return
-      const keyField = rowKey
-      const next = (externalDataRef.current ?? []).map((r) => {
-        const k = (r as Record<string, unknown>)[keyField]
-        const patch = k != null ? byKey.get(k as string | number) : undefined
-        return patch ? { ...r, ...patch } : r
-      })
+      const next = reconcileRowPatches(externalDataRef.current ?? [], materializeRowPatches(byKey))
       commitRowList(next, 'fill')
       // Excel parity: the selection grows to the drag end so the filled cells
       // become part of the range.
@@ -5942,13 +5885,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const dstRow = Math.min(Math.max(targetRow, 0), body.length - h)
       const dstCol = Math.min(Math.max(targetCol, 0), cols.length - w)
       if (dstRow === range.start.row && dstCol === range.start.col) return
-      const byKey = new Map<string | number, Record<string, unknown>>()
+      const byKey = new Map<string | number, Partial<Row>>()
       for (let r = 0; r < h; r += 1) {
         const srcRow = body[range.start.row + r]
         const dstRowObj = body[dstRow + r]
         if (!srcRow || !dstRowObj) continue
-        const srcKey = rowKeyOf(srcRow)
-        const dstKey = rowKeyOf(dstRowObj)
+        const srcKey = rowPatchKey(srcRow, range.start.row + r)
+        const dstKey = rowPatchKey(dstRowObj, dstRow + r)
         if (srcKey == null || dstKey == null) continue // keyless rows skipped
         for (let c = 0; c < w; c += 1) {
           const srcCol = cols[range.start.col + c]
@@ -5964,7 +5907,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
             !isCellReadonly(dstRowObj, dstColObj)
           ) {
             const value = getCellValue(srcRow, srcCol)
-            byKey.set(dstKey, { ...byKey.get(dstKey), [dstColObj.key]: value })
+            byKey.set(dstKey, {
+              ...byKey.get(dstKey),
+              [columnValueKey(dstColObj)]: value,
+            } as Partial<Row>)
           }
           // Phase 2: clear the source cell unless the dest rect covers it
           // (overlap-safe slide) — locked/readonly survive the clear too.
@@ -5976,17 +5922,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
             dstCol <= srcColIdx &&
             srcColIdx <= dstCol + w - 1
           if (!covered && !srcLocked) {
-            byKey.set(srcKey, { ...byKey.get(srcKey), [srcCol.key]: '' })
+            byKey.set(srcKey, {
+              ...byKey.get(srcKey),
+              [columnValueKey(srcCol)]: '',
+            } as Partial<Row>)
           }
         }
       }
       if (byKey.size === 0) return
-      const keyField = rowKey
-      const next = (externalDataRef.current ?? []).map((row) => {
-        const k = (row as Record<string, unknown>)[keyField]
-        const patch = k != null ? byKey.get(k as string | number) : undefined
-        return patch ? { ...row, ...patch } : row
-      })
+      const next = reconcileRowPatches(externalDataRef.current ?? [], materializeRowPatches(byKey))
       commitRowList(next, 'edit')
       // Excel parity: the selection follows the moved block.
       cellRangeCtrl.startRange(dstRow, dstCol)
@@ -6071,13 +6015,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const h = range.end.row - range.start.row + 1
       const w = range.end.col - range.start.col + 1
       if (refit.row === range.start.row && refit.col === range.start.col) return
-      const byKey = new Map<string | number, Record<string, unknown>>()
+      const byKey = new Map<string | number, Partial<Row>>()
       for (let r = 0; r < h; r += 1) {
         const srcRow = body[range.start.row + r]
         const dstRowObj = body[refit.row + r]
         if (!srcRow || !dstRowObj) continue
-        const srcKey = rowKeyOf(srcRow)
-        const dstKey = rowKeyOf(dstRowObj)
+        const srcKey = rowPatchKey(srcRow, range.start.row + r)
+        const dstKey = rowPatchKey(dstRowObj, refit.row + r)
         if (srcKey == null || dstKey == null) continue // keyless rows skipped
         for (let c = 0; c < w; c += 1) {
           const srcCol = cols[range.start.col + c]
@@ -6088,16 +6032,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // Locked/readonly destination cells survive the copy.
           if (isCellLocked(dstRowObj, dstColObj) || isCellReadonly(dstRowObj, dstColObj)) continue
           const value = getCellValue(srcRow, srcCol)
-          byKey.set(dstKey, { ...byKey.get(dstKey), [dstColObj.key]: value })
+          byKey.set(dstKey, {
+            ...byKey.get(dstKey),
+            [columnValueKey(dstColObj)]: value,
+          } as Partial<Row>)
         }
       }
       if (byKey.size === 0) return
-      const keyField = rowKey
-      const next = (externalDataRef.current ?? []).map((row) => {
-        const k = (row as Record<string, unknown>)[keyField]
-        const patch = k != null ? byKey.get(k as string | number) : undefined
-        return patch ? { ...row, ...patch } : row
-      })
+      const next = reconcileRowPatches(externalDataRef.current ?? [], materializeRowPatches(byKey))
       commitRowList(next, 'edit')
       // Copy does NOT move the selection: it stays on the source block.
     },
@@ -6109,12 +6051,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!range) return
     // Batch CE: same success-gated flash as Ctrl/Cmd+C — the range toolbar
     // 复制 button is the second consumption point.
-    void writeClipboardText(
-      buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv', !!clipConfig?.copyWithFormat),
-    ).then((ok) => {
+    const text = serializeGridRange(clipConfig?.copyFormat ?? 'tsv', !!clipConfig?.copyWithFormat)
+    if (text == null) return
+    void writeClipboardText(text).then((ok) => {
       if (ok) flashCopyFeedback(range)
     })
-  }, [cellRangeCtrl, buildRangeCopy, clipConfig, flashCopyFeedback])
+  }, [cellRangeCtrl, serializeGridRange, clipConfig, flashCopyFeedback])
 
   const exportActiveRangeCsv = React.useCallback((): string => {
     const range = cellRangeCtrl.getRange()
@@ -6147,30 +6089,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const cols = liveLeafRef.current
     // Same byKey patch shape as the clipboard paste path: every cell of the
     // rectangle becomes '' — ONE batched commitRowList.
-    const byKey = new Map<string | number, Record<string, string>>()
+    const byKey = new Map<string | number, Partial<Row>>()
     for (let r = range.start.row; r <= range.end.row; r += 1) {
       const row = body[r]
       if (!row) continue
-      const k = rowKeyOf(row)
+      const k = rowPatchKey(row, r)
       if (k == null) continue
       const patches: Record<string, string> = {}
       for (let c = range.start.col; c <= range.end.col; c += 1) {
         const col = cols[c]
         // Batch BE: locked cells survive a range clear.
-        if (col && !isCellLocked(row, col) && !isCellReadonly(row, col)) patches[col.key] = ''
+        if (col && !isCellLocked(row, col) && !isCellReadonly(row, col)) {
+          patches[columnValueKey(col)] = ''
+        }
       }
       // Batch BE: an all-locked row produces an empty patch — skip it so an
       // all-locked range commits nothing (zero spurious onDataChange/undo/
       // audit entries, same zero-commit guard as paste/fill/batch edit).
-      if (Object.keys(patches).length > 0) byKey.set(k, { ...byKey.get(k), ...patches })
+      if (Object.keys(patches).length > 0) {
+        byKey.set(k, { ...byKey.get(k), ...patches } as Partial<Row>)
+      }
     }
     if (byKey.size === 0) return
-    const keyField = rowKey
-    const next = (externalDataRef.current ?? []).map((r) => {
-      const k = (r as Record<string, unknown>)[keyField]
-      const patch = k != null ? byKey.get(k as string | number) : undefined
-      return patch ? { ...r, ...patch } : r
-    })
+    const next = reconcileRowPatches(externalDataRef.current ?? [], materializeRowPatches(byKey))
     commitRowList(next)
   }, [cellRangeCtrl, rowKey, commitRowList])
 
@@ -6326,9 +6267,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const text = current == null ? '' : String(current)
     const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace, fnrParsed)
     if (nextText === text) return
-    const k = rowKeyOf(row)
+    const k = rowPatchKey(row, m.row)
     if (k == null) return
-    commitRowList(rows.map((r) => (rowKeyOf(r) === k ? { ...r, [col.key]: nextText } : r)))
+    const next = reconcileRowPatches(
+      rows,
+      new Map([[k, { ...row, [columnValueKey(col)]: nextText }]]),
+    )
+    if (next.some((entry, index) => !Object.is(entry, rows[index]))) commitRowList(next)
   }
 
   // Replace EVERY match — one batched commitRowList (all cells in one pass).
@@ -6337,7 +6282,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!rowKey || rows.length === 0 || fnrMatches.length === 0) return
     const body = liveBodyRef.current
     const cols = liveLeafRef.current
-    const byKey = new Map<string | number, Record<string, string>>()
+    const byKey = new Map<string | number, Partial<Row>>()
     for (const m of fnrMatches) {
       const row = body[m.row]
       const col = cols[m.col]
@@ -6348,20 +6293,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const text = current == null ? '' : String(current)
       const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace, fnrParsed)
       if (nextText === text) continue
-      const k = rowKeyOf(row)
+      const k = rowPatchKey(row, m.row)
       if (k == null) continue
       const prev = byKey.get(k)
-      byKey.set(k, { ...prev, [col.key]: nextText })
+      byKey.set(k, { ...prev, [columnValueKey(col)]: nextText } as Partial<Row>)
     }
     if (byKey.size === 0) return
-    const keyField = rowKey
-    commitRowList(
-      rows.map((r) => {
-        const k = (r as Record<string, unknown>)[keyField]
-        const patch = k != null ? byKey.get(k as string | number) : undefined
-        return patch ? { ...r, ...patch } : r
-      }),
-    )
+    commitRowList(reconcileRowPatches(rows, materializeRowPatches(byKey)))
   }
 
   const resolvedColWidths = React.useMemo(
@@ -7019,7 +6957,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           )
           const editing = rowMode
             ? rowSessions.has(cellId(k, col.key))
-            : cellEdit.isEditing(cellId(k, col.key), col.key)
+            : cellEdit.isEditing(k, col.key)
           // Batch DH (iris 独有): pattern-edit hint for THIS cell — matching
           // RAW value in the edited column (excluding the editing cell itself),
           // resolved live from the shared store (real-time per keystroke).
@@ -7624,22 +7562,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const applyBatchEdit = (): void => {
     const col = batchEditCols.find((c) => c.key === batchEditColKey)
     if (!col) return
-    const keyField = rowKey
     const rows = externalDataRef.current ?? []
-    if (!keyField || rows.length === 0) return
+    if (!rowKey || rows.length === 0) return
     const keys = new Set(displaySelectionRef.current)
     // Batch BE: locked cells of selected rows stay untouched — the patch
     // applies to the unlocked ones only; ALL locked → nothing changed → no
     // commitRowList at all (panel still closes, zero event pollution).
-    let changed = false
-    const next = rows.map((r) => {
-      const selected = keys.has((r as Record<string, unknown>)[keyField] as string | number)
-      if (selected && !isCellLocked(r, col) && !isCellReadonly(r, col)) changed = true
-      return selected && !isCellLocked(r, col) && !isCellReadonly(r, col)
-        ? { ...r, [col.key]: batchEditValue }
-        : r
-    })
-    if (changed) commitRowList(next, 'batch')
+    const patches = new Map<string | number, Partial<Row>>()
+    for (const key of keys) {
+      const row =
+        rowsModel.find(key) ??
+        bodyDataRef.current.find((entry, index) => rowPatchKey(entry, index) === key)
+      if (!row || isCellLocked(row, col) || isCellReadonly(row, col)) continue
+      patches.set(key, {
+        ...patches.get(key),
+        [columnValueKey(col)]: batchEditValue,
+      } as Partial<Row>)
+    }
+    if (patches.size > 0) {
+      const next = reconcileRowPatches(rows, materializeRowPatches(patches))
+      if (next.some((entry, index) => !Object.is(entry, rows[index]))) commitRowList(next, 'batch')
+    }
     setBatchEditOpen(false)
   }
   // Escape / outside pointer-down close the panel (the trigger button is
@@ -7701,6 +7644,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     return plan
   }, [groupPlan, virtualScroll, hasDetail, bodyData, expandedKeys, rowKeyOf, isRowExpandable])
+
+  const virtualRowIndex = new Map<string | number, number>()
+  for (let index = 0; index < virtualItems.length; index += 1) {
+    const item = virtualItems[index]!
+    if (item.kind === 'row') virtualRowIndex.set(rowKeyOf(item.row, item.rowIndex), index)
+  }
+  virtualRowIndexRef.current = virtualRowIndex
+
+  const { model: virtualModel } = useGridVirtual<Row, BodyPlanEntry<Row>>(gridCore, {
+    items: virtualScroll ? virtualItems : [],
+    estimateSize: effectiveRowHeight ?? 40,
+    viewportSize:
+      virtualScroll && typeof virtualScroll.height === 'number' ? virtualScroll.height : 0,
+    buffer: virtualScroll?.buffer ?? 4,
+    getItemKey: (item) => virtualItemKeyOf(item, rowKeyOf),
+  })
 
   // Batch CS: record the content anchor (first visible plan entry + partial
   // offset) while the plan is STABLE. The transition render skips the write
@@ -8216,7 +8175,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ⇩
             </button>
           ) : null}
-          {toolbar?.columnSettings && columnVisibility ? (
+          {toolbar?.columnSettings && columnVisibilityProp !== undefined ? (
             <>
               <button
                 type="button"
@@ -9885,11 +9844,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // source — number = uniform closed-form window, fn = variable
           // heights through the core offset tree.
           <IrisVirtualScroll
+            ref={virtualScrollHandleRef}
             items={virtualItems}
             itemHeight={effectiveRowHeight ?? virtualScroll.itemHeight}
             height={virtualScroll.height}
             buffer={virtualScroll.buffer}
             keyOf={(item) => virtualItemKeyOf(item, rowKeyOf)}
+            virtualizer={virtualModel}
             onScroll={handleVirtualScrollScroll}
             renderItem={(item) =>
               item.kind === 'group-header'
@@ -9976,9 +9937,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         </div>
       ) : null}
 
-      {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
-          controller's page/pageSize/total; page changes call setParams and
-          proxyConfig.onPageChange. */}
+      {/* Server-side pager: the pagination feature owns UI methods/events;
+          the Table bridge forwards changes to the proxy source. */}
       {contextMenu && contextMenuState ? (
         <TableContextMenu
           key={contextMenuSeq}
@@ -10196,11 +10156,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
         : null}
       {proxy && layouts?.pager !== 'hidden' ? (
         <TablePager
-          proxyState={proxyState}
+          pagination={pagination}
           config={pagerConfig}
           borderTop={borderStyle}
-          setParams={(partial) => proxyRef.current?.setParams(partial)}
-          onPageChange={proxyConfig?.onPageChange}
+          setPage={setPage}
+          setPageSize={setPageSize}
           t={t}
         />
       ) : null}

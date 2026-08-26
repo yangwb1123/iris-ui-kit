@@ -327,6 +327,7 @@ export {
   type GridClipboardChange,
   type GridClipboardCopyChange,
   type GridClipboardFeatureOptions,
+  type GridClipboardOverflowContext,
   type GridClipboardMethods,
   type GridClipboardModel,
   type GridClipboardPasteChange,

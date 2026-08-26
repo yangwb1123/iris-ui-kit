@@ -535,7 +535,8 @@ paste 耗尽有效 body 后收集 split cells，factory 负责宿主行形状与
 `rowKeyField` 复用 `insertRowInList` 的 max+1（无 key 时从 1 起）以及与普通 paste 相同的一次 rows
 transaction。未注入 factory 时仍保持 batch-O 丢弃语义，多格矩形永不触发；新增行同时计入
 `changedRows/changedCells`，React 的 audit/history/onDataChange metadata 继续由既有 `commitOptions` 注入；本批 core 定向
-10/10、React Grid/clipboard 定向 51/51 通过，四框架 typecheck 通过。
+10/10、React Grid/clipboard 定向 51/51 通过，四框架 typecheck 通过；`GridClipboardOverflowContext` 同步从
+`@iris-ui-kit/core/grid` 公共 barrel 导出，便于宿主 factory 保持类型契约。
 
 ## 8. 合并门
 

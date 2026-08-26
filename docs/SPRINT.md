@@ -237,6 +237,21 @@ arch-check:ratchet` 当前无阻断项。
   子树的 key，四端与插件可据此一次性清理已消失的 descendant selection/session 状态；replacement 缺少
   children 字段时也不会在 path reconciliation 中丢弃折叠子树。
 
+## 2026-08-26 Grid Core clipboard overflow continuation（当前工作树）
+
+- Core clipboard 新增可选 `overflowRows` factory：单格 paste 仅在有效 body 行耗尽后收集溢出行的 split cells，
+  由宿主 factory 决定新行字段与锁定/只读策略，Core 统一负责 `rowKeyField` 自动 id、一次 rows transaction
+  及 `changedRows/changedCells` 统计；未注入 factory 时仍保持 batch-O 丢弃语义，多格矩形不触发。
+- React `useGridClipboard`/`IrisTable` 已删除本地溢出建行分支，改为注入同一 factory；audit/history/
+  `onDataChange` metadata 继续沿用 clipboard commitOptions。Core overflow/no-factory/multi-cell 定向 10/10，
+  React clipboard/clip-FNR/grid bridge 定向 33/33，Core `typecheck`/build 与 React typecheck 通过。
+- Vue scrollToTop 适配器批次新增 9 项 focused 回归（阈值、虚拟视口、异步 re-arm、清理、printable、SSR），
+  Vue 全量 172/172 files、1,618/1,618 tests 通过；Core 全量 112/112 files、1,682/1,682 tests，
+  Core typecheck/build、React typecheck 与 Grid clipboard 定向回归均通过，新增 overflow context 已从
+  `@iris-ui-kit/core/grid` 公共 barrel 导出。
+- React 全量当前重跑为 268 files、3,015/3,051 passed；剩余 36 项均为既有 `IrisTree`/Tree contract 的
+  `Maximum update depth exceeded`，本批未触碰该路径，Grid/Table 定向项保持通过。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

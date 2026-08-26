@@ -113,6 +113,8 @@ export const tableProps = {
   error: { type: Boolean, default: false },
   /** Print-friendly mode: marks the root so toolbar/form chrome is hidden by print CSS. */
   printable: { type: Boolean, default: false },
+  /** Show a token-styled back-to-top button for the table's effective scroller. */
+  scrollToTop: { type: Boolean, default: false },
   /** Show a confirmation preview before the toolbar CSV import callback. */
   importPreview: { type: Boolean, default: false },
   onRetry: { type: Function as PropType<(() => void) | undefined>, default: undefined },

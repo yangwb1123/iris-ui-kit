@@ -106,6 +106,43 @@ import type {
   IrisTableDensity,
 } from './types'
 
+// Batch FS: the table back-to-top control is intentionally local to this
+// adapter. It follows the React recipe without adding scroll state to core.
+const SCROLL_TOP_VISIBLE_PX = 200
+const BACK_TOP_ANCHOR_STYLE: Record<string, string> = {
+  position: 'sticky',
+  insetBlockEnd: '0px',
+  height: '0px',
+  pointerEvents: 'none',
+  zIndex: '3',
+}
+const BACK_TOP_BUTTON_STYLE: Record<string, string> = {
+  position: 'absolute',
+  insetBlockEnd: '24px',
+  insetInlineEnd: '24px',
+  width: '40px',
+  height: '40px',
+  borderRadius: '50%',
+  border: '1px solid var(--iris-border)',
+  background: 'var(--iris-surface, var(--iris-background))',
+  color: 'var(--iris-foreground)',
+  cursor: 'pointer',
+  boxShadow: 'var(--iris-shadow-md)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 'var(--iris-font-size-xl, 18px)',
+  pointerEvents: 'auto',
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 /** Data-driven CSS-grid table with explicit ARIA roles, sorting, selection,
  * column resizing, virtual scrolling, and header/cell slots. */
 export const IrisTable = defineComponent({
@@ -1257,6 +1294,91 @@ export const IrisTable = defineComponent({
     // reactive snapshot plus pointer/keyboard/render wiring.
     const { model: cellRangeCtrl, state: cellRangeState } = useGridRange(gridCore)
     const rootRef = ref<HTMLElement | null>(null)
+
+    // -------- Back-to-top (batch FS, iris 独有) --------
+    // Keep the feature inert by default: no DOM query or native listener is
+    // installed until the opt-in prop is on. Scroll events do not bubble, so
+    // both possible scrollers are wired; the handler resolves the effective
+    // virtual viewport at event time and therefore never strands a stale root
+    // probe during an async empty → data transition.
+    const scrollTopShown = ref(false)
+    let scrollTopListeners: HTMLElement[] = []
+    const clearScrollTopListeners = (): void => {
+      for (const el of scrollTopListeners) el.removeEventListener('scroll', onScrollTop)
+      scrollTopListeners = []
+    }
+    const onScrollTop = (): void => {
+      const root = rootRef.value
+      if (!root) return
+      const viewport = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+      const scroller = viewport ?? root
+      scrollTopShown.value = scroller.scrollTop >= SCROLL_TOP_VISIBLE_PX
+    }
+    const armScrollTop = (): void => {
+      clearScrollTopListeners()
+      scrollTopShown.value = false
+      if (!props.scrollToTop || !rootRef.value) return
+      const root = rootRef.value
+      const viewport = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+      root.addEventListener('scroll', onScrollTop)
+      scrollTopListeners.push(root)
+      if (viewport) {
+        viewport.addEventListener('scroll', onScrollTop)
+        scrollTopListeners.push(viewport)
+      }
+      onScrollTop()
+    }
+    onMounted(armScrollTop)
+    // The data-presence/state and virtual-mode flips are the DOM transitions
+    // that can mount or replace the effective viewport. Post-flush ensures the
+    // query sees the newly rendered node before attaching its listener.
+    watch(
+      [
+        () => props.scrollToTop,
+        () => Boolean(props.virtualScroll),
+        bodyData,
+        tableLoading,
+        tableError,
+      ],
+      armScrollTop,
+      { flush: 'post' },
+    )
+    onBeforeUnmount(clearScrollTopListeners)
+
+    const scrollToTopOfTable = (): void => {
+      const root = rootRef.value
+      if (!root) return
+      const viewport = root.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+      const scroller = viewport ?? root
+      const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth'
+      if (typeof scroller.scrollTo === 'function') {
+        try {
+          scroller.scrollTo({ top: 0, behavior })
+          return
+        } catch {
+          // Fall through for browsers/DOM shims with a throwing scrollTo.
+        }
+      }
+      scroller.scrollTop = 0
+    }
+    const buildBackTopSection = (): VNode | null => {
+      if (!props.scrollToTop || !scrollTopShown.value || props.printable) return null
+      return h('div', { 'data-iris-back-top-anchor': '', style: BACK_TOP_ANCHOR_STYLE }, [
+        h(
+          'button',
+          {
+            type: 'button',
+            'data-iris-back-top-table': '',
+            'aria-label': t('backTop.label'),
+            title: t('backTop.label'),
+            onClick: scrollToTopOfTable,
+            style: BACK_TOP_BUTTON_STYLE,
+          },
+          '↑',
+        ),
+      ])
+    }
+
     let responsiveObserver: ResizeObserver | null = null
     const measureResponsiveWidth = (): void => {
       responsiveWidth.value = props.responsive && rootRef.value ? rootRef.value.clientWidth : 0
@@ -2724,7 +2846,7 @@ export const IrisTable = defineComponent({
               ...((attrs.style as Record<string, string> | undefined) ?? {}),
             },
           },
-          [headerRow, bodyNode, summaryRow, buildPagerSection()],
+          [headerRow, bodyNode, summaryRow, buildPagerSection(), buildBackTopSection()],
         ),
         props.responsive && responsiveOverflow.value && !props.printable
           ? h(

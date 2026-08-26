@@ -405,6 +405,7 @@ export function createGridClipboardFeature<Row extends Record<string, unknown>>(
     name: 'clipboard',
     dependsOn: ['rows', 'range'],
     setup(context) {
+      let active = true
       const model = createGridClipboardModel(
         options,
         {
@@ -415,12 +416,26 @@ export function createGridClipboardFeature<Row extends Record<string, unknown>>(
         },
         (change) => context.emit(GRID_CLIPBOARD_CHANGE_EVENT, change),
       )
-      const methods: GridClipboardMethods = {
-        getClipboardModel: () => model,
-        serializeGridRange: (format, copyWithFormat) => model.serialize(format, copyWithFormat),
-        pasteGridRange: (text, range) => model.paste(text, range),
+      // Adapters can retain the bridge model in a keyboard/clipboard
+      // callback that outlives the component. Keep that callback fail-closed
+      // after the feature is disposed, matching the range bridge contract.
+      const guardedModel: GridClipboardModel = {
+        serialize: (format, copyWithFormat) =>
+          active ? model.serialize(format, copyWithFormat) : null,
+        paste: (text, range) => (active ? model.paste(text, range) : false),
       }
-      return { methods: methods as unknown as Readonly<Record<string, GridMethod>> }
+      const methods: GridClipboardMethods = {
+        getClipboardModel: () => guardedModel,
+        serializeGridRange: (format, copyWithFormat) =>
+          guardedModel.serialize(format, copyWithFormat),
+        pasteGridRange: (text, range) => guardedModel.paste(text, range),
+      }
+      return {
+        methods: methods as unknown as Readonly<Record<string, GridMethod>>,
+        dispose: () => {
+          active = false
+        },
+      }
     },
   }
 }

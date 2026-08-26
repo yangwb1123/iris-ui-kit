@@ -308,6 +308,18 @@ describe('createGridClipboardFeature', () => {
     expect(committedRows[0]?.name).toBe('Grace')
   })
 
+  it('fails closed when a retained clipboard model outlives its Grid Core', () => {
+    const grid = createClipboardGrid()
+    const model = grid.invoke<import('./grid').GridClipboardModel>('getClipboardModel')
+    grid.invoke('startCellRange', 0, 0)
+    expect(model.serialize()).toBe('Ada')
+
+    grid.destroy()
+
+    expect(model.serialize()).toBeNull()
+    expect(model.paste('Grace', { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } })).toBe(false)
+  })
+
   it('clamps out-of-bounds ranges and keeps no-range/no-change operations inert', () => {
     const clipboardEvents = vi.fn()
     const rowsChanged = vi.fn()

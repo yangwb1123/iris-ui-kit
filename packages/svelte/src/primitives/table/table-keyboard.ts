@@ -2,15 +2,15 @@ import {
   nextGridCell,
   serializeTableRange,
   writeClipboardText,
+  type CellRange,
   type CellRangeController,
-  type CellRangeState,
   type GridNavKey,
 } from '@iris-ui-kit/core'
 import type { IrisTableClipConfig, IrisTableColumn } from './types'
 import { withComputedFormulaCells } from './tableUtils'
 
 type CellAddress = { row: number; col: number }
-type TableRange = { start: CellAddress; end: CellAddress }
+type TableRange = CellRange
 
 export function createTableKeyboard(options: {
   keyboardNavigation: () => boolean
@@ -22,7 +22,7 @@ export function createTableKeyboard(options: {
   getFocused: () => CellAddress | null
   setFocused: (cell: CellAddress) => void
   range: CellRangeController
-  getRangeState: () => CellRangeState
+  getRange: () => CellRange | null
 }): {
   handleRootKeyDown: (event: KeyboardEvent) => void
   handleGridKey: (event: KeyboardEvent) => void
@@ -70,7 +70,7 @@ export function createTableKeyboard(options: {
         : -1
   }
   const isInRange = (row: number, col: number): boolean =>
-    options.range.isInRange(row, col) && options.getRangeState().active !== null
+    options.range.isInRange(row, col) && options.getRange() !== null
   const handleCellRangeKey = (event: KeyboardEvent): void => {
     if (!options.cellRange()) return
     if (event.key === 'Escape') {
@@ -99,14 +99,7 @@ export function createTableKeyboard(options: {
           : current.col
     options.range.extendRange(nextRow, nextCol)
   }
-  const activeCellRange = (): TableRange | null => {
-    const { anchor, active } = options.getRangeState()
-    if (!anchor || !active) return null
-    return {
-      start: { row: Math.min(anchor.row, active.row), col: Math.min(anchor.col, active.col) },
-      end: { row: Math.max(anchor.row, active.row), col: Math.max(anchor.col, active.col) },
-    }
-  }
+  const activeCellRange = (): TableRange | null => options.getRange()
   const copyActiveRange = (): void => {
     const range = activeCellRange()
     const clip = options.clipConfig()

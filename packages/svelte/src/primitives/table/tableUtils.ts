@@ -3,7 +3,6 @@ import {
   compareValues,
   computeResponsiveColumns,
   computeVirtualRange,
-  createCellRange,
   flattenLeafColumns,
   memoizedFormulaValue,
   RESPONSIVE_NARROW_WIDTH,
@@ -231,21 +230,6 @@ export function buildGridTemplate(
     parts.push(`${effectiveWidths[col.key] ?? resolveInitialWidth(col)}px`)
   }
   return parts.join(' ')
-}
-
-export function isSelectedInRange(
-  cellRangeState: ReturnType<ReturnType<typeof createCellRange>['getState']>,
-  row: number,
-  col: number,
-): boolean {
-  const { anchor, active } = cellRangeState
-  if (!anchor || !active) return false
-  return (
-    row >= Math.min(anchor.row, active.row) &&
-    row <= Math.max(anchor.row, active.row) &&
-    col >= Math.min(anchor.col, active.col) &&
-    col <= Math.max(anchor.col, active.col)
-  )
 }
 
 export function createSortComparator(

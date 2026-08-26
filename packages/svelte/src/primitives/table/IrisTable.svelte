@@ -6,28 +6,31 @@
     buildFormValues,
     buildHeaderMatrix,
     compareStates,
-    createCellRange,
     createRemoteTableSource,
-    createSelectionModel,
-    createExpansion,
     detectColumnType,
     flattenLeafColumns,
     flattenTree,
     mergeFormFilters,
-    removeRowsFromList,
     seedFormValues,
     tableDisplayText,
     toCsvRows,
     withSortedChildren,
     type DetectedColumnType,
-    type RemoteTableParams,
     type RemoteTableSource,
     type RemoteTableSourceState,
     type TreeRow,
-    validateEditRulesAsync,
   } from '@iris-ui-kit/core'
-  import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
+  import {
+    useGridCore,
+    useGridEditing,
+    useGridExpansion,
+    useGridFiltering,
+    useGridRange,
+    useGridRows,
+    useGridSelection,
+    useGridSorting,
+  } from '../../grid'
   import { useDrag } from '../drag/useDrag.svelte'
   import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
   import TableCellEditor from './TableCellEditor.svelte'
@@ -226,17 +229,45 @@
   const leafColumns = $derived(grouped ? flattenLeafColumns(displayColumns) : displayColumns)
   const headerMatrix = $derived(grouped ? buildHeaderMatrix(displayColumns) : null)
 
-  // svelte-ignore state_referenced_locally — `defaultSort` is an initial seed.
-  let internalSort = $state<IrisTableSortState | null>(defaultSort ?? null)
-  const effectiveSort = $derived(sort !== undefined ? sort : internalSort)
+  const gridCore = useGridCore<Record<string, unknown>>()
+  // svelte-ignore state_referenced_locally — sorting options seed the stable Core feature;
+  // controlled props are synchronized explicitly by the effect below.
+  const {
+    model: sortingModel,
+    sort: sortingSort,
+    multiSort: sortingMultiSort,
+  } = useGridSorting<Record<string, unknown>>(gridCore, {
+    mode: multiSort ? 'multiple' : 'single',
+    defaultSort,
+    defaultMultiSort,
+    onSortChange: (next) => {
+      onUpdateSort?.(next)
+      // remoteSort parity: sort changes re-query the server (page resets to 1
+      // in the core controller, vxe behavior).
+      if (remoteSort) proxyRef?.setParams({ sort: next })
+    },
+    onMultiSortChange: (next) => {
+      onUpdateMultiSort?.(next)
+      // remoteSort parity (multi mode): the FULL sort list re-queries the
+      // server; the single `sort` param stays the single-column channel.
+      if (remoteSort) proxyRef?.setParams({ sorts: next })
+    },
+  })
+  const effectiveSort = $derived<IrisTableSortState | null>(
+    sort !== undefined ? (sort ?? null) : $sortingSort,
+  )
+  const effectiveMultiSort = $derived<IrisTableSortState[]>(
+    multiSortState !== undefined ? (multiSortState ?? []) : $sortingMultiSort,
+  )
+  $effect(() => {
+    if (sort !== undefined) sortingModel.syncSort(sort ?? null)
+    if (multiSortState !== undefined) sortingModel.syncMultiSort(multiSortState ?? [])
+  })
 
-  // The ONE sort funnel — named views AND persistState restores go through
-  // this throat (controlled/uncontrolled + remoteSort re-query). `remoteSort`
-  // and `proxyRef` are declared later in setup; calls only happen after mount.
+  // The ONE sort funnel — named views and persistState restores go through
+  // the Core model (controlled/uncontrolled + remoteSort re-query).
   function applySort(next: IrisTableSortState | null): void {
-    if (sort === undefined) internalSort = next
-    onUpdateSort?.(next)
-    if (remoteSort) proxyRef?.setParams({ sort: next })
+    sortingModel.setSort(next)
   }
 
   const tableViews = createTableViewsController({
@@ -246,38 +277,33 @@
     onActiveViewChange: (key) => onActiveViewChange?.(key),
   })
 
-  const multiControlled = $derived(multiSortState !== undefined)
-  // svelte-ignore state_referenced_locally — seeded from defaultMultiSort; controlled syncs via the prop.
-  let multiInternal = $state<IrisTableSortState[]>(defaultMultiSort ?? [])
-  const effectiveMultiSort = $derived<IrisTableSortState[]>(
-    multiControlled ? (multiSortState ?? []) : multiInternal,
-  )
   function setMultiSort(next: IrisTableSortState[]): void {
-    if (!multiControlled) multiInternal = next
-    onUpdateMultiSort?.(next)
-    // remoteSort parity (multi mode): the FULL sort list re-queries the
-    // server; the single `sort` param stays the single-column channel.
-    if (remoteSort) proxyRef?.setParams({ sorts: next })
+    sortingModel.setMultiSort(next)
   }
   const multiSortComparator = $derived<
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
   >(() => createMultiSortComparator(effectiveMultiSort, leafColumns, getCellValue))
-  function cycleMultiSort(column: IrisTableColumn): void {
-    if (!column.sortable) return
-    const idx = effectiveMultiSort.findIndex((s) => s.key === column.key)
-    if (idx < 0) {
-      setMultiSort([...effectiveMultiSort, { key: column.key, direction: 'asc' }])
-      return
-    }
-    const next = [...effectiveMultiSort]
-    if (next[idx]!.direction === 'asc') {
-      next[idx] = { key: column.key, direction: 'desc' }
-      setMultiSort(next)
-      return
-    }
-    next.splice(idx, 1)
-    setMultiSort(next)
-  }
+
+  // svelte-ignore state_referenced_locally — filtering options seed the stable Core feature;
+  // controlled props are synchronized explicitly by the effect below.
+  const {
+    model: filteringModel,
+    filters: filteringFilters,
+    filterValues: filteringFilterValues,
+  } = useGridFiltering<Record<string, unknown>>(gridCore, {
+    defaultFilters: filters,
+    defaultFilterValues: filterValues,
+    onFiltersChange: (next) => onFiltersChange?.(next),
+    onFilterValuesChange: (next) => onFilterValuesChange?.(next),
+  })
+  const effectiveFilters = $derived(filters !== undefined ? filters : $filteringFilters)
+  const effectiveFilterValues = $derived(
+    filterValues !== undefined ? filterValues : $filteringFilterValues,
+  )
+  $effect(() => {
+    if (filters !== undefined) filteringModel.syncFilters(filters)
+    if (filterValues !== undefined) filteringModel.syncFilterValues(filterValues)
+  })
 
   const hasProxy = $derived(proxyConfig !== undefined)
   const remoteSort = $derived(proxyConfig?.remoteSort === true)
@@ -306,7 +332,7 @@
           pageSize: proxyConfig?.pageSize ?? 10,
           sort: remoteSort ? ((sort !== undefined ? sort : defaultSort) ?? null) : null,
           sorts: remoteSort && multiSort ? (multiSortState ?? defaultMultiSort ?? []) : undefined,
-          filters: remoteFilter ? mergeFilterValues(filters ?? {}, filterValues ?? {}) : {},
+          filters: remoteFilter ? mergeFilterValues(effectiveFilters, effectiveFilterValues) : {},
         },
       })
       proxyRef = src
@@ -380,10 +406,9 @@
   })
 
   const filterController = createTableFilterController({
-    getControlled: () => filterValues,
-    onChange: (next) => onFilterValuesChange?.(next),
+    getControlled: () => effectiveFilterValues,
+    onChange: (next) => filteringModel.setFilterValues(next),
   })
-  const effectiveFilterValues = $derived(filterController.values)
   const sortComparator = $derived<
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
   >(() => createSortComparator(effectiveSort, leafColumns, getCellValue))
@@ -444,7 +469,10 @@
     formApplied = values
     if (proxyRef) {
       void proxyRef.setParams({
-        filters: mergeFilterValues(mergeFormFilters(filters ?? {}, values), effectiveFilterValues),
+        filters: mergeFilterValues(
+          mergeFormFilters(effectiveFilters, values),
+          effectiveFilterValues,
+        ),
         page: 1,
       })
     }
@@ -460,7 +488,7 @@
       if (
         proxyRef.setParams({
           filters: mergeFilterValues(
-            mergeFormFilters(filters ?? {}, values),
+            mergeFormFilters(effectiveFilters, values),
             effectiveFilterValues,
           ),
           page: 1,
@@ -474,7 +502,7 @@
     if (!hasProxy || !remoteFilter) return
     proxyRef?.setParams({
       filters: mergeFilterValues(
-        mergeFormFilters(filters ?? {}, formApplied),
+        mergeFormFilters(effectiveFilters, formApplied),
         effectiveFilterValues,
       ),
     })
@@ -483,29 +511,17 @@
   const filteredRows = $derived((): Array<Record<string, unknown>> => {
     if (remoteFilter) return sortedRows()
     const merged: Record<string, string> = hasProxy
-      ? (filters ?? {})
-      : mergeFormFilters(filters ?? {}, formApplied)
+      ? effectiveFilters
+      : mergeFormFilters(effectiveFilters, formApplied)
     return applyTableFilters(sortedRows(), displayColumns, merged, effectiveFilterValues)
   })
 
   function handleHeaderClick(column: IrisTableColumn): void {
     if (multiSort) {
-      cycleMultiSort(column)
+      if (column.sortable) sortingModel.cycleMultiSort(column.key)
       return
     }
-    if (!column.sortable) return
-    const current = effectiveSort
-    let next: IrisTableSortState | null
-    if (!current || current.key !== column.key) {
-      next = { key: column.key, direction: 'asc' }
-    } else if (current.direction === 'asc') {
-      next = { key: column.key, direction: 'desc' }
-    } else {
-      next = null
-    }
-    if (sort === undefined) internalSort = next
-    onUpdateSort?.(next)
-    if (remoteSort) proxyRef?.setParams({ sort: next })
+    if (column.sortable) sortingModel.cycleSort(column.key)
   }
 
   function handleHeaderKeyDown(event: KeyboardEvent, column: IrisTableColumn): void {
@@ -515,33 +531,46 @@
   }
 
   function clearSort(): void {
-    if (sort === undefined) internalSort = null
-    onUpdateSort?.(null)
     if (multiSort) {
-      if (!multiControlled) multiInternal = []
-      onUpdateMultiSort?.([])
+      // Keep the historical single-sort callback for consumers that listen to
+      // the generic clear channel, while the multi-sort state itself is owned
+      // and emitted by Core.
+      onUpdateSort?.(null)
+      setMultiSort([])
+      return
     }
-    if (proxyRef) {
-      const next: Partial<RemoteTableParams> = multiSort ? { sorts: [] } : { sort: null }
-      void proxyRef.setParams(next)
-    }
+    sortingModel.setSort(null)
   }
 
   function clearFilter(): void {
     formDraft = seedFormValues(formConfig?.fields)
     formApplied = {}
-    onFiltersChange?.({})
-    filterController.clearAll()
+    filteringModel.clear()
     if (proxyRef) {
       const changed = proxyRef.setParams({ filters: {}, page: 1 })
       if (changed === false) void proxyRef.refetch()
     }
   }
 
+  // svelte-ignore state_referenced_locally — the initial rows seed the core;
+  // the effect below keeps the source synchronized after props change.
+  const { model: gridRows } = useGridRows(gridCore, baseData, {
+    getRowKey: (row, index) => rowId(row, index),
+    // Static tree children share the Core rows mutation boundary. Lazy
+    // children remain adapter-owned because they live in the source row.
+    getChildren: getSubRows,
+    onRowsChange: (transaction) => {
+      if (hasProxy) proxyRows = [...transaction.rows]
+      else localRows = [...transaction.rows]
+    },
+  })
+  $effect(() => {
+    gridRows.sync(baseData)
+  })
+
   const tableHandle = createTableHandle({
     setRows: (rows) => {
-      if (hasProxy) proxyRows = rows
-      else localRows = rows
+      gridRows.loadData(rows)
     },
     onDataChange: (rows) => onDataChange?.(rows),
     refetch: () => {
@@ -593,13 +622,16 @@
   })
 
   const selControlled = $derived(selection !== undefined)
-  // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
-  const selectionModel = createSelectionModel<string | number>({
+  // svelte-ignore state_referenced_locally — feature options seed the stable core instance.
+  const { model: selectionModel, selection: selectedKeys } = useGridSelection<
+    Record<string, unknown>,
+    string | number
+  >(gridCore, {
     mode: selectable === 'single' ? 'single' : 'multiple',
-    defaultSelected: selection ?? defaultSelection ?? [],
+    value: selection,
+    defaultValue: defaultSelection,
     onChange: (keys) => onUpdateSelection?.(keys),
   })
-  const selectedKeys = toStore(selectionModel.store)
 
   $effect(() => {
     if (selControlled) selectionModel.sync(selection!)
@@ -612,12 +644,14 @@
 
   const hasDetail = $derived(renderDetail !== undefined)
   // svelte-ignore state_referenced_locally — defaults are read once at creation.
-  const expansion = createExpansion({
-    mode: 'multiple',
-    defaultExpanded: (defaultExpandedRowKeys ?? []).map(String),
-    onChange: (keys) => onExpandedRowsChange?.(keys),
-  })
-  const expandedKeys = toStore(expansion.store)
+  const { model: expansion, expandedKeys } = useGridExpansion<Record<string, unknown>, string>(
+    gridCore,
+    {
+      mode: 'multiple',
+      defaultValue: (defaultExpandedRowKeys ?? []).map(String),
+      onChange: (keys) => onExpandedRowsChange?.(keys),
+    },
+  )
 
   function isRowExpandable(row: Record<string, unknown>, index: number): boolean {
     return hasDetail && (rowExpandable ? rowExpandable(row, index) : true)
@@ -671,12 +705,12 @@
   }
 
   function removeRowsForHandle(keys: Array<string | number>): void {
-    const { rows, removedKeys } = removeRowsFromList(baseData, rowKey, keys)
-    if (removedKeys.size === 0) return
-    if (hasProxy) proxyRows = rows
-    else localRows = rows
+    const removedKeys = gridRows.removeMany(keys)
+    if (removedKeys.length === 0) return
+    const rows = gridRows.get()
     const selected = displaySelection
-    const nextSelection = selected.filter((key) => !removedKeys.has(key))
+    const removed = new Set(removedKeys)
+    const nextSelection = selected.filter((key) => !removed.has(key))
     if (nextSelection.length !== selected.length) {
       rebaseToProp()
       selectionModel.set(nextSelection)
@@ -742,7 +776,7 @@
   const persistSnapshot = $derived((): IrisTablePersistedState => {
     const s: IrisTablePersistedState = {}
     if (onUpdateSort) s.sort = effectiveSort
-    if (onFiltersChange) s.filters = filters
+    if (onFiltersChange) s.filters = effectiveFilters
     if (onColumnWidthsChange) s.columnWidths = effectiveWidths
     // Read proxyState UNCONDITIONALLY so the snapshot tracks it — a branch
     // that shortcuts before the read would never re-evaluate once the proxy
@@ -768,7 +802,7 @@
       case 'filters': {
         if (!onFiltersChange || typeof value !== 'object' || value === null || Array.isArray(value))
           return false
-        onFiltersChange(value as Record<string, string>)
+        filteringModel.setFilters(value as Record<string, string>)
         return true
       }
       case 'columnVisibility':
@@ -854,10 +888,69 @@
     }
     return parts.join(' ')
   })
-  let editingCellId = $state<string | null>(null)
-  let editingColumnKey = $state<string | null>(null)
-  let editingDraft = $state('')
-  let editError = $state<string | null>(null)
+  // Cell-mode editing is shared with the other adapters through Grid Core;
+  // row-mode remains in the dedicated Svelte controller because it owns a
+  // multi-cell session and tab traversal.
+  function recordCellCommit(
+    row: Record<string, unknown>,
+    column: IrisTableColumn,
+    rowIndex: number,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
+    if (newValue === oldValue) return
+    onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
+  }
+
+  const cellEditing = useGridEditing<Record<string, unknown>>(gridCore, {
+    getRowKey: (row, index) => rowId(row, index),
+    getRowIndex: (rowKey) => {
+      const index = bodyData.findIndex((row, rowIndex) => Object.is(rowId(row, rowIndex), rowKey))
+      return index >= 0 ? index : undefined
+    },
+    getRules: (columnKey) => leafColumns.find((column) => column.key === columnKey)?.editRules,
+    getValue: (row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return column ? getCellValue(row, column) : row[columnKey]
+    },
+    setValue: (row, columnKey, value) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      const key = (column?.dataIndex ?? column?.key ?? columnKey) as string
+      return { ...row, [key]: value }
+    },
+    coerce: (draft, row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      if (column?.editor !== 'number') return draft
+      const text = String(draft ?? '')
+      if (text === '' || Number.isNaN(Number(text))) {
+        return column ? getCellValue(row, column) : draft
+      }
+      return Number(text)
+    },
+    validate: (value, row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return column?.validate?.(value, row) ?? null
+    },
+    isEditable: (_row, columnKey) => {
+      const column = leafColumns.find((candidate) => candidate.key === columnKey)
+      return Boolean(column && isEditableColumn(column))
+    },
+    onCommit: (commit) => {
+      const column = leafColumns.find((candidate) => candidate.key === commit.columnKey)
+      if (column) {
+        recordCellCommit(commit.row, column, commit.rowIndex, commit.oldValue, commit.value)
+      }
+    },
+  })
+  const editingState = cellEditing.state
+  const editingCellId = $derived(
+    $editingState.editing
+      ? cellId($editingState.editing.rowKey, $editingState.editing.columnKey)
+      : null,
+  )
+  const editingColumnKey = $derived($editingState.editing?.columnKey ?? null)
+  const editingDraft = $derived(String($editingState.draft ?? ''))
+  const editError = $derived($editingState.error)
 
   function beginEdit(
     row: Record<string, unknown>,
@@ -866,96 +959,35 @@
   ): void {
     // Batch EM: a formula column is display-only — never enters cell mode.
     if (!isEditableColumn(column)) return
-    editingCellId = cellId(rowIdent, column.key)
-    editingColumnKey = column.key
     const current = getCellValue(row, column)
-    editingDraft = current == null ? '' : String(current)
-    editError = null
+    cellEditing.startCellEdit(rowIdent, column.key, current == null ? '' : String(current))
   }
 
   function commitEdit(
-    row: Record<string, unknown>,
-    column: IrisTableColumn,
-    rowIndex: number,
+    _row: Record<string, unknown>,
+    _column: IrisTableColumn,
+    _rowIndex: number,
   ): void {
-    if (editingCellId === null) return
-    const oldValue = getCellValue(row, column)
-    const draft = editingDraft
-    const newValue =
-      column.editor === 'number'
-        ? draft === '' || isNaN(Number(draft))
-          ? oldValue
-          : Number(draft)
-        : draft
-    if (column.editRules && column.editRules.length > 0) {
-      const context = { rows: baseData, columnKey: column.key }
-      void validateEditRulesAsync(column.editRules, draft, row, false, context).then(
-        (r: { valid: boolean; messages: string[] }) => {
-          if (!r.valid) {
-            editError = r.messages[0] ?? null
-            return
-          }
-          finishCommit(row, column, rowIndex, oldValue, newValue)
-        },
-      )
-      return
-    }
-    // A column validator keeps the editor open until the draft is valid.
-    if (column.validate) {
-      const error = column.validate(newValue, row)
-      if (error) {
-        editError = error
-        return
-      }
-    }
-    finishCommit(row, column, rowIndex, oldValue, newValue)
-  }
-
-  function finishCommit(
-    row: Record<string, unknown>,
-    column: IrisTableColumn,
-    rowIndex: number,
-    oldValue: unknown,
-    newValue: unknown,
-  ): void {
-    editError = null
-    editingCellId = null
-    editingColumnKey = null
-    if (newValue !== oldValue) {
-      onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
-      // Proxy mode: write the committed value into the local page copy so the
-      // edit survives without a refetch (react liveData parity); the next
-      // page/refetch replaces the copy wholesale.
-      if (proxyRef) {
-        const ident = rowId(row, rowIndex)
-        proxyRows = proxyRows.map((r, i) =>
-          rowId(r, i) === ident ? { ...r, [column.key]: newValue } : r,
-        )
-      }
-    }
+    cellEditing.commitCellEdit()
   }
 
   function cancelEdit(): void {
-    editError = null
-    editingCellId = null
-    editingColumnKey = null
+    cellEditing.cancelCellEdit()
   }
 
   const rowMode = $derived(editConfig?.mode === 'row')
   const rowEdit = createTableRowEditController({
     getColumns: () => leafColumns,
     getRows: () => bodyData,
+    findRow: (key) => gridRows.find(key),
     getRowId: rowId,
     getCellValue,
     onCommit: (event) => {
       onCellEdit?.(event)
       if (proxyRef) {
         const ident = rowId(event.row, event.rowIndex)
-        proxyRows = proxyRows.map((current, index) =>
-          rowId(current, index) === ident
-            ? { ...current, [event.column.key]: event.newValue }
-            : current,
-        )
+        const valueKey = (event.column.dataIndex ?? event.column.key) as string
+        gridRows.update(ident, { [valueKey]: event.newValue }, { reason: 'cell-edit' })
       }
     },
   })
@@ -975,8 +1007,7 @@
     getRowDrag: () => rowDrag,
     getColumnDrag: () => columnDrag,
     commitRows: (rows) => {
-      if (hasProxy) proxyRows = rows
-      else localRows = rows
+      gridRows.commit(rows, { reason: 'row-drag' })
       onDataChange?.(rows)
     },
   })
@@ -998,19 +1029,7 @@
   const handleDragPointerMove = dragBridge.pointerMove
   const handleDragPointerUp = dragBridge.pointerUp
 
-  // Cell-range selection (opt-in via `cellRange`). The controller is created
-  // once; its state is bridged into Svelte via a $state variable subscribed to
-  // the core store.
-  // svelte-ignore state_referenced_locally
-  const cellRangeCtrl = createCellRange()
-  let cellRangeState = $state(cellRangeCtrl.getState())
-  // Subscribe to core store — Svelte's $effect cleanup will run on destroy.
-  $effect(() => {
-    const unsub = cellRangeCtrl.subscribe((s) => {
-      cellRangeState = s
-    })
-    return unsub
-  })
+  const { model: cellRangeCtrl, range: selectedRange } = useGridRange(gridCore)
 
   const keyboard = createTableKeyboard({
     keyboardNavigation: () => keyboardNavigation,
@@ -1022,7 +1041,7 @@
     getFocused: () => focusedCell,
     setFocused: (next) => (focusedCell = next),
     range: cellRangeCtrl,
-    getRangeState: () => cellRangeState,
+    getRange: () => $selectedRange,
   })
   const { handleRootKeyDown, cellTabIndex, isInRange, activeCellRange, copyActiveRange } = keyboard
 
@@ -1558,7 +1577,7 @@
                   errorId={`${editId}-error`}
                   onInput={(value) => {
                     if (rowMode) rowEdit.setDraft(editId, value)
-                    else editingDraft = value
+                    else cellEditing.setCellDraft(value)
                   }}
                   onCommit={() => {
                     if (rowMode) rowEdit.commit(editId, row, col, index, id)

@@ -46,6 +46,8 @@ export interface TableRowEditController {
 export function createTableRowEditController(options: {
   getColumns: () => IrisTableColumn[]
   getRows: () => Array<Record<string, unknown>>
+  /** Resolve the latest row from the shared Core rows source (including tree children). */
+  findRow?: (key: string | number) => Record<string, unknown> | undefined
   getRowId: (row: Record<string, unknown>, index: number) => string | number
   getCellValue: (row: Record<string, unknown>, column: IrisTableColumn) => unknown
   onCommit?: (event: IrisTableCellEditEvent) => void
@@ -83,6 +85,7 @@ export function createTableRowEditController(options: {
     const session = sessions.get(id)
     if (!session) return true
     const liveRow =
+      options.findRow?.(key) ??
       options.getRows().find((candidate, index) => options.getRowId(candidate, index) === key) ??
       row
     const oldValue = options.getCellValue(liveRow, column)

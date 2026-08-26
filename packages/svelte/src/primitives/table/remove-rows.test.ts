@@ -11,6 +11,7 @@ const rows = [
   { id: 2, name: 'Beta' },
   { id: 3, name: 'Gamma' },
 ]
+type TreeRow = { id: number; name: string; children?: TreeRow[] }
 
 describe('IrisTable tableRef.removeRows', () => {
   it('marks the root in printable mode for shared print CSS', () => {
@@ -73,5 +74,29 @@ describe('IrisTable tableRef.removeRows', () => {
     tableRef.current!.removeRows([404, 405])
     expect(container.querySelectorAll('[data-iris-table-row=""]')).toHaveLength(3)
     expect(onDataChange).not.toHaveBeenCalled()
+  })
+
+  it('removes a static tree child through the shared rows transaction', async () => {
+    const treeData: TreeRow[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'Child' }] }]
+    const tableRef: { current: IrisTableHandle | null } = { current: null }
+    const onDataChange = vi.fn()
+    render(IrisTable, {
+      props: {
+        columns,
+        data: treeData,
+        rowKey: 'id',
+        getSubRows: (row: Record<string, unknown>) => row.children as TreeRow[] | undefined,
+        tableRef,
+        onDataChange,
+      },
+    })
+    await waitFor(() => expect(tableRef.current).not.toBeNull())
+
+    tableRef.current!.removeRows([2])
+
+    await waitFor(() =>
+      expect(onDataChange).toHaveBeenCalledWith([{ id: 1, name: 'Root', children: [] }]),
+    )
+    expect(treeData[0]?.children).toHaveLength(1)
   })
 })

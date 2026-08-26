@@ -185,6 +185,38 @@ describe('createGridClipboardFeature', () => {
     )
   })
 
+  it('allows an overflow factory to seed an initially empty grid', () => {
+    const overflowRows = vi.fn(({ lines, columns: contextColumns, parseValue, setValue }) =>
+      lines.map((cells) => {
+        let row = {} as Row
+        cells.forEach((text, index) => {
+          const column = contextColumns[index]!
+          row = setValue(row, column, parseValue(text, row, column))
+        })
+        return row
+      }),
+    )
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: [] }),
+        createGridRangeFeature<Row>(),
+        createGridClipboardFeature<Row>({
+          getColumns: () => columns,
+          parseValue: (text, _row, column) => (column.key === 'age' ? Number(text) : text),
+          overflowRows,
+        }),
+      ],
+    })
+    grid.invoke('startCellRange', 0, 0)
+
+    expect(grid.invoke<boolean>('pasteGridRange', 'Ada\t30\nLinus\t41')).toBe(true)
+    expect(grid.invoke<Row[]>('getRows')).toEqual([
+      { id: 1, name: 'Ada', age: 30 },
+      { id: 2, name: 'Linus', age: 41 },
+    ])
+    expect(overflowRows).toHaveBeenCalledOnce()
+  })
+
   it('clips multi-cell paste to the rectangle and skips locked cells', () => {
     const overflowRows = vi.fn()
     const grid = createClipboardGrid({

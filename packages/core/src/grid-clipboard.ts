@@ -116,8 +116,9 @@ function clampRange(
   range: TableClipboardRange | null,
   rowCount: number,
   columnCount: number,
+  allowEmptyRows = false,
 ): TableClipboardRange | null {
-  if (!range || rowCount <= 0 || columnCount <= 0) return null
+  if (!range || columnCount <= 0 || (rowCount <= 0 && !allowEmptyRows)) return null
   const raw = [
     integer(range.start.row),
     integer(range.start.col),
@@ -126,13 +127,18 @@ function clampRange(
   ]
   if (raw.some((value) => value === null)) return null
   const [startRow, startColumn, endRow, endColumn] = raw as [number, number, number, number]
+  // A factory-backed single-cell paste may legitimately start with no source
+  // rows. Keep the range at row zero so every clipboard line is treated as an
+  // overflow line; serialization and the default (factory-less) path still
+  // reject an empty body above.
+  const lastRow = Math.max(0, rowCount - 1)
   return {
     start: {
-      row: Math.max(0, Math.min(startRow, endRow, rowCount - 1)),
+      row: Math.max(0, Math.min(startRow, endRow, lastRow)),
       col: Math.max(0, Math.min(startColumn, endColumn, columnCount - 1)),
     },
     end: {
-      row: Math.max(0, Math.min(Math.max(startRow, endRow), rowCount - 1)),
+      row: Math.max(0, Math.min(Math.max(startRow, endRow), lastRow)),
       col: Math.max(0, Math.min(Math.max(startColumn, endColumn), columnCount - 1)),
     },
   }
@@ -183,11 +189,19 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
     private readonly emit?: (change: GridClipboardChange<Row>) => void,
   ) {}
 
-  private context(rangeOverride?: TableClipboardRange): GridClipboardContext<Row> | null {
+  private context(
+    rangeOverride?: TableClipboardRange,
+    allowEmptyRows = false,
+  ): GridClipboardContext<Row> | null {
     const sourceRows = this.bindings.getRows()
     const rows = [...(this.options.getRows?.() ?? sourceRows)]
     const columns = this.options.getColumns()
-    const range = clampRange(rangeOverride ?? this.bindings.getRange(), rows.length, columns.length)
+    const range = clampRange(
+      rangeOverride ?? this.bindings.getRange(),
+      rows.length,
+      columns.length,
+      allowEmptyRows,
+    )
     return range ? { sourceRows, rows, columns, range } : null
   }
 
@@ -323,7 +337,11 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
   }
 
   paste(text: string, range?: TableClipboardRange): boolean {
-    const current = this.context(range)
+    // An opt-in overflow factory is also useful for an initially empty grid:
+    // the first single-cell paste has no existing row to anchor to, so treat
+    // row zero as the overflow boundary. Without a factory, preserve the
+    // historical no-range/no-row no-op.
+    const current = this.context(range, this.options.overflowRows !== undefined)
     if (!current) return false
     const lines = text.split(/\r?\n/)
     const multiCell =

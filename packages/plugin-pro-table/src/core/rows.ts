@@ -1,23 +1,19 @@
 import { readCell, type DataViewColumn } from '@iris-ui-kit/core'
+import { collectTreeRows } from '@iris-ui-kit/core/grid'
 import type { ProTableColumn, ProTableTreeConfig } from './types'
 
 /** Flatten every tree node for edit lookup while preserving source row objects. */
-export function collectProTableRows<Row>(
+export function collectProTableRows<Row extends Record<string, unknown>>(
   flatRows: Row[],
   treeRoots: Row[] | null,
   tree: ProTableTreeConfig<Row> | undefined,
+  rowKeyOf?: (row: Row, index: number) => string | number | undefined,
 ): Row[] {
   if (!treeRoots || !tree) return flatRows
-  const rows: Row[] = []
-  const walk = (nodes: Row[]): void => {
-    for (const node of nodes) {
-      rows.push(node)
-      const children = tree.getChildren(node)
-      if (children?.length) walk(children)
-    }
-  }
-  walk(treeRoots)
-  return rows
+  return collectTreeRows(treeRoots, {
+    getRowKey: rowKeyOf ?? (() => undefined),
+    getChildren: tree.getChildren,
+  })
 }
 
 /** Map ProTable columns onto the core data-view contract. */

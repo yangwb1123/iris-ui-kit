@@ -110,6 +110,22 @@ describe('createProTableStore — resource mutations', () => {
     })
   })
 
+  it('preserves custom-key row shape when a client row is created', async () => {
+    type SlugRow = { slug: string; name: string }
+    const table = createProTableStore<SlugRow>({
+      columns: [{ key: 'name', title: 'Name' }],
+      rowKey: (row) => row.slug,
+      data: [{ slug: 'ada', name: 'Ada' }],
+      pageSize: 10,
+    })
+
+    const created = await table.createRow({ slug: 'lin', name: 'Lin' })
+
+    expect(created).toEqual({ slug: 'lin', name: 'Lin' })
+    expect(table.getState().rows).toContainEqual(created)
+    expect(table.getState().rows.find((row) => row.slug === 'lin')).not.toHaveProperty('id')
+  })
+
   it('deletes one row and bulk-deletes the current selection', async () => {
     const onDelete = vi.fn(async () => undefined)
     const onBulkDelete = vi.fn(async () => undefined)
@@ -182,6 +198,94 @@ describe('createProTableStore — inline edit', () => {
     t.startEdit('1', 'age')
     t.commitEdit('99')
     expect(t.getState().rows.find((r) => r.id === 1)?.age).toBe(99)
+  })
+})
+
+describe('createProTableStore — tree rows', () => {
+  it('routes nested edit and delete through the rows transaction', async () => {
+    type TreeUser = User & { children?: TreeUser[] }
+    const treeData: TreeUser[] = [
+      {
+        id: 1,
+        name: 'Root',
+        age: 40,
+        children: [{ id: 2, name: 'Child', age: 20 }],
+      },
+    ]
+    const table = createProTableStore<TreeUser>({
+      columns,
+      rowKey: 'id',
+      data: treeData,
+      pageSize: 10,
+      tree: {
+        defaultExpandedKeys: ['1'],
+        getChildren: (row) => row.children,
+      },
+    })
+
+    expect(table.getState().treeRows?.map((item) => item.key)).toEqual(['1', '2'])
+    table.startEdit('2', 'name')
+    table.commitEdit('Child updated')
+    expect(table.getState().treeRows?.find((item) => item.key === '2')?.row.name).toBe(
+      'Child updated',
+    )
+    expect(table.getState().rows.find((row) => row.id === 2)?.name).toBe('Child updated')
+    expect(treeData[0]?.children?.[0]?.name).toBe('Child')
+
+    // The client tree fetcher reads `treeRoots` on every expansion reload;
+    // the rows transaction must therefore update that source, not just the
+    // legacy flat mirrors.
+    table.collapseAll()
+    table.expandAll()
+    expect(table.getState().treeRows?.find((item) => item.key === '2')?.row.name).toBe(
+      'Child updated',
+    )
+
+    await expect(table.deleteRow('2')).resolves.toBe(true)
+    expect(table.getState().treeRows?.map((item) => item.key)).toEqual(['1'])
+    expect(table.getState().rows).toHaveLength(1)
+    expect(table.getState().rows[0]?.children).toEqual([])
+    expect(treeData[0]?.children).toHaveLength(1)
+
+    table.collapseAll()
+    table.expandAll()
+    expect(table.getState().treeRows?.map((item) => item.key)).toEqual(['1'])
+  })
+
+  it('supports custom child accessors through setChildren', async () => {
+    type NestedUser = User & { descendants?: NestedUser[] }
+    const table = createProTableStore<NestedUser>({
+      columns,
+      rowKey: 'id',
+      data: [{ id: 1, name: 'Root', age: 40, descendants: [{ id: 2, name: 'Child', age: 20 }] }],
+      pageSize: 10,
+      tree: {
+        defaultExpandedKeys: ['1'],
+        getChildren: (row) => row.descendants,
+        setChildren: (row, children) => ({ ...row, descendants: children }),
+      },
+    })
+
+    table.startEdit('2', 'age')
+    table.commitEdit('21')
+    expect(table.getState().rows[0]?.descendants?.[0]?.age).toBe(21)
+    await expect(table.deleteRow('2')).resolves.toBe(true)
+    expect(table.getState().rows[0]?.descendants).toEqual([])
+  })
+
+  it('creates one new root through the same tree rows transaction', async () => {
+    type TreeUser = User & { children?: TreeUser[] }
+    const table = createProTableStore<TreeUser>({
+      columns,
+      rowKey: 'id',
+      data: [{ id: 1, name: 'Root', age: 40, children: [] }],
+      pageSize: 10,
+      tree: { getChildren: (row) => row.children },
+    })
+
+    await table.createRow({ id: 2, name: 'Second', age: 30 })
+    expect(table.getState().rows.map((row) => row.id)).toEqual([1, 2])
+    expect(table.getState().treeRows?.map((item) => item.key)).toEqual(['1', '2'])
   })
 })
 

@@ -10,14 +10,11 @@ import {
   buildHeaderMatrix,
   flattenTree,
   summarize,
-  toCsv,
-  toSpreadsheetXml,
-  toJson,
-  toHtml,
   type HeaderCell,
   type ExpansionModel,
   type TreeRow,
 } from '@iris-ui-kit/core'
+import { collectTreeRows, createGridCore } from '@iris-ui-kit/core/grid'
 import { createProTableMutationTools } from './mutations'
 import { collectProTableRows, toDataViewColumns } from './rows'
 import {
@@ -26,6 +23,8 @@ import {
   getProTableVisibleColumns,
 } from './selectors'
 import { computeProTableColumnWindow } from './view'
+import { createGridExportFeature } from './grid'
+import { createProTableClientRowsBridge } from './rows-model'
 
 /**
  * `@iris-ui-kit/plugin-pro-table` — a vxe-table-style CRUD data table for Iris UI.
@@ -65,6 +64,7 @@ export type {
   ProTableViewOptions,
 } from './types'
 export * from './view'
+export * from './grid'
 export { proTablePlugin } from './plugin'
 
 class ProTableStoreEngine<Row extends Record<string, unknown>> {
@@ -84,10 +84,19 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
       })
     }
 
-    const allRowsForEdit = collectProTableRows(allRows, treeRoots, config.tree)
-
     const rowKeyOf = (row: Row): string =>
       typeof config.rowKey === 'function' ? config.rowKey(row) : String(row[config.rowKey])
+
+    const allRowsForEdit = collectProTableRows(allRows, treeRoots, config.tree, rowKeyOf)
+
+    const clientRowsModel = createProTableClientRowsBridge({
+      mode,
+      allRows,
+      treeRoots,
+      allRowsForEdit,
+      rowKeyOf,
+      tree: config.tree,
+    })
 
     const cellValue = (row: Row, column: ProTableColumn<Row>): unknown => readCell(row, column)
 
@@ -199,13 +208,28 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
         const column = config.columns.find((c) => c.key === columnKey)
         if (!column) return
         const dataIndex = dataIndexOf(column)
-        const idx = allRowsForEdit.findIndex((r) => rowKeyOf(r) === rowKey)
-        const oldValue = idx >= 0 ? allRowsForEdit[idx][dataIndex] : undefined
+        // Resolve through the rows capability so tree edits do not depend on
+        // the adapter-maintained flattened lookup mirror. Server mode keeps
+        // its existing source-array fallback because the remote page is not a
+        // client rows model.
+        const currentRow =
+          clientRowsModel?.find(rowKey) ?? allRowsForEdit.find((r) => rowKeyOf(r) === rowKey)
+        const oldValue = currentRow?.[dataIndex]
         const newValue = column.editor === 'number' ? Number(value) : value
         let updatedRow = {} as Row
-        if (idx >= 0) {
-          updatedRow = { ...allRowsForEdit[idx], [dataIndex]: newValue }
-          allRowsForEdit[idx] = updatedRow
+        if (currentRow) {
+          updatedRow = { ...currentRow, [dataIndex]: newValue }
+          if (clientRowsModel) {
+            clientRowsModel.update(rowKey, { [dataIndex]: newValue } as Partial<Row>, {
+              reason: 'cell-edit',
+            })
+            // `onRowsChange` mirrors the updated row into the legacy array;
+            // expose that canonical row object to the callback when present.
+            updatedRow = clientRowsModel.find(rowKey) ?? updatedRow
+          } else {
+            const index = allRowsForEdit.findIndex((row) => rowKeyOf(row) === rowKey)
+            if (index >= 0) allRowsForEdit[index] = updatedRow
+          }
         }
         config.onCellEdit?.({ rowKey, columnKey, dataIndex, oldValue, newValue, row: updatedRow })
       },
@@ -252,6 +276,20 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
       })
     }
 
+    // B-layer abilities are loaded per ProTable instance. The store keeps its
+    // legacy methods, but their implementation now belongs to the export
+    // feature instead of duplicating four serializer paths in this engine.
+    const exportGrid = createGridCore<Record<string, unknown>>({
+      features: [
+        createGridExportFeature({
+          getData: () => {
+            const { rows, cols } = exportData()
+            return { rows, columns: cols }
+          },
+        }),
+      ],
+    })
+
     const { runMutation, resourceHandlerRequired, removeClientRows } = createProTableMutationTools({
       store,
       dataSource,
@@ -259,6 +297,11 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
       treeRoots,
       allRowsForEdit,
       rowKeyOf,
+      removeRowsFromModel: clientRowsModel
+        ? (keys) => {
+            clientRowsModel.removeMany([...keys], { reason: 'remove' })
+          }
+        : undefined,
     })
 
     // Initial load — client mode applies synchronously (rows ready now), server
@@ -299,10 +342,17 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
           const result = await handler?.(row)
           if (result !== undefined) created = result
           if (mode === 'client') {
-            allRows.push(created)
-            if (treeRoots) {
-              treeRoots.push(created)
-              allRowsForEdit.push(created)
+            if (clientRowsModel) {
+              // ProTable create preserves the caller's row shape. Use an
+              // append transaction rather than the table-handle insert helper,
+              // whose legacy auto-id behavior is not part of this API.
+              clientRowsModel.transact((rows) => [...rows, created], { reason: 'insert' })
+            } else {
+              allRows.push(created)
+              if (treeRoots) {
+                treeRoots.push(created)
+                allRowsForEdit.push(created)
+              }
             }
           }
         })
@@ -311,6 +361,7 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
 
       async deleteRow(key) {
         const row =
+          clientRowsModel?.find(key) ??
           allRowsForEdit.find((candidate) => rowKeyOf(candidate) === key) ??
           store.getState().rows.find((candidate) => rowKeyOf(candidate) === key)
         if (!row) return false
@@ -328,8 +379,12 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
         const uniqueKeys = [...new Set(keys)]
         if (uniqueKeys.length === 0) return 0
         const keySet = new Set(uniqueKeys)
-        const sourceRows = mode === 'client' ? allRowsForEdit : store.getState().rows
-        const loadedRows = sourceRows.filter((row) => keySet.has(rowKeyOf(row)))
+        const loadedRows =
+          mode === 'client' && clientRowsModel
+            ? uniqueKeys
+                .map((key) => clientRowsModel.find(key))
+                .filter((row): row is Row => row !== undefined)
+            : store.getState().rows.filter((row) => keySet.has(rowKeyOf(row)))
 
         await runMutation('bulk-delete', uniqueKeys, async () => {
           const handler = config.mutations?.bulkDelete
@@ -369,25 +424,13 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
         void dataSource.reload()
       },
 
-      exportCsv: () => {
-        const { rows, cols } = exportData()
-        return toCsv(rows, cols)
-      },
+      exportCsv: () => exportGrid.invoke<string>('exportCsv'),
 
-      exportExcelXml: (sheetName) => {
-        const { rows, cols } = exportData()
-        return toSpreadsheetXml(rows, cols, { sheetName })
-      },
+      exportExcelXml: (sheetName) => exportGrid.invoke<string>('exportExcelXml', sheetName),
 
-      exportJson: () => {
-        const { rows, cols } = exportData()
-        return toJson(rows, cols)
-      },
+      exportJson: () => exportGrid.invoke<string>('exportJson'),
 
-      exportHtml: (options) => {
-        const { rows, cols } = exportData()
-        return toHtml(rows, cols, options)
-      },
+      exportHtml: (options) => exportGrid.invoke<string>('exportHtml', options),
 
       reorderColumns(from, to) {
         if (from === to) return
@@ -420,15 +463,10 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
       },
       expandAll() {
         if (expansion && treeRoots && config.tree) {
-          const keys: string[] = []
-          const walk = (nodes: Row[]) => {
-            for (const n of nodes) {
-              keys.push(rowKeyOf(n))
-              const kids = config.tree!.getChildren(n)
-              if (kids?.length) walk(kids)
-            }
-          }
-          walk(treeRoots)
+          const keys = collectTreeRows(treeRoots, {
+            getRowKey: (row) => rowKeyOf(row),
+            getChildren: config.tree.getChildren,
+          }).map(rowKeyOf)
           expansion.expandAll(keys)
         }
       },

@@ -95,6 +95,12 @@ export interface ProTableMutateOptions<Row = Record<string, unknown>> {
 export interface ProTableTreeConfig<Row = Record<string, unknown>> {
   /** Accessor returning child rows for each row. */
   getChildren: (row: Row) => Row[] | undefined
+  /**
+   * Optional immutable child replacement hook used by client-side row
+   * mutations. When omitted, the rows adapter replaces an enumerable property
+   * whose value is the array returned by `getChildren`.
+   */
+  setChildren?: (row: Row, children: Row[]) => Row
   /** Keys expanded by default. */
   defaultExpandedKeys?: string[]
 }

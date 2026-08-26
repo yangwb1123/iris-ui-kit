@@ -8,6 +8,7 @@ interface MutationToolsOptions<Row extends Record<string, unknown>> {
   treeRoots: Row[] | null
   allRowsForEdit: Row[]
   rowKeyOf: (row: Row) => string
+  removeRowsFromModel?: (keys: ReadonlySet<string>) => void
 }
 
 interface ProTableMutationTools<Row extends Record<string, unknown>> {
@@ -26,7 +27,8 @@ class ProTableMutationToolsEngine<Row extends Record<string, unknown>> {
   readonly tools: ProTableMutationTools<Row>
 
   constructor(options: MutationToolsOptions<Row>) {
-    const { store, dataSource, allRows, treeRoots, allRowsForEdit, rowKeyOf } = options
+    const { store, dataSource, allRows, treeRoots, allRowsForEdit, rowKeyOf, removeRowsFromModel } =
+      options
     let mutationEpoch = 0
 
     const runMutation = async <T>(
@@ -75,6 +77,10 @@ class ProTableMutationToolsEngine<Row extends Record<string, unknown>> {
       )
 
     const removeClientRows = (keys: ReadonlySet<string>): void => {
+      if (removeRowsFromModel) {
+        removeRowsFromModel(keys)
+        return
+      }
       for (let index = allRows.length - 1; index >= 0; index--) {
         if (keys.has(rowKeyOf(allRows[index]!))) allRows.splice(index, 1)
       }

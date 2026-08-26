@@ -38923,6 +38923,12 @@
               "default": "false"
             },
             {
+              "name": "scrollToTop",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "importPreview",
               "type": "boolean",
               "optional": true,

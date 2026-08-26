@@ -356,7 +356,7 @@ export const minimize: IrisIcon = {
   name: 'minimize',
   nodes: [
     /* @__PURE__ */ path(
-      'M8 3v3a2 2 0 0 1-2 2H3m0 0h5M3 3l5 5m13 5v-3a2 2 0 0 0-2-2h-3m0 0h5M21 3l-5 5M3 21l5-5m13 5v-3a2 2 0 0 0-2-2h-3m0 0h5M21 21l-5-5',
+      'M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3',
     ),
   ],
 }

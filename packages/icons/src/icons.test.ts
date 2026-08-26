@@ -28,6 +28,17 @@ describe('@iris-ui-kit/icons defaultIcons', () => {
       expect(defaultIcons.icons[name]).toBeDefined()
     }
   })
+
+  it('uses inward corners for the fullscreen exit glyph', () => {
+    expect(defaultIcons.icons.minimize?.nodes).toEqual([
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3',
+        },
+      },
+    ])
+  })
 })
 
 describe('@iris-ui-kit/icons per-icon tree-shakeable exports', () => {

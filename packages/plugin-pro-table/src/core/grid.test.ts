@@ -8,12 +8,8 @@ import {
   createGridPersistenceFeature,
   GRID_PERSISTENCE_CHANGE_EVENT,
   GRID_HISTORY_CHANGE_EVENT,
-  createGridViewsFeature,
   GRID_EXPORT_COMPLETE_EVENT,
-  GRID_VIEWS_CHANGE_EVENT,
   type GridExportComplete,
-  type GridViewsChange,
-  type GridViewsModel,
 } from './grid'
 
 type Row = { id: number; name: string; score: number }
@@ -21,8 +17,6 @@ const columns = [
   { key: 'id', title: 'ID' },
   { key: 'name', title: 'Name' },
 ]
-
-type ViewSnapshot = { sort?: null; filter?: string }
 
 function makeRows() {
   return [

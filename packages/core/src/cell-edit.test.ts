@@ -102,6 +102,20 @@ describe('createCellEdit draft session (advancement)', () => {
     expect(ce.getEditing()).toBeNull()
   })
 
+  it('validates an async commit once and writes back once', async () => {
+    const validate = vi.fn(() => Promise.resolve(null))
+    const commit = vi.fn()
+    const ce = createCellEdit({ validate, onCommit: commit })
+    ce.startEdit('r1', 'c1', 'x')
+    validate.mockClear()
+
+    expect(ce.commitEdit()).toBe(false)
+    await vi.waitFor(() => expect(commit).toHaveBeenCalledTimes(1))
+
+    expect(validate).toHaveBeenCalledTimes(1)
+    expect(ce.getEditing()).toBeNull()
+  })
+
   it('cancelEdit discards draft and error', () => {
     const ce = createCellEdit({ validate: () => 'nope' })
     ce.startEdit('r1', 'c1', 'x')

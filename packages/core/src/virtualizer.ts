@@ -68,6 +68,11 @@ export interface VirtualizerConfig {
   /** Extra items rendered above and below the viewport. Default `0`. */
   buffer?: number
   /**
+   * Fixed item size for the closed-form range path. `null` keeps the variable
+   * offset-tree range. Adapters pass this when their public size is numeric.
+   */
+  fixedSize?: number | null
+  /**
    * Stable key for the item at `index`, so measured sizes survive reorder /
    * filtering (the cache is keyed by this, not by position). Default: the index.
    *
@@ -86,6 +91,10 @@ export interface Virtualizer {
   setScroll(offset: number): void
   /** Update the viewport size (px). */
   setViewportSize(size: number): void
+  /** Update the number of overscan items rendered on either side. */
+  setBuffer(buffer: number): void
+  /** Switch between the fixed closed-form and variable offset-tree range paths. */
+  setFixedSize(size: number | null): void
   /**
    * Change the item count (e.g. paged/infinite growth or a reorder). Rebuilds the
    * size tree from the current keys + measured cache — call after the data set
@@ -237,6 +246,7 @@ interface VirtualizerRuntime {
   viewportSize: number
   scrollOffset: number
   buffer: number
+  fixedSize: number | null
   hasExplicitKey: boolean
   keyOf: (index: number) => string | number
   estimate: (index: number) => number
@@ -248,18 +258,62 @@ interface VirtualizerRuntime {
   clampScroll(offset: number): number
 }
 
+function cloneVirtualizerState(state: VirtualizerState): VirtualizerState {
+  return {
+    ...state,
+    items: state.items.map((item) => ({ ...item })),
+  }
+}
+
+function sameVirtualizerState(a: VirtualizerState, b: VirtualizerState): boolean {
+  if (
+    !Object.is(a.offsetBefore, b.offsetBefore) ||
+    !Object.is(a.totalSize, b.totalSize) ||
+    !Object.is(a.startIndex, b.startIndex) ||
+    !Object.is(a.endIndex, b.endIndex) ||
+    a.items.length !== b.items.length
+  ) {
+    return false
+  }
+  for (let index = 0; index < a.items.length; index++) {
+    const item = a.items[index]
+    const other = b.items[index]
+    if (
+      item === undefined ||
+      other === undefined ||
+      !Object.is(item.index, other.index) ||
+      !Object.is(item.key, other.key) ||
+      !Object.is(item.start, other.start) ||
+      !Object.is(item.size, other.size)
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
 function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState {
-  const { count, tree, viewportSize, scrollOffset, buffer, keyOf } = runtime
+  const { count, tree, viewportSize, scrollOffset, buffer, fixedSize, keyOf } = runtime
   if (count <= 0) return { items: [], offsetBefore: 0, totalSize: 0, startIndex: 0, endIndex: -1 }
   const total = tree.total()
   const maxScroll = Math.max(0, total - viewportSize)
   const top = Math.max(0, Math.min(scrollOffset, maxScroll))
-  const first = Math.min(tree.lowerBound(top), count - 1)
-  let last = first
-  const bottom = top + viewportSize
-  while (last < count - 1 && tree.prefix(last + 1) < bottom) last += 1
-  const startIndex = Math.max(0, first - buffer)
-  const endIndex = Math.min(count - 1, last + buffer)
+  let startIndex: number
+  let endIndex: number
+  if (fixedSize !== null) {
+    const size = Math.max(1, fixedSize)
+    const first = Math.min(Math.floor(top / size), count - 1)
+    const visibleCount = fixedSize <= 0 ? 0 : Math.ceil(viewportSize / fixedSize)
+    startIndex = Math.max(0, first - buffer)
+    endIndex = Math.min(count, first + visibleCount + buffer) - 1
+  } else {
+    const first = Math.min(tree.lowerBound(top), count - 1)
+    let last = first
+    const bottom = top + viewportSize
+    while (last < count - 1 && tree.prefix(last + 1) < bottom) last += 1
+    startIndex = Math.max(0, first - buffer)
+    endIndex = Math.min(count - 1, last + buffer)
+  }
   const items: VirtualItem[] = []
   for (let index = startIndex; index <= endIndex; index++) {
     items.push({
@@ -297,6 +351,10 @@ function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime
   runtime.viewportSize = Math.max(0, config.viewportSize ?? 0)
   runtime.scrollOffset = Math.max(0, config.scrollOffset ?? 0)
   runtime.buffer = Math.max(0, Math.floor(config.buffer ?? 0))
+  runtime.fixedSize =
+    config.fixedSize === null || config.fixedSize === undefined
+      ? null
+      : Math.max(0, config.fixedSize)
   runtime.hasExplicitKey = hasExplicitKey
   runtime.keyOf = keyOf
   runtime.estimate = estimate
@@ -322,6 +380,20 @@ function setVirtualizerViewport(runtime: VirtualizerRuntime, size: number): void
   if (next === runtime.viewportSize) return
   runtime.viewportSize = next
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
+function setVirtualizerBuffer(runtime: VirtualizerRuntime, buffer: number): void {
+  const next = Math.max(0, Math.floor(Number.isFinite(buffer) ? buffer : 0))
+  if (next === runtime.buffer) return
+  runtime.buffer = next
+  runtime.sync()
+}
+
+function setVirtualizerFixedSize(runtime: VirtualizerRuntime, size: number | null): void {
+  const next = size === null || !Number.isFinite(size) ? null : Math.max(0, size)
+  if (next === runtime.fixedSize) return
+  runtime.fixedSize = next
   runtime.sync()
 }
 
@@ -392,16 +464,38 @@ function createVirtualizerViewportApi(
   | 'subscribe'
   | 'setScroll'
   | 'setViewportSize'
+  | 'setBuffer'
+  | 'setFixedSize'
   | 'scrollToIndex'
   | 'scrollToOffset'
   | 'totalSize'
 > {
+  let snapshotSource: VirtualizerState | undefined
+  let snapshot: VirtualizerState | undefined
+  const getState = (): VirtualizerState => {
+    const state = runtime.store.getState()
+    // Keep the public snapshot stable between controller updates for external
+    // store consumers, while repairing a snapshot that a caller mutated.
+    if (
+      snapshot === undefined ||
+      snapshotSource !== state ||
+      !sameVirtualizerState(snapshot, state)
+    ) {
+      snapshotSource = state
+      snapshot = cloneVirtualizerState(state)
+    }
+    return snapshot
+  }
+
   return {
     store: runtime.store,
-    getState: runtime.store.getState,
-    subscribe: runtime.store.subscribe,
+    getState,
+    subscribe: (listener) =>
+      runtime.store.subscribe((state) => listener(cloneVirtualizerState(state))),
     setScroll: (offset) => setVirtualizerScroll(runtime, offset),
     setViewportSize: (size) => setVirtualizerViewport(runtime, size),
+    setBuffer: (buffer) => setVirtualizerBuffer(runtime, buffer),
+    setFixedSize: (size) => setVirtualizerFixedSize(runtime, size),
     scrollToIndex: (index, align = 'start') => scrollVirtualizerToIndex(runtime, index, align),
     scrollToOffset: (offset) => scrollVirtualizerToOffset(runtime, offset),
     totalSize: () => runtime.tree.total(),

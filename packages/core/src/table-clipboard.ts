@@ -20,6 +20,10 @@ export interface TableClipboardRange {
   end: { row: number; col: number }
 }
 
+export type TableClipboardValueResolver<
+  Row extends Record<string, unknown> = Record<string, unknown>,
+> = (row: Row, column: TableClipboardColumn<Row>) => unknown
+
 const FORMULA_LEAD = /^[=+\-@\t\r]/
 
 /** Apply the table's display mask before a formatter, matching the React table contract. */
@@ -77,6 +81,7 @@ export function serializeTableRange<Row extends Record<string, unknown>>(
   range: TableClipboardRange,
   format: unknown = 'tsv',
   copyWithFormat = false,
+  resolveValue: TableClipboardValueResolver<Row> = resolveTableValue,
 ): string {
   const startRow = Math.min(range.start.row, range.end.row)
   const endRow = Math.max(range.start.row, range.end.row)
@@ -96,10 +101,10 @@ export function serializeTableRange<Row extends Record<string, unknown>>(
       const output: Record<string, unknown> = {}
       for (const column of selected) {
         if (!row) continue
-        const raw = resolveTableValue(row, column)
+        const raw = resolveValue(row, column)
         output[typeof column.dataIndex === 'string' ? column.dataIndex : column.key] =
           copyWithFormat && column.formatter
-            ? tableDisplayText(row, column)
+            ? tableDisplayText(row, column, resolveValue)
             : column.exportRaw
               ? raw
               : applyTableMask(raw, column)
@@ -113,10 +118,10 @@ export function serializeTableRange<Row extends Record<string, unknown>>(
     const row = rows[rowIndex]
     const cells = selected.map((column) => {
       if (!row) return ''
-      const raw = resolveTableValue(row, column)
+      const raw = resolveValue(row, column)
       const value =
         copyWithFormat && column.formatter
-          ? tableDisplayText(row, column)
+          ? tableDisplayText(row, column, resolveValue)
           : column.exportRaw
             ? raw
             : applyTableMask(raw, column)

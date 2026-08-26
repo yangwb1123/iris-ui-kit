@@ -1,11 +1,11 @@
 import { createStore, type Store } from './store'
-export interface CellEditTarget {
-  rowKey: string
+export interface CellEditTarget<Key extends string | number = string> {
+  rowKey: Key
   columnKey: string
 }
 
-export interface CellEditState {
-  editing: CellEditTarget | null
+export interface CellEditState<Key extends string | number = string> {
+  editing: CellEditTarget<Key> | null
   /** Draft value while an edit session is open. */
   draft: unknown
   /** Validation error message for the current draft; null when valid/unknown. */
@@ -15,14 +15,14 @@ export interface CellEditState {
   validated: unknown
 }
 
-export interface CreateCellEditOptions {
+export interface CreateCellEditOptions<Key extends string | number = string> {
   /**
    * Apply a committed value. Receives the active edit target + the coerced
    * value; resolve the column/row, mutate your data, and fire your own change
    * callback here. Runs synchronously BEFORE the editing state is cleared.
    * Not called when nothing is being edited or validation failed.
    */
-  onCommit?: (target: CellEditTarget, value: unknown) => void
+  onCommit?: (target: CellEditTarget<Key>, value: unknown) => void
   /**
    * Validate a draft before commit. Return an error message to REJECT (the
    * session stays open, `getError()` reports it); null/undefined to accept.
@@ -30,22 +30,22 @@ export interface CreateCellEditOptions {
    */
   validate?: (
     draft: unknown,
-    target: CellEditTarget,
+    target: CellEditTarget<Key>,
   ) => string | null | undefined | Promise<string | null | undefined>
   /**
    * Coerce a raw draft into the committed value (e.g. string → number for a
    * number editor). Runs after validation passes; the result is passed to
    * `onCommit` and stored as `validated`.
    */
-  coerce?: (draft: unknown, target: CellEditTarget) => unknown
+  coerce?: (draft: unknown, target: CellEditTarget<Key>) => unknown
 }
 
-export interface CellEdit {
-  store: Store<CellEditState>
+export interface CellEdit<Key extends string | number = string> {
+  store: Store<CellEditState<Key>>
   /** The cell being edited, or null. */
-  getEditing(): CellEditTarget | null
+  getEditing(): CellEditTarget<Key> | null
   /** Whether this exact cell is the one being edited. */
-  isEditing(rowKey: string, columnKey: string): boolean
+  isEditing(rowKey: Key, columnKey: string): boolean
   /** The current draft value (while editing). */
   getDraft(): unknown
   /** Validation error of the current draft, or null. */
@@ -54,7 +54,7 @@ export interface CellEdit {
   getValidated(): unknown
   /** Open the editor on a cell with an initial draft (replaces any current
    *  edit; clears error/validated state). */
-  startEdit(rowKey: string, columnKey: string, initialDraft?: unknown): void
+  startEdit(rowKey: Key, columnKey: string, initialDraft?: unknown): void
   /** Update the draft; re-validates it against the column validator (errors
    *  update live, but only a CLEAN draft can be committed). */
   setDraft(value: unknown): void
@@ -69,8 +69,10 @@ export interface CellEdit {
   commitEdit(value?: unknown): boolean
 }
 
-export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
-  const store = createStore<CellEditState>({
+export function createCellEdit<Key extends string | number = string>(
+  options: CreateCellEditOptions<Key> = {},
+): CellEdit<Key> {
+  const store = createStore<CellEditState<Key>>({
     editing: null,
     draft: '',
     error: null,
@@ -85,15 +87,19 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
 
   const validateDraft = (
     draft: unknown,
-    target: CellEditTarget,
+    target: CellEditTarget<Key>,
   ): string | null | undefined | Promise<string | null | undefined> => {
     if (!options.validate) return null
     return options.validate(draft, target) ?? null
   }
 
-  const commitAsync = async (draft: unknown, target: CellEditTarget): Promise<boolean> => {
+  const commitAsync = async (
+    draft: unknown,
+    target: CellEditTarget<Key>,
+    validation: string | null | undefined | Promise<string | null | undefined>,
+  ): Promise<boolean> => {
     const gen = ++sessionGen
-    const error = (await validateDraft(draft, target)) as string | null | undefined
+    const error = (await validation) as string | null | undefined
     if (gen !== sessionGen) return false // cancelled / restarted / superseded
     if (error) {
       store.setState((prev) => ({ ...prev, error }))
@@ -157,7 +163,7 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
       const error = validateDraft(draft, target) as
         string | null | undefined | Promise<string | null | undefined>
       if (error && typeof (error as Promise<unknown>).then === 'function') {
-        void commitAsync(draft, target)
+        void commitAsync(draft, target, error)
         return false
       }
       if (error) {

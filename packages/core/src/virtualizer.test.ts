@@ -94,6 +94,65 @@ describe('createVirtualizer — measurement feedback', () => {
   })
 })
 
+describe('createVirtualizer — snapshot boundaries', () => {
+  it('isolates getState state, items, and item objects from the controller', () => {
+    const v = createVirtualizer({ count: 5, estimateSize: 20, viewportSize: 40 })
+    const snapshot = v.getState()
+    const internal = v.store.getState()
+
+    expect(snapshot).not.toBe(internal)
+    expect(snapshot.items).not.toBe(internal.items)
+    expect(snapshot.items[0]).not.toBe(internal.items[0])
+    expect(v.getState()).toBe(snapshot)
+
+    snapshot.offsetBefore = 999
+    snapshot.totalSize = 999
+    snapshot.startIndex = 999
+    snapshot.endIndex = 999
+    snapshot.items[0]!.start = 999
+    snapshot.items[0]!.size = 999
+    snapshot.items.length = 0
+
+    expect(v.getState()).toMatchObject({
+      offsetBefore: 0,
+      totalSize: 100,
+      startIndex: 0,
+      endIndex: 1,
+      items: [
+        { index: 0, key: 0, start: 0, size: 20 },
+        { index: 1, key: 1, start: 20, size: 20 },
+      ],
+    })
+
+    v.setScroll(20)
+    expect(v.getState()).toMatchObject({ startIndex: 1 })
+    expect(v.getState().items[0]).toMatchObject({ index: 1, start: 20, size: 20 })
+  })
+
+  it('isolates snapshots delivered to subscribers from the controller', () => {
+    const v = createVirtualizer({ count: 5, estimateSize: 20, viewportSize: 40 })
+    const listener = vi.fn((snapshot) => {
+      snapshot.totalSize = -1
+      snapshot.items[0]!.size = -1
+      snapshot.items.length = 0
+    })
+    v.subscribe(listener)
+
+    v.setScroll(20)
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(v.getState()).toMatchObject({
+      startIndex: 1,
+      endIndex: 2,
+      totalSize: 100,
+      items: [
+        { index: 1, key: 1, start: 20, size: 20 },
+        { index: 2, key: 2, start: 40, size: 20 },
+      ],
+    })
+  })
+})
+
 describe('createVirtualizer — variable estimate function', () => {
   it('supports a per-index estimate', () => {
     const v = createVirtualizer({
@@ -147,6 +206,29 @@ describe('createVirtualizer — growth + viewport', () => {
     expect(v.getState().endIndex).toBe(1) // 40/20 = 2 rows
     v.setViewportSize(200)
     expect(v.getState().endIndex).toBe(9) // 200/20 = 10 rows
+  })
+
+  it('setBuffer updates overscan without replacing the controller', () => {
+    const v = createVirtualizer({ count: 100, estimateSize: 20, viewportSize: 100 })
+    v.setScroll(200)
+    expect(v.getState()).toMatchObject({ startIndex: 10, endIndex: 14 })
+    v.setBuffer(2)
+    expect(v.getState()).toMatchObject({ startIndex: 8, endIndex: 16 })
+    v.setBuffer(Number.NaN)
+    expect(v.getState()).toMatchObject({ startIndex: 10, endIndex: 14 })
+  })
+
+  it('fixedSize keeps the closed-form zero-viewport buffer boundary', () => {
+    const v = createVirtualizer({
+      count: 30,
+      estimateSize: 36,
+      fixedSize: 36,
+      viewportSize: 0,
+      buffer: 4,
+    })
+    expect(v.getState()).toMatchObject({ startIndex: 0, endIndex: 3 })
+    v.setFixedSize(null)
+    expect(v.getState()).toMatchObject({ startIndex: 0, endIndex: 4 })
   })
 })
 

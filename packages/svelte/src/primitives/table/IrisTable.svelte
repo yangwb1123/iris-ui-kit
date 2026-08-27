@@ -86,7 +86,9 @@
   import { createPinnedDragMath } from './table-pinned-drag'
   import { createTableViewsController } from './table-views.svelte'
   import { createTablePersistController } from './table-persist.svelte'
-  import { TABLE_STYLES } from './table-styles'
+  import { createTableColumnFade } from './table-column-fade.svelte'
+  import { buildTableGridTemplate } from './table-grid.svelte'
+  import { ensureTableStyles } from './table-styles'
   import TableSortIndicator from './TableSortIndicator.svelte'
   import TableStateRow from './TableStateRow.svelte'
   import TableScrollTop from './TableScrollTop.svelte'
@@ -130,6 +132,7 @@
     seqMethod,
     spanMethod,
     columnVisibility,
+    columnFade = false,
     filters,
     onFiltersChange,
     filterValues,
@@ -272,7 +275,14 @@
     widthPropControlled = widths !== undefined
   })
 
-  const sourceDisplayColumns = $derived(columns.filter((c) => effectiveVisibility[c.key] !== false))
+  const columnFadeController = createTableColumnFade<Record<string, unknown>>({
+    // Read the already-bridged Core snapshot. Fade only decorates the render;
+    // it never writes visibility or emits a second change channel.
+    visibility: () => effectiveVisibility,
+    enabled: () => columnFade,
+    columns: () => columns,
+  })
+  const sourceDisplayColumns = $derived(columnFadeController.displayColumns)
 
   let detectedTypes = $state<Record<string, DetectedColumnType>>({})
   let detectTypesDone = false
@@ -1034,22 +1044,17 @@
     (rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 1 : 0),
   )
 
-  const gridTemplate = $derived(() => {
-    const parts: string[] = []
-    if (rowDrag) parts.push('40px')
-    if (seq) parts.push('60px')
-    if (hasDetail) parts.push('40px')
-    if (showSelection) parts.push('40px')
-    for (const col of leafColumns) {
-      const override = effectiveWidths[col.key]
-      if (override != null) parts.push(`${override}px`)
-      else if (typeof col.width === 'number') parts.push(`${col.width}px`)
-      else if (col.width === 'auto') parts.push('minmax(max-content, max-content)')
-      else if (typeof col.width === 'string') parts.push(col.width)
-      else parts.push('minmax(0, 1fr)')
-    }
-    return parts.join(' ')
-  })
+  const gridTemplate = $derived(() =>
+    buildTableGridTemplate(
+      leafColumns,
+      effectiveWidths,
+      Boolean(rowDrag),
+      seq,
+      hasDetail,
+      showSelection,
+      columnFadeController.isCollapsed,
+    ),
+  )
   // Cell-mode editing is shared with the other adapters through Grid Core;
   // row-mode remains in the dedicated Svelte controller because it owns a
   // multi-cell session and tab traversal.
@@ -1386,15 +1391,23 @@
 
   // Set of leaf-column indices to render: the visible window (+ overscan),
   // always unioned with pinned columns. `null` ⇒ render every column (off).
-  const visibleColSet = $derived.by<Set<number> | null>(() =>
-    computeVisibleColSet(
+  const visibleColSet = $derived.by<Set<number> | null>(() => {
+    const visible = computeVisibleColSet(
       columnVirtualization,
       leafColumns,
       scrollLeft,
       viewportWidth,
       effectiveWidths,
-    ),
-  )
+    )
+    if (!visible) return null
+    // A fading leaf remains mounted even when it is outside the horizontal
+    // window; its stable leaf index still controls grid-column-start.
+    const next = new Set(visible)
+    leafColumns.forEach((column, index) => {
+      if (columnFadeController.fadeByLeaf[column.key]) next.add(index)
+    })
+    return next
+  })
 
   // 1-based grid track for a leaf-column index (after the optional detail +
   // selection tracks), so a rendered cell lands in the right place even when
@@ -1451,13 +1464,9 @@
   // across all four flat/tree × detail combinations). When `virtualScroll` is
   // unset this is false, so the non-virtual body path renders unchanged.
   const useVirtual = $derived(virtualScroll != null && !(treeMode && hasDetail))
-  onMount(() => {
-    if (typeof document === 'undefined') return
-    if (document.getElementById('iris-table-row-styles')) return
-    const style = document.createElement('style')
-    style.id = 'iris-table-row-styles'
-    style.textContent = TABLE_STYLES
-    document.head.appendChild(style)
+  onMount(() => ensureTableStyles(columnFade))
+  $effect(() => {
+    if (columnFade) ensureTableStyles(true)
   })
 </script>
 
@@ -1516,6 +1525,7 @@
   data-iris-table
   data-density={effectiveDensity}
   data-printable={printable ? 'true' : undefined}
+  data-iris-column-fade-active={columnFadeController.columnFadeActive ? 'true' : undefined}
   data-column-virtualized={columnVirtualization ? 'true' : undefined}
   onkeydown={keyboardNavigation || cellRange || clipConfig ? handleRootKeyDown : undefined}
   onpointermove={dragEnabled ? handleDragPointerMove : undefined}
@@ -1538,6 +1548,7 @@
   <!-- Header row -->
   <TableHeader
     columns={displayColumns}
+    columnFade={columnFadeController}
     {grouped}
     {headerMatrix}
     {rowDrag}
@@ -1700,7 +1711,9 @@
           ? 'var(--iris-surface-selected)'
           : striped && index % 2 === 1
             ? 'var(--iris-surface)'
-            : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease; cursor: default"
+            : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease{columnFadeController.columnFadeActive
+        ? ', grid-template-columns var(--iris-duration-md, 200ms) ease'
+        : ''}; cursor: default"
     >
       {#if rowDrag}
         <TableDragHandle
@@ -1781,6 +1794,7 @@
               role="cell"
               data-iris-table-cell={col.key}
               data-iris-table-pinned={col.pinned}
+              {...columnFadeController.columnFadeAttrs(col)}
               data-editable={isEditableColumn(col) ? '' : undefined}
               data-editing={isEditing ? '' : undefined}
               data-iris-input-hint={patternHint ? 'true' : undefined}
@@ -1840,7 +1854,7 @@
                 ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
                 : ''}{isEditing ? '; flex-wrap: wrap' : ''}{patternHint
                 ? '; background-image: linear-gradient(var(--iris-input-hint, rgba(251, 191, 36, 0.16)), var(--iris-input-hint, rgba(251, 191, 36, 0.16)))'
-                : ''}"
+                : ''}{columnFadeController.columnFadeStyle(col) ? '; opacity: 0' : ''}"
             >
               {#if treeMeta && ci === 0}
                 <span
@@ -1915,6 +1929,7 @@
     <TableSummary
       {bodyData}
       {leafColumns}
+      columnFade={columnFadeController}
       {rowDrag}
       {seq}
       {hasDetail}

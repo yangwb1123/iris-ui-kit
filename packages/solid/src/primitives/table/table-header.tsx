@@ -1,6 +1,7 @@
 import { createSignal, For, Show, type Accessor, type JSX } from 'solid-js'
 import type { HeaderCell } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
+import type { TableColumnFadeController } from './table-column-fade'
 import { useDrag } from '../drag/useDrag'
 import { ColumnResizeHandle as TableColumnResizeHandle } from './table-overlay'
 
@@ -95,6 +96,7 @@ export interface GroupedHeaderProps<Row extends TableRow> {
   sortAria: (column: IrisTableColumn<Row>) => 'none' | 'ascending' | 'descending' | undefined
   sortIndicator: (column: IrisTableColumn<Row>) => JSX.Element
   renderFilterTrigger: (column: IrisTableColumn<Row>, leaf: boolean) => JSX.Element
+  columnFade: TableColumnFadeController<Row>
   pinnedDrag: boolean | undefined
   pinnedBoundaryKey: Accessor<string | null>
   resolvePinnedCount: (dx: number) => number
@@ -211,6 +213,7 @@ export function TableGroupedHeader<Row extends TableRow>(
                 }
                 data-iris-col-drag-over={props.columnDragOver() === col.key ? 'true' : undefined}
                 aria-colspan={cell.colSpan}
+                {...props.columnFade.columnFadeAttrs(col)}
                 onPointerDown={
                   props.columnDrag && isLeaf()
                     ? (event: PointerEvent) => props.handleColumnDragPointerDown(event, col.key)
@@ -242,6 +245,7 @@ export function TableGroupedHeader<Row extends TableRow>(
                   'white-space': 'nowrap',
                   overflow: 'hidden',
                   'text-overflow': 'ellipsis',
+                  ...(props.columnFade.columnFadeStyle(col) ?? {}),
                 }}
               >
                 {col.title}
@@ -287,6 +291,7 @@ export interface FlatHeaderProps<Row extends TableRow> {
   sortAria: (column: IrisTableColumn<Row>) => 'none' | 'ascending' | 'descending' | undefined
   sortIndicator: (column: IrisTableColumn<Row>) => JSX.Element
   renderFilterTrigger: (column: IrisTableColumn<Row>, leaf: boolean) => JSX.Element
+  columnFade: TableColumnFadeController<Row>
   pinnedDrag: boolean | undefined
   pinnedBoundaryKey: Accessor<string | null>
   resolvePinnedCount: (dx: number) => number
@@ -404,6 +409,7 @@ export function TableFlatHeader<Row extends TableRow>(props: FlatHeaderProps<Row
                   role="columnheader"
                   data-iris-table-header={col.key}
                   data-iris-table-pinned={col.pinned}
+                  {...props.columnFade.columnFadeAttrs(col)}
                   data-iris-col-drag-active={
                     props.columnDragActive() === col.key ? 'true' : undefined
                   }
@@ -438,6 +444,7 @@ export function TableFlatHeader<Row extends TableRow>(props: FlatHeaderProps<Row
                     ...(props.visibleColSet()
                       ? { 'grid-column-start': String(props.colTrack(colIndex)) }
                       : {}),
+                    ...(props.columnFade.columnFadeStyle(col) ?? {}),
                   }}
                   aria-sort={props.sortAria(col)}
                 >

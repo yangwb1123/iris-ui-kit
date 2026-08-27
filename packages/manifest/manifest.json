@@ -39267,6 +39267,12 @@
               "description": "Fired when visibility changes (parent owns the map)."
             },
             {
+              "name": "columnFade",
+              "type": "boolean",
+              "optional": true,
+              "description": "Animate column show/hide as a token-backed opacity and grid-track overlay. Off by default and disabled by prefers-reduced-motion."
+            },
+            {
               "name": "filters",
               "type": "Record<string, string>",
               "optional": true,
@@ -39778,6 +39784,13 @@
               "name": "columnVisibility",
               "type": "Record<string, boolean>",
               "optional": true
+            },
+            {
+              "name": "columnFade",
+              "type": "boolean",
+              "optional": true,
+              "description": "Animate controlled column show/hide transitions; disabled by default.",
+              "default": "false"
             },
             {
               "name": "filters",

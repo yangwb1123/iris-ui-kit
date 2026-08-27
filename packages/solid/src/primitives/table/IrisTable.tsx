@@ -75,6 +75,9 @@ import { TableScrollTop } from './table-scroll-top'
 import { TableFilterTrigger } from './table-filter-trigger'
 import { applyDetectedTableTypes } from './table-columns'
 import { createTableRowTarget } from './table-row-target'
+import { createTableColumnFade } from './table-column-fade'
+import { createTableGridTemplate } from './table-grid'
+import { ensureTableStyles } from './styles'
 import { createPinnedDragMath } from './table-pinned-drag'
 import { createTableViewsController, TableTabs, TableViews } from './table-views'
 import { createTableUndoController } from './table-undo'
@@ -132,6 +135,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       cellRange: false,
       editConfig: undefined as import('./types').IrisTableEditConfig | undefined,
       columnVirtualization: false,
+      columnFade: false,
       multiSort: false,
       scrollToTop: false,
       seq: false,
@@ -197,10 +201,15 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   })
 
   const effectiveVisibility = (): Record<string, boolean> => columnsFeature.state().visibility
+  const columnFade = createTableColumnFade<Row>({
+    visibility: effectiveVisibility,
+    enabled: () => merged.columnFade === true,
+    columns: () => merged.columns,
+  })
   const sourceDisplayColumns = createMemo<IrisTableColumn<Row>[]>(() => {
-    const vis = effectiveVisibility()
-    if (Object.keys(vis).length === 0) return merged.columns
-    return merged.columns.filter((c) => vis[c.key] !== false)
+    const vis = columnFade.effectiveVisibility()
+    if (Object.keys(vis ?? {}).length === 0) return merged.columns
+    return merged.columns.filter((c) => vis?.[c.key] !== false)
   })
   const [detectedTypes, setDetectedTypes] = createSignal<Record<string, DetectedColumnType>>({})
   let detectTypesDone = false
@@ -1491,28 +1500,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     }
   }
 
-  const SELECTION_COL_WIDTH = 40
-  const EXPAND_COL_WIDTH = 40
-  const SEQ_COL_WIDTH = 60
-  const gridTemplate = createMemo(() => {
-    const parts: string[] = []
-    if (merged.rowDrag) parts.push(`${DRAG_COL_WIDTH}px`)
-    if (merged.seq) parts.push(`${SEQ_COL_WIDTH}px`)
-    if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
-    if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
-    for (const col of leafColumns()) {
-      const w = effectiveWidths()[col.key]
-      // React parity (batch AF): a width-less column renders `minmax(0, 1fr)`
-      // (fills the container); explicit widths, resized values and
-      // `width: 'auto'` keep their tracks. `widthOf` keeps the numeric
-      // `resolveInitialWidth` fallback for resize/virtualization math.
-      if (w != null) parts.push(`${w}px`)
-      else if (typeof col.width === 'number') parts.push(`${col.width}px`)
-      else if (col.width === 'auto') parts.push('minmax(max-content, max-content)')
-      else if (typeof col.width === 'string') parts.push(col.width)
-      else parts.push('minmax(0, 1fr)')
-    }
-    return parts.join(' ')
+  const gridTemplate = createTableGridTemplate({
+    leafColumns,
+    widths: effectiveWidths,
+    rowDrag: () => Boolean(merged.rowDrag),
+    seq: () => Boolean(merged.seq),
+    hasDetail,
+    selectable: () => merged.selectable !== 'none',
+    isCollapsed: columnFade.isCollapsed,
   })
 
   // ---- Column virtualization (opt-in via `columnVirtualization`) ----
@@ -1536,51 +1531,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     i
 
   onMount(() => {
-    if (typeof document === 'undefined') return
-    if (document.getElementById('iris-table-row-styles')) return
-    const style = document.createElement('style')
-    style.id = 'iris-table-row-styles'
-    style.textContent = `
-[data-iris-table] [role="row"]:hover {
-  --iris-row-bg: var(--iris-surface-hover);
-}
-[data-iris-table-row-selected="true"] {
-  --iris-row-bg: var(--iris-surface-selected);
-}
-/* Row edit mode (vxe editConfig.mode parity): the row whose editors are
-   open gets the same token-driven highlight as the selected row. */
-[data-iris-table-row][data-iris-row-editing="true"] {
-  --iris-row-bg: var(--iris-surface-selected);
-}
-@media print { [data-iris-table-tabs], [data-iris-table-toolbar], [data-iris-table-form], [data-iris-scroll-hint] { display: none !important; } [data-iris-table][data-printable="true"] { border: none !important; box-shadow: var(--iris-shadow-none, none) !important; } }
-[data-iris-table][data-density="compact"] [data-iris-table-cell],
-[data-iris-table][data-density="compact"] [data-iris-table-header],
-[data-iris-table][data-density="compact"] [data-iris-table-summary-cell],
-[data-iris-table][data-density="compact"] [data-iris-table-footer-cell] { padding-block: 6px !important; }
-[data-iris-table][data-density="cozy"] [data-iris-table-cell],
-[data-iris-table][data-density="cozy"] [data-iris-table-header],
-[data-iris-table][data-density="cozy"] [data-iris-table-summary-cell],
-[data-iris-table][data-density="cozy"] [data-iris-table-footer-cell] { padding-block: 4px !important; }
-[data-iris-row-target="true"] {
-  --iris-cell-bg: color-mix(in srgb, var(--iris-primary) 18%, var(--iris-background));
-  background: color-mix(in srgb, var(--iris-primary) 18%, var(--iris-background));
-}
-/* Lazy tree loading caret (vxe lazyLoad parity, batch J): keyframes can't
-   be inline, so they live in the singleton stylesheet; opacity + spin use
-   token-driven values. */
-@keyframes iris-table-caret-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-[data-iris-table-tree-toggle][data-iris-tree-loading] {
-  opacity: 0.55;
-  animation: iris-table-caret-spin 900ms linear infinite;
-}
-[data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
-  background: var(--iris-surface-hover);
-}
-`
-    document.head.appendChild(style)
+    createEffect(() => ensureTableStyles(merged.columnFade === true))
   })
   onMount(() => {
     if (!merged.responsive || !rootRef) return
@@ -1622,7 +1573,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const set = new Set<number>()
     for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
     cols.forEach((col, i) => {
-      if (col.pinned) set.add(i)
+      if (col.pinned || columnFade.fadeByLeaf()[col.key] !== undefined) set.add(i)
     })
     return set
   })
@@ -1765,7 +1716,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             : merged.striped && index % 2 === 1
               ? 'var(--iris-surface)'
               : 'var(--iris-row-bg, transparent)',
-          transition: 'background-color 120ms ease',
+          transition: columnFade.columnFadeActive()
+            ? 'background-color 120ms ease, grid-template-columns var(--iris-duration-md, 200ms) ease'
+            : 'background-color 120ms ease',
           cursor: 'default',
         }}
       >
@@ -1930,6 +1883,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   role="cell"
                   data-iris-table-cell={col.key}
                   data-iris-table-pinned={col.pinned}
+                  {...columnFade.columnFadeAttrs(col)}
                   data-editable={isEditableColumn(col) ? '' : undefined}
                   data-editing={isEditing() ? '' : undefined}
                   data-iris-input-hint={patternHint() ? 'true' : undefined}
@@ -1943,7 +1897,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   tabindex={merged.keyboardNavigation ? (isFocused() ? 0 : -1) : undefined}
                   onFocus={
                     merged.keyboardNavigation
-                      ? () => setFocusedCell({ row: index, col: colIndex })
+                      ? () => {
+                          columnFade.rememberFocus(index, colIndex)
+                          setFocusedCell({ row: index, col: colIndex })
+                        }
                       : undefined
                   }
                   onClick={
@@ -2002,6 +1959,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       : undefined,
                     ...(visibleColSet() ? { 'grid-column-start': String(colTrack(colIndex)) } : {}),
                     ...(colspan > 1 ? { 'grid-column-end': `span ${colspan}` } : {}),
+                    ...(columnFade.columnFadeStyle(col) ?? {}),
                   }}
                 >
                   <Show when={treeMeta && isFirstCol}>
@@ -2338,6 +2296,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         // grid/table role as before (treegrid implies managed cell focus).
         role={merged.keyboardNavigation ? (treeMode() ? 'treegrid' : 'grid') : 'table'}
         data-iris-table=""
+        data-iris-column-fade-active={columnFade.columnFadeActive() ? 'true' : undefined}
         data-density={effectiveDensity()}
         data-printable={merged.printable ? 'true' : undefined}
         data-column-virtualized={merged.columnVirtualization ? 'true' : undefined}
@@ -2414,6 +2373,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           sortAria={sortAria}
           sortIndicator={sortIndicator}
           renderFilterTrigger={renderFilterTrigger}
+          columnFade={columnFade}
           pinnedDrag={merged.pinnedDrag}
           pinnedBoundaryKey={pinnedBoundaryKey}
           resolvePinnedCount={resolvePinnedCount}
@@ -2443,6 +2403,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           sortAria={sortAria}
           sortIndicator={sortIndicator}
           renderFilterTrigger={renderFilterTrigger}
+          columnFade={columnFade}
           pinnedDrag={merged.pinnedDrag}
           pinnedBoundaryKey={pinnedBoundaryKey}
           resolvePinnedCount={resolvePinnedCount}
@@ -2592,6 +2553,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             seq={merged.seq}
             hasDetail={hasDetail}
             selectable={merged.selectable}
+            columnFade={columnFade}
           />
         </Show>
 

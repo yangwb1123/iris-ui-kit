@@ -6,12 +6,14 @@
   import { tableColumnDrag } from './table-drag-actions'
   import { resolveInitialWidth, TABLE_CONST } from './tableUtils'
   import type { IrisTableColumn, IrisTableColumnWidths, IrisTableFilterValues } from './types'
+  import type { TableColumnFadeController } from './table-column-fade.svelte'
 
   type Translate = I18n['t']
   type HeaderMatrix = HeaderCell<IrisTableColumn>[][]
 
   let {
     columns,
+    columnFade,
     grouped,
     headerMatrix,
     rowDrag,
@@ -48,6 +50,7 @@
     t,
   }: {
     columns: IrisTableColumn[]
+    columnFade: TableColumnFadeController
     grouped: boolean
     headerMatrix: HeaderMatrix | null
     rowDrag: unknown
@@ -177,10 +180,12 @@
         <!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
         {@const isGroup = !!(col.children && col.children.length > 0)}
         {@const sortable = !isGroup && col.sortable}
+        {@const fadeStyle = columnFade.columnFadeStyle(col)}
         <div
           role="columnheader"
           data-iris-table-header={col.key}
           data-iris-table-header-group={isGroup ? '' : undefined}
+          {...columnFade.columnFadeAttrs(col)}
           use:tableColumnDrag={{
             key: col.key,
             enabled: !isGroup && columnDrag !== undefined,
@@ -207,7 +212,9 @@
               ? 'grab'
               : 'default'}; user-select: {sortable
             ? 'none'
-            : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+            : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis{fadeStyle
+            ? '; opacity: 0'
+            : ''}"
         >
           {@render headerTitle(col)}
           {@render sortIndicator(col)}
@@ -277,11 +284,13 @@
     {/if}
     {#each columns as col, ci}
       {#if !visibleColSet || visibleColSet.has(ci)}
+        {@const fadeStyle = columnFade.columnFadeStyle(col)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
           role="columnheader"
           data-iris-table-header={col.key}
           data-iris-table-pinned={col.pinned}
+          {...columnFade.columnFadeAttrs(col)}
           use:tableColumnDrag={{
             key: col.key,
             enabled: columnDrag !== undefined,
@@ -306,7 +315,9 @@
               ? 'grab'
               : 'default'}; user-select: {col.sortable
             ? 'none'
-            : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+            : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis{fadeStyle
+            ? '; opacity: 0'
+            : ''}"
         >
           {@render headerTitle(col)}
           {@render sortIndicator(col)}

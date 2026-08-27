@@ -65,6 +65,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   columnVisibility?: Record<string, boolean>
   /** Fired when visibility changes (parent owns the map). */
   onColumnVisibilityChange?: (next: Record<string, boolean>) => void
+  /** Animate column show/hide as a token-backed opacity and grid-track overlay. Off by default and disabled by prefers-reduced-motion. */
+  columnFade?: boolean
   /** Client-side filters (vxe filterConfig parity, local mode): column key →
    * filter text; rows filtered with substring, case-insensitive matching
    * ('' entries ignored). Combines with `formConfig` values when both exist. */

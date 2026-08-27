@@ -624,6 +624,10 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Vue `columnFade` continuation accepted；default-off 不注入 fade CSS 或 `matchMedia` listener，focused **24/24**、Vue 全量 **183 files / 1,676 tests**，typecheck/build、lint（0 errors，既有 complexity warning）、iris-ui-spec（329 files / 0 violations）、manifest 与 `git diff --check` 通过；`scripts/arch-baseline.json` 未改。
 
+2026-08-27：Solid `columnFade` continuation accepted；focused **15/15**、client **154 files / 1,086 tests**、SSR **6 files / 46 tests**、dedicated hydration **1/1** 通过；typecheck/lint/build、manifest 与 `git diff --check` 通过，默认关闭时不注入 fade stylesheet，未改 `scripts/arch-baseline.json`。
+
+2026-08-27：Svelte `columnFade` continuation accepted；focused **19/19**、client **159 files / 1,067 tests**、SSR **5 files / 45 tests**、dedicated hydration **1/1** 通过；svelte-check 0 errors/0 warnings、lint/build、manifest 与 `git diff --check` 通过，默认关闭时不注入 fade stylesheet，未改 `scripts/arch-baseline.json`。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

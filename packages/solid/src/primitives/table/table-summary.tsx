@@ -1,6 +1,7 @@
 import { aggregate } from '@iris-ui-kit/core'
 import { createMemo, For, Show, type Accessor, type JSX } from 'solid-js'
 import type { IrisTableColumn } from './types'
+import type { TableColumnFadeController } from './table-column-fade'
 
 interface TableSummaryProps<Row extends Record<string, unknown>> {
   bodyRows: Accessor<Row[]>
@@ -13,6 +14,7 @@ interface TableSummaryProps<Row extends Record<string, unknown>> {
   seq?: boolean
   hasDetail: Accessor<boolean>
   selectable: 'none' | 'single' | 'multi'
+  columnFade: TableColumnFadeController<Row>
 }
 
 const spacerStyle = {
@@ -73,6 +75,7 @@ export function TableSummary<Row extends Record<string, unknown>>(
                   role="cell"
                   data-iris-table-cell={column.key}
                   data-iris-table-summary-cell={op ? '' : undefined}
+                  {...props.columnFade.columnFadeAttrs(column)}
                   style={{
                     display: 'flex',
                     'align-items': 'center',
@@ -91,6 +94,7 @@ export function TableSummary<Row extends Record<string, unknown>>(
                     ...(props.visibleColSet()
                       ? { 'grid-column-start': String(props.colTrack(colIndex)) }
                       : {}),
+                    ...(props.columnFade.columnFadeStyle(column) ?? {}),
                   }}
                 >
                   <Show when={op != null && value() != null}>

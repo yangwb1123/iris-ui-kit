@@ -3,10 +3,12 @@
   import TableDragSpacer from './TableDragSpacer.svelte'
   import type { IrisTableColumn } from './types'
   import { summaryCellStyle } from './tableUtils'
+  import type { TableColumnFadeController } from './table-column-fade.svelte'
 
   let {
     bodyData,
     leafColumns,
+    columnFade,
     rowDrag,
     seq,
     hasDetail,
@@ -18,6 +20,7 @@
   }: {
     bodyData: Record<string, unknown>[]
     leafColumns: IrisTableColumn[]
+    columnFade: TableColumnFadeController
     rowDrag: unknown
     seq: boolean
     hasDetail: boolean
@@ -68,13 +71,15 @@
       {#if !visibleColSet || visibleColSet.has(ci)}
         {@const op = col.summary}
         {@const value = op ? aggregate(bodyData, (row) => getCellValue(row, col), op) : null}
+        {@const fadeStyle = columnFade.columnFadeStyle(col)}
         <div
           role="cell"
           data-iris-table-cell={col.key}
           data-iris-table-summary-cell={op ? '' : undefined}
+          {...columnFade.columnFadeAttrs(col)}
           style="{summaryCellStyle(col)}{visibleColSet
             ? `; grid-column-start: ${colTrack(ci)}`
-            : ''}"
+            : ''}{fadeStyle ? '; opacity: 0' : ''}"
         >
           {#if op != null && value != null}{col.renderSummary
               ? col.renderSummary(value, bodyData)

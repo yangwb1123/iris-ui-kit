@@ -64,6 +64,8 @@ export interface IrisTableProps {
   /** Column visibility (vxe columnConfig.visible parity): map of column key →
    * visible (default true). Hidden columns are not rendered. */
   columnVisibility?: Record<string, boolean>
+  /** Animate controlled column show/hide transitions; disabled by default. */
+  columnFade?: boolean
   /** Client-side filters (vxe filterConfig parity, local mode): column key →
    * filter text; rows filtered with substring, case-insensitive matching
    * ('' entries ignored). Combines with `formConfig` values when both exist. */

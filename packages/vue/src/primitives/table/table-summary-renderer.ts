@@ -11,6 +11,8 @@ export interface TableSummaryRendererContext {
   gridTemplate: string
   leadingCells: VNode[]
   colTrack: (index: number) => number
+  columnFadeAttr: (column: IrisTableColumn<TableRow>) => 'in' | 'out' | undefined
+  columnFadeStyle: (column: IrisTableColumn<TableRow>) => Record<string, string> | null
   getCellValue: (row: TableRow, column: IrisTableColumn<TableRow>) => unknown
   pinnedStyle: (key: string) => Record<string, string>
 }
@@ -25,6 +27,7 @@ export function renderTableSummaryRow(ctx: TableSummaryRendererContext): VNode |
     if (ctx.visibleColSet && !ctx.visibleColSet.has(columnIndex)) continue
     const align = column.align ?? 'left'
     const operation = column.summary
+    const fadeStyle = ctx.columnFadeStyle(column)
     const value = operation
       ? aggregate(ctx.bodyData, (row) => ctx.getCellValue(row, column), operation)
       : null
@@ -43,6 +46,9 @@ export function renderTableSummaryRow(ctx: TableSummaryRendererContext): VNode |
           'data-iris-table-cell': column.key,
           'data-iris-table-summary-cell': operation ? '' : undefined,
           'data-iris-table-pinned': column.pinned,
+          'data-iris-column-fade': ctx.columnFadeAttr(column),
+          'aria-hidden': fadeStyle ? 'true' : undefined,
+          inert: fadeStyle ? '' : undefined,
           style: {
             display: 'flex',
             alignItems: 'center',
@@ -54,6 +60,7 @@ export function renderTableSummaryRow(ctx: TableSummaryRendererContext): VNode |
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             ...(ctx.visibleColSet ? { gridColumnStart: String(ctx.colTrack(columnIndex)) } : {}),
+            ...(fadeStyle ?? {}),
             ...ctx.pinnedStyle(column.key),
           },
         },

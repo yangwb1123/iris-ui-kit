@@ -39,6 +39,7 @@ import {
   type TreeRow,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { usePrefersReducedMotion } from '../../motion'
 import {
   useGridCore,
   useGridClipboard,
@@ -65,6 +66,7 @@ import { renderContextMenuSection, renderFilterPanelSection } from './table-over
 import { auditDiff, renderAuditPanelSection } from './table-audit'
 import { renderImportPreviewSection } from './import-preview'
 import { renderTableSummaryRow } from './table-summary-renderer'
+import { createTableColumnFade } from './table-column-fade'
 import { renderTableStateRow } from './table-state-renderer'
 import { createTableKeyboard } from './table-keyboard'
 import { computeResponsiveTableColumns } from './table-responsive'
@@ -179,7 +181,13 @@ export const IrisTable = defineComponent({
     expandedRowsChange: (_keys: Array<string | number>) => true,
   },
   setup(props, { slots, attrs, emit, expose }) {
-    ensureTableStyles()
+    ensureTableStyles(props.columnFade)
+    watch(
+      () => props.columnFade,
+      (enabled) => {
+        if (enabled) ensureTableStyles(true)
+      },
+    )
     // Keep every adapter-side value consumer on the same formula-aware
     // resolver.  `formulaTables` is intentionally read at call time so a
     // parent can replace the table map without remounting the table.
@@ -238,11 +246,23 @@ export const IrisTable = defineComponent({
     const effectiveVisibility = computed<IrisTableColumnVisibility>(
       () => columnsFeature.state.value.visibility,
     )
-    const sourceDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() => {
-      const vis = effectiveVisibility.value
-      if (Object.keys(vis).length === 0) return props.columns
-      return props.columns.filter((c) => vis[c.key] !== false)
+    const columnFadeEnabled = computed(() => props.columnFade)
+    const reducedMotion = usePrefersReducedMotion(columnFadeEnabled)
+    const columnFade = createTableColumnFade({
+      visibility: () => effectiveVisibility.value,
+      enabled: () => columnFadeEnabled.value,
+      reducedMotion,
+      columns: computed(() => props.columns),
     })
+    const {
+      displayColumns: sourceDisplayColumns,
+      columnFadeAttr,
+      columnFadeStyle,
+      columnFadeAttrs,
+      columnFadeActive,
+      fadeByLeaf,
+      isCollapsed: isColumnFadeCollapsed,
+    } = columnFade
     const detectedTypes = ref<Record<string, DetectedColumnType>>({})
     const detectTypesDone = ref(false)
     const detectedDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() => {
@@ -1432,6 +1452,10 @@ export const IrisTable = defineComponent({
       if (hasDetail.value) parts.push(`${EXPAND_COL_WIDTH}px`)
       if (props.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
       for (const col of leafColumns.value) {
+        if (isColumnFadeCollapsed(col.key)) {
+          parts.push('0px')
+          continue
+        }
         parts.push(`${effectiveWidths.value[col.key] ?? resolveInitialWidth(col)}px`)
       }
       return parts.join(' ')
@@ -1657,15 +1681,24 @@ export const IrisTable = defineComponent({
     }
 
     // Column indices to render: visible window + overscan ∪ pinned. `null` ⇒ all.
-    const visibleColSet = computed<Set<number> | null>(() =>
-      computeVisibleColSet(
+    const visibleColSet = computed<Set<number> | null>(() => {
+      const visible = computeVisibleColSet(
         props.columnVirtualization,
         leafColumns.value,
         scrollLeft.value,
         viewportWidth.value,
         effectiveWidths.value,
-      ),
-    )
+      )
+      if (!visible) return null
+      // A fading column must remain mounted even when it sits outside the
+      // current horizontal window; its stable leaf index still controls its
+      // gridColumnStart.
+      const next = new Set(visible)
+      leafColumns.value.forEach((column, index) => {
+        if (fadeByLeaf.value[column.key]) next.add(index)
+      })
+      return next
+    })
 
     // Sticky offsets for pinned columns (mirrors the React adapter): accumulate
     // resolved widths between each pinned column and its edge (+ selection col).
@@ -2383,6 +2416,8 @@ export const IrisTable = defineComponent({
             multiSortSeq,
             renderFilterTrigger,
             pinnedDragHandle,
+            columnFadeAttr,
+            columnFadeStyle,
             gridTemplate,
           },
           matrix,
@@ -2495,6 +2530,7 @@ export const IrisTable = defineComponent({
               role: 'columnheader',
               'data-iris-table-header': col.key,
               'data-iris-table-pinned': col.pinned,
+              ...columnFadeAttrs(col),
               // Column drag-sort (vxe columnDragConfig parity, batch Y): the
               // header cell is the press target; grouped headers are NOT
               // supported (documented simplification — the reorder maps leaf
@@ -2525,6 +2561,7 @@ export const IrisTable = defineComponent({
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                ...(columnFadeStyle(col) ?? {}),
                 ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
                 ...(col.pinned
                   ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
@@ -2776,6 +2813,7 @@ export const IrisTable = defineComponent({
                 role: 'cell',
                 'data-iris-table-cell': col.key,
                 'data-iris-table-pinned': col.pinned,
+                ...columnFadeAttrs(col),
                 'data-editable': isEditableColumn(col) ? '' : undefined,
                 'data-editing': isEditing ? '' : undefined,
                 'data-iris-input-hint': patternHint ? 'true' : undefined,
@@ -2859,6 +2897,7 @@ export const IrisTable = defineComponent({
                       }
                     : {}),
                   ...pinnedStyle(col.key),
+                  ...(columnFadeStyle(col) ?? {}),
                 },
               },
               cellChildren,
@@ -2889,7 +2928,9 @@ export const IrisTable = defineComponent({
               display: 'grid',
               gridTemplateColumns: gridTemplate.value,
               background: selected ? 'var(--iris-surface-hover)' : 'transparent',
-              transition: 'background-color 120ms ease',
+              transition: columnFadeActive.value
+                ? 'background-color 120ms ease, grid-template-columns var(--iris-duration-md, 200ms) ease'
+                : 'background-color 120ms ease',
               cursor: 'default',
               ...style,
             },
@@ -3006,6 +3047,8 @@ export const IrisTable = defineComponent({
               visibleColSet: visibleColSet.value,
               gridTemplate: gridTemplate.value,
               leadingCells: leadSummaryCells(),
+              columnFadeAttr,
+              columnFadeStyle,
               colTrack,
               getCellValue,
               pinnedStyle,
@@ -3044,6 +3087,7 @@ export const IrisTable = defineComponent({
             // grid/table role as before (treegrid implies managed cell focus).
             role: props.keyboardNavigation ? (treeMode.value ? 'treegrid' : 'grid') : 'table',
             'data-iris-table': '',
+            'data-iris-column-fade-active': columnFadeActive.value ? 'true' : undefined,
             'data-density': effectiveDensity.value,
             'data-printable': props.printable ? 'true' : undefined,
             'data-virtual': props.virtualScroll ? '' : undefined,

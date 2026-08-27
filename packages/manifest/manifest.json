@@ -39026,6 +39026,12 @@
               "optional": true
             },
             {
+              "name": "columnFade",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "filters",
               "type": "Record<string, string>",
               "optional": true

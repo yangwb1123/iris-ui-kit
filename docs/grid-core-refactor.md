@@ -622,6 +622,8 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Svelte columns-state gate：client **157 files / 1,048 tests**、SSR/hydration **4 files / 42 tests**（hydration 37）通过；typecheck 0 errors/0 warnings、lint/build、`pnpm check:manifest`（2 个生成文件无变化）与 `git diff --check` 通过。未调整 ratchet baseline，order/pinned-map channels deferred。
 
+2026-08-27：Vue `columnFade` continuation accepted；default-off 不注入 fade CSS 或 `matchMedia` listener，focused **24/24**、Vue 全量 **183 files / 1,676 tests**，typecheck/build、lint（0 errors，既有 complexity warning）、iris-ui-spec（329 files / 0 violations）、manifest 与 `git diff --check` 通过；`scripts/arch-baseline.json` 未改。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

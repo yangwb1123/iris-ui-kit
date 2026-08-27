@@ -187,6 +187,8 @@ export const tableProps = {
     type: Object as PropType<IrisTableColumnVisibility>,
     default: undefined,
   },
+  /** Animate controlled column show/hide transitions; disabled by default. */
+  columnFade: { type: Boolean, default: false },
   filters: {
     type: Object as PropType<Record<string, string>>,
     default: undefined,

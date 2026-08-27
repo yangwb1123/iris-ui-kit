@@ -25,6 +25,8 @@ export interface GroupedHeaderRenderContext {
   multiSortSeq: (column: TableColumn) => VNode | null
   renderFilterTrigger: (column: TableColumn, leaf: boolean) => VNode | null
   pinnedDragHandle?: (column: TableColumn) => VNode | null
+  columnFadeAttr: (column: TableColumn) => 'in' | 'out' | undefined
+  columnFadeStyle: (column: TableColumn) => Record<string, string> | null
   gridTemplate: Readonly<Ref<string>>
 }
 
@@ -127,6 +129,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
       const isLeaf = !col.children || col.children.length === 0
       const sortable = isLeaf && col.sortable
       const align = col.align ?? 'left'
+      const fadeStyle = ctx.columnFadeStyle(col)
       const headerSlot = ctx.slots[`header.${col.key}`]
       const title = headerSlot?.({ column: col }) ?? col.title
       cells.push(
@@ -137,6 +140,9 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
             role: 'columnheader',
             'data-iris-table-header': col.key,
             'data-iris-table-header-group': isLeaf ? undefined : '',
+            'data-iris-column-fade': ctx.columnFadeAttr(col),
+            'aria-hidden': fadeStyle ? 'true' : undefined,
+            inert: fadeStyle ? '' : undefined,
             'aria-colspan': cell.colSpan,
             onClick: sortable ? () => ctx.onHeaderClick(col) : undefined,
             'aria-sort': sortable ? ctx.ariaSortFor(col) : undefined,
@@ -163,6 +169,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              ...(fadeStyle ?? {}),
             },
           },
           [

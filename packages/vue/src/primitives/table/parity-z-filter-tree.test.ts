@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisTable } from './Table'
 import type { IrisTableColumn } from './types'
@@ -408,5 +408,35 @@ describe('IrisTable batch Z — lazy tree (vxe lazyLoad parity)', () => {
     await nextTick()
     expect(bodyRows(wrapper).length).toBe(1)
     expect(caret(wrapper).attributes('data-iris-tree-loading') ?? null).toBeNull()
+  })
+
+  it('cascades selection through loaded lazy children without a getSubRows accessor', async () => {
+    const selection = ref<Array<string | number>>([])
+    const lazyLoad = vi.fn((_row: Row, load: (children: Row[]) => void) => {
+      load([{ id: 11, name: 'lazy child', age: 11, status: 'active' }])
+    })
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns: treeCols,
+            data: lazyRoots,
+            rowKey: 'id',
+            lazyLoad,
+            selectable: 'multi',
+            treeSelectionCascade: true,
+            selection: selection.value,
+            'onUpdate:selection': (keys: Array<string | number>) => {
+              selection.value = keys
+            },
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    await caret(wrapper).trigger('click')
+    await nextTick()
+    await bodyRows(wrapper)[0]!.find('[data-iris-checkbox] input').setValue(true)
+    await nextTick()
+    expect(new Set(selection.value)).toEqual(new Set([1, 11]))
   })
 })

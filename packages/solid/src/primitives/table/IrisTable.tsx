@@ -693,11 +693,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       const sourceIndex = sourceRows.indexOf(previous)
       patches.set(keyOf(previous, sourceIndex >= 0 ? sourceIndex : index, sourceRows), row)
     })
-    const getChildren = props.getSubRows
-    if (getChildren) {
+    if (props.getSubRows !== undefined || props.lazyLoad !== undefined) {
       return reconcileTreeRows(sourceRows, patches, {
         getRowKey: (row, index) => keyOf(row, index),
-        getChildren,
+        getChildren: readRowChildren,
+        setChildren: writeLazyChildren,
       })
     }
     return sourceRows.map((row, index) => patches.get(keyOf(row, index, sourceRows)) ?? row)
@@ -990,8 +990,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const cur = rowEditing()
     if (cur !== null) {
       for (const session of rowSessions().values()) {
-        // Resolve static tree descendants through the shared Core rows model;
-        // lazy/proxy descendants remain in the adapter-owned visible snapshot.
+        // Resolve static and loaded lazy descendants through the shared Core
+        // rows model; proxy descendants remain in the visible snapshot.
         const currentRow =
           gridRows.find(cur.k) ?? bodyRows().find((r, i) => rowId(r, i) === cur.k) ?? row
         if (!commitRowSession(session, currentRow, cur.k)) return
@@ -1063,13 +1063,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     columns: leafColumns,
     rowId,
     reorderRows: (activeId, overId) => {
-      // Lazy children are adapter-owned and cannot safely be flattened into
-      // roots, even when a static accessor is also supplied (the cache wins
-      // in that mode). Flat tables retain the previous visible-list reorder.
-      if (props.lazyLoad !== undefined) return null
-      const getChildren = props.getSubRows
+      const getChildren =
+        props.getSubRows !== undefined || props.lazyLoad !== undefined ? readRowChildren : undefined
       if (getChildren !== undefined) {
-        // A static tree must be reordered in the source tree. The visible
+        // A tree must be reordered in the source tree. The visible
         // flattened list is only a drag projection and must never be
         // committed as roots. A cross-parent drop is rejected until a
         // re-parenting contract can describe the destination path.
@@ -1094,6 +1091,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             // rowKey is configured.
             getRowKey: (row) => visibleKeys.get(row),
             getChildren,
+            setChildren: writeLazyChildren,
           },
           fromVisible < toVisible ? 'after' : 'before',
         )

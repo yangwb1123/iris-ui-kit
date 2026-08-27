@@ -160,6 +160,49 @@ describe('IrisTable Grid Core clipboard integration', () => {
     ])
   })
 
+  it('reconciles a lazy-loaded tree-child paste into the nested Core row source', async () => {
+    type TreeRow = Row & { children?: TreeRow[] }
+    const treeRows: TreeRow[] = [{ id: 1, name: 'Root', age: 40 }]
+    const lazyLoad = vi.fn((_row: TreeRow, load: (children: TreeRow[]) => void) => {
+      load([{ id: 11, name: 'Lazy child', age: 10 }])
+    })
+    const onDataChange = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { readText: vi.fn().mockResolvedValue('Updated lazy child') },
+    })
+    render(
+      <IrisTable
+        columns={columns}
+        data={treeRows}
+        rowKey="id"
+        lazyLoad={lazyLoad}
+        cellRange
+        clipConfig={{}}
+        onDataChange={onDataChange}
+      />,
+    )
+
+    fireEvent.click(
+      document.querySelector(
+        '[data-iris-table-row="1"] [data-iris-table-tree-toggle]',
+      ) as HTMLElement,
+    )
+    expect(document.querySelector('[data-iris-table-row="11"]')).not.toBeNull()
+    fireEvent.click(cell(1, 0))
+    fireEvent.keyDown(root(), { key: 'v', ctrlKey: true })
+
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledOnce())
+    expect(onDataChange.mock.calls[0]![0]).toEqual([
+      {
+        id: 1,
+        name: 'Root',
+        age: 40,
+        children: [{ id: 11, name: 'Updated lazy child', age: 10 }],
+      },
+    ])
+  })
+
   it('writes clipboard values through a column dataIndex', async () => {
     type AliasRow = Row & { displayName: string }
     const aliasRows: AliasRow[] = [

@@ -319,6 +319,15 @@ arch-check:ratchet` 当前无阻断项。
 - 定向回归：Core rows 20/20；React lazy/row-edit 25/25；Vue lazy tree 11/11；Solid lazy tree 10/10；React/Vue/
   Solid typecheck 通过。`arch-check:ratchet` 继续保留既有 Table baseline 超限，未调整基线。
 
+## 2026-08-26 Grid lazy tree projection continuation（当前工作树）
+
+- 已加载的 lazy children 现在同时进入 React clipboard/range/FNR 等 keyed reconciliation、React/Vue/Solid
+  row-drag 和 React `expandAll`；这些路径统一复用 `readRowChildren`，并通过 Core rows 的 `setChildren` 保持
+  canonical root tree 与 immutable ancestor path。跨父级、隐藏/缺失 key、循环/重复节点和 computed children
+  无 setter 继续 fail-closed；flat 表格与当前没有 `lazyLoad` prop 的 Svelte 不变。
+- 定向回归：Core rows 20/20；React lazy/row-edit/static-drag 41/41，lazy clipboard 6/6；Vue lazy/static-tree
+  23/23；Solid lazy/static-tree 10/10。React/Vue/Solid typecheck、build、lint 通过。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

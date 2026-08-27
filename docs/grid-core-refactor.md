@@ -593,6 +593,13 @@ cache，而是通过同一 rows transaction 写入 Core 的 `children` 槽；loa
 当前 Table 契约没有 `lazyLoad` prop，继续保持静态 `getSubRows` 路径。Core rows 定向回归 20/20，React
 懒树/row-edit 25/25、Vue 懒树 11/11、Solid 懒树 10/10；React/Vue/Solid typecheck 通过。
 
+本次续批继续把已加载的 lazy children 接到所有树投影消费者：React 的 clipboard/range/FNR 等 keyed
+reconciliation、React/Vue/Solid 的 row-drag 都通过同一 `readRowChildren` 和 `setChildren` 走 Core
+canonical tree，React `expandAll` 也会递归 conventional `children`。树跨父级、隐藏 key、循环/重复节点以及
+computed children 无 setter 仍 fail-closed；flat 表格和 Svelte（当前无 `lazyLoad` prop）保持原契约。定向回归
+为 Core rows 20/20、React lazy/row-edit/static-drag 41/41、React lazy clipboard 6/6、Vue lazy/static-tree
+23/23、Solid lazy/static-tree 10/10；四端相关 typecheck/build/lint 通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

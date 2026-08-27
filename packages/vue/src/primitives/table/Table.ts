@@ -761,10 +761,11 @@ export const IrisTable = defineComponent({
         const sourceIndex = sourceRows.indexOf(previous)
         patches.set(keyOf(previous, sourceIndex >= 0 ? sourceIndex : index, sourceRows), row)
       })
-      if (props.getSubRows) {
+      if (props.getSubRows !== undefined || props.lazyLoad !== undefined) {
         return reconcileTreeRows(sourceRows, patches, {
           getRowKey: (row, index) => keyOf(row, index),
-          getChildren: props.getSubRows,
+          getChildren: readRowChildren,
+          setChildren: writeLazyChildren,
         })
       }
       return sourceRows.map((row, index) => patches.get(keyOf(row, index, sourceRows)) ?? row)
@@ -774,7 +775,8 @@ export const IrisTable = defineComponent({
       () => props.treeSelectionCascade && props.selectable === 'multi' && treeMode.value,
     )
     const treeSelectionNodes = computed<TreeSelectionNode<string | number>[]>(() => {
-      const getChildren = props.getSubRows
+      const getChildren =
+        props.getSubRows !== undefined || props.lazyLoad !== undefined ? readRowChildren : undefined
       if (!cascadingTreeSelection.value || !getChildren) return []
       let rowIndex = 0
       return flattenTreeSelectionNodes(sortedData.value, {
@@ -1756,11 +1758,9 @@ export const IrisTable = defineComponent({
       }
       const { activeId, overId } = rowDragCtrl.end()
       if (activeId !== null && overId !== null && activeId !== overId) {
-        // A static tree must be reordered in the source tree. The visible
-        // flattened list is only a drag projection and must never be
-        // committed as roots. Lazy children remain adapter-owned until a
-        // persisted re-parenting contract can describe their source path.
-        if (props.getSubRows !== undefined && props.lazyLoad === undefined) {
+        // A tree must be reordered in the source tree. The visible flattened
+        // list is only a drag projection and must never be committed as roots.
+        if (props.getSubRows !== undefined || props.lazyLoad !== undefined) {
           const visibleKeys = new Map(
             bodyData.value.map((row, index) => [row, String(rowId(row, index))]),
           )
@@ -1779,7 +1779,8 @@ export const IrisTable = defineComponent({
                 // Every drop target is visible; leave hidden descendants keyless
                 // so a synthetic sibling index cannot mask a visible target.
                 getRowKey: (row) => visibleKeys.get(row),
-                getChildren: props.getSubRows,
+                getChildren: readRowChildren,
+                setChildren: writeLazyChildren,
               },
               fromVisible < toVisible ? 'after' : 'before',
             )
@@ -1791,7 +1792,7 @@ export const IrisTable = defineComponent({
               props.rowDrag.onReorder(rows)
             }
           }
-        } else if (props.lazyLoad === undefined) {
+        } else {
           const rows = [...bodyData.value] as Array<Record<string, unknown>>
           const from = rows.findIndex((r, i) => String(rowId(r, i)) === activeId)
           const to = rows.findIndex((r, i) => String(rowId(r, i)) === overId)

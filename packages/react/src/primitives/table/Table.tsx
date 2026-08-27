@@ -2334,9 +2334,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     coerceEditDraft(row, col, draft)
   /** Current row object for a row key (row edit mode resolves at commit time). */
   const currentRowFor = (rowIdent: string | number): Row | undefined =>
-    // Grid Core traverses configured static tree children. Keep the live
-    // snapshot fallback for proxy/lazy rows whose children are intentionally
-    // adapter-owned and therefore not visible to the core model.
+    // Grid Core traverses configured static and loaded lazy children. Keep the
+    // live snapshot fallback for proxy descendants that are not in the local
+    // source model.
     rowsModel.find(rowIdent) ?? liveDataRef.current.find((r, i) => rowKeyOf(r, i) === rowIdent)
   /** Shared commit write-back for row edit sessions (batch K): the live data
    *  update + onCellEdit fire, skipping no-op commits. Cell-mode commits use
@@ -3228,7 +3228,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   /**
-   * Resolve a static-tree drag against the canonical source rows. The DOM
+   * Resolve a tree drag against the canonical source rows. The DOM
    * drag controller intentionally works on `bodyData` (a flattened visible
    * projection), but handing that projection to the parent would promote
    * children to roots. Visible rows are mapped to string keys here so the
@@ -3240,8 +3240,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     overId: string,
     position: 'before' | 'after',
   ): Row[] | null => {
-    const getChildren = getSubRowsRef.current
-    if (getChildren === undefined || lazyLoad !== undefined) return null
+    const getChildren = getRowChildrenRef.current
+    if (getChildren === undefined) return null
     const visibleRows = bodyDataRef.current
     const visibleKeys = new Map(
       visibleRows.map((row, index) => [row, String(rowKeyOf(row, index))]),
@@ -3260,6 +3260,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         // synthetic sibling-index fallback cannot collide with a target.
         getRowKey: (row) => visibleKeys.get(row),
         getChildren,
+        setChildren: setRowChildrenRef.current,
       },
       position,
     )
@@ -3306,8 +3307,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         rows,
         (row, index) => String(rowKeyOf(row, index)),
       )
-      if (resolved && from >= 0 && lazyLoad === undefined) {
-        if (getSubRowsRef.current !== undefined) {
+      if (resolved && from >= 0) {
+        if (getRowChildrenRef.current !== undefined) {
           const treeRows = reorderTreeDragRows(
             activeId,
             overId,
@@ -4168,7 +4169,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (next !== rows) commitRowList(next, 'insert')
     },
     removeRow: (key) => {
-      // Let the rows model resolve the key so static tree children are
+      // Let the rows model resolve the key so tree children are
       // addressable exactly like roots. `removeMany([key])` also returns the
       // descendant keys removed with a tree parent, allowing selection and
       // dirty-session state to be pruned for the whole disappeared subtree.
@@ -4378,7 +4379,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // Tree mode and detail mode share the single expansion model — both
       // render toggles route through expansion.toggle. No-op for plain tables.
       if (!treeMode && !hasDetail) return
-      // Resolve static tree descendants through Core rows. The visible-body
+      // Resolve tree descendants through Core rows. The visible-body
       // index remains preferred for rowExpandable/event parity; a collapsed
       // descendant gets its root snapshot index as a stable callback fallback.
       const visibleIdx = bodyDataRef.current.findIndex((r, i) => rowKeyOf(r, i) === key)
@@ -4820,8 +4821,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // or row-id map rebuild is visible to an already-mounted handler.
   const treeKeyMapRef = React.useRef(treeKeyMap)
   treeKeyMapRef.current = treeKeyMap
-  const getSubRowsRef = React.useRef(getSubRows)
-  getSubRowsRef.current = getSubRows
+  const getRowChildrenRef = React.useRef<((row: Row) => readonly Row[] | undefined) | undefined>(
+    getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
+  )
+  getRowChildrenRef.current =
+    getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined
+  const setRowChildrenRef = React.useRef<((row: Row, children: Row[]) => Row) | undefined>(
+    writeLazyChildren,
+  )
+  setRowChildrenRef.current = writeLazyChildren
 
   /** Resolve a projected row to the same key used by the Core rows tree. */
   function rowPatchKey(row: Row, _index?: number): string | number | undefined {
@@ -4845,11 +4853,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     sourceRows: readonly Row[],
     patches: ReadonlyMap<string | number, Row>,
   ): Row[] {
-    const getChildren = getSubRowsRef.current
+    const getChildren = getRowChildrenRef.current
     if (getChildren !== undefined) {
       return reconcileTreeRows(sourceRows, patches, {
         getRowKey: (row, index) => rowPatchKey(row, index),
         getChildren,
+        setChildren: setRowChildrenRef.current,
       })
     }
     const next = sourceRows.map((row, index) => patches.get(rowPatchKey(row, index)!) ?? row)
@@ -5066,9 +5075,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!expandAll || !treeMode || expandAllSeededRef.current) return
     if (sortedData.length === 0) return
     const keys: string[] = []
-    const collect = (rows: Row[]): void => {
+    const collect = (rows: readonly Row[]): void => {
       rows.forEach((row) => {
-        const children = getSubRows?.(row)
+        const children = readRowChildren(row)
         if (children && children.length > 0) {
           // Batch R: seeded keys must match flattenTree's getKey EXACTLY —
           // treeKeyMap (rowId-aware, sibling index) when present, else the
@@ -5086,7 +5095,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (keys.length === 0) return
     expandAllSeededRef.current = true
     expansion.merge(keys)
-  }, [expandAll, treeMode, sortedData, getSubRows, expansion, rowKey])
+  }, [expandAll, treeMode, sortedData, getSubRows, lazyLoad, expansion, rowKey])
 
   const toggleAll = () => {
     if (selectable !== 'multi') return

@@ -328,6 +328,16 @@ arch-check:ratchet` 当前无阻断项。
 - 定向回归：Core rows 20/20；React lazy/row-edit/static-drag 41/41，lazy clipboard 6/6；Vue lazy/static-tree
   23/23；Solid lazy/static-tree 10/10。React/Vue/Solid typecheck、build、lint 通过。
 
+## 2026-08-26 Grid Core rows reorder continuation（当前工作树）
+
+- Core `GridRowsModel` 新增 `reorder`，并以 `reorderRows` capability alias 暴露 flat/tree 同级移动、
+  `before/after/auto` 位置语义与 rows transaction metadata；flat 路径按 resolved key 不可变重排，tree 路径复用
+  `reorderTreeRows`，跨父级、缺失/重复/循环节点及 computed children 无 setter 继续 fail-closed。
+- Vue、Solid、Svelte 的 row-drag 优先通过 rows model 提交，排序或 index-keyed 可见投影无法与 source row 身份对齐时
+  回退既有 projection resolver；React 仍维持父组件拥有最终数据的 legacy `onReorder` 语义。
+- 定向回归：Core rows 22/22、Vue row-drag 11/11、Solid row-drag 22/22、Svelte row-drag 5/5；Core/Vue/Solid/Svelte
+  typecheck、lint、manifest 与 `git diff --check` 通过。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

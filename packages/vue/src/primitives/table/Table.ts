@@ -1758,17 +1758,40 @@ export const IrisTable = defineComponent({
       }
       const { activeId, overId } = rowDragCtrl.end()
       if (activeId !== null && overId !== null && activeId !== overId) {
+        const visibleRows = bodyData.value
+        const fromVisible = visibleRows.findIndex(
+          (row, index) => String(rowId(row, index)) === activeId,
+        )
+        const toVisible = visibleRows.findIndex(
+          (row, index) => String(rowId(row, index)) === overId,
+        )
+        const fromRow = fromVisible >= 0 ? visibleRows[fromVisible] : undefined
+        const toRow = toVisible >= 0 ? visibleRows[toVisible] : undefined
+        const fromKey = fromRow === undefined ? undefined : rowId(fromRow, fromVisible)
+        const toKey = toRow === undefined ? undefined : rowId(toRow, toVisible)
+        // Prefer the rows model when the visible rows resolve to the same
+        // source objects. This keeps row-drag in the canonical transaction
+        // throat while preserving the adapter projection fallback for
+        // index-keyed/sorted views whose visible index is not a source key.
+        const modelFrom = fromKey === undefined ? undefined : gridRows.model.find(fromKey)
+        const modelTo = toKey === undefined ? undefined : gridRows.model.find(toKey)
+        const useRowsModel =
+          fromKey !== undefined && toKey !== undefined && modelFrom === fromRow && modelTo === toRow
+        if (useRowsModel) {
+          const position = fromVisible < toVisible ? 'after' : 'before'
+          if (gridRows.model.reorder(fromKey, toKey, { reason: 'row-drag', position })) {
+            const rows = gridRows.model.get()
+            props.onDataChange?.(rows)
+            props.rowDrag.onReorder(rows)
+            rowRectsRef.value = []
+            return
+          }
+        }
         // A tree must be reordered in the source tree. The visible flattened
         // list is only a drag projection and must never be committed as roots.
         if (props.getSubRows !== undefined || props.lazyLoad !== undefined) {
           const visibleKeys = new Map(
-            bodyData.value.map((row, index) => [row, String(rowId(row, index))]),
-          )
-          const fromVisible = bodyData.value.findIndex(
-            (row, index) => String(rowId(row, index)) === activeId,
-          )
-          const toVisible = bodyData.value.findIndex(
-            (row, index) => String(rowId(row, index)) === overId,
+            visibleRows.map((row, index) => [row, String(rowId(row, index))]),
           )
           if (fromVisible >= 0 && toVisible >= 0) {
             const result = reorderTreeRows(

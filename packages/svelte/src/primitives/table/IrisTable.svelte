@@ -1171,7 +1171,32 @@
     isGrouped: () => grouped,
     getRowDrag: () => rowDrag,
     getColumnDrag: () => columnDrag,
-    reorderRows: (activeId, overId) => {
+    commitReorderRows: (activeId, overId) => {
+      const visibleRows = bodyData
+      const fromVisible = visibleRows.findIndex(
+        (row, index) => String(rowId(row, index)) === activeId,
+      )
+      const toVisible = visibleRows.findIndex((row, index) => String(rowId(row, index)) === overId)
+      const fromRow = fromVisible >= 0 ? visibleRows[fromVisible] : undefined
+      const toRow = toVisible >= 0 ? visibleRows[toVisible] : undefined
+      const fromKey = fromRow === undefined ? undefined : rowId(fromRow, fromVisible)
+      const toKey = toRow === undefined ? undefined : rowId(toRow, toVisible)
+      const modelFrom = fromKey === undefined ? undefined : gridRows.find(fromKey)
+      const modelTo = toKey === undefined ? undefined : gridRows.find(toKey)
+      // Prefer the rows model when the visible projection resolves to the
+      // same source objects. Index-keyed/sorted projections retain the
+      // projection-aware fallback below.
+      if (
+        fromKey !== undefined &&
+        toKey !== undefined &&
+        modelFrom === fromRow &&
+        modelTo === toRow
+      ) {
+        const position = fromVisible < toVisible ? 'after' : 'before'
+        if (gridRows.reorder(fromKey, toKey, { reason: 'row-drag', position })) {
+          return gridRows.get()
+        }
+      }
       const getChildren = getSubRows
       if (getChildren !== undefined) {
         // Reorder the canonical source tree, never the flattened visible
@@ -1195,7 +1220,8 @@
           },
           fromVisible < toVisible ? 'after' : 'before',
         )
-        return result.changed ? result.rows : null
+        if (!result.changed || !gridRows.commit(result.rows, { reason: 'row-drag' })) return null
+        return gridRows.get()
       }
       // Keep the flat bridge's historical source-list behavior when no tree
       // accessor is supplied.
@@ -1205,12 +1231,13 @@
       if (from < 0 || to < 0 || from === to) return null
       const [moved] = rows.splice(from, 1)
       rows.splice(to, 0, moved!)
-      return rows
+      if (!gridRows.commit(rows, { reason: 'row-drag' })) return null
+      return gridRows.get()
     },
     commitRows: (rows) => {
       gridRows.commit(rows, { reason: 'row-drag' })
-      onDataChange?.(rows)
     },
+    onDataChange: (rows) => onDataChange?.(rows),
   })
   let rowDragSnapshot = $state(dragBridge.rowController.getState())
   let columnDragSnapshot = $state(dragBridge.columnController.getState())

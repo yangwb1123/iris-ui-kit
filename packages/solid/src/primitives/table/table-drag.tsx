@@ -12,6 +12,10 @@ type TableDragConfig<Row extends Record<string, unknown>> = {
   rowId: (row: Row, index: number) => string | number
   /** Resolve a drag into the canonical source rows; `null` rejects the drop. */
   reorderRows?: (activeId: string, overId: string) => Row[] | null
+  /** Commit a drag directly through the rows feature and return its snapshot. */
+  commitReorderRows?: (activeId: string, overId: string) => Row[] | null
+  /** Commit rows returned by the legacy `reorderRows` resolver. */
+  commitRows?: (rows: Row[]) => void
   onDataChange?: (rows: Row[]) => void
 }
 
@@ -83,20 +87,26 @@ export function createTableDrag<Row extends Record<string, unknown>>(
     }
     const { activeId, overId } = rowController.end()
     if (activeId !== null && overId !== null && activeId !== overId) {
-      const rows = options.reorderRows
-        ? options.reorderRows(activeId, overId)
-        : (() => {
-            const next = [...options.rows()]
-            const from = next.findIndex(
-              (row, index) => String(options.rowId(row, index)) === activeId,
-            )
-            const to = next.findIndex((row, index) => String(options.rowId(row, index)) === overId)
-            if (from < 0 || to < 0 || from === to) return null
-            const [moved] = next.splice(from, 1)
-            next.splice(to, 0, moved)
-            return next
-          })()
+      const directCommit = options.commitReorderRows !== undefined
+      const rows = directCommit
+        ? options.commitReorderRows!(activeId, overId)
+        : options.reorderRows
+          ? options.reorderRows(activeId, overId)
+          : (() => {
+              const next = [...options.rows()]
+              const from = next.findIndex(
+                (row, index) => String(options.rowId(row, index)) === activeId,
+              )
+              const to = next.findIndex(
+                (row, index) => String(options.rowId(row, index)) === overId,
+              )
+              if (from < 0 || to < 0 || from === to) return null
+              const [moved] = next.splice(from, 1)
+              next.splice(to, 0, moved)
+              return next
+            })()
       if (rows) {
+        if (!directCommit) options.commitRows?.(rows)
         options.onDataChange?.(rows)
         options.rowDrag()?.onReorder(rows)
       }

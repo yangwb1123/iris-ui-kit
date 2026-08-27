@@ -259,6 +259,61 @@ describe('createGridRowsFeature', () => {
     expect(core.invoke<readonly GridRowKey[]>('removeRows', [2, 3])).toEqual([])
   })
 
+  it('reorders flat rows through one transaction and preserves placement semantics', () => {
+    type FlatRow = { id: number; name: string }
+    const events: Array<GridRowsTransaction<FlatRow>> = []
+    const core = createGridCore<FlatRow>({
+      features: [
+        createGridRowsFeature<FlatRow>({
+          defaultRows: [
+            { id: 1, name: 'A' },
+            { id: 2, name: 'B' },
+            { id: 3, name: 'C' },
+          ],
+        }),
+      ],
+    })
+    core.on<GridRowsTransaction<FlatRow>>(GRID_ROWS_CHANGE_EVENT, (transaction) =>
+      events.push(transaction),
+    )
+    const model = core.invoke<GridRowsModel<FlatRow>>('getRowsModel')
+
+    expect(model.reorder(1, 3, { reason: 'row-drag', position: 'after' })).toBe(true)
+    expect(model.getData().map((row) => row.id)).toEqual([2, 3, 1])
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ reason: 'row-drag', previousRows: expect.any(Array) })
+    expect(model.reorder(1, 1, { reason: 'row-drag' })).toBe(false)
+    expect(events).toHaveLength(1)
+  })
+
+  it('reorders a same-parent tree through the rows transaction and blocks cross-parent moves', () => {
+    type TreeRow = { id: number; children?: TreeRow[] }
+    const childA: TreeRow = { id: 2 }
+    const childB: TreeRow = { id: 3 }
+    const first: TreeRow = { id: 1, children: [childA, childB] }
+    const second: TreeRow = { id: 4, children: [{ id: 5 }] }
+    const core = createGridCore<TreeRow>({
+      features: [
+        createGridRowsFeature<TreeRow>({
+          defaultRows: [first, second],
+          getRowKey: (row) => row.id,
+          getChildren: (row) => row.children,
+        }),
+      ],
+    })
+    const model = core.invoke<GridRowsModel<TreeRow>>('getRowsModel')
+
+    expect(model.reorder(2, 3, { position: 'after', reason: 'row-drag' })).toBe(true)
+    const next = model.getData()
+    expect(next[0]?.children?.map((row) => row.id)).toEqual([3, 2])
+    expect(next[0]).not.toBe(first)
+    expect(next[0]?.children).not.toBe(first.children)
+    expect(first.children).toEqual([childA, childB])
+
+    expect(model.reorder(2, 5, { reason: 'row-drag' })).toBe(false)
+    expect(model.getData()[0]).toBe(next[0])
+  })
+
   it('collects reachable tree rows once and stops on cycles or duplicate keys', () => {
     type TreeRow = { id: number; children?: TreeRow[] }
     const root: TreeRow = { id: 1 }

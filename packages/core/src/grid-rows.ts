@@ -1,6 +1,12 @@
 import { createStore, type Store } from './store'
 import type { GridFeature, GridMethod } from './grid'
-import { findTreeRow, removeTreeRows, setTreeChildren, updateTreeRows } from './grid-tree-rows'
+import {
+  findTreeRow,
+  removeTreeRows,
+  reorderTreeRows,
+  setTreeChildren,
+  updateTreeRows,
+} from './grid-tree-rows'
 import { insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
 
 export type GridRowKey = string | number
@@ -10,6 +16,13 @@ export interface GridRowsCommitOptions<Meta = unknown> {
   readonly reason?: string
   /** Adapter-owned context forwarded untouched to transaction observers. */
   readonly meta?: Meta
+}
+
+export type GridRowsReorderPosition = 'auto' | 'before' | 'after'
+
+export interface GridRowsReorderOptions<Meta = unknown> extends GridRowsCommitOptions<Meta> {
+  /** Placement relative to the target; `auto` preserves flat row-drag semantics. */
+  readonly position?: GridRowsReorderPosition
 }
 
 export interface GridRowsTransaction<Row extends Record<string, unknown>, Meta = unknown> {
@@ -64,6 +77,8 @@ export interface GridRowsModel<Row extends Record<string, unknown>, Meta = unkno
   ): readonly GridRowKey[]
   /** Shallow-merge one row by key. Missing keys are silent no-ops. */
   update(key: GridRowKey, patch: Partial<Row>, options?: GridRowsCommitOptions<Meta>): boolean
+  /** Move two same-level rows through one observable transaction. */
+  reorder(fromKey: GridRowKey, toKey: GridRowKey, options?: GridRowsReorderOptions<Meta>): boolean
   /** Replace one nested child list through a user-visible transaction. */
   setChildren(
     key: GridRowKey,
@@ -96,6 +111,7 @@ export interface GridRowsMethods<Row extends Record<string, unknown>, Meta = unk
     options?: GridRowsCommitOptions<Meta>,
   ): readonly GridRowKey[]
   update(key: GridRowKey, patch: Partial<Row>, options?: GridRowsCommitOptions<Meta>): boolean
+  reorder(fromKey: GridRowKey, toKey: GridRowKey, options?: GridRowsReorderOptions<Meta>): boolean
   setChildren(key: GridRowKey, children: Row[], options?: GridRowsCommitOptions<Meta>): boolean
   syncChildren(key: GridRowKey, children: Row[]): boolean
   insertRow(row: Row, index?: number, options?: GridRowsCommitOptions<Meta>): boolean
@@ -105,6 +121,11 @@ export interface GridRowsMethods<Row extends Record<string, unknown>, Meta = unk
     options?: GridRowsCommitOptions<Meta>,
   ): readonly GridRowKey[]
   updateRow(key: GridRowKey, patch: Partial<Row>, options?: GridRowsCommitOptions<Meta>): boolean
+  reorderRows(
+    fromKey: GridRowKey,
+    toKey: GridRowKey,
+    options?: GridRowsReorderOptions<Meta>,
+  ): boolean
   transactRows(
     updater: (rows: readonly Row[]) => readonly Row[],
     options?: GridRowsCommitOptions<Meta>,
@@ -153,6 +174,27 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
 
   const updateAt = (rows: readonly Row[], index: number, patch: Partial<Row>): Row[] =>
     rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row))
+
+  const reorderAt = (
+    rows: readonly Row[],
+    fromKey: GridRowKey,
+    toKey: GridRowKey,
+    position: GridRowsReorderPosition,
+  ): Row[] => {
+    const fromIndex = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === fromKey)
+    const toIndex = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === toKey)
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return rows as Row[]
+
+    const next = [...rows]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return rows as Row[]
+    const targetIndex = toIndex - (fromIndex < toIndex ? 1 : 0)
+    const insertionIndex =
+      position === 'after' ? targetIndex + 1 : position === 'before' ? targetIndex : toIndex
+    next.splice(insertionIndex, 0, moved)
+    if (next.every((row, index) => Object.is(row, rows[index]))) return rows as Row[]
+    return next
+  }
 
   const commit = (
     rows: readonly Row[],
@@ -292,6 +334,22 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         true,
       )
     },
+    reorder: (fromKey, toKey, reorderOptions) => {
+      const current = store.getState()
+      const position = reorderOptions?.position ?? 'auto'
+      const next = treeOptions
+        ? (() => {
+            const result = reorderTreeRows(current, fromKey, toKey, treeOptions, position)
+            return result.blocked || !result.matched || !result.changed ? current : result.rows
+          })()
+        : reorderAt(current, fromKey, toKey, position)
+      if (Object.is(next, current)) return false
+      const commitOptions: GridRowsCommitOptions<Meta> = {
+        reason: reorderOptions?.reason,
+        meta: reorderOptions?.meta,
+      }
+      return commit(next, reasoned(commitOptions, 'reorder'), true)
+    },
     setChildren: (key, children, commitOptions) => {
       if (!treeOptions) return false
       const result = setTreeChildren(store.getState(), key, children, treeOptions)
@@ -342,6 +400,7 @@ export function createGridRowsFeature<
         remove: (key, commitOptions) => model.remove(key, commitOptions),
         removeMany: (keys, commitOptions) => model.removeMany(keys, commitOptions),
         update: (key, patch, commitOptions) => model.update(key, patch, commitOptions),
+        reorder: (fromKey, toKey, reorderOptions) => model.reorder(fromKey, toKey, reorderOptions),
         setChildren: (key, children, commitOptions) =>
           model.setChildren(key, children, commitOptions),
         syncChildren: (key, children) => model.syncChildren(key, children),
@@ -349,6 +408,8 @@ export function createGridRowsFeature<
         removeRow: (key, commitOptions) => model.remove(key, commitOptions),
         removeRows: (keys, commitOptions) => model.removeMany(keys, commitOptions),
         updateRow: (key, patch, commitOptions) => model.update(key, patch, commitOptions),
+        reorderRows: (fromKey, toKey, reorderOptions) =>
+          model.reorder(fromKey, toKey, reorderOptions),
         transactRows: (updater, commitOptions) => model.transact(updater, commitOptions),
         syncRows: (rows) => model.sync(rows),
         clearRows: (commitOptions) => model.clear(commitOptions),

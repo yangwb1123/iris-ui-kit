@@ -600,6 +600,14 @@ computed children 无 setter 仍 fail-closed；flat 表格和 Svelte（当前无
 为 Core rows 20/20、React lazy/row-edit/static-drag 41/41、React lazy clipboard 6/6、Vue lazy/static-tree
 23/23、Solid lazy/static-tree 10/10；四端相关 typecheck/build/lint 通过。
 
+本批继续收口 row-drag 的事务边界：Core `GridRowsModel` 新增 `reorder`，并以 `reorderRows` capability alias
+暴露 flat/tree 同级移动、`before/after/auto` 位置语义与 rows transaction metadata。flat 路径按 resolved key
+执行不可变 remove→insert；tree 路径复用 `reorderTreeRows`，跨父级、缺失/重复/循环节点以及 computed children
+无 setter 继续 fail-closed，成功时只重建受影响的 ancestor path。Vue、Solid、Svelte 的拖拽桥优先调用该 model，
+排序或 index-keyed 可见投影无法与 source row 身份对齐时才保留旧 projection fallback；React 仍由父组件拥有最终
+数据，未改变 legacy `onReorder` 交付语义。Core rows 22/22、Vue row-drag 11/11、Solid 22/22、Svelte 5/5
+定向回归通过；四端 typecheck/lint 与 manifest/git diff 检查通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

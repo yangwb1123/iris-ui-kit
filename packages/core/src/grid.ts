@@ -391,6 +391,8 @@ export {
   type GridRowsMethods,
   type GridRowsModel,
   type GridRowKey,
+  type GridRowsReorderOptions,
+  type GridRowsReorderPosition,
   type GridRowsTransaction,
 } from './grid-rows'
 

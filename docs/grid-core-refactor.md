@@ -608,6 +608,10 @@ computed children 无 setter 仍 fail-closed；flat 表格和 Svelte（当前无
 数据，未改变 legacy `onReorder` 交付语义。Core rows 22/22、Vue row-drag 11/11、Solid 22/22、Svelte 5/5
 定向回归通过；四端 typecheck/lint 与 manifest/git diff 检查通过。
 
+本次补强 reorder 的坏树护栏：`reorderTreeRows` 找到拖拽两端后仍会扫描剩余可达节点，若发现重复 row/key 或循环引用
+则整次操作保持原树并返回 `blocked`，不因目标恰好排在坏分支之前而产生部分写回。正常同级重排、跨父级拒绝和
+computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效目标之后出现 duplicate/cycle”的 fail-closed 路径。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

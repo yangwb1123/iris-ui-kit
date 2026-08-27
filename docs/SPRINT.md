@@ -338,6 +338,12 @@ arch-check:ratchet` 当前无阻断项。
 - 定向回归：Core rows 22/22、Vue row-drag 11/11、Solid row-drag 22/22、Svelte row-drag 5/5；Core/Vue/Solid/Svelte
   typecheck、lint、manifest 与 `git diff --check` 通过。
 
+## 2026-08-26 Grid Core reorder guard continuation（当前工作树）
+
+- `reorderTreeRows` 不再在找到拖拽目标后提前结束遍历；目标之后若出现重复 row/key 或循环引用，整个操作保持原树并
+  返回 `blocked`，避免 malformed tree 被部分写回。新增 Core 回归覆盖 duplicate/cycle 位于有效目标之后的路径。
+- Core `grid-rows` 定向回归 20/20、Prettier 与 `git diff --check` 通过；适配器行为未改变。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

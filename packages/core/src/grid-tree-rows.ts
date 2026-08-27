@@ -196,25 +196,41 @@ export function reorderTreeRows<Row extends Record<string, unknown>>(
   const seenRows = new Set<Row>()
   let from: Location | undefined
   let to: Location | undefined
+  // A row drag is a write operation, so a malformed source tree must never
+  // be partially reordered just because both requested keys happened to be
+  // encountered before the malformed branch. Keep walking after the targets
+  // are found and remember duplicate/cyclic nodes for a fail-closed result.
+  let invalid = false
 
   const visit = (siblings: readonly Row[], ancestors: readonly Ancestor[]): void => {
     for (const [index, row] of siblings.entries()) {
       const rowKey = options.getRowKey(row, index)
-      if (wasSeen(row, rowKey, seenKeys, seenRows)) continue
+      if (wasSeen(row, rowKey, seenKeys, seenRows)) {
+        invalid = true
+        continue
+      }
       if (!from && Object.is(rowKey, fromKey)) {
         from = { siblings, index, ancestors }
       } else if (!to && Object.is(rowKey, toKey)) {
         to = { siblings, index, ancestors }
       }
       const children = options.getChildren(row)
-      if (children?.length && (!from || !to)) {
+      if (children?.length) {
         visit(children, [...ancestors, { siblings, index, row, children }])
       }
-      if (from && to) return
     }
   }
   visit(nodes, [])
 
+  if (invalid) {
+    return {
+      rows: nodes as Row[],
+      matched: Boolean(from || to),
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
   if (!from || !to) {
     return {
       rows: nodes as Row[],

@@ -616,6 +616,8 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 `GridRowsModel` 与 `reorderTreeRows` 共用 `auto/before/after` 语义，computed key 仍按原 sibling index 解析，
 未知/相同 key 保持原数组引用并跳过 rows transaction；新增回归覆盖双向位置、computed key 与 identity no-op。
 
+2026-08-27：Vue columns-state 续批接入既有 Grid Core，Vue 全量 **180 files / 1,652 tests** 通过，typecheck/build 通过，lint 0 errors（保留既有 1 条 complexity warning）；`git diff --check` 通过，`pnpm check:manifest` 确认 2 个生成文件无变化；未调整 ratchet baseline。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

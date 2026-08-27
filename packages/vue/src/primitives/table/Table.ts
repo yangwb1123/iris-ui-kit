@@ -42,6 +42,7 @@ import { useI18n } from '../../i18n'
 import {
   useGridCore,
   useGridClipboard,
+  useGridColumns,
   useGridEditing,
   useGridExpansion,
   useGridFiltering,
@@ -204,15 +205,42 @@ export const IrisTable = defineComponent({
       () => props.importPreview,
       () => props.toolbar?.onImport,
     )
-    const responsiveWidth = ref(0)
-    const internalWidths = ref<IrisTableColumnWidths>({})
-    const effectiveWidths = computed<IrisTableColumnWidths>(() => {
-      if (props.columnWidths) return props.columnWidths
-      return internalWidths.value
+    const gridCore = useGridCore<Record<string, unknown>>()
+    const columnsFeature = useGridColumns(gridCore, {
+      onVisibilityChange: (next) => emit('update:columnVisibility', next),
+      onWidthsChange: (next) => emit('update:columnWidths', next),
     })
+    const uncontrolledWidths = ref<IrisTableColumnWidths>({})
+    const widthPropControlled = ref(props.columnWidths !== undefined)
+    watch(
+      () => props.columnVisibility,
+      (next) => columnsFeature.model.syncVisibility(next ?? {}),
+      { immediate: true },
+    )
+    watch(
+      () => props.columnWidths,
+      (next) => {
+        if (next !== undefined) {
+          columnsFeature.model.syncWidths(next)
+        } else if (widthPropControlled.value) {
+          // Preserve the pre-existing uncontrolled snapshot when a controlled
+          // width map is removed; the old local owner had this behavior.
+          columnsFeature.model.syncWidths(uncontrolledWidths.value)
+        }
+        widthPropControlled.value = next !== undefined
+      },
+      { immediate: true },
+    )
+    const responsiveWidth = ref(0)
+    const effectiveWidths = computed<IrisTableColumnWidths>(() =>
+      props.columnWidths !== undefined ? props.columnWidths : columnsFeature.state.value.widths,
+    )
+    const effectiveVisibility = computed<IrisTableColumnVisibility>(
+      () => columnsFeature.state.value.visibility,
+    )
     const sourceDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() => {
-      const vis = props.columnVisibility
-      if (!vis) return props.columns
+      const vis = effectiveVisibility.value
+      if (Object.keys(vis).length === 0) return props.columns
       return props.columns.filter((c) => vis[c.key] !== false)
     })
     const detectedTypes = ref<Record<string, DetectedColumnType>>({})
@@ -326,7 +354,6 @@ export const IrisTable = defineComponent({
       { immediate: true },
     )
 
-    const gridCore = useGridCore<Record<string, unknown>>()
     // Grid Rows is the single transaction throat for edits, paste, drag and
     // imperative row operations. The undo bridge is created below (after the
     // selection/root/editing refs exist), so this callback is assigned lazily.
@@ -1306,26 +1333,36 @@ export const IrisTable = defineComponent({
       )
 
     // -------- Column widths --------
-    // Seed internal widths from the LEAF columns when uncontrolled (a header
-    // group column carries no body width; only its leaves do).
+    // Seed the model and the compatibility snapshot from LEAF columns (a
+    // header group column carries no body width; only its leaves do).
     watch(
       () => leafColumns.value,
       (cols) => {
-        const seeded = { ...internalWidths.value }
-        let changed = false
+        const seeded = { ...uncontrolledWidths.value }
+        let snapshotChanged = false
         for (const col of cols) {
           if (seeded[col.key] === undefined) {
             seeded[col.key] = resolveInitialWidth(col)
-            changed = true
+            snapshotChanged = true
           }
         }
-        if (changed) internalWidths.value = seeded
+        if (snapshotChanged) uncontrolledWidths.value = seeded
+
+        const modelWidths = { ...columnsFeature.state.value.widths }
+        let modelChanged = false
+        for (const col of cols) {
+          if (modelWidths[col.key] === undefined) {
+            modelWidths[col.key] = resolveInitialWidth(col)
+            modelChanged = true
+          }
+        }
+        if (modelChanged) columnsFeature.model.syncWidths(modelWidths)
       },
       { immediate: true, deep: false },
     )
     const setColumnWidths = (next: IrisTableColumnWidths) => {
-      if (props.columnWidths === undefined) internalWidths.value = next
-      emit('update:columnWidths', next)
+      if (props.columnWidths === undefined) uncontrolledWidths.value = next
+      columnsFeature.setWidths(next)
     }
 
     const onHeaderClick = (column: IrisTableColumn) => {

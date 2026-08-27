@@ -1,9 +1,44 @@
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import { useGridCore, useGridRows, useGridSelection, useGridVirtual } from './index'
+import { describe, expect, it, vi } from 'vitest'
+import type { GridColumnsModel, GridCore } from '@iris-ui-kit/core/grid'
+import { useGridColumns, useGridCore, useGridRows, useGridSelection, useGridVirtual } from './index'
 
 describe('Vue Grid Core bridge', () => {
+  it('installs columns on the supplied core and keeps inbound sync silent', () => {
+    let core: GridCore<{ id: string }> | undefined
+    let columns: ReturnType<typeof useGridColumns> | undefined
+    const onVisibilityChange = vi.fn()
+    const onWidthsChange = vi.fn()
+    const Harness = defineComponent({
+      setup() {
+        core = useGridCore<{ id: string }>()
+        useGridRows(core, [{ id: 'a' }])
+        useGridSelection(core, { defaultValue: ['a'] })
+        columns = useGridColumns(core, { onVisibilityChange, onWidthsChange })
+        return () => h('div')
+      },
+    })
+
+    const wrapper = mount(Harness)
+    const feature = columns!
+    expect(core!.features.filter((name) => name === 'columns')).toHaveLength(1)
+    expect(feature.model).toBe(core!.invoke<GridColumnsModel>('getColumnsModel'))
+
+    feature.model.syncVisibility({ hidden: false })
+    feature.model.syncWidths({ name: 120 })
+    expect(onVisibilityChange).not.toHaveBeenCalled()
+    expect(onWidthsChange).not.toHaveBeenCalled()
+
+    feature.setWidths({ name: 140 })
+    feature.setVisibility({ hidden: true })
+    expect(onWidthsChange).toHaveBeenCalledWith({ name: 140 })
+    expect(onVisibilityChange).toHaveBeenCalledWith({ hidden: true })
+
+    wrapper.unmount()
+    expect(core!.status).toBe('destroyed')
+  })
+
   it('uses one core instance for rows + selection and destroys it with the component', async () => {
     let coreStatus = ''
     const Harness = defineComponent({

@@ -508,6 +508,24 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return index
   }
 
+  // Static and lazy tree children share the Core rows source. Lazy rows use a
+  // conventional `children` slot after their first load; static trees keep
+  // their caller-provided `getSubRows` accessor.
+  const readRowChildren = (row: Row): readonly Row[] | undefined => {
+    if (props.lazyLoad !== undefined) {
+      const children = (row as Record<string, unknown>).children
+      if (Array.isArray(children)) return children as Row[]
+    }
+    return props.getSubRows?.(row)
+  }
+  const writeLazyChildren =
+    props.lazyLoad === undefined
+      ? undefined
+      : (row: Row, children: Row[]): Row => ({
+          ...row,
+          children,
+        })
+
   // ---- Expandable detail rows ----
   // A leading toggle column + a full-width detail panel, driven by the
   // shared Grid Core expansion feature (multiple-open). Keys are strings. The
@@ -515,9 +533,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // exclusive (renderDetail vs getSubRows).
   const { model: gridRows } = useGridRows(gridCore, baseData(), {
     getRowKey: (row, index) => rowId(row, index),
-    // Static tree children share the Core rows mutation boundary. Lazy
-    // children remain adapter-owned because they live in a cache map.
-    getChildren: props.getSubRows,
+    getChildren:
+      props.getSubRows !== undefined || props.lazyLoad !== undefined ? readRowChildren : undefined,
+    setChildren: writeLazyChildren,
     onRowsChange: (transaction) => {
       const next = [...transaction.rows]
       liveRowsRef = next
@@ -596,18 +614,15 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     merged.multiSort ? multiSortComparator() : sortComparator(),
   )
   // ---- Lazy tree (vxe lazyLoad parity, batch J) ---------------------------
-  // Children are fetched on first expand: `lazyLoad(row, load)`. The loaded
-  // cache (plain closure, wins over `getSubRows`) drives flattenTree; the
-  // loading SET is a signal because it drives the caret spinner on both
-  // transitions (the cache map itself is not reactive).
+  // Children are fetched on first expand: `lazyLoad(row, load)`. Loaded
+  // children are written to the Core rows source's conventional `children`
+  // slot; only the loading SET remains adapter-owned because it drives the
+  // caret spinner on both transitions.
   const lazyTree = (): boolean => props.lazyLoad !== undefined
   const [lazyLoading, setLazyLoading] = createSignal<Set<string>>(new Set())
-  let lazyChildren = new Map<string, Row[]>()
-  // Monotonic epoch, bumped whenever the data source reference changes (cache
-  // + loading cleared wholesale): a stale fetch's result must never re-seed a
-  // cleared cache, and must not clear a newer fetch's loading flag. Solid has
-  // no re-render staleness, but the async callback closure still needs the
-  // guard (react batch-K M2 parity).
+  // Monotonic epoch, bumped whenever the data source reference changes
+  // (loading cleared wholesale): a stale fetch must never write into the new
+  // Core row source or clear a newer fetch's loading flag.
   let lazyEpoch = 0
   let lastLazySourceRef: Row[] | undefined
   createEffect(() => {
@@ -615,14 +630,12 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (source !== lastLazySourceRef) {
       lastLazySourceRef = source
       lazyEpoch++
-      lazyChildren = new Map()
       setLazyLoading(new Set<string>())
     }
   })
-  const lazyChildrenOf = (row: Row): Row[] | undefined => {
-    const key = String(rowId(row, 0))
-    return lazyChildren.get(key) ?? props.getSubRows?.(row)
-  }
+  const lazyChildrenOf = readRowChildren
+  const hasLazyChildren = (row: Row): boolean =>
+    props.lazyLoad !== undefined && Array.isArray((row as Record<string, unknown>).children)
   const flatTree = createMemo<Array<TreeRow<Row>> | null>(() => {
     if (props.getSubRows === undefined && !lazyTree()) return null
     const keys = expandedKeys()
@@ -1935,7 +1948,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       <Show
                         when={treeMeta!.hasChildren}
                         fallback={
-                          lazyTree() && !lazyChildren.has(treeMeta!.key) ? (
+                          lazyTree() && !hasLazyChildren(row) ? (
                             <button
                               type="button"
                               data-iris-table-tree-toggle=""
@@ -1969,8 +1982,17 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                                     // may belong to a newer fetch of the same
                                     // key).
                                     if (epoch !== lazyEpoch) return
-                                    lazyChildren.set(key, children)
-                                    if (children && children.length > 0) {
+                                    const lazyKey = rowId(row, Math.max(0, treeMeta!.posInset - 1))
+                                    suppressUndoRecord = true
+                                    let committed = false
+                                    try {
+                                      committed = gridRows.setChildren(lazyKey, children, {
+                                        reason: 'lazy-load',
+                                      })
+                                    } finally {
+                                      suppressUndoRecord = false
+                                    }
+                                    if (committed && children && children.length > 0) {
                                       expansion.toggle(key)
                                     }
                                     clearLoading()

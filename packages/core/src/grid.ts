@@ -399,6 +399,7 @@ export {
   findTreeRow,
   reorderTreeRows,
   reconcileTreeRows,
+  setTreeChildren,
   removeTreeRows,
   updateTreeRows,
   type GridTreeMutationResult,

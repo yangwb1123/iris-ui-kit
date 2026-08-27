@@ -228,6 +228,8 @@ import {
 interface TableRowsCommitMeta {
   readonly auditType: AuditLogType
   readonly recordHistory: boolean
+  readonly recordUndo?: boolean
+  readonly recordAudit?: boolean
   readonly notifyDataChange: boolean
 }
 
@@ -1211,9 +1213,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     beforeChange: ({ rows, meta }) => {
       const next = rows as Row[]
       const type = meta?.auditType ?? 'edit'
-      if (meta?.recordHistory !== false && !historySuppressRef.current) recordHistory(type)
-      recordUndo(next)
-      recordAudit(next, type)
+      if (meta?.recordHistory !== false) {
+        if (!historySuppressRef.current) recordHistory(type)
+      }
+      if (meta?.recordUndo !== false) {
+        recordUndo(next)
+      }
+      if (meta?.recordAudit !== false) {
+        recordAudit(next, type)
+      }
     },
     onChange: ({ rows, meta }) => {
       const next = rows as Row[]
@@ -1221,6 +1229,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (meta?.notifyDataChange !== false) onDataChangeRef.current?.(next)
     },
   })
+  // Static and lazy tree children share the Core rows source. Lazy rows use a
+  // conventional `children` slot after the first load; a caller-provided
+  // `getSubRows` remains the fallback for ordinary static trees. Keeping this
+  // resolver stable at the rows boundary lets Core find/update/remove a lazy
+  // child instead of consulting an adapter-only cache.
+  const readRowChildren = (row: Row): readonly Row[] | undefined => {
+    if (lazyLoad !== undefined) {
+      const children = (row as Record<string, unknown>).children
+      if (Array.isArray(children)) return children as Row[]
+    }
+    return getSubRows?.(row)
+  }
+  const writeLazyChildren =
+    lazyLoad === undefined
+      ? undefined
+      : (row: Row, children: Row[]): Row => ({
+          ...row,
+          children,
+        })
   const { rows: liveData, model: rowsModel } = useGridRows<Row, TableRowsCommitMeta>(
     gridCore,
     legacyRows.initialRows,
@@ -1229,9 +1256,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // Keep the legacy no-`keepSource` seed identity while the core feature
       // defaults to defensive ownership for standalone consumers.
       cloneDefaultRows: keepSource === true,
-      // Static tree children are part of the same rows source. Lazy children
-      // stay adapter-owned until their cache can be represented immutably.
-      getChildren: getSubRows,
+      getChildren: getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
+      setChildren: writeLazyChildren,
     },
   )
   // The feature owns pagination methods/events; this thin bridge keeps proxy
@@ -1307,13 +1333,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
         undoStack.push([...(next ?? [])])
       }
       // Batch K (M2): a NEW data source reference means the parent re-fed the
-      // data (or the proxy page changed) — cached lazy-tree children belong to
-      // the previous rows. Drop the cache AND the in-flight loading set so
-      // fresh `getSubRows` children render and lazy keys reload on the next
-      // expand. Internal write-backs (edit commits / row ops) never reach this
-      // effect (lastExternalRef only moves here), so they keep the cache.
-      // The epoch bump invalidates any in-flight lazyLoad callback (review fix).
-      lazyChildrenRef.current = new Map()
+      // data (or the proxy page changed). Children absent from that source are
+      // intentionally gone; loaded lazy children now live in the Core row
+      // snapshot and are replaced by the `rowsModel.sync` above. Clear only
+      // the in-flight loading set and invalidate stale callbacks.
       setLazyLoading(new Set())
       lazyEpochRef.current += 1
     }
@@ -4596,10 +4619,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // mode, so non-tree behavior is unchanged.
   const treeMode = getSubRows !== undefined || lazyLoad !== undefined
   // Lazy tree (vxe lazyLoad parity, batch J): children are fetched on first
-  // expand. The loaded map lives in a ref (read by `getChildren`, which wins
-  // over `getSubRows`); the loading SET is React state because it drives the
-  // caret render (spinner) on both transitions.
-  const lazyChildrenRef = React.useRef<Map<string, Row[]>>(new Map())
+  // expand. Loaded children are written to the Core rows source's conventional
+  // `children` slot by `rowsModel.setChildren`; only the loading SET remains
+  // adapter-owned because it drives the spinner while a callback is pending.
   const [lazyLoading, setLazyLoading] = React.useState<Set<string>>(new Set())
   // Batch K review fix (M2 race): bumped whenever the data source reference
   // changes (cache + loading set cleared). A lazy-load callback captures the
@@ -4611,8 +4633,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // flattenTree (forEach index per level) and the flatten's getKey reads this
   // map — rowId applies to tree rows too. Null without `rowId` → getKey falls
   // back to `String(rowKeyOf(row))`, exactly as before (additive guard).
-  // `lazyLoading` in deps re-walks after a lazy load lands (the ref map
-  // itself is not reactive).
+  // `lazyLoading` in deps re-walks after a lazy load lands (the row store is
+  // reactive, but the callback also needs a render while the spinner clears).
+  const lazyChildrenOf = readRowChildren
+  const hasLazyChildren = (row: Row): boolean =>
+    lazyLoad !== undefined && Array.isArray((row as Record<string, unknown>).children)
   const treeKeyMap = React.useMemo<Map<Row, string> | null>(() => {
     if (!rowId) return null
     const map = new Map<Row, string>()
@@ -4620,17 +4645,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       rows.forEach((r, i) => {
         const key = String(rowKeyOf(r, i))
         map.set(r, key)
-        const children = lazyChildrenRef.current.get(key) ?? getSubRows?.(r)
+        const children = lazyChildrenOf(r)
         if (children && children.length > 0) walk(children)
       })
     }
     walk(sortedData)
     return map
-  }, [rowId, sortedData, getSubRows, lazyLoading])
-  const lazyChildrenOf = (row: Row): readonly Row[] | undefined => {
-    const key = treeKeyMap?.get(row) ?? String(rowKeyOf(row))
-    return lazyChildrenRef.current.get(key) ?? getSubRows?.(row)
-  }
+  }, [rowId, sortedData, getSubRows, lazyLoad, lazyLoading])
   // Comparator for tree siblings: multi mode uses the chained multi comparator
   // (batch G fix), single mode keeps its own — byte-identical to before.
   const treeComparator = React.useMemo(
@@ -7227,8 +7248,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     paddingLeft: treeMeta.depth * 16,
                   }}
                 >
-                  {treeMeta.hasChildren ||
-                  (lazyLoad !== undefined && !lazyChildrenRef.current.has(treeMeta.key)) ? (
+                  {treeMeta.hasChildren || (lazyLoad !== undefined && !hasLazyChildren(row)) ? (
                     <button
                       type="button"
                       data-iris-table-tree-toggle=""
@@ -7267,8 +7287,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
                             // the loading flag, which may belong to a newer
                             // fetch of the same key).
                             if (epoch !== lazyEpochRef.current) return
-                            lazyChildrenRef.current.set(treeMeta.key, children)
-                            if (children && children.length > 0) {
+                            const rowKey = rowKeyOf(row, Math.max(0, treeMeta.posInset - 1))
+                            const committed = rowsModel.setChildren(rowKey, children, {
+                              reason: 'lazy-load',
+                              meta: {
+                                auditType: 'edit',
+                                recordHistory: false,
+                                recordUndo: false,
+                                recordAudit: false,
+                                notifyDataChange: false,
+                              },
+                            })
+                            if (committed && children && children.length > 0) {
                               expansion.toggle(treeMeta.key)
                               // Lazy load resolved children: the row just expanded.
                               onTreeExpandChange?.(row, true)

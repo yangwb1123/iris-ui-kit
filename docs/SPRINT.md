@@ -307,6 +307,18 @@ arch-check:ratchet` 当前无阻断项。
 - 新增 Svelte undo 薄桥与工具栏/SSR 回归；undo 定向 10/10、现有 row-edit/paste/remove 回归 11/11，SSR/hydration
   套件 41/41；Svelte 默认全量 156 files/1,039 tests、typecheck/lint/build、manifest 与格式检查通过。
 
+## 2026-08-26 Grid lazy tree rows boundary continuation（当前工作树）
+
+- Core `grid-tree-rows` 新增 `setTreeChildren`，rows model/capability 同时提供可观察的 `setChildren` 与静默的
+  `syncChildren`；两条路径都复制 children 输入、按稳定 key 做 cycle-safe 查找，并只重建变更的 ancestor path。
+  普通 `children` 属性可自动推断，计算型 accessor 无 setter 时 fail-closed；无变化不产生事务。
+- React、Vue、Solid 的既有 `lazyLoad` 回填统一写入 Core rows 的不可变 `children` 槽，adapter 只保留 loading
+  set 与 epoch；懒加载成功不记 `onDataChange`、undo 或 audit，但随后 Core `find/update/remove` 可直接访问已加载子行。
+  `getSubRows` fallback、空结果、重试和刷新后的陈旧回调丢弃语义保持不变。Svelte 当前没有 `lazyLoad` 公共 prop，
+  仍使用静态 `getSubRows`。
+- 定向回归：Core rows 20/20；React lazy/row-edit 25/25；Vue lazy tree 11/11；Solid lazy tree 10/10；React/Vue/
+  Solid typecheck 通过。`arch-check:ratchet` 继续保留既有 Table baseline 超限，未调整基线。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

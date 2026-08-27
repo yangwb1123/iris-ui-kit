@@ -1,4 +1,5 @@
 import type { GridRowKey } from './grid-rows'
+export { setTreeChildren } from './grid-tree-children'
 
 export interface GridTreeRowsOptions<Row extends Record<string, unknown>> {
   /** Resolve the stable key for a row at its sibling index. */

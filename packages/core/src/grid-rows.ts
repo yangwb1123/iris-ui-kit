@@ -1,6 +1,6 @@
 import { createStore, type Store } from './store'
 import type { GridFeature, GridMethod } from './grid'
-import { findTreeRow, removeTreeRows, updateTreeRows } from './grid-tree-rows'
+import { findTreeRow, removeTreeRows, setTreeChildren, updateTreeRows } from './grid-tree-rows'
 import { insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
 
 export type GridRowKey = string | number
@@ -64,6 +64,14 @@ export interface GridRowsModel<Row extends Record<string, unknown>, Meta = unkno
   ): readonly GridRowKey[]
   /** Shallow-merge one row by key. Missing keys are silent no-ops. */
   update(key: GridRowKey, patch: Partial<Row>, options?: GridRowsCommitOptions<Meta>): boolean
+  /** Replace one nested child list through a user-visible transaction. */
+  setChildren(
+    key: GridRowKey,
+    children: readonly Row[],
+    options?: GridRowsCommitOptions<Meta>,
+  ): boolean
+  /** Replace one nested child list without callbacks/events. */
+  syncChildren(key: GridRowKey, children: readonly Row[]): boolean
   /** Replace rows from a controlled prop or remote source without callbacks/events. */
   sync(rows: readonly Row[]): boolean
   clear(options?: GridRowsCommitOptions<Meta>): boolean
@@ -88,6 +96,8 @@ export interface GridRowsMethods<Row extends Record<string, unknown>, Meta = unk
     options?: GridRowsCommitOptions<Meta>,
   ): readonly GridRowKey[]
   update(key: GridRowKey, patch: Partial<Row>, options?: GridRowsCommitOptions<Meta>): boolean
+  setChildren(key: GridRowKey, children: Row[], options?: GridRowsCommitOptions<Meta>): boolean
+  syncChildren(key: GridRowKey, children: Row[]): boolean
   insertRow(row: Row, index?: number, options?: GridRowsCommitOptions<Meta>): boolean
   removeRow(key: GridRowKey, options?: GridRowsCommitOptions<Meta>): boolean
   removeRows(
@@ -282,6 +292,18 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         true,
       )
     },
+    setChildren: (key, children, commitOptions) => {
+      if (!treeOptions) return false
+      const result = setTreeChildren(store.getState(), key, children, treeOptions)
+      if (result.blocked || !result.matched || !result.changed) return false
+      return commit(result.rows, reasoned(commitOptions, 'children'), true)
+    },
+    syncChildren: (key, children) => {
+      if (!treeOptions) return false
+      const result = setTreeChildren(store.getState(), key, children, treeOptions)
+      if (result.blocked || !result.matched || !result.changed) return false
+      return commit(result.rows, {}, false)
+    },
     sync: (rows) => {
       const current = store.getState()
       if (
@@ -320,6 +342,9 @@ export function createGridRowsFeature<
         remove: (key, commitOptions) => model.remove(key, commitOptions),
         removeMany: (keys, commitOptions) => model.removeMany(keys, commitOptions),
         update: (key, patch, commitOptions) => model.update(key, patch, commitOptions),
+        setChildren: (key, children, commitOptions) =>
+          model.setChildren(key, children, commitOptions),
+        syncChildren: (key, children) => model.syncChildren(key, children),
         insertRow: (row, index, commitOptions) => model.insert(row, index, commitOptions),
         removeRow: (key, commitOptions) => model.remove(key, commitOptions),
         removeRows: (keys, commitOptions) => model.removeMany(keys, commitOptions),

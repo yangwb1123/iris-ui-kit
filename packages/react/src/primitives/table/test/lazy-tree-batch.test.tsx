@@ -156,6 +156,35 @@ describe('@iris-ui-kit/react IrisTable lazy tree (vxe lazyLoad parity, batch J)'
     })
     expect(lazyLoad).toHaveBeenCalledTimes(2)
   })
+
+  it('hydrates Core rows without user mutation callbacks or history entries', () => {
+    const ref = { current: null as IrisTableHandle<Row> | null }
+    const onDataChange = vi.fn()
+    const lazyLoad = vi.fn((_row: Row, load: (children: Row[]) => void) => {
+      load([{ id: 2, name: 'child', age: 2 }])
+    })
+    render(
+      <IrisTable
+        columns={cols}
+        data={lazyRoots}
+        rowKey="id"
+        lazyLoad={lazyLoad}
+        undo
+        auditLog
+        tableRef={ref}
+        onDataChange={onDataChange}
+      />,
+    )
+    act(() => {
+      fireEvent.click(caretOf(1)!)
+    })
+    expect(ref.current?.getData()[0]?.children).toHaveLength(1)
+    expect(onDataChange).not.toHaveBeenCalled()
+    expect(ref.current?.getAuditLog()).toHaveLength(0)
+    expect((document.querySelector('[data-iris-table-undo]') as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+  })
 })
 
 describe('@iris-ui-kit/react IrisTable handle.removeRows (batch J)', () => {

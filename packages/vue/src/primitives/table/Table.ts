@@ -333,6 +333,26 @@ export const IrisTable = defineComponent({
     let recordUndoRows: ((rows: Array<Record<string, unknown>>) => void) | null = null
     let suppressUndoRecord = false
 
+    // Static and lazy tree children share the Core rows source. Lazy rows use
+    // the conventional `children` slot after their first load; static tables
+    // continue to resolve children through the caller's `getSubRows` accessor.
+    const readRowChildren = (
+      row: Record<string, unknown>,
+    ): readonly Record<string, unknown>[] | undefined => {
+      if (props.lazyLoad !== undefined) {
+        const children = row.children
+        if (Array.isArray(children)) return children as Record<string, unknown>[]
+      }
+      return props.getSubRows?.(row)
+    }
+    const writeLazyChildren =
+      props.lazyLoad === undefined
+        ? undefined
+        : (row: Record<string, unknown>, children: Record<string, unknown>[]) => ({
+            ...row,
+            children,
+          })
+
     const sorting = useGridSorting<Record<string, unknown>>(gridCore, {
       mode: props.multiSort ? 'multiple' : 'single',
       defaultSort: props.defaultSort,
@@ -521,9 +541,11 @@ export const IrisTable = defineComponent({
     // replace (`set`) and multi-select a `toggle`, matching the previous behavior.
     const gridRows = useGridRows(gridCore, tableData.value, {
       getRowKey: (row, index) => rowId(row, index),
-      // Static tree children share the Core rows mutation boundary. Lazy
-      // children remain adapter-owned because they live in a cache map.
-      getChildren: props.getSubRows,
+      getChildren:
+        props.getSubRows !== undefined || props.lazyLoad !== undefined
+          ? readRowChildren
+          : undefined,
+      setChildren: writeLazyChildren,
       onRowsChange: (transaction) => {
         const next = [...transaction.rows]
         committedList.sync(next)
@@ -639,34 +661,23 @@ export const IrisTable = defineComponent({
     // detail rows and is gated off the virtual-scroll path.
     const treeMode = computed(() => props.getSubRows !== undefined || props.lazyLoad !== undefined)
     // Lazy tree (vxe lazyLoad parity, batch Z): children are fetched on first
-    // expand. The loaded map wins over `getSubRows`; the loading SET drives the
-    // caret render on both transitions. Both are reactive refs (the deep map
-    // mutation re-walks flatTree; a new data source reference drops them —
-    // React M2 parity).
-    const lazyChildren = ref<Map<string, Array<Record<string, unknown>>>>(new Map())
+    // expand. Loaded children are written to the Core rows source; only the
+    // loading SET remains adapter-owned because it drives the spinner.
     const lazyLoading = ref<Set<string>>(new Set())
-    // Bumped whenever the data source reference changes (cache + loading set
-    // cleared). A lazy-load callback captures the epoch at call time and drops
-    // its result if a refresh happened while the fetch was in flight — stale
-    // children must never re-seed the cleared cache (React M2 parity).
+    // Bumped whenever the data source reference changes (loading set cleared).
+    // A lazy-load callback captures the epoch at call time and drops its result
+    // if a refresh happened while the fetch was in flight (React M2 parity).
     let lazyEpoch = 0
-    // The source refs (not the live copy) drive the cache lifecycle: internal
-    // write-backs (edit commits / rowDrag / loadData) replace the live rows,
-    // not the source arrays, so they keep the cache (React parity).
     watch(
       () => (proxyCtrl.proxy.value ? proxyCtrl.state.value.data : props.data),
       () => {
-        lazyChildren.value = new Map()
         lazyLoading.value = new Set()
         lazyEpoch += 1
       },
     )
-    const lazyChildrenOf = (
-      row: Record<string, unknown>,
-    ): Array<Record<string, unknown>> | undefined => {
-      const key = String(row[props.rowKey])
-      return lazyChildren.value.get(key) ?? props.getSubRows?.(row)
-    }
+    const lazyChildrenOf = readRowChildren
+    const hasLazyChildren = (row: Record<string, unknown>): boolean =>
+      props.lazyLoad !== undefined && Array.isArray(row.children)
     const flatTree = computed<Array<TreeRow<Record<string, unknown>>> | null>(() =>
       treeMode.value
         ? flattenTree(sortedData.value, {
@@ -1213,8 +1224,7 @@ export const IrisTable = defineComponent({
             paddingLeft: `${treeMeta.depth * 16}px`,
           },
         },
-        treeMeta.hasChildren ||
-          (props.lazyLoad !== undefined && !lazyChildren.value.has(treeMeta.key))
+        treeMeta.hasChildren || (props.lazyLoad !== undefined && !hasLazyChildren(row))
           ? [
               h(
                 'button',
@@ -1247,8 +1257,21 @@ export const IrisTable = defineComponent({
                         // is not re-seeded (and keep the loading flag, which
                         // may belong to a newer fetch of the same key).
                         if (epoch !== lazyEpoch) return
-                        lazyChildren.value.set(treeMeta.key, children)
-                        if (children && children.length > 0) {
+                        const rawKey = row[props.rowKey]
+                        const lazyKey =
+                          typeof rawKey === 'string' || typeof rawKey === 'number'
+                            ? rawKey
+                            : rowId(row, Math.max(0, treeMeta.posInset - 1))
+                        suppressUndoRecord = true
+                        let committed = false
+                        try {
+                          committed = gridRows.model.setChildren(lazyKey, children, {
+                            reason: 'lazy-load',
+                          })
+                        } finally {
+                          suppressUndoRecord = false
+                        }
+                        if (committed && children && children.length > 0) {
                           expansion.toggle(treeMeta.key)
                         }
                         clearLoading()

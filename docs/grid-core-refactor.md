@@ -583,6 +583,16 @@ mode 的本地写回延迟到会话关闭后，live snapshot 让已提交值在�
 history pristine 时重建 baseline。新增 Svelte undo 定向 10/10、SSR 1/1，hydration 安全套件 41/41；默认全量
 156 files/1,039 tests，typecheck 通过。
 
+本次续批完成懒加载树的 rows 写回边界：Core 新增 `setTreeChildren` 纯函数以及 rows model 的
+`setChildren/syncChildren`（分别对应可观察事务和静默同步），沿稳定 key 查找父节点、复制异步 children
+数组、只重建变更节点的 ancestor path；普通 `children` 属性可自动写回，计算型 accessor 没有
+`setChildren` 时 fail-closed。React/Vue/Solid 的既有 `lazyLoad` 回调不再维护 adapter-local children
+cache，而是通过同一 rows transaction 写入 Core 的 `children` 槽；loading/epoch 仍留在适配器，因而
+旧的 spinner、重试、刷新丢弃陈旧回调和 `getSubRows` fallback 语义不变。懒加载提交标记为非业务变更：
+不会触发 `onDataChange`、undo 或 audit，但 Core 的 `find/update/remove` 随即可寻址已加载子节点；Svelte
+当前 Table 契约没有 `lazyLoad` prop，继续保持静态 `getSubRows` 路径。Core rows 定向回归 20/20，React
+懒树/row-edit 25/25、Vue 懒树 11/11、Solid 懒树 10/10；React/Vue/Solid typecheck 通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

@@ -351,6 +351,11 @@ arch-check:ratchet` 当前无阻断项。
 - 新增纯函数回归覆盖方向、位置、computed key 原始索引与 identity no-op；Core 全量 114/114 files、1,696/1,696
   tests，typecheck/lint/build、Prettier 与 `git diff --check` 通过（lint 仅保留既有复杂度 warning）。
 
+## 2026-08-27 Grid Core columnFade continuation（当前工作树）
+
+- Vue、Solid、Svelte 的 `IrisTable` 均新增 adapter-local `columnFade`，复用既有 Grid Core `columnVisibility` snapshot；默认关闭不注入 fade stylesheet 或 `matchMedia` 监听，隐藏/显示使用 token-backed 两阶段轨道与 opacity 过渡，并覆盖 reduced-motion、焦点恢复、分组列、虚拟列、SSR/hydration 与卸载清理。
+- Vue focused 24/24、全量 183 files/1,676 tests；Solid focused 15/15、client 154 files/1,086 tests、SSR 46 + dedicated hydration 1；Svelte focused 19/19、client 159 files/1,067 tests、SSR 45 + dedicated hydration 1。三端 typecheck/lint/build、manifest 与 `git diff --check` 通过；未调整 `scripts/arch-baseline.json`，既有 oversized Table ratchet 限制仍保留。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

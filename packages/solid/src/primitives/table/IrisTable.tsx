@@ -137,6 +137,12 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     props,
   )
 
+  /** Resolve values with this table's own external-table scope. Keeping the
+   * scope in this component closure prevents multiple Solid tables from
+   * leaking formula references into one another. */
+  const resolveTableCellValue = (row: Row, column: IrisTableColumn<Row>): unknown =>
+    getTableCellValue(row, column, props.formulaTables)
+
   const { t } = useI18n()
   const [densityState, setDensityState] = createSignal<IrisTableDensity>('comfortable')
   const densityProp = (): IrisTableDensity =>
@@ -275,7 +281,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     detectTypesDone = true
     const next: Record<string, DetectedColumnType> = {}
     for (const column of flattenLeafColumns(sourceColumns).filter((c) => !c.formula)) {
-      next[column.key] = detectColumnType(rows.map((row) => getTableCellValue(row, column)))
+      next[column.key] = detectColumnType(rows.map((row) => resolveTableCellValue(row, column)))
     }
     setDetectedTypes(next)
   })
@@ -325,16 +331,23 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const cycleMultiSort = (col: IrisTableColumn<Row>): void => {
     if (col.sortable) sorting.model.cycleMultiSort(col.key)
   }
-  const sortComparator = createMemo<((a: Row, b: Row) => number) | null>(() =>
-    createMultiSortComparator(
+  const sortComparator = createMemo<((a: Row, b: Row) => number) | null>(() => {
+    // Read the identity here even when no formula is currently sorted. A new
+    // formulaTables record must rebuild the comparator and therefore the
+    // sorted view, while in-place mutation remains outside the contract.
+    const formulaTables = props.formulaTables
+    return createMultiSortComparator(
       effectiveSort() ? [effectiveSort()!] : [],
       leafColumns(),
-      getTableCellValue,
-    ),
-  )
-  const multiSortComparator = createMemo<((a: Row, b: Row) => number) | null>(() =>
-    createMultiSortComparator(multiSortState(), leafColumns(), getTableCellValue),
-  )
+      (row, column) => getTableCellValue(row, column, formulaTables),
+    )
+  })
+  const multiSortComparator = createMemo<((a: Row, b: Row) => number) | null>(() => {
+    const formulaTables = props.formulaTables
+    return createMultiSortComparator(multiSortState(), leafColumns(), (row, column) =>
+      getTableCellValue(row, column, formulaTables),
+    )
+  })
 
   const tableViews = createTableViewsController({
     config: () => merged.views,
@@ -514,7 +527,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       const textOk = active.every(([key, value]) => {
         const col = displayColumns().find((c) => c.key === key)
         if (!col) return true
-        const raw = getTableCellValue(row, col)
+        const raw = resolveTableCellValue(row, col)
         if (col.filterMethod) return col.filterMethod(raw, row, value)
         return String(raw ?? '')
           .toLowerCase()
@@ -523,7 +536,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       const setsOk = checkedEntries.every(([key, values]) => {
         const col = displayColumns().find((c) => c.key === key)
         if (!col) return true
-        return values.includes(String(getTableCellValue(row, col) ?? ''))
+        return values.includes(String(resolveTableCellValue(row, col) ?? ''))
       })
       return textOk && setsOk
     })
@@ -579,12 +592,22 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   })
   // Body rows paired with their tree meta (meta is null in flat mode).
   const bodyEntries = createMemo<Array<{ row: Row; meta: TreeRow<Row> | null }>>(() => {
+    // Establish an explicit render dependency for formula results. Solid's
+    // <For> preserves an unchanged row identity, so a new tables record must
+    // also produce a fresh entry list for every displayed formula cell to
+    // re-run; in-place mutation remains outside the immutable prop contract.
+    const formulaTables = leafColumns().some((column) => column.formula)
+      ? props.formulaTables
+      : undefined
     const ft = flatTree()
-    if (ft) return ft.map((t) => ({ row: t.row, meta: t }))
-    return filteredData().map((row) => ({ row, meta: null }))
+    const entries = ft
+      ? ft.map((t) => ({ row: t.row, meta: t }))
+      : filteredData().map((row) => ({ row, meta: null }))
+    return formulaTables === undefined ? entries : [...entries]
   })
   const bodyRows = createMemo<Row[]>(() => bodyEntries().map((e) => e.row))
-  const materializedRows = (): Row[] => withComputedFormulaCells(bodyRows(), leafColumns())
+  const materializedRows = (): Row[] =>
+    withComputedFormulaCells(bodyRows(), leafColumns(), props.formulaTables)
 
   /** Map clipboard's effective-row projection back to the Core row source. */
   const reconcileClipboardRows = (
@@ -692,7 +715,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     getRules: (columnKey) => leafColumns().find((column) => column.key === columnKey)?.editRules,
     getValue: (row, columnKey) => {
       const column = leafColumns().find((candidate) => candidate.key === columnKey)
-      return column ? getTableCellValue(row, column) : row[columnKey]
+      return column ? resolveTableCellValue(row, column) : row[columnKey]
     },
     setValue: (row, columnKey, value) => {
       const column = leafColumns().find((candidate) => candidate.key === columnKey)
@@ -704,7 +727,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       if (column?.editor !== 'number') return draft
       const text = String(draft ?? '')
       if (text === '' || Number.isNaN(Number(text))) {
-        return column ? getTableCellValue(row, column) : draft
+        return column ? resolveTableCellValue(row, column) : draft
       }
       return Number(text)
     },
@@ -739,7 +762,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   const beginEdit = (row: Row, column: IrisTableColumn<Row>, rowIdent: string | number): void => {
     if (!isEditableColumn(column)) return
-    const current = getTableCellValue(row, column)
+    const current = resolveTableCellValue(row, column)
     cellEditing.startCellEdit(rowIdent, column.key, current == null ? '' : String(current))
   }
 
@@ -755,7 +778,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const raw =
       column.editor === 'number'
         ? draft === '' || Number.isNaN(Number(draft))
-          ? getTableCellValue(row, column)
+          ? resolveTableCellValue(row, column)
           : Number(draft)
         : draft
     const formatted = column.formatter?.(applyTableMask(raw, column), row)
@@ -777,7 +800,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     col: IrisTableColumn<Row>,
     rowIndex: number,
   ): RowCellSession<Row> => {
-    const current = getTableCellValue(row, col)
+    const current = resolveTableCellValue(row, col)
     const [draft, setDraft] = createSignal<string>(current == null ? '' : String(current))
     const [error, setError] = createSignal<string | null>(null)
     return { col, rowIndex, draft, error, setDraft, setError, gen: 0 }
@@ -802,7 +825,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     // otherwise start a FRESH commit on the stale session object (double
     // onCellEdit / write-back after Escape).
     if (!rowSessions().has(id)) return true
-    const oldValue = getTableCellValue(row, col)
+    const oldValue = resolveTableCellValue(row, col)
     const draftValue = session.draft()
     const newValue =
       col.editor === 'number'
@@ -1217,7 +1240,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     getRows: bodyRows,
     getColumns: () => leafColumns(),
     rowKeyField: merged.rowKey,
-    resolveValue: (row, column) => getTableCellValue(row, column as IrisTableColumn<Row>),
+    resolveValue: (row, column) => resolveTableCellValue(row, column as IrisTableColumn<Row>),
     setValue: (row, column, value) => ({
       ...row,
       [(column.dataIndex ?? column.key) as string]: value,
@@ -1700,8 +1723,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               editingColumnKey() === col.key &&
               !isEditing() &&
               editingDraft() !== '' &&
-              String(getTableCellValue(row, col) ?? '') === editingDraft()
-            const displayText = (): string => tableDisplayText<Row>(row, col, getTableCellValue)
+              String(resolveTableCellValue(row, col) ?? '') === editingDraft()
+            const displayText = (): string => tableDisplayText<Row>(row, col, resolveTableCellValue)
             // Cell merge (vxe spanMethod parity): the occupied set carries
             // cells covered by an earlier rowspan/colspan origin — those cells
             // render nothing. Origin cells with colspan > 1 extend their grid
@@ -1775,8 +1798,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     'align-items': 'center',
                     'justify-content':
                       (col.align ??
-                        (typeof getTableCellValue(row, col) === 'number' ? 'right' : 'left')) ===
-                      'right'
+                        (typeof resolveTableCellValue(row, col) === 'number'
+                          ? 'right'
+                          : 'left')) === 'right'
                         ? 'flex-end'
                         : col.align === 'center'
                           ? 'center'
@@ -2369,7 +2393,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             visibleColSet={visibleColSet}
             gridTemplate={gridTemplate}
             colTrack={colTrack}
-            getCellValue={getTableCellValue}
+            getCellValue={resolveTableCellValue}
             rowDrag={merged.rowDrag}
             seq={merged.seq}
             hasDetail={hasDetail}

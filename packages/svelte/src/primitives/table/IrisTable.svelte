@@ -64,7 +64,7 @@
     computeVisibleColSet,
     createMultiSortComparator,
     createSortComparator,
-    getCellValue,
+    getCellValue as resolveTableCellValue,
     mergeFilterValues,
     resolveInitialWidth,
     resolveResponsiveWidth,
@@ -118,6 +118,7 @@
     defaultSelection,
     sort,
     defaultSort,
+    formulaTables,
     multiSort = false,
     multiSortState,
     defaultMultiSort,
@@ -187,6 +188,12 @@
     style,
     ...rest
   }: IrisTableProps = $props()
+
+  // Keep every adapter-side value consumer on one formula-aware resolver.
+  // `formulaTables` is read at call time so replacing the map updates render,
+  // sort, filter, summary, clipboard and exports without remounting.
+  const getCellValue = (row: Record<string, unknown>, column: IrisTableColumn): unknown =>
+    resolveTableCellValue(row, column, formulaTables)
 
   const { t } = useI18n()
   let densityState = $state<IrisTableDensity>('comfortable')
@@ -299,7 +306,12 @@
   }
   const multiSortComparator = $derived<
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
-  >(() => createMultiSortComparator(effectiveMultiSort, leafColumns, getCellValue))
+  >(() => {
+    const tables = formulaTables
+    return createMultiSortComparator(effectiveMultiSort, leafColumns, (row, column) =>
+      resolveTableCellValue(row, column, tables),
+    )
+  })
 
   // svelte-ignore state_referenced_locally — filtering options seed the stable Core feature;
   // controlled props are synchronized explicitly by the effect below.
@@ -428,7 +440,12 @@
   })
   const sortComparator = $derived<
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
-  >(() => createSortComparator(effectiveSort, leafColumns, getCellValue))
+  >(() => {
+    const tables = formulaTables
+    return createSortComparator(effectiveSort, leafColumns, (row, column) =>
+      resolveTableCellValue(row, column, tables),
+    )
+  })
 
   const sortedRows = $derived((): Array<Record<string, unknown>> => {
     // remoteSort parity: the server owns the ordering — never re-sort locally.
@@ -530,7 +547,13 @@
     const merged: Record<string, string> = hasProxy
       ? effectiveFilters
       : mergeFormFilters(effectiveFilters, formApplied)
-    return applyTableFilters(sortedRows(), displayColumns, merged, effectiveFilterValues)
+    return applyTableFilters(
+      sortedRows(),
+      displayColumns,
+      merged,
+      effectiveFilterValues,
+      formulaTables,
+    )
   })
 
   function handleHeaderClick(column: IrisTableColumn): void {
@@ -609,10 +632,13 @@
     removeRows: removeRowsForHandle,
     getFilteredData: () => [...bodyData],
     exportCurrentViewCsv: () =>
-      serializeTableCsv(withComputedFormulaCells(bodyData, leafColumns), leafColumns),
+      serializeTableCsv(
+        withComputedFormulaCells(bodyData, leafColumns, formulaTables),
+        leafColumns,
+      ),
     exportMultiCsv: () => {
       const current = serializeTableCsv(
-        withComputedFormulaCells(bodyData, leafColumns),
+        withComputedFormulaCells(bodyData, leafColumns, formulaTables),
         leafColumns,
       )
       if (!exportNames || exportNames.length === 0) return current
@@ -1694,7 +1720,12 @@
                   onCancel={() => (rowMode ? rowEdit.cancel() : cancelEdit())}
                   showPreview={editPreview && col.formatter !== undefined}
                   preview={editPreview && col.formatter !== undefined
-                    ? editPreviewText(row, col, rowMode ? (rowSession?.draft ?? '') : editingDraft)
+                    ? editPreviewText(
+                        row,
+                        col,
+                        rowMode ? (rowSession?.draft ?? '') : editingDraft,
+                        formulaTables,
+                      )
                     : undefined}
                   onTab={rowMode && rowSession
                     ? (direction) => rowEdit.tab(editId, row, col, index, id, direction)

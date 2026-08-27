@@ -114,6 +114,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Below 480px, greedily hide the lowest-priority top-level columns until
    * the natural width fits; pinned columns survive. */
   responsive?: boolean
+  /**
+   * External rows for adapter-local cross-table formulas. `=other!field`
+   * reads `formulaTables.other[0].field`; absent/unknown/empty references
+   * fail closed. Pass a new record when a referenced table changes.
+   */
+  formulaTables?: Record<string, Row[]>
   /** Extra bare row sets appended as named CSV segments by the imperative handle. */
   exportNames?: Array<{ key: string; ref: () => Row[] }>
   /** Infer leaf-column value kinds from the first non-empty data arrival and

@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisTable } from './Table'
 import { exportCsv } from './exportCsv'
-import type { IrisTableColumn, IrisTableExpose } from './types'
+import type { IrisTableColumn, IrisTableExpose, IrisTableFormulaTables } from './types'
 
 enableAutoUnmount(afterEach)
 
@@ -271,5 +271,100 @@ describe('@iris-ui-kit/vue IrisTable formula columns (batch EK, iris 独有)', (
     await Promise.resolve()
     expect(writeText).toHaveBeenCalledWith('Alpha\t30\nBeta\t20\nGamma\t100')
     Reflect.deleteProperty(navigator, 'clipboard')
+  })
+})
+
+describe('@iris-ui-kit/vue IrisTable cross-table formulas', () => {
+  const crossColumns: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'taxed', title: 'Taxed', formula: 'price * rates!rate', sortable: true },
+  ]
+  const tables: IrisTableFormulaTables = { rates: [{ rate: 1.5 }] }
+
+  it('renders the first external row and keeps missing references fail-closed', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: crossColumns, data: rows, rowKey: 'id', formulaTables: tables },
+    })
+    expect(cells(wrapper, 'taxed')).toEqual(['15', '6', '150'])
+
+    const missing = mount(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name' },
+          { key: 'taxed', title: 'Taxed', formula: 'rates!missing + 1' },
+        ],
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+      },
+    })
+    expect(cells(missing, 'taxed')).toEqual(['', '', ''])
+  })
+
+  it('sorts and filters using the external computed value', () => {
+    const sorted = mount(IrisTable, {
+      props: {
+        columns: crossColumns,
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+        defaultSort: { key: 'taxed', direction: 'asc' },
+      },
+    })
+    expect(cells(sorted, 'name')).toEqual(['Beta', 'Alpha', 'Gamma'])
+
+    const filtered = mount(IrisTable, {
+      props: {
+        columns: crossColumns,
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+        filters: { taxed: '6' },
+      },
+    })
+    expect(cells(filtered, 'name')).toEqual(['Beta'])
+  })
+
+  it('updates when the formulaTables identity is replaced', async () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: crossColumns, data: rows, rowKey: 'id', formulaTables: tables },
+    })
+    await wrapper.setProps({ formulaTables: { rates: [{ rate: 2 }] } })
+    await nextTick()
+    expect(cells(wrapper, 'taxed')).toEqual(['20', '8', '200'])
+  })
+
+  it('routes summary, CSV and range copy through the external formula resolver', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name' },
+          { key: 'taxed', title: 'Taxed', formula: 'price * rates!rate', summary: 'sum' },
+        ],
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+        cellRange: true,
+        clipConfig: { copy: true },
+      },
+    })
+    const tableRef = wrapper.vm as unknown as IrisTableExpose<Row>
+    expect(
+      wrapper.find('[data-iris-table-row="summary"] [data-iris-table-cell="taxed"]').text(),
+    ).toBe('171')
+    expect(tableRef.exportCurrentViewCsv()).toBe('Name,Taxed\nAlpha,15\nBeta,6\nGamma,150')
+    await wrapper.find('[data-iris-cell-row="0"][data-iris-cell-col="0"]').trigger('click')
+    await wrapper
+      .find('[data-iris-cell-row="2"][data-iris-cell-col="1"]')
+      .trigger('click', { shiftKey: true })
+    await wrapper.find('[data-iris-table]').trigger('keydown', { key: 'c', ctrlKey: true })
+    await nextTick()
+    await Promise.resolve()
+    expect(writeText).toHaveBeenCalledWith('Alpha\t15\nBeta\t6\nGamma\t150')
   })
 })

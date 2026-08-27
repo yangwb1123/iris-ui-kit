@@ -38884,6 +38884,11 @@
               "default": "false"
             },
             {
+              "name": "formulaTables",
+              "type": "IrisTableFormulaTables<Record<string, unknown>>",
+              "optional": true
+            },
+            {
               "name": "exportNames",
               "type": "Array<{ key: string; ref: () => Array<Record<string, unknown>> }",
               "optional": true
@@ -39111,6 +39116,7 @@
             "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableFormulaTables",
             "IrisTableNamedView",
             "IrisTableProps",
             "IrisTableProxyConfig",
@@ -39383,6 +39389,12 @@
               "optional": true
             },
             {
+              "name": "formulaTables",
+              "type": "Record<string, Row[]>",
+              "optional": true,
+              "description": "External rows for adapter-local cross-table formulas. `=other!field` reads `formulaTables.other[0].field`; absent/unknown/empty references fail closed. Pass a new record when a referenced table changes."
+            },
+            {
               "name": "exportNames",
               "type": "Array<{ key: string; ref: () => Row[] }>",
               "optional": true,
@@ -39610,6 +39622,7 @@
             "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableFormulaTables",
             "IrisTableHandle",
             "IrisTableLazyLoad",
             "IrisTableNamedView",
@@ -39687,6 +39700,11 @@
             {
               "name": "defaultSort",
               "type": "IrisTableSortState | null",
+              "optional": true
+            },
+            {
+              "name": "formulaTables",
+              "type": "IrisTableFormulaTables",
               "optional": true
             },
             {
@@ -40129,6 +40147,7 @@
             "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableFormulaTables",
             "IrisTableHandle",
             "IrisTableNamedView",
             "IrisTablePagerConfig",

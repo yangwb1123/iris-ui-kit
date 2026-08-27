@@ -8,6 +8,7 @@ import type {
   IrisTableContextMenuConfig,
   IrisTableEditConfig,
   IrisTableFilterValues,
+  IrisTableFormulaTables,
   IrisTableFormConfig,
   IrisTableHandle,
   IrisTablePagerConfig,
@@ -37,6 +38,9 @@ export interface IrisTableProps {
   defaultSelection?: Array<string | number>
   sort?: IrisTableSortState | null
   defaultSort?: IrisTableSortState | null
+  /** External row sets for `table!field` formula references. The first row
+   * of the named set is read; replace the object when referenced rows change. */
+  formulaTables?: IrisTableFormulaTables
   /** Multi-column sort (vxe sort-config.multiple parity): header clicks
    * append/cycle columns in click order instead of replacing. Default false. */
   multiSort?: boolean

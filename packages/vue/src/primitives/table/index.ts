@@ -15,6 +15,7 @@ export type {
   IrisTableExpose,
   IrisTableFilterOption,
   IrisTableFilterValues,
+  IrisTableFormulaTables,
   IrisTableFormConfig,
   IrisTableFormField,
   IrisTableProxyConfig,

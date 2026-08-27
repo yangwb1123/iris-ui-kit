@@ -91,7 +91,7 @@ import {
   RESIZE_STEP,
   cellId,
   computeVisibleColSet,
-  getCellValue,
+  getCellValue as resolveCellValue,
   isEditableColumn,
   resolveInitialWidth,
   resolveSpan,
@@ -178,6 +178,13 @@ export const IrisTable = defineComponent({
   },
   setup(props, { slots, attrs, emit, expose }) {
     ensureTableStyles()
+    // Keep every adapter-side value consumer on the same formula-aware
+    // resolver.  `formulaTables` is intentionally read at call time so a
+    // parent can replace the table map without remounting the table.
+    const getCellValue = (
+      row: Record<string, unknown>,
+      column: IrisTableColumn<Record<string, unknown>>,
+    ): unknown => resolveCellValue(row, column, props.formulaTables)
     const { t } = useI18n()
     const densityState = ref<IrisTableDensity>('comfortable')
     const effectiveDensity = computed<IrisTableDensity>(() => {
@@ -363,11 +370,15 @@ export const IrisTable = defineComponent({
     const sortComparator = computed<
       ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
     >(() =>
-      buildMultiSortComparator(leafColumns.value, internalSort.value ? [internalSort.value] : []),
+      buildMultiSortComparator(
+        leafColumns.value,
+        internalSort.value ? [internalSort.value] : [],
+        props.formulaTables,
+      ),
     )
     const multiSortComparator = computed<
       ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
-    >(() => buildMultiSortComparator(leafColumns.value, multiSortState.value))
+    >(() => buildMultiSortComparator(leafColumns.value, multiSortState.value, props.formulaTables))
     const sortedRows = computed(() => {
       if (remoteSort.value) return tableData.value
       const compare = props.multiSort ? multiSortComparator.value : sortComparator.value
@@ -1797,12 +1808,12 @@ export const IrisTable = defineComponent({
       getFilteredData: () => [...bodyData.value],
       exportCurrentViewCsv: () =>
         serializeTableCsv(
-          withComputedFormulaCells(bodyData.value, leafColumns.value),
+          withComputedFormulaCells(bodyData.value, leafColumns.value, props.formulaTables),
           leafColumns.value,
         ),
       exportMultiCsv: () => {
         const current = serializeTableCsv(
-          withComputedFormulaCells(bodyData.value, leafColumns.value),
+          withComputedFormulaCells(bodyData.value, leafColumns.value, props.formulaTables),
           leafColumns.value,
         )
         const names = props.exportNames

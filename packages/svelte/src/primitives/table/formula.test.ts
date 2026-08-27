@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte'
 import IrisTable from './IrisTable.svelte'
 import { exportCsv } from './exportCsv'
-import type { IrisTableColumn, IrisTableHandle } from './types'
+import type { IrisTableColumn, IrisTableFormulaTables, IrisTableHandle } from './types'
 
 afterEach(() => {
   cleanup()
@@ -285,5 +285,113 @@ describe('@iris-ui-kit/svelte IrisTable formula columns (batch EM, iris 独有)'
     fireEvent.keyDown(container.querySelector('[data-iris-table]')!, { key: 'c', ctrlKey: true })
     await Promise.resolve()
     expect(writeText).toHaveBeenCalledWith('Alpha\t30\nBeta\t20\nGamma\t100')
+  })
+})
+
+describe('@iris-ui-kit/svelte IrisTable cross-table formulas', () => {
+  const crossColumns: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'taxed', title: 'Taxed', formula: 'price * rates!rate', sortable: true },
+  ]
+  const tables: IrisTableFormulaTables = { rates: [{ rate: 1.5 }] }
+
+  it('renders the first external row and keeps missing references fail-closed', () => {
+    const rendered = render(IrisTable, {
+      props: { columns: crossColumns, data: rows, rowKey: 'id', formulaTables: tables },
+    })
+    expect(cells(rendered.container, 'taxed')).toEqual(['15', '6', '150'])
+
+    const missing = render(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name' },
+          { key: 'taxed', title: 'Taxed', formula: 'rates!missing + 1' },
+        ],
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+      },
+    })
+    expect(cells(missing.container, 'taxed')).toEqual(['', '', ''])
+  })
+
+  it('sorts and filters using the external computed value', () => {
+    const sorted = render(IrisTable, {
+      props: {
+        columns: crossColumns,
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+        defaultSort: { key: 'taxed', direction: 'asc' },
+      },
+    })
+    expect(cells(sorted.container, 'name')).toEqual(['Beta', 'Alpha', 'Gamma'])
+
+    sorted.unmount()
+    const filtered = render(IrisTable, {
+      props: {
+        columns: crossColumns,
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+        filters: { taxed: '6' },
+      },
+    })
+    expect(cells(filtered.container, 'name')).toEqual(['Beta'])
+  })
+
+  it('updates when the formulaTables identity is replaced', async () => {
+    const view = render(IrisTable, {
+      props: { columns: crossColumns, data: rows, rowKey: 'id', formulaTables: tables },
+    })
+    await view.rerender({
+      columns: crossColumns,
+      data: rows,
+      rowKey: 'id',
+      formulaTables: { rates: [{ rate: 2 }] },
+    })
+    expect(cells(view.container, 'taxed')).toEqual(['20', '8', '200'])
+  })
+
+  it('routes summary, CSV and range copy through the external formula resolver', async () => {
+    const tableRef: { current: IrisTableHandle | null } = { current: null }
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const rendered = render(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name' },
+          { key: 'taxed', title: 'Taxed', formula: 'price * rates!rate', summary: 'sum' },
+        ],
+        data: rows,
+        rowKey: 'id',
+        formulaTables: tables,
+        tableRef,
+        cellRange: true,
+        clipConfig: { copy: true },
+      },
+    })
+    await waitFor(() => expect(tableRef.current).not.toBeNull())
+    expect(
+      rendered.container
+        .querySelector('[data-iris-table-row="summary"] [data-iris-table-cell="taxed"]')
+        ?.textContent?.trim(),
+    ).toBe('171')
+    expect(tableRef.current?.exportCurrentViewCsv()).toBe('Name,Taxed\nAlpha,15\nBeta,6\nGamma,150')
+    fireEvent.click(
+      rendered.container.querySelector('[data-iris-cell-row="0"][data-iris-cell-col="0"]')!,
+    )
+    fireEvent.click(
+      rendered.container.querySelector('[data-iris-cell-row="2"][data-iris-cell-col="1"]')!,
+      { shiftKey: true },
+    )
+    fireEvent.keyDown(rendered.container.querySelector('[data-iris-table]')!, {
+      key: 'c',
+      ctrlKey: true,
+    })
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('Alpha\t15\nBeta\t6\nGamma\t150'))
   })
 })

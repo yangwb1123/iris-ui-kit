@@ -552,6 +552,14 @@ preventDefault，Core `paste` 负责 TSV 行列解析、公式列拒写、`dataI
 语义。三端新增 paste 回归各 2/2，连同既有公式/主表回归为 Vue 99/99、Solid 75/75、Svelte 73/73，四端
 typecheck、lint、格式检查通过。
 
+本次续批完成跨表公式 `formulaTables` 的四端契约：Core 已有的 `table!field`（读取命名表首行、未知表/空表/
+未知字段 fail-closed）现在贯通 Vue、Solid、Svelte 的渲染、排序、过滤、摘要、范围复制与 CSV 导出；三端均保留
+新对象身份更新语义和表间隔离，公式列仍为只读展示列。新增 Vue/Svelte SSR 回归并重跑 Solid SSR，生成
+`IrisTableFormulaTables` 类型和 manifest/llms。交叉公式定向回归 Vue 7/7（含 SSR）、Solid 8/8（含 SSR）、
+Svelte 7/7（含 SSR），React 既有契约 12/12；完整回归为 Vue 175 files/1,628 tests、Solid 151/1,054 + SSR
+41、Svelte 155/1,029 + SSR 38。三端 typecheck、lint/build、React typecheck 与 `git diff --check` 通过；Vue
+仅保留既有 Table complexity warning，未调整 arch ratchet baseline。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

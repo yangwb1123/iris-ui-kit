@@ -23,6 +23,10 @@ export interface IrisTableSortState {
   direction: IrisTableSortDirection
 }
 
+/** External row sets available to cross-table formula references. */
+export type IrisTableFormulaTables<Row extends Record<string, unknown> = Record<string, unknown>> =
+  Record<string, Row[]>
+
 export type IrisTableViewConfig = TableViewConfig
 export type IrisTableViewSnapshot = TableViewSnapshot
 export type IrisTableNamedView = TableNamedView<IrisTableViewSnapshot>
@@ -42,11 +46,14 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * columns; the closest is a display-only formatter). Evaluated by the core
    * `evaluateFormula` parser against each row: field refs + `+ - * / %` +
    * whitelist functions SUM/AVG/MIN/MAX/COUNT (case-insensitive), optional
-   * leading `=`. The COMPUTED value feeds every data consumer — cell render,
-   * sorting, filtering, summary, range copy and CSV export (all via the
-   * `getCellValue` choke point). Errors / unknown fields → null (empty
-   * cell). An `editable` formula column is DISPLAY-ONLY: inline editing and
-   * row mode ignore it. Overrides `dataIndex`.
+   * leading `=`. `table!field` reads the first row's field from the optional
+   * `formulaTables` prop. The COMPUTED value feeds every data consumer — cell
+   * render, sorting, filtering, summary, range copy and CSV export (all via
+   * the `getCellValue` choke point). Missing tables/rows/fields and bad
+   * formulas fail closed to null (empty cell). Replace the `formulaTables`
+   * object when referenced rows change; in-place nested mutation may remain
+   * memoized. An `editable` formula column is DISPLAY-ONLY: inline editing
+   * and row mode ignore it. Overrides `dataIndex`.
    */
   formula?: string
   /** Format the masked display value; copyWithFormat uses this string. */

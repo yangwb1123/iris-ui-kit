@@ -1,8 +1,8 @@
 import solid from 'vite-plugin-solid'
 import { defineConfig } from 'vitest/config'
 
-// Dedicated SSR config for the hydration / server-render test ONLY
-// (`src/hydration.test.tsx`). It is intentionally separate from the default
+// Dedicated SSR config for the hydration / server-render tests
+// (`src/hydration.test.tsx` and focused table SSR fixtures). It is intentionally separate from the default
 // `vitest.config.ts` and from the production `tsup.config.ts` — it changes
 // NEITHER.
 //
@@ -28,7 +28,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/hydration.test.tsx', 'src/primitives/table/batch-ft.ssr.test.tsx'],
+    include: [
+      'src/hydration.test.tsx',
+      'src/primitives/table/batch-ft.ssr.test.tsx',
+      'src/primitives/table/formula-tables.ssr.test.tsx',
+    ],
     globals: false,
     isolate: true,
     // Inline solid + workspace deps so they are transformed by the SSR

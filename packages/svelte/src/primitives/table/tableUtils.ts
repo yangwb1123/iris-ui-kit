@@ -6,6 +6,7 @@ import {
   flattenLeafColumns,
   memoizedFormulaValue,
   RESPONSIVE_NARROW_WIDTH,
+  type FormulaTables,
 } from '@iris-ui-kit/core'
 import type {
   IrisTableColumn,
@@ -113,23 +114,27 @@ export function editPreviewText(
   row: Record<string, unknown>,
   column: IrisTableColumn,
   draft: string,
+  formulaTables?: FormulaTables,
 ): string {
   const raw =
     column.editor === 'number'
       ? draft === '' || isNaN(Number(draft))
-        ? getCellValue(row, column)
+        ? getCellValue(row, column, formulaTables)
         : Number(draft)
       : draft
   return String(column.formatter?.(applyTableMask(raw, column), row) ?? '')
 }
 
-export function getCellValue(row: Record<string, unknown>, column: IrisTableColumn): unknown {
-  // Batch EM: a formula column reads the COMPUTED value (2-arg
-  // memoizedFormulaValue — no tables slot, react AO byte semantics). This
+export function getCellValue(
+  row: Record<string, unknown>,
+  column: IrisTableColumn,
+  formulaTables?: FormulaTables,
+): unknown {
+  // Batch EM: a formula column reads the COMPUTED value. This
   // choke point feeds sorting, filtering, summary, the cell render, edit
   // drafts, pattern hints and range copy, so the computed value flows
   // everywhere.
-  if (column.formula) return memoizedFormulaValue(column.formula, row)
+  if (column.formula) return memoizedFormulaValue(column.formula, row, formulaTables)
   const key = (column.dataIndex ?? column.key) as string
   return row[key]
 }
@@ -149,6 +154,7 @@ export function isEditableColumn(column: IrisTableColumn): boolean {
 export function withComputedFormulaCells(
   rows: readonly Record<string, unknown>[],
   columns: readonly IrisTableColumn[],
+  formulaTables?: FormulaTables,
 ): Record<string, unknown>[] {
   const formulaCols = columns.filter((c) => c.formula)
   if (formulaCols.length === 0) return rows as Record<string, unknown>[]
@@ -157,7 +163,7 @@ export function withComputedFormulaCells(
     for (const col of formulaCols) {
       const key = (col.dataIndex ?? col.key) as string
       const next: Record<string, unknown> = shadow ?? { ...row }
-      next[key as string] = memoizedFormulaValue(col.formula!, row)
+      next[key as string] = memoizedFormulaValue(col.formula!, row, formulaTables)
       shadow = next
     }
     return shadow as Record<string, unknown>
@@ -182,6 +188,7 @@ export function applyTableFilters(
   columns: IrisTableColumn[],
   textFilters: Record<string, string>,
   filterValues: IrisTableFilterValues,
+  formulaTables?: FormulaTables,
 ): Array<Record<string, unknown>> {
   const active = Object.entries(textFilters).filter(([, value]) => value != null && value !== '')
   const checked = Object.entries(filterValues).filter(([, values]) => values.length > 0)
@@ -191,7 +198,7 @@ export function applyTableFilters(
       active.every(([key, value]) => {
         const col = columns.find((column) => column.key === key)
         if (!col) return true
-        const raw = getCellValue(row, col)
+        const raw = getCellValue(row, col, formulaTables)
         if (col.filterMethod) return col.filterMethod(raw, row, value)
         return String(raw ?? '')
           .toLowerCase()
@@ -200,7 +207,7 @@ export function applyTableFilters(
       checked.every(([key, values]) => {
         const col = columns.find((column) => column.key === key)
         if (!col) return true
-        return values.includes(String(getCellValue(row, col) ?? ''))
+        return values.includes(String(getCellValue(row, col, formulaTables) ?? ''))
       }),
   )
 }

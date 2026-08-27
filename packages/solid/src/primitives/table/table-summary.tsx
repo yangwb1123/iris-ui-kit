@@ -1,5 +1,5 @@
 import { aggregate } from '@iris-ui-kit/core'
-import { For, Show, type Accessor, type JSX } from 'solid-js'
+import { createMemo, For, Show, type Accessor, type JSX } from 'solid-js'
 import type { IrisTableColumn } from './types'
 
 interface TableSummaryProps<Row extends Record<string, unknown>> {
@@ -58,9 +58,11 @@ export function TableSummary<Row extends Record<string, unknown>>(
           {(column, colIndexAccessor) => {
             const colIndex = colIndexAccessor()
             const op = column.summary
-            const value = op
-              ? aggregate(props.bodyRows(), (row) => props.getCellValue(row, column), op)
-              : null
+            // Keep the aggregate reactive to formulaTables identity changes even
+            // when the body row array itself is unchanged.
+            const value = createMemo(() =>
+              op ? aggregate(props.bodyRows(), (row) => props.getCellValue(row, column), op) : null,
+            )
             const inWindow = (): boolean => {
               const set = props.visibleColSet()
               return !set || set.has(colIndex)
@@ -91,9 +93,9 @@ export function TableSummary<Row extends Record<string, unknown>>(
                       : {}),
                   }}
                 >
-                  <Show when={op != null && value != null}>
-                    <Show when={column.renderSummary} fallback={String(value)}>
-                      {column.renderSummary!(value!, props.bodyRows())}
+                  <Show when={op != null && value() != null}>
+                    <Show when={column.renderSummary} fallback={String(value())}>
+                      {column.renderSummary!(value()!, props.bodyRows())}
                     </Show>
                   </Show>
                 </div>

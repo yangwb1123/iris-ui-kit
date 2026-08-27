@@ -8,6 +8,7 @@ import type {
   IrisTableColumnVisibility,
   IrisTableContextMenuConfig,
   IrisTableFilterValues,
+  IrisTableFormulaTables,
   IrisTableFormConfig,
   IrisTableProxyConfig,
   IrisTableRenderDetail,
@@ -95,6 +96,14 @@ export const tableProps = {
   /** Below 480px, greedily hide the lowest-priority top-level columns until
    * the natural width fits; pinned columns survive. */
   responsive: { type: Boolean, default: false },
+  /**
+   * External row sets for `table!field` formula references. The first row of
+   * the named set is read; replace the object when referenced rows change.
+   */
+  formulaTables: {
+    type: Object as PropType<IrisTableFormulaTables<Record<string, unknown>>>,
+    default: undefined,
+  },
   /** Extra bare row sets appended as named CSV segments by the imperative handle. */
   exportNames: {
     type: Array as PropType<Array<{ key: string; ref: () => Array<Record<string, unknown>> }>>,

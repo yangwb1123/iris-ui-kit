@@ -1,4 +1,4 @@
-import { computeVirtualRange, memoizedFormulaValue } from '@iris-ui-kit/core'
+import { computeVirtualRange, memoizedFormulaValue, type FormulaTables } from '@iris-ui-kit/core'
 import type {
   IrisTableColumn,
   IrisTableColumnWidths,
@@ -26,12 +26,12 @@ export function isEditableColumn<Row extends Record<string, unknown>>(
 export function getCellValue<Row extends Record<string, unknown>>(
   row: Row,
   column: IrisTableColumn<Row>,
+  formulaTables?: FormulaTables,
 ): unknown {
-  // Batch EK: a formula column reads the COMPUTED value (2-arg
-  // memoizedFormulaValue — no tables slot, react AO byte semantics). This
-  // choke point feeds sorting, filtering, summary, the cell slot/render,
-  // edit drafts and pattern hints, so the computed value flows everywhere.
-  if (column.formula) return memoizedFormulaValue(column.formula, row)
+  // Batch EK/GB: a formula column reads the COMPUTED value. The optional
+  // tables slot keeps cross-table references additive/default-off while making
+  // every adapter-side value consumer use the same computed value.
+  if (column.formula) return memoizedFormulaValue(column.formula, row, formulaTables)
   const key = (column.dataIndex ?? column.key) as keyof Row
   return row[key]
 }
@@ -44,6 +44,7 @@ export function getCellValue<Row extends Record<string, unknown>>(
 export function withComputedFormulaCells<Row extends Record<string, unknown>>(
   rows: readonly Row[],
   columns: readonly IrisTableColumn<Row>[],
+  formulaTables?: FormulaTables,
 ): Row[] {
   const formulaCols = columns.filter((c) => c.formula)
   if (formulaCols.length === 0) return rows as Row[]
@@ -52,7 +53,11 @@ export function withComputedFormulaCells<Row extends Record<string, unknown>>(
     for (const col of formulaCols) {
       const key = (col.dataIndex ?? col.key) as keyof Row
       const next: Row = shadow ?? { ...row }
-      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(col.formula!, row)
+      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(
+        col.formula!,
+        row,
+        formulaTables,
+      )
       shadow = next
     }
     return shadow as Row

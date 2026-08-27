@@ -24,6 +24,7 @@ export default defineConfig({
     exclude: [
       'src/hydration.test.tsx',
       'src/primitives/table/batch-ft.ssr.test.tsx',
+      'src/primitives/table/formula-tables.ssr.test.tsx',
       '**/node_modules/**',
       '**/dist/**',
     ],

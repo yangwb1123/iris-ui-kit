@@ -1,5 +1,5 @@
 import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
-import { compareValues } from '@iris-ui-kit/core'
+import { compareValues, type FormulaTables } from '@iris-ui-kit/core'
 import { getCellValue } from './table-helpers'
 import type { IrisTableColumn, IrisTableSortState } from './types'
 
@@ -18,6 +18,8 @@ export interface UseTableSortOptions<Row> {
   defaultMultiSort?: IrisTableSortState[] | undefined
   /** Called when the multi-column sort changes. */
   onMultiSortChange?: (next: IrisTableSortState[]) => void
+  /** External table rows used by formula-column comparators. */
+  formulaTables?: MaybeRefOrGetter<FormulaTables | undefined>
 }
 
 export interface UseTableSortResult<Row> {
@@ -41,9 +43,11 @@ export interface UseTableSortResult<Row> {
  * single and multi sort paths. */
 function buildSorter<Row extends Record<string, unknown>>(
   col: IrisTableColumn<Row>,
+  formulaTables?: FormulaTables,
 ): (a: Row, b: Row) => number {
   if (col.sorter) return col.sorter
-  return (a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col))
+  return (a: Row, b: Row) =>
+    compareValues(getCellValue(a, col, formulaTables), getCellValue(b, col, formulaTables))
 }
 
 /**
@@ -55,6 +59,7 @@ function buildSorter<Row extends Record<string, unknown>>(
 export function buildMultiSortComparator<Row extends Record<string, unknown>>(
   leafColumns: IrisTableColumn<Row>[],
   state: IrisTableSortState[],
+  formulaTables?: FormulaTables,
 ): ((a: Row, b: Row) => number) | null {
   if (state.length === 0) return null
   const colMap = new Map(leafColumns.map((c) => [c.key, c]))
@@ -62,7 +67,10 @@ export function buildMultiSortComparator<Row extends Record<string, unknown>>(
   for (const s of state) {
     const col = colMap.get(s.key)
     if (!col) continue
-    chain.push({ dir: s.direction === 'asc' ? 1 : -1, sorter: buildSorter(col) })
+    chain.push({
+      dir: s.direction === 'asc' ? 1 : -1,
+      sorter: buildSorter(col, formulaTables),
+    })
   }
   if (chain.length === 0) return null
   return (a, b) => {
@@ -111,6 +119,9 @@ export function useTableSort<Row extends Record<string, unknown>>(
       options.onMultiSortChange?.(val)
     },
   })
+  const formulaTables = computed(() =>
+    options.formulaTables === undefined ? undefined : toValue(options.formulaTables),
+  )
 
   const sortComparator = computed<((a: Row, b: Row) => number) | null>(() => {
     const s = sortState.value
@@ -118,11 +129,15 @@ export function useTableSort<Row extends Record<string, unknown>>(
     const col = toValue(options.leafColumns).find((c) => c.key === s.key)
     if (!col) return null
     const dir = s.direction === 'asc' ? 1 : -1
-    return (a, b) => buildSorter(col)(a, b) * dir
+    return (a, b) => buildSorter(col, formulaTables.value)(a, b) * dir
   })
 
   const multiSortComparator = computed<((a: Row, b: Row) => number) | null>(() =>
-    buildMultiSortComparator(toValue(options.leafColumns), multiSortState.value),
+    buildMultiSortComparator(
+      toValue(options.leafColumns),
+      multiSortState.value,
+      formulaTables.value,
+    ),
   )
 
   const sortedData = computed<Row[]>(() => {

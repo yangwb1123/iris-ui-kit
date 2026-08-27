@@ -16,6 +16,7 @@ export type {
   IrisTableHandle,
   IrisTableFilterOption,
   IrisTableFilterValues,
+  IrisTableFormulaTables,
   IrisTableContextMenuItem,
   IrisTableContextMenuParams,
   IrisTableContextMenuConfig,

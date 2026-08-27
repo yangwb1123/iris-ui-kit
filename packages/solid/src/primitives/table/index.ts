@@ -5,6 +5,7 @@ export type {
   IrisTableColumn,
   IrisTableSortState,
   IrisTableSortDirection,
+  IrisTableFormulaTables,
   IrisTableEditor,
   IrisTableAggregateOp,
   IrisTableCellEditEvent,

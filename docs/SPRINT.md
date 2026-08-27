@@ -270,6 +270,15 @@ arch-check:ratchet` 当前无阻断项。
   四端 typecheck、lint、Prettier、build 与 `git diff --check` 通过。Vue lint 仅保留既有 Table complexity
   warning；未调整 arch ratchet baseline。
 
+## 2026-08-26 Grid cross-table formula alignment continuation（当前工作树）
+
+- `formulaTables` 的 `table!field` 语义已对齐 Vue、Solid、Svelte：读取命名表首行，未知表/空表/未知字段 fail-closed；
+  公式计算贯通渲染、排序、过滤、摘要、范围复制与 CSV，替换外部表对象才触发重算，多个表实例各自隔离。
+  新增 `IrisTableFormulaTables` 类型、Vue/Svelte SSR 回归，并重新生成 manifest/llms。
+- 交叉公式定向回归 Vue 7/7、Solid 8/8、Svelte 7/7（均含 SSR），React 既有契约 12/12；完整回归 Vue
+  175 files/1,628 tests、Solid 151/1,054 + SSR 41、Svelte 155/1,029 + SSR 38。三端 typecheck/lint/build、
+  React typecheck 与 `git diff --check` 通过；Vue 仅保留既有 Table complexity warning，未调整 arch ratchet baseline。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

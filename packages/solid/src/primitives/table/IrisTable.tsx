@@ -39,6 +39,7 @@ import {
 import {
   useGridCore,
   useGridClipboard,
+  useGridColumns,
   useGridEditing,
   useGridExpansion,
   useGridFiltering,
@@ -158,9 +159,47 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   }
 
   const [responsiveWidth, setResponsiveWidth] = createSignal(0)
+  const gridCore = useGridCore<Row>()
+  const columnsFeature = useGridColumns(gridCore, {
+    // Seed the same feature that owns subsequent table column mutations. The
+    // values are only the initial snapshot; the effects below mirror later
+    // Solid prop replacements without making the core emit an event.
+    visibility: props.columnVisibility,
+    widths: props.columnWidths,
+    defaultWidths: props.defaultColumnWidths,
+    onVisibilityChange: (next) => props.onColumnVisibilityChange?.(next),
+    onWidthsChange: (next) => props.onColumnWidthsChange?.(next),
+  })
+  const [uncontrolledWidths, setUncontrolledWidths] = createSignal<IrisTableColumnWidths>({
+    ...(props.defaultColumnWidths ?? {}),
+  })
+  const [widthPropControlled, setWidthPropControlled] = createSignal(
+    props.columnWidths !== undefined,
+  )
+
+  // Solid hook options are evaluated when the helper is called, so table props
+  // need explicit effects for replacement. Core sync methods are intentionally
+  // silent; in particular, a rejected controlled update must not echo back.
+  createEffect(() => {
+    const visibility = props.columnVisibility
+    columnsFeature.model.syncVisibility(visibility ?? {})
+  })
+  createEffect(() => {
+    const widths = props.columnWidths
+    if (widths !== undefined) {
+      columnsFeature.model.syncWidths(widths)
+    } else if (widthPropControlled()) {
+      // Match the old local owner: removing control restores the last
+      // uncontrolled/default snapshot rather than the controlled proposal.
+      columnsFeature.model.syncWidths(uncontrolledWidths())
+    }
+    setWidthPropControlled(widths !== undefined)
+  })
+
+  const effectiveVisibility = (): Record<string, boolean> => columnsFeature.state().visibility
   const sourceDisplayColumns = createMemo<IrisTableColumn<Row>[]>(() => {
-    const vis = props.columnVisibility
-    if (vis === undefined) return merged.columns
+    const vis = effectiveVisibility()
+    if (Object.keys(vis).length === 0) return merged.columns
     return merged.columns.filter((c) => vis[c.key] !== false)
   })
   const [detectedTypes, setDetectedTypes] = createSignal<Record<string, DetectedColumnType>>({})
@@ -205,18 +244,22 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     grouped() ? buildHeaderMatrix(displayColumns()) : null,
   )
 
-  const [internalWidths, setInternalWidths] = createSignal<IrisTableColumnWidths>({
-    ...(props.defaultColumnWidths ?? {}),
-  })
   const widthsControlled = (): boolean => props.columnWidths !== undefined
-  const effectiveWidths = (): IrisTableColumnWidths =>
-    widthsControlled() ? props.columnWidths! : internalWidths()
+  const effectiveWidths = (): IrisTableColumnWidths => {
+    const controlled = props.columnWidths
+    if (controlled !== undefined) return controlled
+    // Effects run after a Solid parent replacement. During the one render
+    // before the transition effect, expose the preserved uncontrolled snapshot
+    // rather than the old controlled model map.
+    if (widthPropControlled()) return uncontrolledWidths()
+    return columnsFeature.state().widths
+  }
   const widthOf = (col: IrisTableColumn<Row>): number =>
     effectiveWidths()[col.key] ??
     resolveTableInitialWidth(col as IrisTableColumn<Record<string, unknown>>)
   const setColumnWidths = (next: IrisTableColumnWidths): void => {
-    if (!widthsControlled()) setInternalWidths(next)
-    merged.onColumnWidthsChange?.(next)
+    if (!widthsControlled()) setUncontrolledWidths(next)
+    columnsFeature.setWidths(next)
   }
 
   const pinnedDrag = createPinnedDragMath<Row>({
@@ -296,7 +339,6 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return hasProxy() ? s.error !== null : merged.error
   })
 
-  const gridCore = useGridCore<Row>()
   // Grid Rows is the single mutation boundary for edits, paste, drag and
   // imperative row operations. The undo bridge is created after the table's
   // selection/root/editing state exists, so the transaction callback records

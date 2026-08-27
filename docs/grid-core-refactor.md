@@ -618,6 +618,8 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Vue columns-state 续批接入既有 Grid Core，Vue 全量 **180 files / 1,652 tests** 通过，typecheck/build 通过，lint 0 errors（保留既有 1 条 complexity warning）；`git diff --check` 通过，`pnpm check:manifest` 确认 2 个生成文件无变化；未调整 ratchet baseline。
 
+2026-08-27：Solid columns-state 续批 gate：client **153 files / 1,071 tests**、SSR/hydration **5 files / 45 tests** 通过；typecheck/lint/build、`pnpm check:manifest`（2 个生成文件无变化）与 `git diff --check` 通过。order/pinned-map channels deferred，未调整 ratchet baseline。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

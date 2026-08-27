@@ -44,4 +44,28 @@ describe('IrisTable Grid Core columns SSR bridge', () => {
     expect(updates).toEqual([])
     expect(typeof document).toBe('undefined')
   })
+
+  it('renders a controlled top-level order deterministically and does not emit while syncing', async () => {
+    const updates: unknown[] = []
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(IrisTable, {
+            columns,
+            data,
+            rowKey: 'id',
+            columnOrder: ['status', 'unknown', 'name'],
+            'onUpdate:columnOrder': (next: unknown) => updates.push(next),
+          }),
+      }),
+    )
+
+    expect(html.indexOf('data-iris-table-header="status"')).toBeLessThan(
+      html.indexOf('data-iris-table-header="name"'),
+    )
+    expect(html.indexOf('data-iris-table-header="name"')).toBeLessThan(
+      html.indexOf('data-iris-table-header="age"'),
+    )
+    expect(updates).toEqual([])
+  })
 })

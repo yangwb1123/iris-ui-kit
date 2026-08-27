@@ -628,6 +628,8 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Svelte `columnFade` continuation accepted；focused **19/19**、client **159 files / 1,067 tests**、SSR **5 files / 45 tests**、dedicated hydration **1/1** 通过；svelte-check 0 errors/0 warnings、lint/build、manifest 与 `git diff --check` 通过，默认关闭时不注入 fade stylesheet，未改 `scripts/arch-baseline.json`。
 
+2026-08-27：Vue `columnOrder` continuation accepted；显式受控 order 才写入 Core，普通 `columnDrag` 保持父级 columns 所有权；全量 **184 files / 1,682 tests**、typecheck/build、spec audit **329 files / 0 violations**、lint（0 errors，既有 complexity warning）、manifest 与 `git diff --check` 通过，未改 `scripts/arch-baseline.json`。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

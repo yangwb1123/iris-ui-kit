@@ -187,6 +187,11 @@ export const tableProps = {
     type: Object as PropType<IrisTableColumnVisibility>,
     default: undefined,
   },
+  /** Controlled top-level presentation order; omitted keys retain source order. */
+  columnOrder: {
+    type: Array as PropType<string[]>,
+    default: undefined,
+  },
   /** Animate controlled column show/hide transitions; disabled by default. */
   columnFade: { type: Boolean, default: false },
   filters: {
@@ -243,6 +248,7 @@ export type TableEmitters = {
   multiSortChange: (value: IrisTableSortState[]) => boolean
   'update:columnWidths': (value: IrisTableColumnWidths) => boolean
   'update:columnVisibility': (value: IrisTableColumnVisibility) => boolean
+  'update:columnOrder': (value: string[] | undefined) => boolean
   rowClick: (row: Record<string, unknown>, index: number) => boolean
   rowDblclick: (row: Record<string, unknown>, index: number) => boolean
   cellEdit: (payload: IrisTableCellEditEvent<Record<string, unknown>>) => boolean

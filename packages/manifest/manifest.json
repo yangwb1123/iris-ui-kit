@@ -39026,6 +39026,11 @@
               "optional": true
             },
             {
+              "name": "columnOrder",
+              "type": "string[]",
+              "optional": true
+            },
+            {
               "name": "columnFade",
               "type": "boolean",
               "optional": true,
@@ -39101,6 +39106,7 @@
             "onRetry",
             "rowClick",
             "rowDblclick",
+            "update:columnOrder",
             "update:columnVisibility",
             "update:columnWidths",
             "update:multiSortState",

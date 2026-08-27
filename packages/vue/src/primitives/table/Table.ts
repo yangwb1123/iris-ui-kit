@@ -71,7 +71,7 @@ import { renderTableStateRow } from './table-state-renderer'
 import { createTableKeyboard } from './table-keyboard'
 import { computeResponsiveTableColumns } from './table-responsive'
 import { ensureTableStyles } from './table-styles'
-import { applyDetectedTableTypes } from './table-columns'
+import { applyDetectedTableTypes, applyTableColumnOrder } from './table-columns'
 import { renderTableFilterTrigger } from './table-filter-trigger'
 import { renderTableSortIndicator } from './table-sort-indicator'
 import { createTableRowTarget } from './table-row-target'
@@ -175,6 +175,8 @@ export const IrisTable = defineComponent({
     'update:columnWidths': (_value: IrisTableColumnWidths) => true,
     /** Controlled columnVisibility channel (parent owns the map). */
     'update:columnVisibility': (_value: IrisTableColumnVisibility) => true,
+    /** Controlled top-level column-order proposal channel. */
+    'update:columnOrder': (_value: string[] | undefined) => true,
     rowClick: (_row: Record<string, unknown>, _index: number) => true,
     rowDblclick: (_row: Record<string, unknown>, _index: number) => true,
     cellEdit: (_payload: IrisTableCellEditEvent<Record<string, unknown>>) => true,
@@ -216,8 +218,29 @@ export const IrisTable = defineComponent({
     const gridCore = useGridCore<Record<string, unknown>>()
     const columnsFeature = useGridColumns(gridCore, {
       onVisibilityChange: (next) => emit('update:columnVisibility', next),
+      onOrderChange: (next) => emit('update:columnOrder', next),
       onWidthsChange: (next) => emit('update:columnWidths', next),
     })
+    // A supplied order is controlled, including an empty array. Keep the
+    // model mirrored silently so removing control cannot expose a rejected or
+    // previously proposed order through the next render.
+    const orderPropControlled = ref(props.columnOrder !== undefined)
+    watch(
+      () => props.columnOrder,
+      (next) => {
+        if (next !== undefined) {
+          orderPropControlled.value = true
+          columnsFeature.model.syncOrder(next)
+        } else {
+          if (orderPropControlled.value) columnsFeature.model.syncOrder([])
+          orderPropControlled.value = false
+        }
+      },
+      { immediate: true, flush: 'sync' },
+    )
+    const effectiveColumnOrder = computed<string[] | undefined>(() =>
+      orderPropControlled.value ? (props.columnOrder ?? []) : columnsFeature.state.value.order,
+    )
     const uncontrolledWidths = ref<IrisTableColumnWidths>({})
     const widthPropControlled = ref(props.columnWidths !== undefined)
     watch(
@@ -282,15 +305,18 @@ export const IrisTable = defineComponent({
       const width = effectiveWidths.value[column.key] ?? resolveInitialWidth(column)
       return Number.isFinite(width) && width >= 0 ? width : resolveInitialWidth(column)
     }
+    const orderedDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() =>
+      applyTableColumnOrder(detectedDisplayColumns.value, effectiveColumnOrder.value),
+    )
     const responsiveResult = computed(() =>
       props.responsive
         ? computeResponsiveTableColumns(
-            detectedDisplayColumns.value,
+            orderedDisplayColumns.value,
             responsiveWidth.value,
             responsiveLeadingWidth.value,
             responsiveWidthOf,
           )
-        : { columns: detectedDisplayColumns.value, overflow: false },
+        : { columns: orderedDisplayColumns.value, overflow: false },
     )
     const responsiveDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(
       () => responsiveResult.value.columns,
@@ -1946,6 +1972,12 @@ export const IrisTable = defineComponent({
           const [moved] = next.splice(from, 1)
           next.splice(to, 0, moved)
           props.columnDrag.onReorder(next as IrisTableColumn<Record<string, unknown>>[])
+          // The columnDrag callback owns ordinary parent-fed column arrays. Only
+          // an explicit columnOrder owner opts into the separate order channel;
+          // otherwise a no-op callback must not mutate Core or emit an event.
+          if (!grouped.value && orderPropControlled.value) {
+            columnsFeature.setOrder(next.map((column) => column.key))
+          }
         }
       }
       colRectsRef.value = []

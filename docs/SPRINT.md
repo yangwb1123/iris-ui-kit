@@ -344,6 +344,13 @@ arch-check:ratchet` 当前无阻断项。
   返回 `blocked`，避免 malformed tree 被部分写回。新增 Core 回归覆盖 duplicate/cycle 位于有效目标之后的路径。
 - Core `grid-rows` 定向回归 20/20、Prettier 与 `git diff --check` 通过；适配器行为未改变。
 
+## 2026-08-27 Grid Core reorder primitive continuation（当前工作树）
+
+- 平面 rows 的 remove→insert 位置算法下沉为 `table-rows` 纯函数 `reorderRowsInList`；`GridRowsModel` 与
+  `reorderTreeRows` 共用同一份 `auto/before/after` 语义，避免 Core 内部出现两套拖拽插入规则。
+- 新增纯函数回归覆盖方向、位置、computed key 原始索引与 identity no-op；Core 全量 114/114 files、1,696/1,696
+  tests，typecheck/lint/build、Prettier 与 `git diff --check` 通过（lint 仅保留既有复杂度 warning）。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

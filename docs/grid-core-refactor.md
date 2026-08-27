@@ -612,6 +612,10 @@ computed children 无 setter 仍 fail-closed；flat 表格和 Svelte（当前无
 则整次操作保持原树并返回 `blocked`，不因目标恰好排在坏分支之前而产生部分写回。正常同级重排、跨父级拒绝和
 computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效目标之后出现 duplicate/cycle”的 fail-closed 路径。
 
+本次续批将平面与树的 remove→insert 位置计算继续收敛到 `table-rows` 的 `reorderRowsInList` 纯函数。Core
+`GridRowsModel` 与 `reorderTreeRows` 共用 `auto/before/after` 语义，computed key 仍按原 sibling index 解析，
+未知/相同 key 保持原数组引用并跳过 rows transaction；新增回归覆盖双向位置、computed key 与 identity no-op。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

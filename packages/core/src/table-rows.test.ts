@@ -4,6 +4,7 @@ import {
   insertRowInList,
   removeRowFromList,
   removeRowsFromList,
+  reorderRowsInList,
   updateRowInList,
 } from './table-rows'
 
@@ -102,6 +103,39 @@ describe('removeRowsFromList', () => {
     const result = removeRowsFromList(rows, 'id', [9])
     expect(result.rows).toBe(rows)
     expect(result.removedKeys.size).toBe(0)
+  })
+})
+
+describe('reorderRowsInList', () => {
+  const keyOf = (row: Row): number => row.id
+
+  it('uses auto remove-then-insert semantics and keeps row identity', () => {
+    const next = reorderRowsInList(rows, keyOf, 1, 3)
+    expect(next.map((row) => row.id)).toEqual([2, 3, 1])
+    expect(next[0]).toBe(rows[1])
+    expect(next[2]).toBe(rows[0])
+    expect(rows.map((row) => row.id)).toEqual([1, 2, 3])
+  })
+
+  it('supports before and after placement in either direction', () => {
+    expect(reorderRowsInList(rows, keyOf, 1, 3, 'before').map((row) => row.id)).toEqual([2, 1, 3])
+    expect(reorderRowsInList(rows, keyOf, 3, 1, 'after').map((row) => row.id)).toEqual([1, 3, 2])
+  })
+
+  it('returns the original list for missing or same keys', () => {
+    expect(reorderRowsInList(rows, keyOf, 9, 3)).toBe(rows)
+    expect(reorderRowsInList(rows, keyOf, 2, 2)).toBe(rows)
+  })
+
+  it('resolves computed keys against the original sibling indexes', () => {
+    const indexed = rows.map((row) => ({ ...row, code: `${row.name}:${row.id}` }))
+    const next = reorderRowsInList(
+      indexed,
+      (row, index) => `${row.code}:${index}`,
+      'Bob:2:1',
+      'Charlie:3:2',
+    )
+    expect(next.map((row) => row.id)).toEqual([1, 3, 2])
   })
 })
 

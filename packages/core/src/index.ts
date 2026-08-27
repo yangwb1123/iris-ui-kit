@@ -412,6 +412,7 @@ export {
   insertRowInList,
   removeRowFromList,
   removeRowsFromList,
+  reorderRowsInList,
   updateRowInList,
   cloneRowInList,
 } from './table-rows'

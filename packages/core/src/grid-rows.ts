@@ -7,7 +7,12 @@ import {
   setTreeChildren,
   updateTreeRows,
 } from './grid-tree-rows'
-import { insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
+import {
+  insertRowInList,
+  removeRowFromList,
+  reorderRowsInList,
+  updateRowInList,
+} from './table-rows'
 
 export type GridRowKey = string | number
 
@@ -175,27 +180,6 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
   const updateAt = (rows: readonly Row[], index: number, patch: Partial<Row>): Row[] =>
     rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row))
 
-  const reorderAt = (
-    rows: readonly Row[],
-    fromKey: GridRowKey,
-    toKey: GridRowKey,
-    position: GridRowsReorderPosition,
-  ): Row[] => {
-    const fromIndex = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === fromKey)
-    const toIndex = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === toKey)
-    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return rows as Row[]
-
-    const next = [...rows]
-    const [moved] = next.splice(fromIndex, 1)
-    if (!moved) return rows as Row[]
-    const targetIndex = toIndex - (fromIndex < toIndex ? 1 : 0)
-    const insertionIndex =
-      position === 'after' ? targetIndex + 1 : position === 'before' ? targetIndex : toIndex
-    next.splice(insertionIndex, 0, moved)
-    if (next.every((row, index) => Object.is(row, rows[index]))) return rows as Row[]
-    return next
-  }
-
   const commit = (
     rows: readonly Row[],
     commitOptions: GridRowsCommitOptions<Meta> = {},
@@ -342,7 +326,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
             const result = reorderTreeRows(current, fromKey, toKey, treeOptions, position)
             return result.blocked || !result.matched || !result.changed ? current : result.rows
           })()
-        : reorderAt(current, fromKey, toKey, position)
+        : reorderRowsInList(current, keyOf, fromKey, toKey, position)
       if (Object.is(next, current)) return false
       const commitOptions: GridRowsCommitOptions<Meta> = {
         reason: reorderOptions?.reason,

@@ -104,6 +104,39 @@ export function removeRowsFromList<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Reorder two keyed rows in one sibling list (vxe row-drag parity).
+ *
+ * `position: 'auto'` preserves the historical remove-then-insert behavior:
+ * the source row is inserted at the target's original index. `before` and
+ * `after` describe the target position after the source has been removed.
+ * The key resolver receives the original sibling index, so computed keys keep
+ * the same addressing contract as the rows feature. Inputs are never mutated;
+ * an unknown key, same key, or identity-only result returns the ORIGINAL list
+ * reference so callers can avoid a synthetic transaction.
+ */
+export function reorderRowsInList<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  getRowKey: (row: Row, index: number) => string | number | undefined,
+  fromKey: string | number,
+  toKey: string | number,
+  position: 'auto' | 'before' | 'after' = 'auto',
+): Row[] {
+  const fromIndex = rows.findIndex((row, rowIndex) => getRowKey(row, rowIndex) === fromKey)
+  const toIndex = rows.findIndex((row, rowIndex) => getRowKey(row, rowIndex) === toKey)
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return rows as Row[]
+
+  const next = [...rows]
+  const [moved] = next.splice(fromIndex, 1)
+  if (!moved) return rows as Row[]
+  const targetIndex = toIndex - (fromIndex < toIndex ? 1 : 0)
+  const insertionIndex =
+    position === 'after' ? targetIndex + 1 : position === 'before' ? targetIndex : toIndex
+  next.splice(insertionIndex, 0, moved)
+  if (next.every((row, index) => Object.is(row, rows[index]))) return rows as Row[]
+  return next
+}
+
+/**
  * Replace the row with `key` by a shallow merge of `patch` (vxe-grid setRow
  * parity): `{ ...row, ...patch }`. Other rows keep object identity; returns
  * the ORIGINAL array reference when no row matches; never mutates inputs.

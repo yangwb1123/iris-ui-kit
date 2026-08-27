@@ -1,4 +1,5 @@
 import type { GridRowKey } from './grid-rows'
+import { reorderRowsInList } from './table-rows'
 export { setTreeChildren } from './grid-tree-children'
 
 export interface GridTreeRowsOptions<Row extends Record<string, unknown>> {
@@ -250,23 +251,9 @@ export function reorderTreeRows<Row extends Record<string, unknown>>(
     }
   }
 
-  const reordered = [...from.siblings]
-  const [moved] = reordered.splice(from.index, 1)
-  if (!moved) {
-    return {
-      rows: nodes as Row[],
-      matched: true,
-      changed: false,
-      blocked: true,
-      removed: new Set(),
-    }
-  }
-  const targetIndex = to.index - (from.index < to.index ? 1 : 0)
-  const insertionIndex =
-    position === 'after' ? targetIndex + 1 : position === 'before' ? targetIndex : to.index
-  reordered.splice(insertionIndex, 0, moved)
+  const reordered = reorderRowsInList(from.siblings, options.getRowKey, fromKey, toKey, position)
   const sourceSiblings = from.siblings
-  if (reordered.every((row, index) => Object.is(row, sourceSiblings[index]))) {
+  if (Object.is(reordered, sourceSiblings)) {
     return {
       rows: nodes as Row[],
       matched: true,

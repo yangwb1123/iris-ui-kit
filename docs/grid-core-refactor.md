@@ -560,6 +560,14 @@ Svelte 7/7（含 SSR），React 既有契约 12/12；完整回归为 Vue 175 fil
 41、Svelte 155/1,029 + SSR 38。三端 typecheck、lint/build、React typecheck 与 `git diff --check` 通过；Vue
 仅保留既有 Table complexity warning，未调整 arch ratchet baseline。
 
+本次续批补齐 Vue Table 的撤销/重做薄桥：Core `createUndoStack` 继续持有有界的 post-change row-list
+快照，Vue 只负责生命周期、`useGridRows` 事务桥、受控 selection pruning、工具栏按钮与窗口快捷键；编辑、粘贴、
+拖拽、`loadData`/`removeRows` 均共享同一记录边界，undo/redo replay 通过正常 `onDataChange`/audit 写回且不会
+自我入栈。快捷键默认只在表根内生效，编辑器/文本控件、卸载或关闭 `undo` 时 fail-closed；异步 clipboard read
+在卸载或关闭 paste 后也不会提交。新增 Vue undo 单测 10/10（含 row-mode、proxy、selection、paste 与 pending
+read）及 SSR 1/1、hydration 1/1，Vue typecheck/lint 通过（仅既有复杂度 warning），并重新生成 manifest/llms；现有 Vue 全量
+回归保持 178 files/1,640 tests 通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

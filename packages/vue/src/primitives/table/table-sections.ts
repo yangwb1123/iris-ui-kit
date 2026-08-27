@@ -12,6 +12,7 @@ import type {
   IrisTableProxyConfig,
   IrisTableToolbarConfig,
 } from './types'
+import { renderUndoToolbar, type TableUndoToolbarContext } from './table-undo-toolbar'
 
 type TableRow = Record<string, unknown>
 type Translate = UseI18nReturn['t']
@@ -133,6 +134,8 @@ export interface ToolbarSectionContext {
   densityToggle: boolean
   effectiveDensity: IrisTableDensity
   onDensityToggle: () => void
+  /** Built-in row-list undo/redo controls (disabled unless `undo` is on). */
+  undo: TableUndoToolbarContext
   /** Batch EN: built-in audit trigger (iris 独有, mirror react batch AT).
    * Renders the toolbar when `auditLog` is on even without a toolbar/density
    * config (react parity — the toolbar gate admits auditLog). */
@@ -155,13 +158,14 @@ export function renderToolbarSection(ctx: ToolbarSectionContext): VNode | null {
   const tb = ctx.toolbar
   // Batch EN: `auditLog` renders the toolbar on its own (like `densityToggle`
   // — the built-in audit trigger rides the toolbar row).
-  if (!tb && !ctx.densityToggle && !ctx.auditLog) return null
+  if (!tb && !ctx.densityToggle && !ctx.auditLog && !ctx.undo.enabled) return null
   const toolChildren: VNode[] = []
   if (tb?.title) {
     toolChildren.push(
       h('span', { style: { fontWeight: 600, color: 'var(--iris-foreground)' } }, tb.title),
     )
   }
+  toolChildren.push(...renderUndoToolbar(ctx.undo))
   toolChildren.push(h('div', { style: { flex: '1' } }))
   if (tb?.onRefresh) {
     toolChildren.push(

@@ -132,6 +132,8 @@ export const tableProps = {
   cellRange: { type: Boolean, default: false },
   /** Range clipboard copy; copyWithFormat uses column formatter output. */
   clipConfig: { type: Object as PropType<IrisTableClipConfig>, default: undefined },
+  /** Enable built-in row-list undo/redo history; default off. */
+  undo: { type: Boolean, default: false },
   renderDetail: {
     type: Function as PropType<IrisTableRenderDetail<Record<string, unknown>>>,
     default: undefined,

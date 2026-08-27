@@ -38968,6 +38968,12 @@
               "optional": true
             },
             {
+              "name": "undo",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "renderDetail",
               "type": "IrisTableRenderDetail<Record<string, unknown>>",
               "optional": true

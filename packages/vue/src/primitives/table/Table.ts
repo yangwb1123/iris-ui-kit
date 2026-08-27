@@ -73,6 +73,7 @@ import { renderTableFilterTrigger } from './table-filter-trigger'
 import { renderTableSortIndicator } from './table-sort-indicator'
 import { createTableRowTarget } from './table-row-target'
 import { createTablePinnedDrag } from './table-pinned-drag'
+import { createCommittedList, createTableUndoController, replaceTableCell } from './table-undo'
 import { useTableImport } from './useTableImport'
 import {
   renderCellEditContent,
@@ -305,6 +306,9 @@ export const IrisTable = defineComponent({
         ? proxyCtrl.liveData.value
         : (localRowsOverride.value ?? props.data ?? []),
     )
+    // Synchronous mirror for multiple commits in one event (row-mode edit
+    // sessions: Vue batches computed updates until the next flush).
+    const committedList = createCommittedList(() => tableData.value)
     watch(
       [() => props.autoDetectTypes, tableData, () => props.columns],
       () => {
@@ -323,6 +327,11 @@ export const IrisTable = defineComponent({
     )
 
     const gridCore = useGridCore<Record<string, unknown>>()
+    // Grid Rows is the single transaction throat for edits, paste, drag and
+    // imperative row operations. The undo bridge is created below (after the
+    // selection/root/editing refs exist), so this callback is assigned lazily.
+    let recordUndoRows: ((rows: Array<Record<string, unknown>>) => void) | null = null
+    let suppressUndoRecord = false
 
     const sorting = useGridSorting<Record<string, unknown>>(gridCore, {
       mode: props.multiSort ? 'multiple' : 'single',
@@ -516,11 +525,17 @@ export const IrisTable = defineComponent({
       // children remain adapter-owned because they live in a cache map.
       getChildren: props.getSubRows,
       onRowsChange: (transaction) => {
-        if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = [...transaction.rows]
-        else localRowsOverride.value = [...transaction.rows]
+        const next = [...transaction.rows]
+        committedList.sync(next)
+        if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = next
+        else localRowsOverride.value = next
+        if (!suppressUndoRecord) recordUndoRows?.(next)
       },
     })
-    watch(tableData, (rows) => gridRows.model.sync(rows))
+    watch(tableData, (rows) => {
+      committedList.sync(rows)
+      gridRows.model.sync(rows)
+    })
     const selControlled = computed(() => props.selection !== undefined)
     const { model: selectionModel, selection: selectedKeys } = useGridSelection<
       Record<string, unknown>,
@@ -957,9 +972,16 @@ export const IrisTable = defineComponent({
     ) => {
       if (newValue === oldValue) return
       recordCellCommit(row, column, rowIndex, oldValue, newValue)
-      if (proxyCtrl.proxy.value) {
-        const key = (column.dataIndex ?? column.key) as string
-        gridRows.model.update(rowId(row, rowIndex), { [key]: newValue }, { reason: 'cell-edit' })
+      // Row-mode sessions bypass the cell-editing engine, so write their
+      // immutable row replacement through the same list mirror used by the
+      // undo bridge. This also keeps consecutive column commits in one event
+      // based on the freshest row list in local (non-proxy) mode.
+      const current = committedList.list()
+      const key = (column.dataIndex ?? column.key) as string
+      const next = replaceTableCell(current, rowId(row, rowIndex), key, newValue, rowId)
+      if (next !== current) {
+        undoController.record(next)
+        setTableRows(next)
       }
     }
 
@@ -983,7 +1005,9 @@ export const IrisTable = defineComponent({
     const currentRowFor = (k: string | number): Record<string, unknown> | undefined =>
       // Static tree children are indexed by the shared Core rows model. Keep
       // the visible-body fallback for proxy/lazy rows owned by this adapter.
-      gridRows.model.find(k) ?? bodyData.value.find((r, i) => rowId(r, i) === k)
+      committedList.list().find((r, i) => rowId(r, i) === k) ??
+      gridRows.model.find(k) ??
+      bodyData.value.find((r, i) => rowId(r, i) === k)
 
     const beginRowEdit = (
       row: Record<string, unknown>,
@@ -1377,6 +1401,43 @@ export const IrisTable = defineComponent({
       },
     })
     const rootRef = ref<HTMLElement | null>(null)
+    let tableDisposed = false
+    onScopeDispose(() => {
+      tableDisposed = true
+    })
+
+    // Built-in row-list undo/redo (iris parity with React). The stack stores
+    // post-change snapshots; all writes still go through the Grid Rows model,
+    // while the transaction callback above records ordinary user mutations.
+    // Explicit replay/imperative commits use this guarded funnel so a replay
+    // never records itself as a fresh undo step.
+    const setTableRows = (rows: Array<Record<string, unknown>>): void => {
+      committedList.sync(rows)
+      suppressUndoRecord = true
+      try {
+        gridRows.model.commit(rows)
+      } finally {
+        suppressUndoRecord = false
+      }
+    }
+    const undoController = createTableUndoController(
+      () => props.undo,
+      () => props.data ?? [],
+      () => (proxyCtrl.proxy.value ? proxyCtrl.state.value.data : (props.data ?? [])),
+      setTableRows,
+      recordAudit,
+      (rows) => props.onDataChange?.(rows),
+      () => rootRef.value,
+      () => editingCellId.value !== null || rowEditing.value !== null,
+      {
+        current: () => displaySelection.value,
+        enabled: () => props.selectable !== 'none',
+        keyOf: rowId,
+        rebase: rebaseToProp,
+        set: (keys) => selectionModel.set(keys),
+      },
+    )
+    recordUndoRows = undoController.record
 
     // -------- Back-to-top (batch FS, iris 独有) --------
     // Keep the feature inert by default: no DOM query or native listener is
@@ -1497,8 +1558,15 @@ export const IrisTable = defineComponent({
       rangeState: cellRangeState,
       serializeRange: serializeGridRange,
       pasteRange: (range) => {
+        // Clipboard reads are asynchronous. Re-check the live feature config
+        // and lifecycle after the promise resolves so a disabled or unmounted
+        // table cannot commit a stale paste (the browser read may outlive it).
+        const clipAtStart = props.clipConfig
+        if (!clipAtStart || clipAtStart.paste === false) return
         void readClipboardText().then((text) => {
-          if (text !== null) pasteGridRange(text, range)
+          const clip = props.clipConfig
+          if (text === null || tableDisposed || !clip || clip.paste === false) return
+          pasteGridRange(text, range)
         })
       },
     })
@@ -1920,6 +1988,7 @@ export const IrisTable = defineComponent({
         densityToggle: props.densityToggle,
         effectiveDensity: effectiveDensity.value,
         onDensityToggle: cycleDensity,
+        undo: { enabled: props.undo, controller: undoController, t },
         // Batch EN: the built-in audit trigger rides the toolbar (react
         // parity — the toolbar gate admits auditLog on its own).
         auditLog: props.auditLog,

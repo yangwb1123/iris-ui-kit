@@ -279,6 +279,14 @@ arch-check:ratchet` 当前无阻断项。
   175 files/1,628 tests、Solid 151/1,054 + SSR 41、Svelte 155/1,029 + SSR 38。三端 typecheck/lint/build、
   React typecheck 与 `git diff --check` 通过；Vue 仅保留既有 Table complexity warning，未调整 arch ratchet baseline。
 
+## 2026-08-26 Grid Vue undo/redo bridge continuation（当前工作树）
+
+- Vue `IrisTable` 接入 Core `createUndoStack`：编辑、粘贴、拖拽、`loadData`/`removeRows` 共用 Grid Rows 事务记录，
+  工具栏 controls 与 Ctrl/Cmd+Z/Y（含 Shift+Z）按表根范围生效；replay 经过正常 `onDataChange`/audit 通道，
+  selection 会清理已从快照消失的 key，外部未修改历史时自动重建 baseline。
+- 新增 pending clipboard read 的卸载/关闭保护，新增 Vue undo 单测 10/10、SSR 1/1、hydration 1/1；Vue typecheck/lint 通过（仅既有
+  Table complexity warning），manifest/llms 与现有 Vue 全量 178 files/1,640 tests 保持同步。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

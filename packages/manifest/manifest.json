@@ -39297,6 +39297,12 @@
               "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
             },
             {
+              "name": "undo",
+              "type": "boolean",
+              "optional": true,
+              "description": "Built-in row-list undo/redo history; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes. Default off."
+            },
+            {
               "name": "proxyConfig",
               "type": "IrisTableProxyConfig<Row>",
               "optional": true,
@@ -39808,6 +39814,13 @@
               "type": "IrisTableToolbarConfig",
               "optional": true,
               "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
+            },
+            {
+              "name": "undo",
+              "type": "boolean",
+              "optional": true,
+              "description": "Built-in row-list undo/redo history; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes. Default off.",
+              "default": "false"
             },
             {
               "name": "proxyConfig",

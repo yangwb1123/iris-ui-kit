@@ -28,7 +28,11 @@ export default defineConfig({
   plugins: [svelte()],
   test: {
     environment: 'node',
-    include: ['src/hydration.test.ts', 'src/primitives/table/formula-tables.ssr.test.ts'],
+    include: [
+      'src/hydration.test.ts',
+      'src/primitives/table/formula-tables.ssr.test.ts',
+      'src/primitives/table/undo.ssr.test.ts',
+    ],
     server: { deps: { inline: [/@iris-ui-kit/] } },
   },
 })

@@ -287,6 +287,26 @@ arch-check:ratchet` 当前无阻断项。
 - 新增 pending clipboard read 的卸载/关闭保护，新增 Vue undo 单测 10/10、SSR 1/1、hydration 1/1；Vue typecheck/lint 通过（仅既有
   Table complexity warning），manifest/llms 与现有 Vue 全量 178 files/1,640 tests 保持同步。
 
+## 2026-08-26 Grid Solid undo/redo bridge continuation（当前工作树）
+
+- Solid `IrisTable` 接入同一 Core `createUndoStack`：Grid Rows 事务统一记录 cell/row edit、粘贴、拖拽、`loadData`/
+  `removeRows`，工具栏与 Ctrl/Cmd+Z/Y（含 Shift+Z）按表根作用；回放通过受保护的 rows commit，不会把 undo/redo
+  再次入栈，并在快照缺少行时清理 selection。外部数据只在历史未触碰时重建 baseline，proxy 与本地 rows 均保持当前
+  live snapshot。
+- 新增 Solid shortcut/undo/toolbar 薄桥；row mode 的本地写回在编辑会话结束后刷新，避免 Solid keyed DOM 替换破坏剩余
+  editor；编辑器/文本控件和表外快捷键 fail-closed。新增 undo 定向回归 11/11、row-edit 回归 7/7、undo SSR 1/1，
+  现有 SSR/hydration 安全套件合计 44/44；Solid 默认全量 152 files/1,065 tests 通过，typecheck/lint/build、
+  manifest 与格式检查通过。
+
+## 2026-08-26 Grid Svelte undo/redo bridge continuation（当前工作树）
+
+- Svelte `IrisTable` 接入同一 Core `createUndoStack`：Grid Rows 事务统一记录 cell/row edit、粘贴、拖拽、`loadData`/
+  `removeRows`，工具栏与 Ctrl/Cmd+Z/Y（含 Shift+Z）按表根作用；回放使用 guarded rows commit 并通过
+  `onDataChange` 写回，selection 会清理快照中已消失的 key。外部 source 只在历史 pristine 时重建 baseline，
+  proxy 与本地 rows 保持 live snapshot；row mode 的本地写回在编辑会话结束后刷新，并保持已提交值可见。
+- 新增 Svelte undo 薄桥与工具栏/SSR 回归；undo 定向 10/10、现有 row-edit/paste/remove 回归 11/11，SSR/hydration
+  套件 41/41；Svelte 默认全量 156 files/1,039 tests、typecheck/lint/build、manifest 与格式检查通过。
+
 ## 完成定义
 
 - 所有当前功能点有实现与对应层级的验证。

@@ -14,7 +14,12 @@ export default defineConfig({
     // (`vitest.ssr.config.ts`: node env, server-compiled `.svelte`). Under this
     // default (browser-condition, DOM-compiled) config `svelte/server`'s
     // `render()` cannot consume the client build, so exclude it here.
-    exclude: ['src/hydration.test.ts', '**/node_modules/**', '**/dist/**'],
+    exclude: [
+      'src/hydration.test.ts',
+      'src/primitives/table/undo.ssr.test.ts',
+      '**/node_modules/**',
+      '**/dist/**',
+    ],
     setupFiles: ['./vitest-setup.ts'],
   },
 })

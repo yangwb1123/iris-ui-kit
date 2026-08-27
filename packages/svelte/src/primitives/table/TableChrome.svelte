@@ -35,6 +35,11 @@
     t: Translate
     importPreview?: boolean
     densityToggle?: boolean
+    undo?: boolean
+    canUndo?: boolean
+    canRedo?: boolean
+    onUndo?: () => void
+    onRedo?: () => void
     effectiveDensity?: IrisTableDensity
     onDensityToggle?: () => void
   }
@@ -66,6 +71,11 @@
     t,
     importPreview = false,
     densityToggle = false,
+    undo = false,
+    canUndo = false,
+    canRedo = false,
+    onUndo,
+    onRedo,
     effectiveDensity = 'comfortable',
     onDensityToggle,
   }: FormProps & ToolbarProps & PagerProps = $props()
@@ -118,7 +128,7 @@
   </form>
 {/if}
 
-{#if toolbar || densityToggle}
+{#if toolbar || densityToggle || undo}
   <div
     data-iris-table-toolbar=""
     style="display: flex; align-items: center; gap: var(--iris-space-sm, 12px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border: 1px solid var(--iris-border); border-bottom: none; border-top-left-radius: var(--iris-radius-md, 6px); border-top-right-radius: var(--iris-radius-md, 6px); background: var(--iris-surface); font-size: var(--iris-font-size-sm, 13px); position: relative"
@@ -127,6 +137,30 @@
         >{toolbarView.title}</span
       >{/if}
     <div style="flex: 1"></div>
+    {#if undo}
+      <button
+        type="button"
+        data-iris-table-undo=""
+        disabled={!canUndo}
+        onclick={() => onUndo?.()}
+        style="border: none; background: transparent; cursor: {canUndo
+          ? 'pointer'
+          : 'default'}; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
+        aria-label={t('table.undo')}
+        title={t('table.undo')}>↶</button
+      >
+      <button
+        type="button"
+        data-iris-table-redo=""
+        disabled={!canRedo}
+        onclick={() => onRedo?.()}
+        style="border: none; background: transparent; cursor: {canRedo
+          ? 'pointer'
+          : 'default'}; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
+        aria-label={t('table.redo')}
+        title={t('table.redo')}>↷</button
+      >
+    {/if}
     {#if toolbarView.onRefresh}
       <button
         type="button"

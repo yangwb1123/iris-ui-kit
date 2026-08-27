@@ -140,6 +140,17 @@ const cases: { name: string; render: () => JSX.Element }[] = [
       />
     ),
   },
+  {
+    name: 'Table (undo)',
+    render: () => (
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[{ id: 1, name: 'Alpha' }]}
+        rowKey="id"
+        undo
+      />
+    ),
+  },
 ]
 
 afterEach(() => {

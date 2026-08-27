@@ -81,6 +81,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   formConfig?: IrisTableFormConfig
   /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */
   toolbar?: IrisTableToolbarConfig
+  /** Built-in row-list undo/redo history; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes. Default off. */
+  undo?: boolean
   /** Server-side data proxy (vxe-grid proxyConfig parity, query slice). When
    * set, rows come from the proxy `query` (paged) and a pager renders below
    * the body. */

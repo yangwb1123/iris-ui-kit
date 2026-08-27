@@ -568,6 +568,21 @@ Svelte 7/7（含 SSR），React 既有契约 12/12；完整回归为 Vue 175 fil
 read）及 SSR 1/1、hydration 1/1，Vue typecheck/lint 通过（仅既有复杂度 warning），并重新生成 manifest/llms；现有 Vue 全量
 回归保持 178 files/1,640 tests 通过。
 
+本次续批将同一 undo/redo 契约接入 Solid：Core `createUndoStack` 仍只保存有界的 post-change row-list 快照，Solid
+只桥接 `useGridRows` 事务、selection pruning、toolbar 与表根范围的快捷键；cell/row edit、粘贴、拖拽和 imperative
+row operations 均从同一 rows transaction 记录，replay 使用 guarded commit 并通过 `onDataChange` 写回。row mode
+的本地 live rows 延迟到会话关闭后同步，同时用 live snapshot 保持已提交值可见，避免 keyed DOM 替换打断剩余 editors；
+外部 source 仅在历史 pristine 时重建 baseline，proxy 与本地表均保持一致。Solid 新增 undo 定向 11/11、row-edit 7/7、
+undo SSR 1/1，现有 SSR/hydration 安全套件合计 44/44；默认全量 152 files/1,065 tests、typecheck/lint/build、
+manifest 与格式检查通过。
+
+本次续批继续接入 Svelte：Core `createUndoStack` 仍只保存有界的 post-change row-list 快照，Svelte 仅桥接
+`useGridRows` 事务、selection pruning、toolbar 与表根范围的快捷键；cell/row edit、粘贴、拖拽和 imperative
+row operations 均从同一 rows transaction 记录，replay 使用 guarded commit 并通过 `onDataChange` 写回。row
+mode 的本地写回延迟到会话关闭后，live snapshot 让已提交值在剩余 editors 存活期间仍可见；外部 source 仅在
+history pristine 时重建 baseline。新增 Svelte undo 定向 10/10、SSR 1/1，hydration 安全套件 41/41；默认全量
+156 files/1,039 tests，typecheck 通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

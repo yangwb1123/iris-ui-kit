@@ -129,6 +129,16 @@ const cases: { name: string; Comp: Component<never>; props: Record<string, unkno
       printable: true,
     },
   },
+  {
+    name: 'Table (undo)',
+    Comp: IrisTable as unknown as Component<never>,
+    props: {
+      columns: [{ key: 'name', title: 'Name' }],
+      data: [{ id: 1, name: 'Alpha' }],
+      rowKey: 'id',
+      undo: true,
+    },
+  },
 ]
 
 afterEach(() => {

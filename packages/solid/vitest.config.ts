@@ -25,6 +25,7 @@ export default defineConfig({
       'src/hydration.test.tsx',
       'src/primitives/table/batch-ft.ssr.test.tsx',
       'src/primitives/table/formula-tables.ssr.test.tsx',
+      'src/primitives/table/undo.ssr.test.tsx',
       '**/node_modules/**',
       '**/dist/**',
     ],

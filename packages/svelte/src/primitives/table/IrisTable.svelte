@@ -78,6 +78,7 @@
   } from './tableUtils'
   import { createTableFilterController } from './table-filter.svelte'
   import { createTableRowEditController } from './table-row-edit.svelte'
+  import { createTableUndoController } from './table-undo.svelte'
   import { createTableKeyboard } from './table-keyboard'
   import { handleTableRowKeyDown } from './table-events'
   import { applyDetectedTableTypes } from './table-columns'
@@ -134,6 +135,7 @@
     onFilterValuesChange,
     formConfig,
     toolbar,
+    undo = false,
     contextMenu,
     proxyConfig,
     pagerConfig,
@@ -592,6 +594,19 @@
     }
   }
 
+  // Grid Rows is the single mutation boundary for edits, paste, drag and
+  // imperative row operations. The undo bridge is created later, once the
+  // selection/root/editing callbacks exist; this lazy hook keeps the default
+  // path completely inert when `undo` is omitted.
+  let recordUndoRows: ((rows: Array<Record<string, unknown>>) => void) | null = null
+  let suppressUndoRecord = false
+  let rowEditorOpen = (): boolean => false
+  let pendingLocalRows = $state<Array<Record<string, unknown>> | null>(null)
+  // svelte-ignore state_referenced_locally — the initial rows seed the live
+  // snapshot; the synchronization effect below tracks later source changes.
+  let liveRowsRef: Array<Record<string, unknown>> = baseData
+  let liveRevision = $state(0)
+
   // svelte-ignore state_referenced_locally — the initial rows seed the core;
   // the effect below keeps the source synchronized after props change.
   const { model: gridRows } = useGridRows(gridCore, baseData, {
@@ -600,12 +615,22 @@
     // children remain adapter-owned because they live in the source row.
     getChildren: getSubRows,
     onRowsChange: (transaction) => {
-      if (hasProxy) proxyRows = [...transaction.rows]
-      else localRows = [...transaction.rows]
+      const next = [...transaction.rows]
+      liveRowsRef = next
+      liveRevision += 1
+      if (hasProxy) proxyRows = next
+      else if (rowEditorOpen()) pendingLocalRows = next
+      else localRows = next
+      if (!suppressUndoRecord) recordUndoRows?.(next)
     },
   })
   $effect(() => {
-    gridRows.sync(baseData)
+    const rows = baseData
+    if (rows !== liveRowsRef) {
+      liveRowsRef = rows
+      liveRevision += 1
+    }
+    gridRows.sync(rows)
   })
 
   const tableHandle = createTableHandle({
@@ -720,6 +745,19 @@
       : null,
   )
   const bodyData = $derived(flatTree ? flatTree.map((tr) => tr.row) : filteredRows())
+
+  /** Resolve a row from the live Core snapshot during a row-mode session. */
+  function liveRowFor(row: Record<string, unknown>, index: number): Record<string, unknown> {
+    // Keep the row body reactive when a transaction replaces an object while
+    // the Svelte row editor remains mounted for its sibling columns.
+    void liveRevision
+    const key = rowId(row, index)
+    return (
+      gridRows.find(key) ??
+      liveRowsRef.find((candidate, candidateIndex) => rowId(candidate, candidateIndex) === key) ??
+      row
+    )
+  }
 
   /** Map clipboard's effective-row projection back to the Core row source. */
   const reconcileClipboardRows = (
@@ -1062,12 +1100,20 @@
     getCellValue,
     onCommit: (event) => {
       onCellEdit?.(event)
-      if (proxyRef) {
-        const ident = rowId(event.row, event.rowIndex)
-        const valueKey = (event.column.dataIndex ?? event.column.key) as string
-        gridRows.update(ident, { [valueKey]: event.newValue }, { reason: 'cell-edit' })
-      }
+      // Row mode bypasses the Core cell-edit feature, so write its immutable
+      // replacement through the same rows transaction for local and proxy
+      // tables. The transaction callback records one undo snapshot when on.
+      const ident = rowId(event.row, event.rowIndex)
+      const valueKey = (event.column.dataIndex ?? event.column.key) as string
+      gridRows.update(ident, { [valueKey]: event.newValue }, { reason: 'cell-edit' })
     },
+  })
+  rowEditorOpen = () => rowEdit.active !== null
+  $effect(() => {
+    if (rowEditorOpen() || pendingLocalRows === null) return
+    const next = pendingLocalRows
+    pendingLocalRows = null
+    localRows = next
   })
 
   const stateRowStyle = 'padding: 32px 12px; text-align: center; color: var(--iris-muted)'
@@ -1075,6 +1121,47 @@
   // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
   let rootEl = $state<HTMLDivElement | null>(null)
   let focusedCell = $state<{ row: number; col: number } | null>(null)
+
+  // Replay and imperative commits use a guarded rows transaction so a replay
+  // never records itself as a fresh history entry. Ordinary mutations are
+  // observed by the `onRowsChange` hook above.
+  const setTableRows = (rows: Array<Record<string, unknown>>): void => {
+    suppressUndoRecord = true
+    try {
+      gridRows.commit(rows)
+    } finally {
+      suppressUndoRecord = false
+    }
+  }
+  const undoController = createTableUndoController({
+    enabled: () => undo === true,
+    initialRows: () => baseData,
+    sourceRows: () => (hasProxy ? proxyState.data : (data ?? [])),
+    setRows: setTableRows,
+    onDataChange: (rows) => onDataChange?.(rows),
+    root: () => rootEl,
+    isEditing: () => editingCellId !== null || rowEdit.active !== null,
+    selection: {
+      current: () => displaySelection,
+      enabled: () => selectable !== 'none',
+      keyOf: rowId,
+      rebase: rebaseToProp,
+      set: (keys) => selectionModel.set(keys),
+    },
+  })
+  recordUndoRows = undoController.record
+  $effect(() => {
+    undoController.syncSource(hasProxy ? proxyState.data : (data ?? []))
+  })
+  $effect(() => {
+    undoController.syncEnabled(undo === true)
+  })
+  $effect(() => {
+    if (!undoController.shortcutsEnabled() || typeof window === 'undefined') return
+    const onShortcut = (event: KeyboardEvent): void => undoController.handleKeydown(event)
+    window.addEventListener('keydown', onShortcut)
+    return () => window.removeEventListener('keydown', onShortcut)
+  })
 
   const dragBridge = createTableDragBridge({
     getRoot: () => rootEl,
@@ -1327,6 +1414,11 @@
   onSubmit={handleFormSubmit}
   onReset={handleFormReset}
   {toolbar}
+  {undo}
+  canUndo={undoController.canUndo()}
+  canRedo={undoController.canRedo()}
+  onUndo={undoController.undo}
+  onRedo={undoController.redo}
   {selectable}
   selectedKeys={displaySelection}
   refresh={() => {
@@ -1507,6 +1599,7 @@
     fillHeight: boolean,
   )}
     {@const id = rowId(row, index)}
+    {@const renderedRow = liveRowFor(row, index)}
     {@const selected = isSelected(id)}
     {@const rowEditing = rowMode && rowEdit.active?.key === id}
     <!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -1521,9 +1614,9 @@
       aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
       aria-setsize={treeMeta ? treeMeta.setSize : undefined}
       aria-posinset={treeMeta ? treeMeta.posInset : undefined}
-      onclick={onRowClick ? () => onRowClick(row, index) : undefined}
+      onclick={onRowClick ? () => onRowClick(renderedRow, index) : undefined}
       onkeydown={onRowClick
-        ? (event) => handleTableRowKeyDown(event, row, index, onRowClick)
+        ? (event) => handleTableRowKeyDown(event, renderedRow, index, onRowClick)
         : undefined}
       tabindex={onRowClick ? 0 : undefined}
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
@@ -1608,7 +1701,7 @@
             editingColumnKey === col.key &&
             !isEditing &&
             editingDraft !== '' &&
-            String(getCellValue(row, col) ?? '') === editingDraft}
+            String(getCellValue(renderedRow, col) ?? '') === editingDraft}
           {#if !spanCovered}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
@@ -1628,7 +1721,7 @@
                 ? () => (focusedCell = { row: index, col: ci })
                 : undefined}
               onclick={rowMode && editConfig?.trigger !== 'manual'
-                ? () => rowEdit.handleCellClick(row, col, index, id)
+                ? () => rowEdit.handleCellClick(renderedRow, col, index, id)
                 : cellRange
                   ? (e: MouseEvent) => {
                       if (e.shiftKey) {
@@ -1638,7 +1731,7 @@
                       }
                     }
                   : editConfig?.trigger === 'click' && isEditableColumn(col)
-                    ? () => beginEdit(row, col, id)
+                    ? () => beginEdit(renderedRow, col, id)
                     : undefined}
               onkeydown={cellRange
                 ? (event) => {
@@ -1649,14 +1742,14 @@
                   }
                 : undefined}
               ondblclick={rowMode && editConfig?.trigger !== 'manual'
-                ? () => rowEdit.switchTo(row, index, col.key)
+                ? () => rowEdit.switchTo(renderedRow, index, col.key)
                 : isEditableColumn(col) &&
                     editConfig?.trigger !== 'click' &&
                     editConfig?.trigger !== 'manual'
-                  ? () => beginEdit(row, col, id)
+                  ? () => beginEdit(renderedRow, col, id)
                   : undefined}
               style="display: flex; align-items: center; justify-content: {(col.align ??
-                (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
+                (typeof getCellValue(renderedRow, col) === 'number' ? 'right' : 'left')) === 'right'
                 ? 'flex-end'
                 : col.align === 'center'
                   ? 'center'
@@ -1714,28 +1807,30 @@
                     else cellEditing.setCellDraft(value)
                   }}
                   onCommit={() => {
-                    if (rowMode) rowEdit.commit(editId, row, col, index, id)
-                    else commitEdit(row, col, index)
+                    if (rowMode) rowEdit.commit(editId, renderedRow, col, index, id)
+                    else commitEdit(renderedRow, col, index)
                   }}
                   onCancel={() => (rowMode ? rowEdit.cancel() : cancelEdit())}
                   showPreview={editPreview && col.formatter !== undefined}
                   preview={editPreview && col.formatter !== undefined
                     ? editPreviewText(
-                        row,
+                        renderedRow,
                         col,
                         rowMode ? (rowSession?.draft ?? '') : editingDraft,
                         formulaTables,
                       )
                     : undefined}
                   onTab={rowMode && rowSession
-                    ? (direction) => rowEdit.tab(editId, row, col, index, id, direction)
+                    ? (direction) => rowEdit.tab(editId, renderedRow, col, index, id, direction)
                     : undefined}
                   inputRef={rowMode ? (node) => rowEdit.registerInput(col.key, node) : undefined}
                 />
               {:else if col.render}
-                {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
+                {@render (col.render(getCellValue(renderedRow, col), renderedRow) as RowSnippet)(
+                  renderedRow,
+                )}
               {:else}
-                {tableDisplayText(row, col, getCellValue)}
+                {tableDisplayText(renderedRow, col, getCellValue)}
               {/if}
             </div>
           {/if}

@@ -76,6 +76,7 @@ import { applyDetectedTableTypes } from './table-columns'
 import { createTableRowTarget } from './table-row-target'
 import { createPinnedDragMath } from './table-pinned-drag'
 import { createTableViewsController, TableTabs, TableViews } from './table-views'
+import { createTableUndoController } from './table-undo'
 import { getCellValue as getTableCellValue } from './utils'
 import { isEditableColumn, withComputedFormulaCells } from './utils'
 import { exportCsv as serializeTableCsv } from './exportCsv'
@@ -133,6 +134,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       multiSort: false,
       scrollToTop: false,
       seq: false,
+      undo: false,
     },
     props,
   )
@@ -295,6 +297,38 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   })
 
   const gridCore = useGridCore<Row>()
+  // Grid Rows is the single mutation boundary for edits, paste, drag and
+  // imperative row operations. The undo bridge is created after the table's
+  // selection/root/editing state exists, so the transaction callback records
+  // lazily without making undo part of the default path.
+  let recordUndoRows: ((rows: Row[]) => void) | null = null
+  let suppressUndoRecord = false
+  // Solid updates keyed `<For>` rows immediately. While a row-mode editor is
+  // open, defer the adapter's local signal write so committing one column does
+  // not replace the row DOM under the remaining editors. The core rows model
+  // is updated synchronously; the deferred signal flushes once the session
+  // closes and therefore preserves both editor focus and row references.
+  let rowEditingState: Accessor<{ k: string | number; idx: number } | null> | null = null
+  let pendingLocalRows: Row[] | null = null
+  let pendingLocalRowsTimer: ReturnType<typeof setTimeout> | null = null
+  let liveRowsRef: Row[] = baseData()
+  const [liveRevision, setLiveRevision] = createSignal(0)
+  const flushPendingLocalRows = (): void => {
+    if (pendingLocalRows === null || rowEditingState?.() !== null) return
+    const next = pendingLocalRows
+    pendingLocalRows = null
+    setLocalRows(next)
+  }
+  const schedulePendingLocalRows = (): void => {
+    if (pendingLocalRowsTimer !== null) return
+    pendingLocalRowsTimer = setTimeout(() => {
+      pendingLocalRowsTimer = null
+      flushPendingLocalRows()
+    }, 0)
+  }
+  onCleanup(() => {
+    if (pendingLocalRowsTimer !== null) clearTimeout(pendingLocalRowsTimer)
+  })
   const sorting = useGridSorting<Row>(gridCore, {
     mode: merged.multiSort ? 'multiple' : 'single',
     defaultSort: props.defaultSort,
@@ -485,11 +519,26 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     // children remain adapter-owned because they live in a cache map.
     getChildren: props.getSubRows,
     onRowsChange: (transaction) => {
-      if (hasProxy()) setProxyRows([...transaction.rows])
-      else setLocalRows([...transaction.rows])
+      const next = [...transaction.rows]
+      liveRowsRef = next
+      setLiveRevision((value) => value + 1)
+      if (hasProxy()) setProxyRows(next)
+      else if (rowEditingState?.() === null) setLocalRows(next)
+      else {
+        pendingLocalRows = next
+        schedulePendingLocalRows()
+      }
+      if (!suppressUndoRecord) recordUndoRows?.(next)
     },
   })
-  createEffect(() => gridRows.sync(baseData()))
+  createEffect(() => {
+    const rows = baseData()
+    if (rows !== liveRowsRef) {
+      liveRowsRef = rows
+      setLiveRevision((value) => value + 1)
+    }
+    gridRows.sync(rows)
+  })
   const hasDetail = (): boolean => props.renderDetail !== undefined
   const { model: expansion, expandedKeys } = useGridExpansion<Row, string>(gridCore, {
     mode: 'multiple',
@@ -792,6 +841,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // closures (their own signals) and are dropped wholesale on cancel.
   const rowMode = (): boolean => merged.editConfig?.mode === 'row'
   const [rowEditing, setRowEditing] = createSignal<{ k: string | number; idx: number } | null>(null)
+  rowEditingState = rowEditing
   const [rowSessions, setRowSessions] = createSignal<Map<string, RowCellSession<Row>>>(new Map())
   const rowEditorRefs = new Map<string, HTMLInputElement>()
 
@@ -805,6 +855,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const [error, setError] = createSignal<string | null>(null)
     return { col, rowIndex, draft, error, setDraft, setError, gen: 0 }
   }
+
+  const currentRowFor = (key: string | number, fallback: Row): Row =>
+    gridRows.find(key) ??
+    liveRowsRef.find((candidate, index) => rowId(candidate, index) === key) ??
+    fallback
 
   // Commit ONE column's session: validate (editRules async → in-flight),
   // write back, then close just that editor (per-cell commit — the rest of
@@ -825,7 +880,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     // otherwise start a FRESH commit on the stale session object (double
     // onCellEdit / write-back after Escape).
     if (!rowSessions().has(id)) return true
-    const oldValue = resolveTableCellValue(row, col)
+    const currentRow = currentRowFor(rowIdent, row)
+    const oldValue = resolveTableCellValue(currentRow, col)
     const draftValue = session.draft()
     const newValue =
       col.editor === 'number'
@@ -845,15 +901,15 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       session.setError(null)
       close()
       if (newValue !== oldValue) {
-        merged.onCellEdit?.({ row, column: col, oldValue, newValue, rowIndex })
-        // Proxy mode: write the committed value into the local page copy so the
-        // edit survives without a refetch; the next page/refetch replaces it.
-        if (proxy) {
-          const valueKey = (col.dataIndex ?? col.key) as string
-          gridRows.update(rowIdent, { [valueKey]: newValue } as Partial<Row>, {
-            reason: 'cell-edit',
-          })
-        }
+        merged.onCellEdit?.({ row: currentRow, column: col, oldValue, newValue, rowIndex })
+        // Row-mode sessions bypass the core editing feature, so write their
+        // immutable replacement through the rows transaction for both local
+        // and proxy tables. The transaction callback also records one undo
+        // snapshot and keeps `dataIndex` separate from the display key.
+        const valueKey = (col.dataIndex ?? col.key) as string
+        gridRows.update(rowIdent, { [valueKey]: newValue } as Partial<Row>, {
+          reason: 'cell-edit',
+        })
       }
     }
     if (col.editRules && col.editRules.length > 0) {
@@ -928,13 +984,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         if (!commitRowSession(session, currentRow, cur.k)) return
       }
     }
-    beginRowEdit(row, rowIndex, focusColKey)
+    beginRowEdit(currentRowFor(rowId(row, rowIndex), row), rowIndex, focusColKey)
   }
 
   // All open sessions committed → the row leaves edit mode (click re-opens).
   createEffect(() => {
     const cur = rowEditing()
     if (cur !== null && rowSessions().size === 0) setRowEditing(null)
+  })
+  createEffect(() => {
+    if (rowEditing() === null && pendingLocalRows !== null) schedulePendingLocalRows()
   })
 
   /** A row-mode cell click: same row reopens a committed column; a different
@@ -946,10 +1005,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     rowIndex: number,
     k: string | number,
   ): void => {
+    const currentRow = currentRowFor(k, row)
     if (rowEditing()?.k === k) {
       const id = `${k}::${col.key}`
       if (isEditableColumn(col) && !rowSessions().has(id)) {
-        const session = createRowSession(row, col, rowIndex)
+        const session = createRowSession(currentRow, col, rowIndex)
         setRowSessions((prev) => {
           const next = new Map(prev)
           next.set(id, session)
@@ -958,7 +1018,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         focusRowEditor(col.key)
       }
     } else {
-      switchRowEdit(row, rowIndex, col.key)
+      switchRowEdit(currentRow, rowIndex, col.key)
     }
   }
 
@@ -1144,6 +1204,35 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const rowTarget = createTableRowTarget(() => rootRef)
   const { scrollTo: scrollToRow, goTo: goToRow } = rowTarget
   onCleanup(rowTarget.dispose)
+
+  // Built-in row-list undo/redo. Ordinary user mutations are observed at the
+  // Grid Rows transaction throat above; replay and explicit commits use this
+  // guarded funnel so an undo/redo never records itself as a fresh step.
+  const setTableRows = (rows: Row[]): void => {
+    suppressUndoRecord = true
+    try {
+      gridRows.commit(rows)
+    } finally {
+      suppressUndoRecord = false
+    }
+  }
+  const undoController = createTableUndoController(
+    () => merged.undo === true,
+    () => baseData(),
+    () => (hasProxy() ? proxyState().data : (props.data ?? [])),
+    setTableRows,
+    (rows) => merged.onDataChange?.(rows),
+    () => rootRef,
+    () => editingCellId() !== null || rowEditing() !== null,
+    {
+      current: displaySelection,
+      enabled: () => merged.selectable !== 'none',
+      keyOf: rowId,
+      rebase: rebaseToProp,
+      set: (keys) => selectionModel.set(keys),
+    },
+  )
+  recordUndoRows = undoController.record
 
   const tableHandle = {
     loadData: (rows: Row[]): void => {
@@ -1558,6 +1647,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // index so indent + toggle render for windowed tree rows too.
   const renderRow = (row: Row, index: number, treeMeta: TreeRow<Row> | null): JSX.Element => {
     const id = rowId(row, index)
+    const liveRow = (): Row => {
+      liveRevision()
+      return (
+        gridRows.find(id) ??
+        liveRowsRef.find((candidate, candidateIndex) => rowId(candidate, candidateIndex) === id) ??
+        row
+      )
+    }
     spanPass()
     const selected = (): boolean => isSelected(id)
     const expanded = (): boolean => expandedKeys().includes(String(id))
@@ -1723,8 +1820,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               editingColumnKey() === col.key &&
               !isEditing() &&
               editingDraft() !== '' &&
-              String(resolveTableCellValue(row, col) ?? '') === editingDraft()
-            const displayText = (): string => tableDisplayText<Row>(row, col, resolveTableCellValue)
+              String(resolveTableCellValue(liveRow(), col) ?? '') === editingDraft()
+            const displayText = (): string =>
+              tableDisplayText<Row>(liveRow(), col, resolveTableCellValue)
             // Cell merge (vxe spanMethod parity): the occupied set carries
             // cells covered by an earlier rowspan/colspan origin — those cells
             // render nothing. Origin cells with colspan > 1 extend their grid
@@ -1798,7 +1896,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     'align-items': 'center',
                     'justify-content':
                       (col.align ??
-                        (typeof resolveTableCellValue(row, col) === 'number'
+                        (typeof resolveTableCellValue(liveRow(), col) === 'number'
                           ? 'right'
                           : 'left')) === 'right'
                         ? 'flex-end'
@@ -1939,7 +2037,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     when={isEditing()}
                     fallback={
                       <Show when={col.renderCell} fallback={displayText()}>
-                        {col.renderCell!(row, index)}
+                        {col.renderCell!(liveRow(), index)}
                       </Show>
                     }
                   >
@@ -2136,6 +2234,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         densityToggle={merged.densityToggle}
         effectiveDensity={effectiveDensity}
         onDensityToggle={cycleDensity}
+        undo={merged.undo}
+        canUndo={undoController.canUndo}
+        canRedo={undoController.canRedo}
+        onUndo={undoController.undo}
+        onRedo={undoController.redo}
       />
 
       <div

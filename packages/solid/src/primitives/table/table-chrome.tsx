@@ -15,6 +15,7 @@ import type {
 } from './types'
 import { ImportPreview } from './import-preview'
 import { createTableImportController } from './table-import'
+import { TableUndoToolbar } from './table-undo-toolbar'
 
 type Translate = UseI18nReturn['t']
 
@@ -97,6 +98,11 @@ export interface TableToolbarProps {
   t: Translate
   importPreview?: boolean
   densityToggle?: boolean
+  undo?: boolean
+  canUndo?: Accessor<boolean>
+  canRedo?: Accessor<boolean>
+  onUndo?: () => void
+  onRedo?: () => void
   effectiveDensity?: Accessor<IrisTableDensity>
   onDensityToggle?: () => void
 }
@@ -111,7 +117,7 @@ export function TableToolbar(props: TableToolbarProps): JSX.Element {
 
   return (
     <>
-      <Show when={props.toolbar || props.densityToggle}>
+      <Show when={props.toolbar || props.densityToggle || props.undo}>
         <div
           data-iris-table-toolbar=""
           style={{
@@ -134,6 +140,15 @@ export function TableToolbar(props: TableToolbarProps): JSX.Element {
             </span>
           </Show>
           <div style={{ flex: 1 }} />
+          <Show when={props.undo}>
+            <TableUndoToolbar
+              canUndo={props.canUndo ?? (() => false)}
+              canRedo={props.canRedo ?? (() => false)}
+              onUndo={() => props.onUndo?.()}
+              onRedo={() => props.onRedo?.()}
+              t={props.t}
+            />
+          </Show>
           <Show when={toolbar().onRefresh}>
             <button
               type="button"

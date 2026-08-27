@@ -32,6 +32,7 @@ export default defineConfig({
       'src/hydration.test.ts',
       'src/primitives/table/formula-tables.ssr.test.ts',
       'src/primitives/table/undo.ssr.test.ts',
+      'src/primitives/table/grid-columns.ssr.test.ts',
     ],
     server: { deps: { inline: [/@iris-ui-kit/] } },
   },

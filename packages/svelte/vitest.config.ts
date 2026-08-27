@@ -17,6 +17,7 @@ export default defineConfig({
     exclude: [
       'src/hydration.test.ts',
       'src/primitives/table/undo.ssr.test.ts',
+      'src/primitives/table/grid-columns.ssr.test.ts',
       '**/node_modules/**',
       '**/dist/**',
     ],

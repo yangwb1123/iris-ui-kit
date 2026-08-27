@@ -26,6 +26,7 @@
   import {
     useGridCore,
     useGridClipboard,
+    useGridColumns,
     useGridEditing,
     useGridExpansion,
     useGridFiltering,
@@ -215,11 +216,63 @@
           : 'comfortable'
   }
   let responsiveWidth = $state(0)
-  const sourceDisplayColumns = $derived(
+  const gridCore = useGridCore<Record<string, unknown>>()
+  // svelte-ignore state_referenced_locally — columns options seed the stable Core feature;
+  // controlled props are synchronized explicitly by the effects below.
+  const columnsFeature = useGridColumns(gridCore, {
+    visibility: columnVisibility,
+    widths: columnWidths,
+    defaultWidths: defaultColumnWidths,
+    onWidthsChange: (next) => onColumnWidthsChange?.(next),
+  })
+  const columnState = columnsFeature.state
+  // svelte-ignore state_referenced_locally — this sentinel is initialized from
+  // the first prop value and updated by the replacement effect below.
+  let visibilityPropControlled = $state(columnVisibility !== undefined)
+  // svelte-ignore state_referenced_locally — this sentinel is initialized from
+  // the first prop value and updated by the replacement effect below.
+  let widthPropControlled = $state(columnWidths !== undefined)
+  // svelte-ignore state_referenced_locally — defaults seed the independent
+  // uncontrolled snapshot and are intentionally not re-seeded after mount.
+  let uncontrolledWidths = $state<IrisTableColumnWidths>({ ...(defaultColumnWidths ?? {}) })
+
+  const effectiveVisibility = $derived<Record<string, boolean>>(
     columnVisibility !== undefined
-      ? columns.filter((c) => columnVisibility![c.key] !== false)
-      : columns,
+      ? columnVisibility
+      : visibilityPropControlled
+        ? {}
+        : $columnState.visibility,
   )
+  const widthsControlled = $derived(columnWidths !== undefined)
+  const effectiveWidths = $derived<IrisTableColumnWidths>(
+    columnWidths !== undefined
+      ? columnWidths
+      : widthPropControlled
+        ? uncontrolledWidths
+        : $columnState.widths,
+  )
+
+  // Bridge option objects seed once; prop replacements must be mirrored with
+  // Core's silent sync methods so controlled parents remain authoritative and
+  // inbound updates never echo callbacks or columns:change events.
+  $effect(() => {
+    const visibility = columnVisibility
+    columnsFeature.model.syncVisibility(visibility ?? {})
+    visibilityPropControlled = visibility !== undefined
+  })
+  $effect(() => {
+    const widths = columnWidths
+    if (widths !== undefined) {
+      columnsFeature.model.syncWidths(widths)
+    } else if (widthPropControlled) {
+      // Removing control restores the pre-control uncontrolled/default snapshot,
+      // not a rejected controlled proposal held by the Core model.
+      columnsFeature.model.syncWidths(uncontrolledWidths)
+    }
+    widthPropControlled = widths !== undefined
+  })
+
+  const sourceDisplayColumns = $derived(columns.filter((c) => effectiveVisibility[c.key] !== false))
 
   let detectedTypes = $state<Record<string, DetectedColumnType>>({})
   let detectTypesDone = false
@@ -236,7 +289,7 @@
       (selectable !== 'none' ? 40 : 0),
   )
   const responsiveWidthOf = (column: IrisTableColumn): number =>
-    resolveResponsiveWidth(column, columnWidths, defaultColumnWidths)
+    resolveResponsiveWidth(column, effectiveWidths, defaultColumnWidths)
   const responsiveResult = $derived(
     responsive
       ? computeResponsiveTableColumns(
@@ -254,8 +307,6 @@
   const grouped = $derived(displayColumns.some((c) => c.children && c.children.length > 0))
   const leafColumns = $derived(grouped ? flattenLeafColumns(displayColumns) : displayColumns)
   const headerMatrix = $derived(grouped ? buildHeaderMatrix(displayColumns) : null)
-
-  const gridCore = useGridCore<Record<string, unknown>>()
   // svelte-ignore state_referenced_locally — sorting options seed the stable Core feature;
   // controlled props are synchronized explicitly by the effect below.
   const {
@@ -834,17 +885,12 @@
     onDataChange?.(rows)
   }
 
-  // svelte-ignore state_referenced_locally
-  let internalWidths = $state<IrisTableColumnWidths>({ ...(defaultColumnWidths ?? {}) })
-
-  const widthsControlled = $derived(columnWidths !== undefined)
-  const effectiveWidths = $derived<IrisTableColumnWidths>(
-    widthsControlled ? columnWidths! : internalWidths,
-  )
   function setColumnWidth(key: string, width: number): void {
     const next = { ...effectiveWidths, [key]: width }
-    if (!widthsControlled) internalWidths = next
-    onColumnWidthsChange?.(next)
+    if (!widthsControlled) uncontrolledWidths = next
+    // Core is the sole mutation throat; its feature callback preserves the
+    // existing sparse width-map callback contract.
+    columnsFeature.setWidths(next)
   }
 
   const resizeHandleEls = $state<Record<string, HTMLElement | undefined>>({})

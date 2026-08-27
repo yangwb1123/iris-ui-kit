@@ -620,6 +620,8 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Solid columns-state 续批 gate：client **153 files / 1,071 tests**、SSR/hydration **5 files / 45 tests** 通过；typecheck/lint/build、`pnpm check:manifest`（2 个生成文件无变化）与 `git diff --check` 通过。order/pinned-map channels deferred，未调整 ratchet baseline。
 
+2026-08-27：Svelte columns-state gate：client **157 files / 1,048 tests**、SSR/hydration **4 files / 42 tests**（hydration 37）通过；typecheck 0 errors/0 warnings、lint/build、`pnpm check:manifest`（2 个生成文件无变化）与 `git diff --check` 通过。未调整 ratchet baseline，order/pinned-map channels deferred。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

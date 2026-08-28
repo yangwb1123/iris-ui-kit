@@ -97,6 +97,8 @@ export interface GroupedHeaderProps<Row extends TableRow> {
   sortIndicator: (column: IrisTableColumn<Row>) => JSX.Element
   renderFilterTrigger: (column: IrisTableColumn<Row>, leaf: boolean) => JSX.Element
   columnFade: TableColumnFadeController<Row>
+  pinOf: (column: IrisTableColumn<Row>) => 'left' | 'right' | null
+  pinnedStyle: (key: string) => JSX.CSSProperties | null
   pinnedDrag: boolean | undefined
   pinnedBoundaryKey: Accessor<string | null>
   resolvePinnedCount: (dx: number) => number
@@ -208,6 +210,7 @@ export function TableGroupedHeader<Row extends TableRow>(
                 role="columnheader"
                 data-iris-table-header={col.key}
                 data-iris-table-header-group={isLeaf() ? undefined : ''}
+                data-iris-table-pinned={isLeaf() ? props.pinOf(col) : undefined}
                 data-iris-col-drag-active={
                   props.columnDragActive() === col.key ? 'true' : undefined
                 }
@@ -246,6 +249,7 @@ export function TableGroupedHeader<Row extends TableRow>(
                   overflow: 'hidden',
                   'text-overflow': 'ellipsis',
                   ...(props.columnFade.columnFadeStyle(col) ?? {}),
+                  ...(isLeaf() ? (props.pinnedStyle(col.key) ?? {}) : {}),
                 }}
               >
                 {col.title}
@@ -292,6 +296,8 @@ export interface FlatHeaderProps<Row extends TableRow> {
   sortIndicator: (column: IrisTableColumn<Row>) => JSX.Element
   renderFilterTrigger: (column: IrisTableColumn<Row>, leaf: boolean) => JSX.Element
   columnFade: TableColumnFadeController<Row>
+  pinOf: (column: IrisTableColumn<Row>) => 'left' | 'right' | null
+  pinnedStyle: (key: string) => JSX.CSSProperties | null
   pinnedDrag: boolean | undefined
   pinnedBoundaryKey: Accessor<string | null>
   resolvePinnedCount: (dx: number) => number
@@ -408,7 +414,7 @@ export function TableFlatHeader<Row extends TableRow>(props: FlatHeaderProps<Row
                 <div
                   role="columnheader"
                   data-iris-table-header={col.key}
-                  data-iris-table-pinned={col.pinned}
+                  data-iris-table-pinned={props.pinOf(col)}
                   {...props.columnFade.columnFadeAttrs(col)}
                   data-iris-col-drag-active={
                     props.columnDragActive() === col.key ? 'true' : undefined
@@ -445,6 +451,7 @@ export function TableFlatHeader<Row extends TableRow>(props: FlatHeaderProps<Row
                       ? { 'grid-column-start': String(props.colTrack(colIndex)) }
                       : {}),
                     ...(props.columnFade.columnFadeStyle(col) ?? {}),
+                    ...(props.pinnedStyle(col.key) ?? {}),
                   }}
                   aria-sort={props.sortAria(col)}
                 >

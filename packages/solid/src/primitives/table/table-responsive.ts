@@ -16,6 +16,7 @@ export function computeTableResponsiveColumns<Row extends Record<string, unknown
   containerWidth: number,
   leadingWidth: number,
   widthOf: (column: IrisTableColumn<Row>) => number,
+  pinOf: (column: IrisTableColumn<Row>) => 'left' | 'right' | null,
 ): ResponsiveTableResult<Row> {
   if (containerWidth <= 0 || containerWidth >= RESPONSIVE_NARROW_WIDTH) {
     return { columns, overflow: false }
@@ -24,7 +25,7 @@ export function computeTableResponsiveColumns<Row extends Record<string, unknown
   const isPinned = (column: IrisTableColumn<Row>): boolean =>
     column.children && column.children.length > 0
       ? column.children.some(isPinned)
-      : column.pinned !== undefined
+      : pinOf(column) !== null
   const fitted = computeResponsiveColumns(columns, budget, {
     widthOf: (column) => widthOf(column as IrisTableColumn<Row>),
     isPinned: (column) => isPinned(column as IrisTableColumn<Row>),

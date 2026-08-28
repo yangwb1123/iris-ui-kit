@@ -35,6 +35,7 @@ export default defineConfig({
       'src/primitives/table/grid-columns.ssr.test.tsx',
       'src/primitives/table/undo.ssr.test.tsx',
       'src/primitives/table/batch-fade-solid.ssr.test.tsx',
+      'src/primitives/table/pinned-columns.ssr.test.tsx',
     ],
     globals: false,
     isolate: true,

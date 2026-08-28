@@ -10,6 +10,8 @@ interface TableSummaryProps<Row extends Record<string, unknown>> {
   gridTemplate: Accessor<string>
   colTrack: (index: number) => number
   getCellValue: (row: Row, column: IrisTableColumn<Row>) => unknown
+  pinOf: (column: IrisTableColumn<Row>) => 'left' | 'right' | null
+  pinnedStyle: (key: string) => JSX.CSSProperties | null
   rowDrag?: { onReorder: (rows: Row[]) => void }
   seq?: boolean
   hasDetail: Accessor<boolean>
@@ -74,6 +76,7 @@ export function TableSummary<Row extends Record<string, unknown>>(
                 <div
                   role="cell"
                   data-iris-table-cell={column.key}
+                  data-iris-table-pinned={props.pinOf(column)}
                   data-iris-table-summary-cell={op ? '' : undefined}
                   {...props.columnFade.columnFadeAttrs(column)}
                   style={{
@@ -95,6 +98,7 @@ export function TableSummary<Row extends Record<string, unknown>>(
                       ? { 'grid-column-start': String(props.colTrack(colIndex)) }
                       : {}),
                     ...(props.columnFade.columnFadeStyle(column) ?? {}),
+                    ...(props.pinnedStyle(column.key) ?? {}),
                   }}
                 >
                   <Show when={op != null && value() != null}>

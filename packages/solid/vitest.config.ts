@@ -29,6 +29,7 @@ export default defineConfig({
       'src/primitives/table/undo.ssr.test.tsx',
       'src/primitives/table/batch-fade-solid.ssr.test.tsx',
       'src/primitives/table/batch-fade-solid.hydration.test.tsx',
+      'src/primitives/table/pinned-columns.ssr.test.tsx',
       '**/node_modules/**',
       '**/dist/**',
     ],

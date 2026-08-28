@@ -636,9 +636,15 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Vue `pinnedColumns` continuation accepted；受控拖拽每次提案前静默重同步 Core，focused **8/8**、全量 **186 files / 1,687 tests**、typecheck/build、lint 0 errors（既有 complexity warning）、spec audit **1,594 files / 0 violations**、`pnpm check:manifest` 与 `git diff --check` 通过；`scripts/arch-baseline.json` 未改。`arch-check:ratchet` 仍受 HEAD 既有 oversized Vue/React/Solid/Svelte Table 文件限制，未调整 baseline。
 
+2026-08-28：Solid `pinnedColumns` continuation accepted；受控 pin map、列声明 fallback、左右 sticky 投影、分组表/汇总与 pinned drag 均通过 focused **8/8**、client **156 files / 1,099 tests**、SSR **7 files / 48 tests**；typecheck/lint/build、spec audit **1,594 files / 0 violations**、manifest 与 `git diff --check` 通过，未改 `scripts/arch-baseline.json`；`arch-check:ratchet` 仍因既有 React/Vue/Solid/Svelte oversized Table 文件的 grandfathered baseline 限制报红，未调整 baseline。
+
 2026-08-28：列顺序投影纯函数继续下沉至 Core `applyColumnOrder`，React/Vue/Solid/Svelte 移除重复的 adapter-local 实现；未知/重复 key、遗漏列的稳定顺序及空 order 的 identity 快路径保持不变。Core columns **10/10**、grid-columns **5/5**，四端列状态/列顺序定向回归 **39/39**，四端 typecheck 与 `git diff --check` 通过。
 
 2026-08-28：列可见性投影继续下沉至 Core `applyColumnVisibility`，React/Vue/Solid/Svelte 的顶层 visibility 过滤统一复用该纯函数；空/未提供 map 保持 identity，分组列仍只在顶层过滤，fade 的 overlay 与 `visibleMethod` 语义不变。Core columns **12/12**、grid-columns **5/5**，列顺序/状态及三端 fade 定向回归 **105/105**，四端 typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：`pinnedColumns` map 通道继续对齐 Vue/Solid/Svelte，显式 `null` 覆盖静态 pin，缺失 key 保留静态声明；受控拖拽提案经 Grid Columns model 回调但不乐观改写，响应式/虚拟列和 SSR 均保持 pin 语义。Vue pin 回归 **8/8**、Solid/Svelte pin + SSR 回归各 **5/5**，三端 typecheck/lint/build 与 `git diff --check` 通过。
+
+2026-08-28：自动列类型投影下沉至 Core `applyDetectedColumnDefaults`，四端统一递归填充缺失 alignment；React 通过选项继续填充缺失 `sortType`，Vue/Solid/Svelte 保持原有仅 alignment 语义。Core column-type **13/13**，四端 auto-detect 回归 **21/21**，typecheck 与格式检查通过。
 
 ## 8. 合并门
 

@@ -171,11 +171,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     visibility: props.columnVisibility,
     order: props.columnOrder,
     widths: props.columnWidths,
+    pinned: props.pinnedColumns,
     defaultWidths: props.defaultColumnWidths,
     onVisibilityChange: (next) => props.onColumnVisibilityChange?.(next),
     onOrderChange: (next) => props.onColumnOrderChange?.(next),
     onWidthsChange: (next) => props.onColumnWidthsChange?.(next),
+    onPinnedChange: (key, side) => props.onColumnPinnedChange?.(key, side),
   })
+  const [pinPropControlled, setPinPropControlled] = createSignal(props.pinnedColumns !== undefined)
   const [orderPropControlled, setOrderPropControlled] = createSignal(
     props.columnOrder !== undefined,
   )
@@ -192,6 +195,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   createEffect(() => {
     const visibility = props.columnVisibility
     columnsFeature.model.syncVisibility(visibility ?? {})
+  })
+  createEffect(() => {
+    const pinned = props.pinnedColumns
+    if (pinned !== undefined) {
+      columnsFeature.model.syncPinned(pinned)
+    } else if (pinPropControlled()) {
+      // Do not expose a rejected controlled proposal after control is removed.
+      columnsFeature.model.syncPinned({})
+    }
+    setPinPropControlled(pinned !== undefined)
   })
   createEffect(() => {
     const order = props.columnOrder
@@ -215,6 +228,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     setWidthPropControlled(widths !== undefined)
   })
 
+  const pinOf = (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
+    const controlled = props.pinnedColumns
+    if (controlled !== undefined && col.key in controlled) return controlled[col.key]
+    return col.pinned ?? null
+  }
   const effectiveVisibility = (): Record<string, boolean> => columnsFeature.state().visibility
   const effectiveColumnOrder = (): string[] | undefined => {
     if (props.columnOrder !== undefined) return props.columnOrder
@@ -259,6 +277,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           responsiveWidth(),
           responsiveLeadingWidth(),
           responsiveWidthOf,
+          pinOf,
         )
       : { columns: orderedDisplayColumns(), overflow: false },
   )
@@ -288,6 +307,44 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const widthOf = (col: IrisTableColumn<Row>): number =>
     effectiveWidths()[col.key] ??
     resolveTableInitialWidth(col as IrisTableColumn<Record<string, unknown>>)
+  const pinnedOffsets = createMemo<Record<string, { side: 'left' | 'right'; offset: number }>>(
+    () => {
+      const offsets: Record<string, { side: 'left' | 'right'; offset: number }> = {}
+      let left = responsiveLeadingWidth()
+      for (const col of leafColumns()) {
+        if (pinOf(col) === 'left') {
+          offsets[col.key] = { side: 'left', offset: left }
+          left += widthOf(col)
+        }
+      }
+      let right = 0
+      for (let index = leafColumns().length - 1; index >= 0; index -= 1) {
+        const col = leafColumns()[index]!
+        if (pinOf(col) === 'right') {
+          offsets[col.key] = { side: 'right', offset: right }
+          right += widthOf(col)
+        }
+      }
+      return offsets
+    },
+  )
+  const pinnedStyle = (key: string): JSX.CSSProperties | null => {
+    const pin = pinnedOffsets()[key]
+    if (!pin) return null
+    return pin.side === 'left'
+      ? {
+          position: 'sticky',
+          'inset-inline-start': `${pin.offset}px`,
+          'z-index': 1,
+          background: 'var(--iris-background)',
+        }
+      : {
+          position: 'sticky',
+          'inset-inline-end': `${pin.offset}px`,
+          'z-index': 1,
+          background: 'var(--iris-background)',
+        }
+  }
   const setColumnWidths = (next: IrisTableColumnWidths): void => {
     if (!widthsControlled()) setUncontrolledWidths(next)
     columnsFeature.setWidths(next)
@@ -297,6 +354,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     enabled: () => merged.pinnedDrag,
     columns: leafColumns,
     widthOf,
+    pinOf,
+    controlled: () => props.pinnedColumns !== undefined,
+    setPinned: columnsFeature.setPinned,
     onColumnPinnedChange: merged.onColumnPinnedChange,
     onPinnedCountChange: merged.onPinnedCountChange,
   })
@@ -1598,7 +1658,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const set = new Set<number>()
     for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
     cols.forEach((col, i) => {
-      if (col.pinned || columnFade.fadeByLeaf()[col.key] !== undefined) set.add(i)
+      if (pinOf(col) !== null || columnFade.fadeByLeaf()[col.key] !== undefined) set.add(i)
     })
     return set
   })
@@ -1907,7 +1967,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                 <div
                   role="cell"
                   data-iris-table-cell={col.key}
-                  data-iris-table-pinned={col.pinned}
+                  data-iris-table-pinned={pinOf(col)}
                   {...columnFade.columnFadeAttrs(col)}
                   data-editable={isEditableColumn(col) ? '' : undefined}
                   data-editing={isEditing() ? '' : undefined}
@@ -1985,6 +2045,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     ...(visibleColSet() ? { 'grid-column-start': String(colTrack(colIndex)) } : {}),
                     ...(colspan > 1 ? { 'grid-column-end': `span ${colspan}` } : {}),
                     ...(columnFade.columnFadeStyle(col) ?? {}),
+                    ...(pinnedStyle(col.key) ?? {}),
                   }}
                 >
                   <Show when={treeMeta && isFirstCol}>
@@ -2399,6 +2460,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           sortIndicator={sortIndicator}
           renderFilterTrigger={renderFilterTrigger}
           columnFade={columnFade}
+          pinOf={pinOf}
+          pinnedStyle={pinnedStyle}
           pinnedDrag={merged.pinnedDrag}
           pinnedBoundaryKey={pinnedBoundaryKey}
           resolvePinnedCount={resolvePinnedCount}
@@ -2429,6 +2492,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           sortIndicator={sortIndicator}
           renderFilterTrigger={renderFilterTrigger}
           columnFade={columnFade}
+          pinOf={pinOf}
+          pinnedStyle={pinnedStyle}
           pinnedDrag={merged.pinnedDrag}
           pinnedBoundaryKey={pinnedBoundaryKey}
           resolvePinnedCount={resolvePinnedCount}
@@ -2574,6 +2639,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             gridTemplate={gridTemplate}
             colTrack={colTrack}
             getCellValue={resolveTableCellValue}
+            pinOf={pinOf}
+            pinnedStyle={pinnedStyle}
             rowDrag={merged.rowDrag}
             seq={merged.seq}
             hasDetail={hasDetail}

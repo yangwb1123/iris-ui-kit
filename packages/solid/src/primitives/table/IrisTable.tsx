@@ -89,6 +89,8 @@ export type { IrisTableProps } from './props'
 
 const DEFAULT_MIN_WIDTH = 60
 const DRAG_COL_WIDTH = 40
+const PIN_LEFT_MENU_KEY = '__iris-pin-left'
+const UNPIN_MENU_KEY = '__iris-unpin'
 
 /** Read clipboard text; null when the browser API is unavailable or denied. */
 async function readClipboardText(): Promise<string | null> {
@@ -165,7 +167,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const [responsiveWidth, setResponsiveWidth] = createSignal(0)
   const gridCore = useGridCore<Row>()
   const columnsFeature = useGridColumns(gridCore, {
-    // Seed the same feature that owns subsequent table column mutations. The
+    // Use the same feature that owns subsequent table column mutations. The
     // values are only the initial snapshot; the effects below mirror later
     // Solid prop replacements without making the core emit an event.
     visibility: props.columnVisibility,
@@ -230,7 +232,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   const pinOf = (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
     const controlled = props.pinnedColumns
-    if (controlled !== undefined && col.key in controlled) return controlled[col.key]
+    if (controlled !== undefined) {
+      if (col.key in controlled) return controlled[col.key] ?? null
+      return col.pinned ?? null
+    }
+    const internal = columnsFeature.state().pinned
+    if (Object.prototype.hasOwnProperty.call(internal, col.key)) {
+      return internal[col.key] ?? null
+    }
     return col.pinned ?? null
   }
   const effectiveVisibility = (): Record<string, boolean> => columnsFeature.state().visibility
@@ -345,6 +354,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           background: 'var(--iris-background)',
         }
   }
+  const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
+    const column = leafColumns().find((candidate) => candidate.key === key)
+    if (!column || pinOf(column) === side) return
+    columnsFeature.setPinned(key, side)
+  }
   const setColumnWidths = (next: IrisTableColumnWidths): void => {
     if (!widthsControlled()) setUncontrolledWidths(next)
     columnsFeature.setWidths(next)
@@ -356,7 +370,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     widthOf,
     pinOf,
     controlled: () => props.pinnedColumns !== undefined,
-    setPinned: columnsFeature.setPinned,
+    setPinned: setColumnPinned,
     onColumnPinnedChange: merged.onColumnPinnedChange,
     onPinnedCountChange: merged.onPinnedCountChange,
   })
@@ -1303,6 +1317,40 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     setContextMenuState((prev) => (prev ? { ...prev, open: false } : prev))
   }
 
+  // ---- Column header pin menu (iris-only, independent of contextMenu) -----
+  // Like the body menu, this is a cursor-anchored instance of the existing
+  // floating menu. The current pin is read at render and at commit through
+  // pinOf, so controlled rejection never gets an optimistic visual update.
+  const [pinMenuState, setPinMenuState] = createSignal<{
+    open: boolean
+    col: IrisTableColumn<Row>
+  } | null>(null)
+  const [pinMenuAnchor, setPinMenuAnchor] = createSignal<HTMLElement | null>(null)
+  const closePinMenu = (): void => {
+    setPinMenuState((prev) => (prev ? { ...prev, open: false } : prev))
+  }
+  const handleHeaderContextMenu = (event: MouseEvent, col: IrisTableColumn<Row>): void => {
+    if (merged.columnPinMenu !== true) return
+    event.preventDefault()
+    event.stopPropagation()
+    closeContextMenu()
+    const virtualAnchor = {
+      getBoundingClientRect: () => ({
+        left: event.clientX,
+        top: event.clientY,
+        right: event.clientX,
+        bottom: event.clientY,
+        width: 0,
+        height: 0,
+        x: event.clientX,
+        y: event.clientY,
+        toJSON() {},
+      }),
+    } as unknown as HTMLElement
+    setPinMenuAnchor(virtualAnchor)
+    setPinMenuState({ open: true, col })
+  }
+
   // ---- Header filter panel (vxe filterConfig parity) ----------------------
   // One panel at a time, keyed by the column whose trigger was clicked. The
   // anchor is the trigger BUTTON itself (a real DOM node), captured at click
@@ -1338,6 +1386,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     ci: number,
   ): void => {
     if (!merged.contextMenu) return
+    closePinMenu()
     e.preventDefault()
     // Virtual anchor: zero-size rect at the cursor. The object is rebuilt per
     // open (capturing this event's coordinates) so the panel always lands at
@@ -2456,6 +2505,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           columnDragOver={colDragOver}
           handleColumnDragPointerDown={handleColDragPointerDown}
           handleHeaderClick={handleHeaderClick}
+          columnPinMenu={merged.columnPinMenu}
+          handleHeaderContextMenu={handleHeaderContextMenu}
           sortAria={sortAria}
           sortIndicator={sortIndicator}
           renderFilterTrigger={renderFilterTrigger}
@@ -2488,6 +2539,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           columnDragOver={colDragOver}
           handleColumnDragPointerDown={handleColDragPointerDown}
           handleHeaderClick={handleHeaderClick}
+          columnPinMenu={merged.columnPinMenu}
+          handleHeaderContextMenu={handleHeaderContextMenu}
           sortAria={sortAria}
           sortIndicator={sortIndicator}
           renderFilterTrigger={renderFilterTrigger}
@@ -2702,6 +2755,38 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             params={state().params}
             onSelect={(key, params) => merged.contextMenu?.onSelect(key, params)}
             onClose={closeContextMenu}
+          />
+        )}
+      </Show>
+
+      {/* Column header pin menu: an independent instance of the existing
+        cursor-anchored context-menu surface. */}
+      <Show when={merged.columnPinMenu === true && pinMenuState()}>
+        {(state) => (
+          <TableOverlayContextMenu
+            open={state().open}
+            anchor={pinMenuAnchor}
+            items={
+              pinOf(state().col) === null
+                ? [{ key: PIN_LEFT_MENU_KEY, label: t('table.pinLeft') }]
+                : [{ key: UNPIN_MENU_KEY, label: t('table.unpin') }]
+            }
+            params={{
+              row: undefined as unknown as Row,
+              column: state().col,
+              rowIndex: -1,
+              columnIndex: leafColumns().findIndex((column) => column.key === state().col.key),
+            }}
+            onSelect={(key) => {
+              const column = state().col
+              const current = pinOf(column)
+              if (key === PIN_LEFT_MENU_KEY && current === null) {
+                setColumnPinned(column.key, 'left')
+              } else if (key === UNPIN_MENU_KEY && current !== null) {
+                setColumnPinned(column.key, null)
+              }
+            }}
+            onClose={closePinMenu}
           />
         )}
       </Show>

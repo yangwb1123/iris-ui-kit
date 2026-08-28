@@ -39413,6 +39413,12 @@
               "description": "Optional tab strip; tab clicks apply listed view names in order."
             },
             {
+              "name": "columnPinMenu",
+              "type": "boolean",
+              "optional": true,
+              "description": "Enable a built-in leaf-column header menu to pin left or unpin; off by default."
+            },
+            {
               "name": "pinnedColumns",
               "type": "Record<string, 'left' | 'right' | null>",
               "optional": true,
@@ -39826,12 +39832,6 @@
               "type": "(order: string[] | undefined) => void",
               "optional": true,
               "description": "Fired when a column drag proposes a new controlled order."
-            },
-            {
-              "name": "pinnedColumns",
-              "type": "Record<string, 'left' | 'right' | null>",
-              "optional": true,
-              "description": "Controlled per-column pin state; explicit null overrides a static column pin."
             },
             {
               "name": "columnFade",

@@ -33,4 +33,20 @@ describe('Solid IrisTable pinnedColumns SSR', () => {
     expect(first).toContain('data-iris-table-pinned="right"')
     expect(updates).toEqual([])
   })
+
+  it('keeps the header pin menu absent and side-effect free during SSR', () => {
+    const updates: unknown[] = []
+    const html = renderToString(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        columnPinMenu
+        onColumnPinnedChange={(key, side) => updates.push([key, side])}
+      />
+    ))
+
+    expect(html).not.toContain('data-iris-table-context-menu')
+    expect(html).not.toContain('__iris-pin-left')
+    expect(updates).toEqual([])
+  })
 })

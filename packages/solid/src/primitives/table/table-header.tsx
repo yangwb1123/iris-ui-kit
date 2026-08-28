@@ -1,79 +1,12 @@
-import { createSignal, For, Show, type Accessor, type JSX } from 'solid-js'
+import { For, Show, type Accessor, type JSX } from 'solid-js'
 import type { HeaderCell } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 import type { TableColumnFadeController } from './table-column-fade'
-import { useDrag } from '../drag/useDrag'
+import { PinnedDragHandle } from './table-pinned-drag-handle'
 import { ColumnResizeHandle as TableColumnResizeHandle } from './table-overlay'
 
 type TableRow = Record<string, unknown>
 type TableHeaderMatrix<Row extends TableRow> = HeaderCell<IrisTableColumn<Row>>[][]
-
-function PinnedDragHandle(props: {
-  colKey: string
-  label: string
-  resolvePinnedCount: (dx: number) => number
-  commitPinnedCount: (count: number) => void
-}): JSX.Element {
-  const [element, setElement] = createSignal<HTMLElement | null>(null)
-  const [dx, setDx] = createSignal(0)
-  useDrag({
-    handle: element,
-    onStart: () => {
-      setDx(0)
-    },
-    onDrag: ({ dx: next }) => setDx(next),
-    onEnd: ({ dx: next }) => {
-      props.commitPinnedCount(props.resolvePinnedCount(next))
-      setDx(0)
-    },
-  })
-  const nudge = (event: KeyboardEvent): void => {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
-    event.preventDefault()
-    event.stopPropagation()
-    props.commitPinnedCount(props.resolvePinnedCount(0) + (event.key === 'ArrowRight' ? 1 : -1))
-  }
-  return (
-    <span
-      ref={setElement}
-      role="separator"
-      aria-orientation="vertical"
-      aria-label={`Adjust pinned column count at ${props.label}`}
-      tabIndex={0}
-      data-iris-pinned-drag-handle=""
-      data-column-key={props.colKey}
-      data-iris-pinned-drag-active={dx() !== 0 ? 'true' : undefined}
-      onPointerDown={(event) => event.stopPropagation()}
-      onKeyDown={nudge}
-      style={{
-        position: 'absolute',
-        top: '0',
-        right: '0',
-        bottom: '0',
-        width: '8px',
-        cursor: 'col-resize',
-        'touch-action': 'none',
-        'user-select': 'none',
-        'z-index': '2',
-        transform: dx() !== 0 ? `translateX(${dx()}px)` : undefined,
-      }}
-    >
-      <span
-        aria-hidden="true"
-        data-iris-pinned-drag-line=""
-        style={{
-          position: 'absolute',
-          top: '0',
-          bottom: '0',
-          'inset-inline-start': '50%',
-          width: '2px',
-          background: 'var(--iris-primary)',
-          transform: 'translateX(-50%)',
-        }}
-      />
-    </span>
-  )
-}
 
 export interface GroupedHeaderProps<Row extends TableRow> {
   grouped: Accessor<boolean>
@@ -93,6 +26,8 @@ export interface GroupedHeaderProps<Row extends TableRow> {
   columnDragOver: Accessor<string | null>
   handleColumnDragPointerDown: (event: PointerEvent, key: string) => void
   handleHeaderClick: (column: IrisTableColumn<Row>) => void
+  columnPinMenu: boolean | undefined
+  handleHeaderContextMenu: (event: MouseEvent, column: IrisTableColumn<Row>) => void
   sortAria: (column: IrisTableColumn<Row>) => 'none' | 'ascending' | 'descending' | undefined
   sortIndicator: (column: IrisTableColumn<Row>) => JSX.Element
   renderFilterTrigger: (column: IrisTableColumn<Row>, leaf: boolean) => JSX.Element
@@ -223,6 +158,11 @@ export function TableGroupedHeader<Row extends TableRow>(
                     : undefined
                 }
                 onClick={sortable() ? () => props.handleHeaderClick(col) : undefined}
+                onContextMenu={
+                  props.columnPinMenu && isLeaf()
+                    ? (event: MouseEvent) => props.handleHeaderContextMenu(event, col)
+                    : undefined
+                }
                 aria-sort={sortable() ? props.sortAria(col) : undefined}
                 style={{
                   'grid-column': `${lead + cell.colStart} / span ${cell.colSpan}`,
@@ -292,6 +232,8 @@ export interface FlatHeaderProps<Row extends TableRow> {
   columnDragOver: Accessor<string | null>
   handleColumnDragPointerDown: (event: PointerEvent, key: string) => void
   handleHeaderClick: (column: IrisTableColumn<Row>) => void
+  columnPinMenu: boolean | undefined
+  handleHeaderContextMenu: (event: MouseEvent, column: IrisTableColumn<Row>) => void
   sortAria: (column: IrisTableColumn<Row>) => 'none' | 'ascending' | 'descending' | undefined
   sortIndicator: (column: IrisTableColumn<Row>) => JSX.Element
   renderFilterTrigger: (column: IrisTableColumn<Row>, leaf: boolean) => JSX.Element
@@ -426,6 +368,11 @@ export function TableFlatHeader<Row extends TableRow>(props: FlatHeaderProps<Row
                       : undefined
                   }
                   onClick={() => props.handleHeaderClick(col)}
+                  onContextMenu={
+                    props.columnPinMenu
+                      ? (event: MouseEvent) => props.handleHeaderContextMenu(event, col)
+                      : undefined
+                  }
                   style={{
                     position: 'relative',
                     display: 'flex',

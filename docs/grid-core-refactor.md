@@ -3,6 +3,8 @@
 > 状态：Phase 0–3 已实现（2026-08-24，含四框架 cell-mode、排序与过滤续批）。本文是后续 Grid 重构的真相源；
 > `docs/vxe-grid-comparison.md` 继续记录功能覆盖，不再作为架构设计文档。
 
+2026-08-28：Solid `columnPinMenu` parity gate accepted；静态列 pin 的 live fallback regression 已补测；Solid client **157 files / 1,111 tests**、SSR **7 files / 49 tests**，typecheck/lint/build、spec audit（**1,589 files / 0 violations**）、`pnpm check:manifest`、`git diff --check` 均通过，`scripts/arch-baseline.json` 未改。`arch-check:ratchet` 的阻断项仍为 baseline 已豁免的 6 个 React/Vue/Solid/Svelte 表文件，未调整 baseline。
+
 ## 1. 为什么现在必须重构
 
 Iris Table 已完成 vxe-grid 主要功能覆盖，但当前实现仍以“继续增加 prop + 在组件内接线”为主：

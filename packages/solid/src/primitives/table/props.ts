@@ -113,6 +113,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onActiveViewChange?: (key: string | null) => void
   /** Optional tab strip; tab clicks apply listed view names in order. */
   tableTabs?: IrisTableTab[]
+  /** Enable a built-in leaf-column header menu to pin left or unpin; off by default. */
+  columnPinMenu?: boolean
   /** Controlled pin side by column key; absent keys fall back to column declarations. */
   pinnedColumns?: Record<string, 'left' | 'right' | null>
   /** Show a draggable boundary for the leading left-pinned columns. */

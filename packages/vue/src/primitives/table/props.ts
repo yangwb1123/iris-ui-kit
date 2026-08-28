@@ -88,6 +88,8 @@ export const tableProps = {
     type: Object as PropType<Record<string, 'left' | 'right' | null>>,
     default: undefined,
   },
+  /** Enable the built-in column-header pin menu; default off. */
+  columnPinMenu: { type: Boolean, default: false },
   /** Called for each column whose pin side changes. */
   onColumnPinnedChange: {
     type: Function as PropType<(key: string, side: 'left' | 'right' | null) => void>,

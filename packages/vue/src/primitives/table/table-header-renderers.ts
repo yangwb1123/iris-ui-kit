@@ -27,7 +27,9 @@ export interface GroupedHeaderRenderContext {
   pinnedDragHandle?: (column: TableColumn) => VNode | null
   pinOf: (column: TableColumn) => 'left' | 'right' | null
   pinnedColumnsControlled: boolean
+  columnPinMenu: boolean
   pinnedStyle: (key: string) => Record<string, string>
+  onHeaderContextMenu?: (event: MouseEvent, column: TableColumn) => void
   columnFadeAttr: (column: TableColumn) => 'in' | 'out' | undefined
   columnFadeStyle: (column: TableColumn) => Record<string, string> | null
   gridTemplate: Readonly<Ref<string>>
@@ -144,12 +146,17 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
             'data-iris-table-header': col.key,
             'data-iris-table-header-group': isLeaf ? undefined : '',
             'data-iris-table-pinned':
-              isLeaf && ctx.pinnedColumnsControlled ? ctx.pinOf(col) : undefined,
+              isLeaf && (ctx.pinnedColumnsControlled || ctx.columnPinMenu)
+                ? ctx.pinOf(col)
+                : undefined,
             'data-iris-column-fade': ctx.columnFadeAttr(col),
             'aria-hidden': fadeStyle ? 'true' : undefined,
             inert: fadeStyle ? '' : undefined,
             'aria-colspan': cell.colSpan,
             onClick: sortable ? () => ctx.onHeaderClick(col) : undefined,
+            ...(isLeaf && ctx.onHeaderContextMenu
+              ? { onContextmenu: (event: MouseEvent) => ctx.onHeaderContextMenu!(event, col) }
+              : {}),
             'aria-sort': sortable ? ctx.ariaSortFor(col) : undefined,
             style: {
               gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
@@ -175,7 +182,9 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               ...(fadeStyle ?? {}),
-              ...(isLeaf && ctx.pinnedColumnsControlled && ctx.pinOf(col) !== null
+              ...(isLeaf &&
+              (ctx.pinnedColumnsControlled || ctx.columnPinMenu) &&
+              ctx.pinOf(col) !== null
                 ? { ...ctx.pinnedStyle(col.key), background: 'var(--iris-surface)' }
                 : {}),
             },

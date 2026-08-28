@@ -107,6 +107,7 @@ import type {
   IrisTableColumn,
   IrisTableColumnVisibility,
   IrisTableColumnWidths,
+  IrisTableContextMenuConfig,
   IrisTableContextMenuParams,
   IrisTableExpose,
   IrisTableSortState,
@@ -116,6 +117,8 @@ import type {
 // Batch FS: the table back-to-top control is intentionally local to this
 // adapter. It follows the React recipe without adding scroll state to core.
 const SCROLL_TOP_VISIBLE_PX = 200
+const PIN_LEFT_MENU_KEY = '__iris-pin-left'
+const UNPIN_MENU_KEY = '__iris-unpin'
 const BACK_TOP_ANCHOR_STYLE: Record<string, string> = {
   position: 'sticky',
   insetBlockEnd: '0px',
@@ -226,23 +229,24 @@ export const IrisTable = defineComponent({
     })
     // Pin state is controlled only when the prop is present. The resolver is
     // the single read throat: explicit map entries (including null) win over
-    // static declarations, while absent entries retain the declaration.
+    // static declarations; otherwise the Core pinned channel contains only
+    // explicit uncontrolled overrides and current declarations remain the
+    // live fallback, without mutating the caller's columns.
     const pinnedPropControlled = ref(props.pinnedColumns !== undefined)
     const pinOf = (column: IrisTableColumn<Record<string, unknown>>): 'left' | 'right' | null => {
       const pinned = props.pinnedColumns
-      if (pinned !== undefined && Object.prototype.hasOwnProperty.call(pinned, column.key)) {
-        return pinned[column.key] ?? null
+      if (pinned !== undefined) {
+        if (Object.prototype.hasOwnProperty.call(pinned, column.key)) {
+          return pinned[column.key] ?? null
+        }
+        return column.pinned ?? null
+      }
+      const internal = columnsFeature.state.value.pinned
+      if (Object.prototype.hasOwnProperty.call(internal, column.key)) {
+        return internal[column.key] ?? null
       }
       return column.pinned ?? null
     }
-    const staticPinned = computed<Record<string, 'left' | 'right' | null>>(() => {
-      const next: Record<string, 'left' | 'right' | null> = {}
-      for (const column of flattenLeafColumns(props.columns)) {
-        const side = pinOf(column)
-        if (side !== null) next[column.key] = side
-      }
-      return next
-    })
     watch(
       () => props.pinnedColumns,
       (next) => {
@@ -250,7 +254,9 @@ export const IrisTable = defineComponent({
           pinnedPropControlled.value = true
           columnsFeature.model.syncPinned(next)
         } else {
-          if (pinnedPropControlled.value) columnsFeature.model.syncPinned(staticPinned.value)
+          // Discard controlled proposals when control is removed. Static
+          // declarations stay the live fallback for a later columns replace.
+          if (pinnedPropControlled.value) columnsFeature.model.syncPinned({})
           pinnedPropControlled.value = false
         }
       },
@@ -1835,6 +1841,17 @@ export const IrisTable = defineComponent({
       })
     }
 
+    // One write throat for every pin gesture. Controlled proposals are first
+    // rebased from the parent's map so a rejected proposal never becomes the
+    // basis for the next callback; Core still owns the callback and channel
+    // write, while pinOf keeps controlled rendering non-optimistic.
+    const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
+      if (props.pinnedColumns !== undefined) {
+        columnsFeature.model.syncPinned(props.pinnedColumns)
+      }
+      columnsFeature.setPinned(key, side)
+    }
+
     const pinnedDragHandle = createTablePinnedDrag({
       enabled: () => props.pinnedDrag === true,
       columns: () => leafColumns.value,
@@ -2211,6 +2228,92 @@ export const IrisTable = defineComponent({
     const closeContextMenu = (): void => {
       if (contextMenuState.value) contextMenuState.value.open = false
     }
+    const virtualCursorAnchor = (event: MouseEvent): HTMLElement =>
+      ({
+        getBoundingClientRect: () => ({
+          left: event.clientX,
+          top: event.clientY,
+          right: event.clientX,
+          bottom: event.clientY,
+          width: 0,
+          height: 0,
+          x: event.clientX,
+          y: event.clientY,
+          toJSON() {},
+        }),
+      }) as unknown as HTMLElement
+
+    // Header pin menu state is separate from the body context-menu state, but
+    // deliberately uses the same overlay renderer and floating-menu plumbing.
+    // Keeping the state as a normal context-menu snapshot means the menu has
+    // the same role, disabled-button behavior, dismissal and Teleport contract.
+    const pinMenuState = ref<{
+      open: boolean
+      items: Array<{ key: string; label: string; disabled?: boolean }>
+      params: IrisTableContextMenuParams<Record<string, unknown>>
+    } | null>(null)
+    const pinMenuAnchorRef = ref<HTMLElement | null>(null)
+    const pinMenuRef = ref<HTMLElement | null>(null)
+    const closePinMenu = (): void => {
+      if (pinMenuState.value) pinMenuState.value.open = false
+    }
+    watch(
+      () => props.columnPinMenu,
+      (enabled) => {
+        if (!enabled) closePinMenu()
+      },
+      { flush: 'sync' },
+    )
+    const pinMenuItemsFor = (column: IrisTableColumn): Array<{ key: string; label: string }> =>
+      pinOf(column) === null
+        ? [{ key: PIN_LEFT_MENU_KEY, label: t('table.pinLeft') }]
+        : [{ key: UNPIN_MENU_KEY, label: t('table.unpin') }]
+    const handleHeaderContextMenu = (event: MouseEvent, column: IrisTableColumn): void => {
+      if (!props.columnPinMenu) return
+      // A header context gesture must never sort or reach the browser menu.
+      event.preventDefault()
+      event.stopPropagation()
+      // Swap menus: a header gesture closes an already-open body menu.
+      closeContextMenu()
+      pinMenuAnchorRef.value = virtualCursorAnchor(event)
+      const params: IrisTableContextMenuParams<Record<string, unknown>> = {
+        row: undefined as unknown as Record<string, unknown>,
+        column,
+        rowIndex: -1,
+        columnIndex: leafColumns.value.findIndex((candidate) => candidate.key === column.key),
+      }
+      pinMenuState.value = { open: true, items: pinMenuItemsFor(column), params }
+    }
+    const pinMenuConfig: IrisTableContextMenuConfig<Record<string, unknown>> = {
+      // The renderer receives the snapshot items above. This required config
+      // member is intentionally empty: the pin menu has no caller items.
+      items: () => [],
+      onSelect: (key, params) => {
+        const current = pinOf(params.column)
+        if (key === PIN_LEFT_MENU_KEY && current === null) {
+          setColumnPinned(params.column.key, 'left')
+        } else if (key === UNPIN_MENU_KEY && current !== null) {
+          setColumnPinned(params.column.key, null)
+        }
+      },
+    }
+    // Keep an open menu's single item aligned with a parent-controlled update
+    // or an internal Core pin write that happens before the item is clicked.
+    watch(
+      () => {
+        const state = pinMenuState.value
+        if (!state?.open) return null
+        const side = pinOf(state.params.column)
+        const label = t(side === null ? 'table.pinLeft' : 'table.unpin')
+        return `${side ?? 'none'}\u0000${label}`
+      },
+      () => {
+        const state = pinMenuState.value
+        if (state?.open) state.items = pinMenuItemsFor(state.params.column)
+      },
+      { flush: 'sync' },
+    )
+
     const handleContextMenu = (
       e: MouseEvent,
       row: Record<string, unknown>,
@@ -2220,19 +2323,9 @@ export const IrisTable = defineComponent({
     ): void => {
       if (!props.contextMenu) return
       e.preventDefault()
-      contextAnchorRef.value = {
-        getBoundingClientRect: () => ({
-          left: e.clientX,
-          top: e.clientY,
-          right: e.clientX,
-          bottom: e.clientY,
-          width: 0,
-          height: 0,
-          x: e.clientX,
-          y: e.clientY,
-          toJSON() {},
-        }),
-      } as unknown as HTMLElement
+      // Swap menus: a body gesture closes an already-open header pin menu.
+      closePinMenu()
+      contextAnchorRef.value = virtualCursorAnchor(e)
       const params: IrisTableContextMenuParams<Record<string, unknown>> = {
         row,
         column: col,
@@ -2278,6 +2371,43 @@ export const IrisTable = defineComponent({
         close: closeContextMenu,
         contextMenu: props.contextMenu,
       })
+
+    const pinMenuOpen = computed(() => props.columnPinMenu && pinMenuState.value?.open === true)
+    const { floatingStyles: pinMenuStyles } = useFloating({
+      anchor: pinMenuAnchorRef,
+      floating: pinMenuRef,
+      open: pinMenuOpen,
+      placement: 'bottom-start',
+      // The zero-size virtual anchor must remain at the cursor; clamping it
+      // would move the context menu away from the requested coordinates.
+      flip: false,
+      shift: false,
+    })
+    useDismiss({
+      enabled: pinMenuOpen,
+      exclude: [pinMenuRef],
+      onDismiss: closePinMenu,
+    })
+    watch(pinMenuOpen, (open) => {
+      if (typeof document === 'undefined') return
+      if (open) document.addEventListener('scroll', closePinMenu, true)
+      else document.removeEventListener('scroll', closePinMenu, true)
+    })
+    onScopeDispose(() => {
+      if (typeof document === 'undefined') return
+      document.removeEventListener('scroll', closePinMenu, true)
+    })
+
+    const buildPinMenuSection = (): VNode | null => {
+      if (!props.columnPinMenu) return null
+      return renderContextMenuSection({
+        state: pinMenuState,
+        styles: pinMenuStyles,
+        menuRef: pinMenuRef,
+        close: closePinMenu,
+        contextMenu: pinMenuConfig,
+      })
+    }
 
     // -------- Header filter panel (vxe filterConfig parity, batch Z) --------
     // One panel at a time, keyed by the column whose trigger was clicked. The
@@ -2493,7 +2623,9 @@ export const IrisTable = defineComponent({
             pinnedDragHandle,
             pinOf,
             pinnedColumnsControlled: props.pinnedColumns !== undefined,
+            columnPinMenu: props.columnPinMenu,
             pinnedStyle,
+            onHeaderContextMenu: props.columnPinMenu ? handleHeaderContextMenu : undefined,
             columnFadeAttr,
             columnFadeStyle,
             gridTemplate,
@@ -2622,6 +2754,9 @@ export const IrisTable = defineComponent({
                   ? (e: PointerEvent) => handleColDragPointerDown(e, col.key)
                   : undefined,
               onClick: () => onHeaderClick(col),
+              ...(props.columnPinMenu
+                ? { onContextmenu: (event: MouseEvent) => handleHeaderContextMenu(event, col) }
+                : {}),
               style: {
                 position: 'relative',
                 display: 'flex',
@@ -3236,6 +3371,7 @@ export const IrisTable = defineComponent({
             )
           : null,
         buildContextMenuSection(),
+        buildPinMenuSection(),
         buildFilterPanelSection(),
         buildAuditPanelSection(),
       ].filter((n): n is VNode => n !== null)

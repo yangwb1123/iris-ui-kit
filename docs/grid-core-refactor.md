@@ -4,6 +4,7 @@
 > `docs/vxe-grid-comparison.md` 继续记录功能覆盖，不再作为架构设计文档。
 
 2026-08-28：Solid `columnPinMenu` parity gate accepted；静态列 pin 的 live fallback regression 已补测；Solid client **157 files / 1,111 tests**、SSR **7 files / 49 tests**，typecheck/lint/build、spec audit（**1,589 files / 0 violations**）、`pnpm check:manifest`、`git diff --check` 均通过，`scripts/arch-baseline.json` 未改。`arch-check:ratchet` 的阻断项仍为 baseline 已豁免的 6 个 React/Vue/Solid/Svelte 表文件，未调整 baseline。
+2026-08-28：Vue `columnPinMenu` parity gate accepted；修复 default-off 替换 `columns` 后 static pin fallback 过期，并使已打开菜单跟随 live i18n；focused **14/14**、全量 **188 files / 1,701 tests**、typecheck/build、lint 0 errors（1 条既有 complexity warning）、spec audit **1,895 files / 0 violations**、manifest **155×4 / 86 tokens** 与 `git diff --check` 通过；`scripts/arch-baseline.json` 未改。`arch-check:ratchet` 仍因六个既有 oversized table 文件报红，未调整 baseline。
 
 ## 1. 为什么现在必须重构
 

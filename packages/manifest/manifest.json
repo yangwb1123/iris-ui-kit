@@ -38867,6 +38867,12 @@
               "optional": true
             },
             {
+              "name": "columnPinMenu",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "onColumnPinnedChange",
               "type": "(key: string, side: 'left' | 'right' | null) =",
               "optional": true

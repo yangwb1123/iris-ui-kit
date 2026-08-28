@@ -139,6 +139,14 @@ export const tableProps = {
   cellRange: { type: Boolean, default: false },
   /** Range clipboard copy; copyWithFormat uses column formatter output. */
   clipConfig: { type: Object as PropType<IrisTableClipConfig>, default: undefined },
+  /** Batch CK (iris 独有 — vxe has no inline search highlight): a
+   * case-insensitive literal-substring search over each text cell's display
+   * chain (mask → formatter ?? raw); every occurrence renders as an inline
+   * `<mark data-iris-search-hit>` with the surface-selected token. Display-only:
+   * no bar, no match state, no write-back. `render`/`html`/`link`/`autoLink`/
+   * sparkline cells are untouched. Additive; default off (fail-closed).
+   */
+  searchHighlight: { type: String, default: '' },
   /** Enable built-in row-list undo/redo history; default off. */
   undo: { type: Boolean, default: false },
   renderDetail: {

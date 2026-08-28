@@ -78,6 +78,7 @@ import { renderTableSortIndicator } from './table-sort-indicator'
 import { createTableRowTarget } from './table-row-target'
 import { createTablePinnedDrag } from './table-pinned-drag'
 import { createCommittedList, createTableUndoController, replaceTableCell } from './table-undo'
+import { applySearchHighlight } from './search-highlight'
 import { useTableImport } from './useTableImport'
 import {
   renderCellEditContent,
@@ -3003,9 +3004,20 @@ export const IrisTable = defineComponent({
                 )
               : buildCellEditContent(row, col, index, editCellId)
           } else {
+            // Keep the off path on tableDisplayText byte-identical. The active
+            // path uses the same mask → formatter/raw order, while preserving
+            // non-string formatter/raw nodes for the wrapper's string gate.
             content =
               cellSlot?.({ row, index, value: getCellValue(row, col) }) ??
-              tableDisplayText(row, col, getCellValue)
+              (props.searchHighlight
+                ? (() => {
+                    const displayValue = applyTableMask(getCellValue(row, col), col)
+                    const renderedValue = col.formatter
+                      ? col.formatter(displayValue, row)
+                      : displayValue
+                    return applySearchHighlight(renderedValue, props.searchHighlight)
+                  })()
+                : tableDisplayText(row, col, getCellValue))
           }
 
           // Tree mode: in the first data cell, prepend a depth-indent span that

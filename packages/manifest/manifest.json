@@ -38979,6 +38979,12 @@
               "optional": true
             },
             {
+              "name": "searchHighlight",
+              "type": "string",
+              "optional": true,
+              "default": ""
+            },
+            {
               "name": "undo",
               "type": "boolean",
               "optional": true,

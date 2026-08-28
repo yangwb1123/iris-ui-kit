@@ -449,6 +449,10 @@ react 3012 tests · vue 1599 tests（+15 批 EK 公式列 +11 批 EN 审计日�
 | DS   | `widthHint` 在列宽拖拽期间显示 token 化像素宽度提示                                                                                                        | [`baseline`](vxe-grid/batch-ds-baseline.md) · [`adapt`](vxe-grid/batch-ds-adapt.md) · [`review`](vxe-grid/batch-ds-review.md) · [`gate`](vxe-grid/batch-ds-gate.md) |
 | DT   | `exportRowsCsv(keys)` 按 body 顺序复用既有 CSV/公式导出管线                                                                                                | [`baseline`](vxe-grid/batch-dt-baseline.md) · [`adapt`](vxe-grid/batch-dt-adapt.md) · [`review`](vxe-grid/batch-dt-review.md) · [`gate`](vxe-grid/batch-dt-gate.md) |
 
+## 批 SHL 当前实现记录
+
+Vue `IrisTable` 支持 `searchHighlight?: string`：普通 masked formatter/raw 字符串命中时渲染 token 化 `<mark data-iris-search-hit>`；空值关闭、非字符串 formatter/raw 节点、cell slot 均保持原样，无状态/回写，SSR 输出确定。实现与测试见 [`batch-shl-vue-baseline.md`](vxe-grid/batch-shl-vue-baseline.md)。
+
 ## 当前整仓验证快照（2026-08-20）
 
 core 1594/1594、React 2815/2815、Vue 1545/1545、Solid 986/986 + hydration 38/38、Svelte 942/942 + hydration 35/35；turbo 180/180，core V8 statements/lines 95.58%、branches 92.83%、functions 96.18%。

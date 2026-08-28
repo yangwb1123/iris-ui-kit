@@ -73,7 +73,7 @@ import { createTableDrag } from './table-drag'
 import { computeTableResponsiveColumns } from './table-responsive'
 import { TableScrollTop } from './table-scroll-top'
 import { TableFilterTrigger } from './table-filter-trigger'
-import { applyDetectedTableTypes } from './table-columns'
+import { applyDetectedTableTypes, applyTableColumnOrder } from './table-columns'
 import { createTableRowTarget } from './table-row-target'
 import { createTableColumnFade } from './table-column-fade'
 import { createTableGridTemplate } from './table-grid'
@@ -169,11 +169,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     // values are only the initial snapshot; the effects below mirror later
     // Solid prop replacements without making the core emit an event.
     visibility: props.columnVisibility,
+    order: props.columnOrder,
     widths: props.columnWidths,
     defaultWidths: props.defaultColumnWidths,
     onVisibilityChange: (next) => props.onColumnVisibilityChange?.(next),
+    onOrderChange: (next) => props.onColumnOrderChange?.(next),
     onWidthsChange: (next) => props.onColumnWidthsChange?.(next),
   })
+  const [orderPropControlled, setOrderPropControlled] = createSignal(
+    props.columnOrder !== undefined,
+  )
   const [uncontrolledWidths, setUncontrolledWidths] = createSignal<IrisTableColumnWidths>({
     ...(props.defaultColumnWidths ?? {}),
   })
@@ -189,6 +194,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     columnsFeature.model.syncVisibility(visibility ?? {})
   })
   createEffect(() => {
+    const order = props.columnOrder
+    if (order !== undefined) {
+      columnsFeature.model.syncOrder(order)
+    } else if (orderPropControlled()) {
+      // Clear a rejected controlled proposal before exposing the model again.
+      columnsFeature.model.syncOrder([])
+    }
+    setOrderPropControlled(order !== undefined)
+  })
+  createEffect(() => {
     const widths = props.columnWidths
     if (widths !== undefined) {
       columnsFeature.model.syncWidths(widths)
@@ -201,6 +216,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   })
 
   const effectiveVisibility = (): Record<string, boolean> => columnsFeature.state().visibility
+  const effectiveColumnOrder = (): string[] | undefined => {
+    if (props.columnOrder !== undefined) return props.columnOrder
+    return orderPropControlled() ? [] : columnsFeature.state().order
+  }
   const columnFade = createTableColumnFade<Row>({
     visibility: effectiveVisibility,
     enabled: () => merged.columnFade === true,
@@ -230,15 +249,18 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const width = widthOf(column)
     return Number.isFinite(width) && width >= 0 ? width : resolveTableInitialWidth(column)
   }
+  const orderedDisplayColumns = createMemo<IrisTableColumn<Row>[]>(() =>
+    applyTableColumnOrder(detectedDisplayColumns(), effectiveColumnOrder()),
+  )
   const responsiveResult = createMemo(() =>
     merged.responsive
       ? computeTableResponsiveColumns(
-          detectedDisplayColumns(),
+          orderedDisplayColumns(),
           responsiveWidth(),
           responsiveLeadingWidth(),
           responsiveWidthOf,
         )
-      : { columns: detectedDisplayColumns(), overflow: false },
+      : { columns: orderedDisplayColumns(), overflow: false },
   )
   const responsiveOverflow = createMemo(() => responsiveResult().overflow)
   const displayColumns = createMemo<IrisTableColumn<Row>[]>(() => responsiveResult().columns)
@@ -1113,6 +1135,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     rows: bodyRows,
     columns: leafColumns,
     rowId,
+    columnOrderControlled: () => props.columnOrder !== undefined,
+    setColumnOrder: (next) => columnsFeature.setOrder(next),
+    grouped,
     commitReorderRows: (activeId, overId) => {
       const visibleRows = bodyRows()
       const fromVisible = visibleRows.findIndex(

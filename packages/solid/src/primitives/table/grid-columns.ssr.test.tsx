@@ -40,4 +40,25 @@ describe('Solid IrisTable Grid Core columns SSR bridge', () => {
     expect(updates).toEqual([])
     expect(typeof document).toBe('undefined')
   })
+
+  it('projects controlled column order during SSR without invoking its callback', () => {
+    const updates: Array<string[] | undefined> = []
+    const html = renderToString(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        rowKey="id"
+        columnOrder={['status', 'name']}
+        onColumnOrderChange={(next) => updates.push(next)}
+      />
+    ))
+
+    expect(html.indexOf('data-iris-table-header="status"')).toBeLessThan(
+      html.indexOf('data-iris-table-header="name"'),
+    )
+    expect(html.indexOf('data-iris-table-cell="status"')).toBeLessThan(
+      html.indexOf('data-iris-table-cell="name"'),
+    )
+    expect(updates).toEqual([])
+  })
 })

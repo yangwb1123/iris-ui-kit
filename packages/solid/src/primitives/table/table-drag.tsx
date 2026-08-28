@@ -10,6 +10,12 @@ type TableDragConfig<Row extends Record<string, unknown>> = {
   rows: Accessor<Row[]>
   columns: Accessor<IrisTableColumn<Row>[]>
   rowId: (row: Row, index: number) => string | number
+  /** Top-level column order is controlled only when this accessor is true. */
+  columnOrderControlled?: Accessor<boolean>
+  /** The shared Grid Columns model's controlled-order write path. */
+  setColumnOrder?: (order: string[]) => void
+  /** Grouped tables keep column order at the top-level and do not sync leaf drags. */
+  grouped?: Accessor<boolean>
   /** Resolve a drag into the canonical source rows; `null` rejects the drop. */
   reorderRows?: (activeId: string, overId: string) => Row[] | null
   /** Commit a drag directly through the rows feature and return its snapshot. */
@@ -128,9 +134,14 @@ export function createTableDrag<Row extends Record<string, unknown>>(
   const onColumnPointerMove = (event: PointerEvent): void => {
     if (!options.columnDrag()) return
     if (columnController.isPending() && columnController.tryStart(event.clientX, event.clientY)) {
+      const columnKeys = new Set(options.columns().map((column) => column.key))
       columnRects.length = 0
       columnRects.push(
-        ...collectRects(options.root(), '[data-iris-table-header]', 'data-iris-table-header'),
+        ...collectRects(
+          options.root(),
+          '[data-iris-table-header]',
+          'data-iris-table-header',
+        ).filter((rect) => columnKeys.has(rect.id)),
       )
     }
     if (columnController.getState().activeId !== null) {
@@ -153,6 +164,9 @@ export function createTableDrag<Row extends Record<string, unknown>>(
         const [moved] = columns.splice(from, 1)
         columns.splice(to, 0, moved)
         options.columnDrag()?.onReorder(columns)
+        if (options.columnOrderControlled?.() && !options.grouped?.()) {
+          options.setColumnOrder?.(columns.map((column) => column.key))
+        }
       }
     }
     columnRects.length = 0

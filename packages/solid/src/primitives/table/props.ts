@@ -65,6 +65,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   columnVisibility?: Record<string, boolean>
   /** Fired when visibility changes (parent owns the map). */
   onColumnVisibilityChange?: (next: Record<string, boolean>) => void
+  /** Controlled top-level presentation order; omitted keys retain source order. */
+  columnOrder?: string[]
+  /** Fired when a column drag proposes a new controlled top-level order. */
+  onColumnOrderChange?: (next: string[] | undefined) => void
   /** Animate column show/hide as a token-backed opacity and grid-track overlay. Off by default and disabled by prefers-reduced-motion. */
   columnFade?: boolean
   /** Client-side filters (vxe filterConfig parity, local mode): column key →

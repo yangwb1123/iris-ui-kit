@@ -632,6 +632,8 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-27：Solid `columnOrder` continuation accepted；显式受控 order 才写入 Core，普通 `columnDrag` 保持父级 columns 所有权；drag 落点矩形过滤 `__drag/__seq/__expand` 伪列头；全量 **155 files / 1,091 tests**、SSR/hydration **6 files / 47 tests**、typecheck/lint/build、spec audit（**312 files / 0 violations**）、manifest 与 `git diff --check` 通过；`arch-check --diff` 仍阻断：solid IrisTable.tsx **2667 行 > baseline 2340**（HEAD 已 2641 行，ratchet 在既有合并续批中已过期，react/svelte 另 3 个超限同在 HEAD），按命令未改 `scripts/arch-baseline.json`。
 
+2026-08-28：Svelte `columnOrder` continuation accepted；order 与 React/Vue 同构经 `grid-columns` per-table channel（显式 `columnOrder` 才接管列序，`columnDrag` 所有权不变）；focused **5/5**、client **160 files / 1,072 tests**、SSR **5 files / 48 tests**（hydration-safety 39）通过；svelte-check 0 errors/0 warnings、lint/build、framework parity、manifest（155×4）与 `git diff --check` 通过，未改 `scripts/arch-baseline.json`（svelte `IrisTable.svelte` 净 +31，ratchet 限制同上）。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

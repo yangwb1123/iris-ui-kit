@@ -139,6 +139,19 @@ const cases: { name: string; Comp: Component<never>; props: Record<string, unkno
       undo: true,
     },
   },
+  {
+    name: 'Table (column order)',
+    Comp: IrisTable as unknown as Component<never>,
+    props: {
+      columns: [
+        { key: 'name', title: 'Name' },
+        { key: 'age', title: 'Age' },
+      ],
+      data: [{ id: 1, name: 'Alpha', age: 42 }],
+      rowKey: 'id',
+      columnOrder: ['age', 'name'],
+    },
+  },
 ]
 
 afterEach(() => {

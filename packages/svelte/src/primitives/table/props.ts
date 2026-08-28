@@ -64,6 +64,10 @@ export interface IrisTableProps {
   /** Column visibility (vxe columnConfig.visible parity): map of column key →
    * visible (default true). Hidden columns are not rendered. */
   columnVisibility?: Record<string, boolean>
+  /** Controlled top-level presentation order; omitted keys retain source order. */
+  columnOrder?: string[]
+  /** Fired when a column drag proposes a new controlled order. */
+  onColumnOrderChange?: (order: string[] | undefined) => void
   /** Animate controlled column show/hide transitions; disabled by default. */
   columnFade?: boolean
   /** Client-side filters (vxe filterConfig parity, local mode): column key →

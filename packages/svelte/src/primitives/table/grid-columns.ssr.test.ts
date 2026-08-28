@@ -37,4 +37,31 @@ describe('Svelte IrisTable Grid Core columns SSR/hydration guard', () => {
     expect(typeof document).toBe('undefined')
     expect(typeof window).toBe('undefined')
   })
+
+  it('renders a controlled top-level order deterministically without emitting while syncing', () => {
+    const updates: unknown[] = []
+    const renderTable = (): string =>
+      render(IrisTable, {
+        props: {
+          columns,
+          data,
+          rowKey: 'id',
+          columnOrder: ['status', 'unknown', 'name'],
+          onColumnOrderChange: (next) => updates.push(next),
+        },
+      }).body
+
+    const first = renderTable()
+    const second = renderTable()
+    const status = first.indexOf('data-iris-table-header="status"')
+    const name = first.indexOf('data-iris-table-header="name"')
+    const age = first.indexOf('data-iris-table-header="age"')
+
+    expect(first).toBe(second)
+    expect(status).toBeLessThan(name)
+    expect(name).toBeLessThan(age)
+    expect(updates).toEqual([])
+    expect(typeof document).toBe('undefined')
+    expect(typeof window).toBe('undefined')
+  })
 })

@@ -219,7 +219,8 @@ export interface IrisTablePersistedState {
  * The table is CONTROLLED: restore replays through the change callbacks and
  * saves serialize the current props on every change. `columnVisibility` and
  * `columnOrder` are accepted for cross-framework parity but stay inert in this
- * bridge — neither has a change callback yet (fiat F1).
+ * persistence bridge — visibility has no change callback, and the order callback
+ * is reserved for controlled drag proposals (fiat F1).
  */
 export interface IrisTablePersistConfig {
   /** Storage adapter (`getItem`/`setItem`; defaults to `localStorage`).

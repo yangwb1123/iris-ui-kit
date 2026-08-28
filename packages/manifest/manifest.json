@@ -39805,6 +39805,18 @@
               "optional": true
             },
             {
+              "name": "columnOrder",
+              "type": "string[]",
+              "optional": true,
+              "description": "Controlled top-level presentation order; omitted keys retain source order."
+            },
+            {
+              "name": "onColumnOrderChange",
+              "type": "(order: string[] | undefined) => void",
+              "optional": true,
+              "description": "Fired when a column drag proposes a new controlled order."
+            },
+            {
               "name": "columnFade",
               "type": "boolean",
               "optional": true,
@@ -40170,6 +40182,7 @@
           "events": [
             "onActiveViewChange",
             "onCellEdit",
+            "onColumnOrderChange",
             "onColumnPinnedChange",
             "onColumnWidthsChange",
             "onDataChange",

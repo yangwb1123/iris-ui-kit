@@ -82,7 +82,7 @@
   import { createTableUndoController } from './table-undo.svelte'
   import { createTableKeyboard } from './table-keyboard'
   import { handleTableRowKeyDown } from './table-events'
-  import { applyDetectedTableTypes } from './table-columns'
+  import { applyDetectedTableTypes, applyTableColumnOrder } from './table-columns'
   import { createPinnedDragMath } from './table-pinned-drag'
   import { createTableViewsController } from './table-views.svelte'
   import { createTablePersistController } from './table-persist.svelte'
@@ -132,6 +132,8 @@
     seqMethod,
     spanMethod,
     columnVisibility,
+    columnOrder,
+    onColumnOrderChange,
     columnFade = false,
     filters,
     onFiltersChange,
@@ -224,11 +226,16 @@
   // controlled props are synchronized explicitly by the effects below.
   const columnsFeature = useGridColumns(gridCore, {
     visibility: columnVisibility,
+    order: columnOrder,
     widths: columnWidths,
     defaultWidths: defaultColumnWidths,
+    onOrderChange: (next) => onColumnOrderChange?.(next),
     onWidthsChange: (next) => onColumnWidthsChange?.(next),
   })
   const columnState = columnsFeature.state
+  // svelte-ignore state_referenced_locally — this sentinel is initialized from
+  // the first prop value and updated by the replacement effect below.
+  let orderPropControlled = $state(columnOrder !== undefined)
   // svelte-ignore state_referenced_locally — this sentinel is initialized from
   // the first prop value and updated by the replacement effect below.
   let visibilityPropControlled = $state(columnVisibility !== undefined)
@@ -263,6 +270,20 @@
     columnsFeature.model.syncVisibility(visibility ?? {})
     visibilityPropControlled = visibility !== undefined
   })
+  $effect(() => {
+    const order = columnOrder
+    if (order !== undefined) {
+      columnsFeature.model.syncOrder(order)
+    } else if (orderPropControlled) {
+      // Removing control must not expose a rejected controlled proposal held by
+      // the Core model; the source declaration becomes the render order again.
+      columnsFeature.model.syncOrder([])
+    }
+    orderPropControlled = order !== undefined
+  })
+  const effectiveColumnOrder = $derived<string[] | undefined>(
+    columnOrder !== undefined ? columnOrder : orderPropControlled ? [] : $columnState.order,
+  )
   $effect(() => {
     const widths = columnWidths
     if (widths !== undefined) {
@@ -300,15 +321,18 @@
   )
   const responsiveWidthOf = (column: IrisTableColumn): number =>
     resolveResponsiveWidth(column, effectiveWidths, defaultColumnWidths)
+  const orderedDisplayColumns = $derived(
+    applyTableColumnOrder(detectedDisplayColumns, effectiveColumnOrder),
+  )
   const responsiveResult = $derived(
     responsive
       ? computeResponsiveTableColumns(
-          detectedDisplayColumns,
+          orderedDisplayColumns,
           responsiveWidth,
           responsiveLeadingWidth,
           responsiveWidthOf,
         )
-      : { columns: detectedDisplayColumns, overflow: false },
+      : { columns: orderedDisplayColumns, overflow: false },
   )
   const responsiveDisplayColumns = $derived(responsiveResult.columns)
   const responsiveOverflow = $derived(responsiveResult.overflow)
@@ -939,10 +963,10 @@
 
   // ── Batch EJ (persistState): view-state persistence (iris 独有) ────────────
   // Collector snapshot — what can be restored is what gets saved.
-  // columnVisibility/columnOrder have NO change channels in this Svelte
-  // bridge (controlled prop only / columnDrag.onReorder over the whole leaf
-  // array), so they are permanently inert in both directions — never
-  // collected, never replayed (mirror of react's per-piece callback gates).
+  // columnVisibility has no change channel in this Svelte bridge. The
+  // columnOrder callback is reserved for controlled drag proposals, while
+  // persistence keeps both pieces inert until their persistence contract is
+  // extended — neither is collected or replayed here.
   // pageSize joins only in proxy mode; its restore is the documented special
   // case (the proxy-creation effect applies it BEFORE the first query).
   const persistSnapshot = $derived((): IrisTablePersistedState => {
@@ -981,7 +1005,8 @@
         // No change channel (controlled prop only) — permanently inert.
         return false
       case 'columnOrder':
-        // No change channel (reorder runs through columnDrag.onReorder) — inert.
+        // The order callback belongs to the drag proposal contract; persistence
+        // deliberately remains inert for this piece.
         return false
       case 'columnWidths': {
         if (
@@ -1287,6 +1312,12 @@
     },
     commitRows: (rows) => {
       gridRows.commit(rows, { reason: 'row-drag' })
+    },
+    commitColumnOrder: (order) => {
+      // columnDrag normally belongs to the caller's columns array. Only an
+      // explicitly supplied columnOrder owner opts into the Core order channel;
+      // controlled parents remain authoritative because the render reads the prop.
+      if (orderPropControlled) columnsFeature.setOrder(order)
     },
     onDataChange: (rows) => onDataChange?.(rows),
   })

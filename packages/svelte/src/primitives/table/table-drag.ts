@@ -15,6 +15,8 @@ export interface TableDragBridgeOptions {
   commitReorderRows?: (activeId: string, overId: string) => Array<Record<string, unknown>> | null
   /** Commit rows returned by the legacy `reorderRows` resolver. */
   commitRows?: (rows: Array<Record<string, unknown>>) => void
+  /** Commit a column-order proposal only when the adapter has an explicit owner. */
+  commitColumnOrder?: (order: string[]) => void
   onDataChange?: (rows: Array<Record<string, unknown>>) => void
 }
 
@@ -148,6 +150,7 @@ export function createTableDragBridge(options: TableDragBridgeOptions): TableDra
         const [moved] = columns.splice(from, 1)
         columns.splice(to, 0, moved!)
         config.onReorder(columns)
+        options.commitColumnOrder?.(columns.map((column) => column.key))
       }
     }
     columnRects.length = 0

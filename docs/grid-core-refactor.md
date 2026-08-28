@@ -634,6 +634,12 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 2026-08-28：Svelte `columnOrder` continuation accepted；order 与 React/Vue 同构经 `grid-columns` per-table channel（显式 `columnOrder` 才接管列序，`columnDrag` 所有权不变）；focused **5/5**、client **160 files / 1,072 tests**、SSR **5 files / 48 tests**（hydration-safety 39）通过；svelte-check 0 errors/0 warnings、lint/build、framework parity、manifest（155×4）与 `git diff --check` 通过，未改 `scripts/arch-baseline.json`（svelte `IrisTable.svelte` 净 +31，ratchet 限制同上）。
 
+2026-08-27：Vue `pinnedColumns` continuation accepted；受控拖拽每次提案前静默重同步 Core，focused **8/8**、全量 **186 files / 1,687 tests**、typecheck/build、lint 0 errors（既有 complexity warning）、spec audit **1,594 files / 0 violations**、`pnpm check:manifest` 与 `git diff --check` 通过；`scripts/arch-baseline.json` 未改。`arch-check:ratchet` 仍受 HEAD 既有 oversized Vue/React/Solid/Svelte Table 文件限制，未调整 baseline。
+
+2026-08-28：列顺序投影纯函数继续下沉至 Core `applyColumnOrder`，React/Vue/Solid/Svelte 移除重复的 adapter-local 实现；未知/重复 key、遗漏列的稳定顺序及空 order 的 identity 快路径保持不变。Core columns **10/10**、grid-columns **5/5**，四端列状态/列顺序定向回归 **39/39**，四端 typecheck 与 `git diff --check` 通过。
+
+2026-08-28：列可见性投影继续下沉至 Core `applyColumnVisibility`，React/Vue/Solid/Svelte 的顶层 visibility 过滤统一复用该纯函数；空/未提供 map 保持 identity，分组列仍只在顶层过滤，fade 的 overlay 与 `visibleMethod` 语义不变。Core columns **12/12**、grid-columns **5/5**，列顺序/状态及三端 fade 定向回归 **105/105**，四端 typecheck/build/lint 与 `git diff --check` 通过。
+
 ## 8. 合并门
 
 每个迁移批次必须同时满足：

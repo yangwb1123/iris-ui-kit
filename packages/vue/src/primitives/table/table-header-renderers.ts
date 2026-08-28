@@ -25,6 +25,9 @@ export interface GroupedHeaderRenderContext {
   multiSortSeq: (column: TableColumn) => VNode | null
   renderFilterTrigger: (column: TableColumn, leaf: boolean) => VNode | null
   pinnedDragHandle?: (column: TableColumn) => VNode | null
+  pinOf: (column: TableColumn) => 'left' | 'right' | null
+  pinnedColumnsControlled: boolean
+  pinnedStyle: (key: string) => Record<string, string>
   columnFadeAttr: (column: TableColumn) => 'in' | 'out' | undefined
   columnFadeStyle: (column: TableColumn) => Record<string, string> | null
   gridTemplate: Readonly<Ref<string>>
@@ -140,6 +143,8 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
             role: 'columnheader',
             'data-iris-table-header': col.key,
             'data-iris-table-header-group': isLeaf ? undefined : '',
+            'data-iris-table-pinned':
+              isLeaf && ctx.pinnedColumnsControlled ? ctx.pinOf(col) : undefined,
             'data-iris-column-fade': ctx.columnFadeAttr(col),
             'aria-hidden': fadeStyle ? 'true' : undefined,
             inert: fadeStyle ? '' : undefined,
@@ -170,6 +175,9 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               ...(fadeStyle ?? {}),
+              ...(isLeaf && ctx.pinnedColumnsControlled && ctx.pinOf(col) !== null
+                ? { ...ctx.pinnedStyle(col.key), background: 'var(--iris-surface)' }
+                : {}),
             },
           },
           [

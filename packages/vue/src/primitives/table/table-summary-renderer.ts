@@ -14,6 +14,7 @@ export interface TableSummaryRendererContext {
   columnFadeAttr: (column: IrisTableColumn<TableRow>) => 'in' | 'out' | undefined
   columnFadeStyle: (column: IrisTableColumn<TableRow>) => Record<string, string> | null
   getCellValue: (row: TableRow, column: IrisTableColumn<TableRow>) => unknown
+  pinOf: (column: IrisTableColumn<TableRow>) => 'left' | 'right' | null
   pinnedStyle: (key: string) => Record<string, string>
 }
 
@@ -45,7 +46,7 @@ export function renderTableSummaryRow(ctx: TableSummaryRendererContext): VNode |
           role: 'cell',
           'data-iris-table-cell': column.key,
           'data-iris-table-summary-cell': operation ? '' : undefined,
-          'data-iris-table-pinned': column.pinned,
+          'data-iris-table-pinned': ctx.pinOf(column),
           'data-iris-column-fade': ctx.columnFadeAttr(column),
           'aria-hidden': fadeStyle ? 'true' : undefined,
           inert: fadeStyle ? '' : undefined,

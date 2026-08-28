@@ -12,6 +12,7 @@ import {
   type VNode,
 } from 'vue'
 import {
+  applyColumnOrder,
   buildFormValues,
   buildHeaderMatrix,
   compareStates,
@@ -71,7 +72,7 @@ import { renderTableStateRow } from './table-state-renderer'
 import { createTableKeyboard } from './table-keyboard'
 import { computeResponsiveTableColumns } from './table-responsive'
 import { ensureTableStyles } from './table-styles'
-import { applyDetectedTableTypes, applyTableColumnOrder } from './table-columns'
+import { applyDetectedTableTypes } from './table-columns'
 import { renderTableFilterTrigger } from './table-filter-trigger'
 import { renderTableSortIndicator } from './table-sort-indicator'
 import { createTableRowTarget } from './table-row-target'
@@ -217,10 +218,44 @@ export const IrisTable = defineComponent({
     )
     const gridCore = useGridCore<Record<string, unknown>>()
     const columnsFeature = useGridColumns(gridCore, {
+      pinned: props.pinnedColumns,
       onVisibilityChange: (next) => emit('update:columnVisibility', next),
       onOrderChange: (next) => emit('update:columnOrder', next),
       onWidthsChange: (next) => emit('update:columnWidths', next),
+      onPinnedChange: (key, side) => props.onColumnPinnedChange?.(key, side),
     })
+    // Pin state is controlled only when the prop is present. The resolver is
+    // the single read throat: explicit map entries (including null) win over
+    // static declarations, while absent entries retain the declaration.
+    const pinnedPropControlled = ref(props.pinnedColumns !== undefined)
+    const pinOf = (column: IrisTableColumn<Record<string, unknown>>): 'left' | 'right' | null => {
+      const pinned = props.pinnedColumns
+      if (pinned !== undefined && Object.prototype.hasOwnProperty.call(pinned, column.key)) {
+        return pinned[column.key] ?? null
+      }
+      return column.pinned ?? null
+    }
+    const staticPinned = computed<Record<string, 'left' | 'right' | null>>(() => {
+      const next: Record<string, 'left' | 'right' | null> = {}
+      for (const column of flattenLeafColumns(props.columns)) {
+        const side = pinOf(column)
+        if (side !== null) next[column.key] = side
+      }
+      return next
+    })
+    watch(
+      () => props.pinnedColumns,
+      (next) => {
+        if (next !== undefined) {
+          pinnedPropControlled.value = true
+          columnsFeature.model.syncPinned(next)
+        } else {
+          if (pinnedPropControlled.value) columnsFeature.model.syncPinned(staticPinned.value)
+          pinnedPropControlled.value = false
+        }
+      },
+      { immediate: true, flush: 'sync' },
+    )
     // A supplied order is controlled, including an empty array. Keep the
     // model mirrored silently so removing control cannot expose a rejected or
     // previously proposed order through the next render.
@@ -306,7 +341,7 @@ export const IrisTable = defineComponent({
       return Number.isFinite(width) && width >= 0 ? width : resolveInitialWidth(column)
     }
     const orderedDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() =>
-      applyTableColumnOrder(detectedDisplayColumns.value, effectiveColumnOrder.value),
+      applyColumnOrder(detectedDisplayColumns.value, effectiveColumnOrder.value),
     )
     const responsiveResult = computed(() =>
       props.responsive
@@ -315,6 +350,7 @@ export const IrisTable = defineComponent({
             responsiveWidth.value,
             responsiveLeadingWidth.value,
             responsiveWidthOf,
+            pinOf,
           )
         : { columns: orderedDisplayColumns.value, overflow: false },
     )
@@ -1714,6 +1750,7 @@ export const IrisTable = defineComponent({
         scrollLeft.value,
         viewportWidth.value,
         effectiveWidths.value,
+        pinOf,
       )
       if (!visible) return null
       // A fading column must remain mounted even when it sits outside the
@@ -1738,7 +1775,7 @@ export const IrisTable = defineComponent({
         (hasDetail.value ? EXPAND_COL_WIDTH : 0) +
         (props.selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
       for (const col of leafColumns.value) {
-        if (col.pinned === 'left') {
+        if (pinOf(col) === 'left') {
           map[col.key] = { side: 'left', offset: left }
           left += widthOf(col)
         }
@@ -1746,7 +1783,7 @@ export const IrisTable = defineComponent({
       let right = 0
       for (let i = leafColumns.value.length - 1; i >= 0; i -= 1) {
         const col = leafColumns.value[i]
-        if (col?.pinned === 'right') {
+        if (col && pinOf(col) === 'right') {
           map[col.key] = { side: 'right', offset: right }
           right += widthOf(col)
         }
@@ -1802,8 +1839,14 @@ export const IrisTable = defineComponent({
       enabled: () => props.pinnedDrag === true,
       columns: () => leafColumns.value,
       widthOf: (column) => effectiveWidths.value[column.key] ?? resolveInitialWidth(column),
-      onColumnPinnedChange: props.onColumnPinnedChange,
-      onPinnedCountChange: props.onPinnedCountChange,
+      pinOf,
+      setPinned: (key, side) => {
+        if (pinnedPropControlled.value) {
+          columnsFeature.model.syncPinned(props.pinnedColumns ?? {})
+          columnsFeature.setPinned(key, side)
+        } else props.onColumnPinnedChange?.(key, side)
+      },
+      onPinnedCountChange: (count) => props.onPinnedCountChange?.(count),
     })
 
     const rowDragCtrl = createSortable()
@@ -2448,6 +2491,9 @@ export const IrisTable = defineComponent({
             multiSortSeq,
             renderFilterTrigger,
             pinnedDragHandle,
+            pinOf,
+            pinnedColumnsControlled: props.pinnedColumns !== undefined,
+            pinnedStyle,
             columnFadeAttr,
             columnFadeStyle,
             gridTemplate,
@@ -2561,7 +2607,7 @@ export const IrisTable = defineComponent({
               key: col.key,
               role: 'columnheader',
               'data-iris-table-header': col.key,
-              'data-iris-table-pinned': col.pinned,
+              'data-iris-table-pinned': pinOf(col),
               ...columnFadeAttrs(col),
               // Column drag-sort (vxe columnDragConfig parity, batch Y): the
               // header cell is the press target; grouped headers are NOT
@@ -2595,7 +2641,7 @@ export const IrisTable = defineComponent({
                 textOverflow: 'ellipsis',
                 ...(columnFadeStyle(col) ?? {}),
                 ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
-                ...(col.pinned
+                ...(pinOf(col) !== null
                   ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
                   : {}),
               },
@@ -2844,7 +2890,7 @@ export const IrisTable = defineComponent({
                 key: col.key,
                 role: 'cell',
                 'data-iris-table-cell': col.key,
-                'data-iris-table-pinned': col.pinned,
+                'data-iris-table-pinned': pinOf(col),
                 ...columnFadeAttrs(col),
                 'data-editable': isEditableColumn(col) ? '' : undefined,
                 'data-editing': isEditing ? '' : undefined,
@@ -3083,6 +3129,7 @@ export const IrisTable = defineComponent({
               columnFadeStyle,
               colTrack,
               getCellValue,
+              pinOf,
               pinnedStyle,
             })
           : null

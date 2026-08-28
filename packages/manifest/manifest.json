@@ -38862,6 +38862,11 @@
               "default": "false"
             },
             {
+              "name": "pinnedColumns",
+              "type": "Record<string, 'left' | 'right' | null>",
+              "optional": true
+            },
+            {
               "name": "onColumnPinnedChange",
               "type": "(key: string, side: 'left' | 'right' | null) =",
               "optional": true

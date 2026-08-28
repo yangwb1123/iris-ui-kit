@@ -83,6 +83,11 @@ export const tableProps = {
   tableTabs: { type: Array as PropType<IrisTableTab[]>, default: undefined },
   /** Show a draggable boundary for the leading left-pinned columns. */
   pinnedDrag: { type: Boolean, default: false },
+  /** Controlled per-column pin state; explicit null overrides a static column pin. */
+  pinnedColumns: {
+    type: Object as PropType<Record<string, 'left' | 'right' | null>>,
+    default: undefined,
+  },
   /** Called for each column whose pin side changes. */
   onColumnPinnedChange: {
     type: Function as PropType<(key: string, side: 'left' | 'right' | null) => void>,

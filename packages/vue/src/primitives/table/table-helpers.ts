@@ -103,6 +103,7 @@ export function computeVisibleColSet(
   scrollLeft: number,
   viewportWidth: number,
   widths: IrisTableColumnWidths,
+  pinOf: (column: IrisTableColumn) => 'left' | 'right' | null,
 ): Set<number> | null {
   if (!enabled) return null
   const range = computeVirtualRange({
@@ -115,7 +116,7 @@ export function computeVisibleColSet(
   const visible = new Set<number>()
   for (let index = range.startIndex; index <= range.endIndex; index += 1) visible.add(index)
   columns.forEach((column, index) => {
-    if (column.pinned) visible.add(index)
+    if (pinOf(column) !== null) visible.add(index)
   })
   return visible
 }

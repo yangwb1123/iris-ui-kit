@@ -1,24 +1,38 @@
 import { computed, h, ref, type Ref, type VNode } from 'vue'
-import { leftPinnedCount, pinnedCountFromBudget } from '@iris-ui-kit/core'
+import { pinnedCountFromBudget } from '@iris-ui-kit/core'
 import { useDrag } from '../drag/useDrag'
 import type { IrisTableColumn } from './types'
+
+function leftPinnedCount(
+  columns: readonly IrisTableColumn[],
+  pinOf: (column: IrisTableColumn) => 'left' | 'right' | null,
+  cap: number,
+): number {
+  let count = 0
+  for (let index = 0; index < cap; index += 1) {
+    if (pinOf(columns[index]!) === 'left') count = index + 1
+    else break
+  }
+  return count
+}
 
 export function createTablePinnedDrag(options: {
   enabled: () => boolean
   columns: () => IrisTableColumn<Record<string, unknown>>[]
   widthOf: (column: IrisTableColumn) => number
-  onColumnPinnedChange?: (key: string, pinned: 'left' | null) => void
+  pinOf: (column: IrisTableColumn) => 'left' | 'right' | null
+  setPinned: (key: string, pinned: 'left' | null) => void
   onPinnedCountChange?: (count: number) => void
 }): (column: IrisTableColumn) => VNode | null {
   const firstRightPinnedIndex = computed(() => {
-    const index = options.columns().findIndex((column) => column.pinned === 'right')
+    const index = options.columns().findIndex((column) => options.pinOf(column) === 'right')
     return index < 0 ? options.columns().length : index
   })
   const pinnedBoundaryColumn = computed(() => {
     if (!options.enabled()) return null
     for (let index = firstRightPinnedIndex.value - 1; index >= 0; index -= 1) {
       const column = options.columns()[index]
-      if (column?.pinned === 'left') return column
+      if (column && options.pinOf(column) === 'left') return column
     }
     return null
   })
@@ -37,7 +51,7 @@ export function createTablePinnedDrag(options: {
   const resolvePinnedCount = (dx: number): number => {
     const columns = options.columns()
     const cap = firstRightPinnedIndex.value
-    const current = leftPinnedCount(columns, cap)
+    const current = leftPinnedCount(columns, options.pinOf, cap)
     let currentWidth = 0
     for (let index = 0; index < current; index += 1) {
       const column = columns[index]
@@ -55,14 +69,14 @@ export function createTablePinnedDrag(options: {
     const columns = options.columns()
     const cap = firstRightPinnedIndex.value
     const clamped = Math.max(0, Math.min(cap, count))
-    const current = leftPinnedCount(columns, cap)
+    const current = leftPinnedCount(columns, options.pinOf, cap)
     if (clamped === current) return
     for (let index = 0; index < cap; index += 1) {
       const column = columns[index]
       if (!column) continue
       const target: 'left' | null = index < clamped ? 'left' : null
-      if (column.pinned === target) continue
-      options.onColumnPinnedChange?.(column.key, target)
+      if (options.pinOf(column) === target) continue
+      options.setPinned(column.key, target)
     }
     options.onPinnedCountChange?.(clamped)
   }

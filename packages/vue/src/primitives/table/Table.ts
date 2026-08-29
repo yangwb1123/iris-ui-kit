@@ -18,6 +18,7 @@ import {
   compareStates,
   applyTableMask,
   createAuditLog,
+  createRecentFilters,
   createSortable,
   detectColumnType,
   createTreeSelection,
@@ -33,6 +34,7 @@ import {
   validateEditRulesAsync,
   withSortedChildren,
   type AuditLogType,
+  type RecentFilterEntry,
   type DetectedColumnType,
   type SortableRect,
   type SortableState,
@@ -561,6 +563,16 @@ export const IrisTable = defineComponent({
     )
     const effectiveFilterValues = computed(() =>
       props.filterValues !== undefined ? props.filterValues : filtering.filterValues.value,
+    )
+    // Batch CB: keep the bounded recent-filter controller local to this table.
+    // Its ref mirror makes controller mutations reactive without changing the
+    // existing Grid Filtering semantics or the filter panel's draft state.
+    const recent = createRecentFilters()
+    const recentEntries = shallowRef<readonly RecentFilterEntry[]>(recent.list())
+    onScopeDispose(
+      recent.subscribe(() => {
+        recentEntries.value = recent.list()
+      }),
     )
     // remoteSort parity: hand the sort state to the server. Header clicks are
     // pushed via the onSortChange/onMultiSortChange wrappers above; these
@@ -2453,6 +2465,14 @@ export const IrisTable = defineComponent({
     })
     const applyFilterValues = (colKey: string, values: string[]): void => {
       filtering.model.setFilterValues({ ...effectiveFilterValues.value, [colKey]: values })
+      // Batch CB: record only non-empty confirmed sets. This stays at the
+      // ordinary apply throat, so it also works without a callback or a
+      // controlled filterValues prop; empty values retain clear semantics.
+      if (props.recentFilters && values.length > 0) recent.record(colKey, values)
+    }
+    const applyRecentFilter = (entry: RecentFilterEntry): void => {
+      applyFilterValues(entry.key, entry.values)
+      closeFilterPanel()
     }
     const clearFilterValues = (colKey: string): void => {
       filtering.model.clearColumnFilterValues(colKey)
@@ -2476,6 +2496,8 @@ export const IrisTable = defineComponent({
         toggle: toggleFilterDraft,
         apply: applyFilterValues,
         clear: clearFilterValues,
+        recent: props.recentFilters ? recentEntries.value : [],
+        onApplyRecent: applyRecentFilter,
       })
 
     return () => {

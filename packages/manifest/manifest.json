@@ -39064,6 +39064,12 @@
               "optional": true
             },
             {
+              "name": "recentFilters",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "onFilterValuesChange",
               "type": "(next: IrisTableFilterValues) =",
               "optional": true

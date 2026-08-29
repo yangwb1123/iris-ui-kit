@@ -217,6 +217,8 @@ export const tableProps = {
     type: Object as PropType<IrisTableFilterValues>,
     default: undefined,
   },
+  /** Show recently confirmed non-empty filter sets in the filter panel; default off. */
+  recentFilters: { type: Boolean, default: false },
   onFilterValuesChange: {
     type: Function as PropType<(next: IrisTableFilterValues) => void>,
     default: undefined,

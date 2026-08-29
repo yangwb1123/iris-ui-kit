@@ -1,4 +1,5 @@
 import { h, Teleport, type Ref, type VNode } from 'vue'
+import type { RecentFilterEntry } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import type { UseI18nReturn } from '../../i18n'
 import type {
@@ -94,11 +95,27 @@ export interface FilterPanelSectionContext {
   filterDraft: Readonly<Ref<string[]>>
   columns: IrisTableColumn<TableRow>[]
   filterValues: IrisTableFilterValues | undefined
+  recent: readonly RecentFilterEntry[]
+  onApplyRecent: (entry: RecentFilterEntry) => void
   t: Translate
   close: () => void
   toggle: (value: string) => void
   apply: (colKey: string, values: string[]) => void
   clear: (colKey: string) => void
+}
+
+/** Resolve a recent filter label from the current column declarations. */
+function recentFilterLabel(
+  entry: RecentFilterEntry,
+  columns: readonly IrisTableColumn<TableRow>[],
+): string {
+  const col = columns.find((column) => column.key === entry.key)
+  if (!col) return entry.values.join(', ')
+  const labels = entry.values.map((value) => {
+    const option = col.filterOptions?.find((item) => item.value === value)
+    return option ? option.label : value
+  })
+  return `${col.title ?? entry.key}: ${labels.join(', ')}`
 }
 
 /** Render the teleported checkbox filter panel for one header column. */
@@ -134,6 +151,51 @@ export function renderFilterPanelSection(ctx: FilterPanelSectionContext): VNode 
       },
     },
     [
+      ...(ctx.recent.length > 0
+        ? [
+            h(
+              'div',
+              {
+                'data-iris-filter-recent-title': '',
+                style: {
+                  color: 'var(--iris-muted)',
+                  fontSize: 'var(--iris-font-size-xs, 11px)',
+                  marginTop: 'var(--iris-space-xxs, 4px)',
+                },
+              },
+              ctx.t('table.recentFilters'),
+            ),
+            ...ctx.recent.map((entry, index) =>
+              h(
+                'button',
+                {
+                  key: `${entry.key}:${index}`,
+                  type: 'button',
+                  'data-iris-filter-recent': index,
+                  onClick: () => ctx.onApplyRecent(entry),
+                  style: {
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--iris-foreground)',
+                    cursor: 'pointer',
+                    font: 'inherit',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                    textAlign: 'start',
+                  },
+                },
+                recentFilterLabel(entry, ctx.columns),
+              ),
+            ),
+            h('div', {
+              style: {
+                borderTop: '1px solid var(--iris-border)',
+                margin: 'var(--iris-space-xxs, 4px) 0',
+              },
+            }),
+          ]
+        : []),
       ...options.map((opt) =>
         h(
           'div',

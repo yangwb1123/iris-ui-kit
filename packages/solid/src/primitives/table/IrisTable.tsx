@@ -78,6 +78,7 @@ import { createTableRowTarget } from './table-row-target'
 import { createTableColumnFade } from './table-column-fade'
 import { createTableGridTemplate } from './table-grid'
 import { ensureTableStyles } from './styles'
+import { applySearchHighlight } from './search-highlight'
 import { createPinnedDragMath } from './table-pinned-drag'
 import { createTableViewsController, TableTabs, TableViews } from './table-views'
 import { createTableUndoController } from './table-undo'
@@ -1992,6 +1993,13 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               String(resolveTableCellValue(liveRow(), col) ?? '') === editingDraft()
             const displayText = (): string =>
               tableDisplayText<Row>(liveRow(), col, resolveTableCellValue)
+            const displayNode = (): JSX.Element => {
+              if (!merged.searchHighlight) return displayText()
+              const rowValue = liveRow()
+              const masked = applyTableMask(resolveTableCellValue(rowValue, col), col)
+              const finalNode = col.formatter ? col.formatter(masked, rowValue) : masked
+              return applySearchHighlight(finalNode, merged.searchHighlight)
+            }
             // Cell merge (vxe spanMethod parity): the occupied set carries
             // cells covered by an earlier rowspan/colspan origin — those cells
             // render nothing. Origin cells with colspan > 1 extend their grid
@@ -2220,7 +2228,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   <Show
                     when={isEditing()}
                     fallback={
-                      <Show when={col.renderCell} fallback={displayText()}>
+                      <Show when={col.renderCell} fallback={displayNode()}>
                         {col.renderCell!(liveRow(), index)}
                       </Show>
                     }

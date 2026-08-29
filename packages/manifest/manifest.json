@@ -38979,12 +38979,6 @@
               "optional": true
             },
             {
-              "name": "searchHighlight",
-              "type": "string",
-              "optional": true,
-              "default": ""
-            },
-            {
               "name": "undo",
               "type": "boolean",
               "optional": true,
@@ -39640,6 +39634,12 @@
               "type": "IrisTableClipConfig",
               "optional": true,
               "description": "Range clipboard copy; copyWithFormat uses column formatter output."
+            },
+            {
+              "name": "searchHighlight",
+              "type": "string",
+              "optional": true,
+              "description": "Literal, case-insensitive query for display-only text-cell highlighting: mask → formatter ?? raw, with each string occurrence wrapped in `<mark data-iris-search-hit>`. Empty/absent is off and fail-closed; no bar, match state, callback, or write-back; renderCell remains untouched. Additive — default off."
             },
             {
               "name": "virtualScroll",

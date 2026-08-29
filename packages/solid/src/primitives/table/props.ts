@@ -206,6 +206,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   cellRange?: boolean
   /** Range clipboard copy; copyWithFormat uses column formatter output. */
   clipConfig?: IrisTableClipConfig
+  /** Literal, case-insensitive query for display-only text-cell highlighting: mask → formatter ?? raw, with each string occurrence wrapped in `<mark data-iris-search-hit>`. Empty/absent is off and fail-closed; no bar, match state, callback, or write-back; renderCell remains untouched. Additive — default off. */
+  searchHighlight?: string
   virtualScroll?: IrisTableVirtualOptions
   columnVirtualization?: boolean
   style?: JSX.CSSProperties

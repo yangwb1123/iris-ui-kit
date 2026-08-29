@@ -21,6 +21,14 @@ export const BASE_CELL_STYLE: JSX.CSSProperties = {
   'white-space': 'nowrap',
 }
 
+/** Inline search-hit styling; every value is a theme token or its fallback. */
+export const SEARCH_HIT_STYLE: JSX.CSSProperties = {
+  background: 'var(--iris-surface-selected, rgba(99,102,241,0.12))',
+  color: 'inherit',
+  'border-radius': 'var(--iris-radius-sm, 4px)',
+  padding: '0 var(--iris-space-xxs, 4px)',
+}
+
 const TABLE_STYLE_ID = 'iris-table-row-styles'
 const TABLE_FADE_STYLE_ID = 'iris-table-column-fade-styles-solid'
 

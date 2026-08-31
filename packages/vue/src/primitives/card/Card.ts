@@ -51,7 +51,7 @@ export const IrisCard = defineComponent({
         flexDirection: 'column',
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
-        borderRadius: 'var(--iris-radius-md, 8px)',
+        borderRadius: 'var(--iris-radius-md, 6px)',
         overflow: 'hidden',
         transition: props.hover ? 'transform 160ms ease, box-shadow 160ms ease' : 'none',
       }

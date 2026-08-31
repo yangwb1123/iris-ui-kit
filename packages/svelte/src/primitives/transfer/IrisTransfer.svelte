@@ -252,7 +252,7 @@
       style:border-radius="var(--iris-radius-sm, 4px)"
       style:background="var(--iris-background)"
       style:cursor={disabled || $sourceChecked.length === 0 ? 'not-allowed' : 'pointer'}
-      style:font-size="14px"
+      style:font-size="var(--iris-font-size-md, 14px)"
       style:opacity={disabled || $sourceChecked.length === 0 ? '0.5' : '1'}>›</button
     >
     <button
@@ -267,7 +267,7 @@
       style:border-radius="var(--iris-radius-sm, 4px)"
       style:background="var(--iris-background)"
       style:cursor={disabled || $targetChecked.length === 0 ? 'not-allowed' : 'pointer'}
-      style:font-size="14px"
+      style:font-size="var(--iris-font-size-md, 14px)"
       style:opacity={disabled || $targetChecked.length === 0 ? '0.5' : '1'}>‹</button
     >
   </div>

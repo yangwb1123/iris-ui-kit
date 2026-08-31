@@ -110,7 +110,7 @@
     style:border-radius="var(--iris-radius-md, 6px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
     style:opacity={disabled ? '0.6' : '1'}
-    style:font-size="14px"
+    style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
     style:min-height="34px"
     style:min-width="180px"

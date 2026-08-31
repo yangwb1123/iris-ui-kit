@@ -103,7 +103,7 @@
   const LABEL_STYLE =
     'display: inline-flex; align-items: center; gap: var(--iris-space-xs, 8px); border: none; background: transparent; color: inherit; font: inherit; font-size: var(--iris-font-size-sm, 13px); cursor: pointer; padding: 0'
   const CLOSE_STYLE =
-    'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: none; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; padding: 0; opacity: 0.6'
+    'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: none; border-radius: var(--iris-radius-sm, 4px); background: transparent; color: inherit; cursor: pointer; padding: 0; opacity: 0.6'
   const TRIGGER_STYLE =
     'display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--iris-radius-md, 6px); border: 1px solid var(--iris-border); background: var(--iris-surface); color: var(--iris-foreground); cursor: pointer'
 </script>

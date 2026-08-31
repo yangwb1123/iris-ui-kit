@@ -166,7 +166,7 @@
       style:color="var(--iris-foreground)"
       style:cursor={!canPrev ? 'not-allowed' : 'pointer'}
       style:opacity={!canPrev ? '0.4' : '1'}
-      style:font-size="18px"
+      style:font-size="var(--iris-font-size-xl, 18px)"
       style:display="inline-flex"
       style:align-items="center"
       style:justify-content="center">‹</button
@@ -191,7 +191,7 @@
       style:color="var(--iris-foreground)"
       style:cursor={!canNext ? 'not-allowed' : 'pointer'}
       style:opacity={!canNext ? '0.4' : '1'}
-      style:font-size="18px"
+      style:font-size="var(--iris-font-size-xl, 18px)"
       style:display="inline-flex"
       style:align-items="center"
       style:justify-content="center">›</button
@@ -216,7 +216,7 @@
           onclick={() => goTo(i)}
           style:width={i === value ? '20px' : '8px'}
           style:height="8px"
-          style:border-radius="4px"
+          style:border-radius="var(--iris-radius-sm, 4px)"
           style:border="none"
           style:padding="0"
           style:cursor="pointer"

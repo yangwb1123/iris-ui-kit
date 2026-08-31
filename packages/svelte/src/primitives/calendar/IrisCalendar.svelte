@@ -167,7 +167,12 @@
       style:opacity={prevDisabled ? '0.4' : '1'}>&#8249;</button
     >
 
-    <div data-iris-calendar-title aria-live="polite" style:font-weight="600" style:font-size="14px">
+    <div
+      data-iris-calendar-title
+      aria-live="polite"
+      style:font-weight="600"
+      style:font-size="var(--iris-font-size-md, 14px)"
+    >
       {title}
     </div>
 
@@ -271,7 +276,7 @@
             style:border-radius="var(--iris-radius-sm, 4px)"
             style:cursor={isDisabled ? 'not-allowed' : 'pointer'}
             style:opacity={isDisabled ? '0.45' : '1'}
-            style:font-size="13px"
+            style:font-size="var(--iris-font-size-sm, 13px)"
             style:font-family="inherit"
             style:outline="none">{date.getDate()}</button
           >

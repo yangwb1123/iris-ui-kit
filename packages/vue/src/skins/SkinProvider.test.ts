@@ -79,6 +79,27 @@ describe('SkinProvider / useSkin (Vue)', () => {
     }
   })
 
+  it('applies live typography and radius patches to the target', async () => {
+    const engine = createSkinEngine({ skins: [brand], default: 'light' })
+    const wrapper = mount(SkinProvider, {
+      props: { engine },
+      slots: { default: () => h('button') },
+    })
+
+    engine.patch({
+      tokens: {
+        'iris.font.size.md': '18px',
+        'iris.font.size.4xl': '34px',
+        'iris.radius.md': 0,
+      },
+    })
+
+    expect(document.documentElement.style.getPropertyValue('--iris-font-size-md')).toBe('18px')
+    expect(document.documentElement.style.getPropertyValue('--iris-font-size-4xl')).toBe('34px')
+    expect(document.documentElement.style.getPropertyValue('--iris-radius-md')).toBe('0px')
+    wrapper.unmount()
+  })
+
   it('reverts the post-swap target on unmount', async () => {
     const engine = createSkinEngine({ skins: [brand], default: 'brand' })
     const el1 = document.createElement('div')

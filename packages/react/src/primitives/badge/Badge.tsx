@@ -27,7 +27,7 @@ function badgeStyle(
     fontWeight: 500,
     lineHeight: 1,
     whiteSpace: 'nowrap',
-    fontSize: size === 'sm' ? 'var(--iris-font-size-xs, 12px)' : '12px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
     padding: size === 'sm' ? '2px 6px' : '3px 8px',
   }
   switch (variant) {

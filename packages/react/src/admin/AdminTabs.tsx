@@ -144,7 +144,7 @@ export function IrisAdminTabs({
           width: 16,
           height: 16,
           border: 'none',
-          borderRadius: 4,
+          borderRadius: 'var(--iris-radius-sm, 4px)',
           background: 'transparent',
           color: 'inherit',
           cursor: 'pointer',

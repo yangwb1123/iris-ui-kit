@@ -23,7 +23,7 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--iris-foreground)',
   border: '1px solid var(--iris-border)',
   borderRadius: 'var(--iris-radius-sm, 4px)',
-  fontSize: 12,
+  fontSize: 'var(--iris-font-size-xs, 12px)',
   fontFamily: 'inherit',
   textAlign: 'center',
 }
@@ -219,7 +219,7 @@ export function IrisColorPicker({
               height: 4,
               transform: 'translateY(-50%)',
               border: '2px solid #fff',
-              borderRadius: 2,
+              borderRadius: 'var(--iris-radius-sm, 4px)',
               boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
               pointerEvents: 'none',
             }}
@@ -250,7 +250,7 @@ export function IrisColorPicker({
                 height: 4,
                 transform: 'translateY(-50%)',
                 border: '2px solid #fff',
-                borderRadius: 2,
+                borderRadius: 'var(--iris-radius-sm, 4px)',
                 boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
                 pointerEvents: 'none',
               }}
@@ -259,7 +259,14 @@ export function IrisColorPicker({
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 6,
+          alignItems: 'center',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
+        }}
+      >
         <input
           data-iris-color-picker-hex=""
           aria-label={t('colorPicker.hex')}

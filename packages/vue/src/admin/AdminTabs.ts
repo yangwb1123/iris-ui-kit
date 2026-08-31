@@ -142,7 +142,7 @@ export const IrisAdminTabs = defineComponent({
                 width: '16px',
                 height: '16px',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
                 background: 'transparent',
                 color: 'inherit',
                 cursor: 'pointer',

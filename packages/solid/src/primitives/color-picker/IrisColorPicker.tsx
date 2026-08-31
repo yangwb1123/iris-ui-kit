@@ -191,7 +191,7 @@ export function IrisColorPicker(props: IrisColorPickerProps): JSX.Element {
         style={{
           position: 'relative',
           height: '14px',
-          'border-radius': '7px',
+          'border-radius': 'var(--iris-radius-sm, 4px)',
           background:
             'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
@@ -241,7 +241,7 @@ export function IrisColorPicker(props: IrisColorPickerProps): JSX.Element {
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-sm, 4px)',
             color: 'var(--iris-foreground)',
-            'font-size': '13px',
+            'font-size': 'var(--iris-font-size-xs, 12px)',
             'font-family': 'monospace',
             outline: 'none',
           }}
@@ -273,7 +273,7 @@ export function IrisColorPicker(props: IrisColorPickerProps): JSX.Element {
                 style={{
                   width: '20px',
                   height: '20px',
-                  'border-radius': '3px',
+                  'border-radius': 'var(--iris-radius-sm, 4px)',
                   background: preset,
                   border:
                     currentHex().toLowerCase() === preset.toLowerCase()

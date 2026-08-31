@@ -116,9 +116,9 @@
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}
     style:border-radius="var(--iris-radius-md, 6px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
-    style:font-size="14px"
+    style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
-    style:min-height="34px"
+    style:min-height="var(--iris-control-height-md, 34px)"
     style:min-width="140px"
     >{fmt(value.start) || (startPlaceholder ?? t('dateRangePicker.start'))}</button
   >
@@ -137,9 +137,9 @@
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}
     style:border-radius="var(--iris-radius-md, 6px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
-    style:font-size="14px"
+    style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
-    style:min-height="34px"
+    style:min-height="var(--iris-control-height-md, 34px)"
     style:min-width="140px">{fmt(value.end) || (endPlaceholder ?? t('dateRangePicker.end'))}</button
   >
 

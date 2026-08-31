@@ -62,7 +62,7 @@
     {#if sidebarTitle}
       <div
         style:font-weight="700"
-        style:font-size="14px"
+        style:font-size="var(--iris-font-size-md, 14px)"
         style:margin-bottom="12px"
         style:color="var(--iris-foreground)"
       >
@@ -86,7 +86,7 @@
           style:background={item.id === activeId ? 'var(--iris-surface-hover)' : 'transparent'}
           style:color="var(--iris-foreground)"
           style:cursor="pointer"
-          style:font-size="14px"
+          style:font-size="var(--iris-font-size-md, 14px)"
           style:font-family="inherit"
           style:text-align="start"
         >
@@ -99,7 +99,13 @@
 {/snippet}
 
 {#snippet headerContent()}
-  <div style:padding="0 16px" style:font-weight="700" style:font-size="16px">{title}</div>
+  <div
+    style:padding="0 16px"
+    style:font-weight="700"
+    style:font-size="var(--iris-font-size-lg, 16px)"
+  >
+    {title}
+  </div>
 {/snippet}
 
 {#snippet mainContent()}
@@ -109,7 +115,11 @@
         {#each cards as card (card.id)}
           <IrisDashboardCard title={card.title} colSpan={card.colSpan} rowSpan={card.rowSpan}>
             {#if card.body}
-              <p style:margin="0" style:font-size="14px" style:color="var(--iris-muted)">
+              <p
+                style:margin="0"
+                style:font-size="var(--iris-font-size-md, 14px)"
+                style:color="var(--iris-muted)"
+              >
                 {card.body}
               </p>
             {/if}

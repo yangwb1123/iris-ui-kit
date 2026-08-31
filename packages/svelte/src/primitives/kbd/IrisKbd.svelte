@@ -47,7 +47,7 @@
       background: 'var(--iris-surface)',
       color: 'var(--iris-foreground)',
       border: '1px solid var(--iris-border)',
-      'border-radius': '4px',
+      'border-radius': 'var(--iris-radius-sm, 4px)',
       'box-shadow': '0 1px 0 var(--iris-border)',
       'line-height': '1',
       'font-weight': '500',

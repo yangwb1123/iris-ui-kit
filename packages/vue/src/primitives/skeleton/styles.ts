@@ -32,7 +32,7 @@ const CSS = `
   border-radius: 50%;
 }
 [data-iris-skeleton-shape="text"] {
-  border-radius: 4px;
+  border-radius: var(--iris-radius-sm, 4px);
 }
 @media (prefers-reduced-motion: reduce) {
   [data-iris-skeleton][data-iris-skeleton-animated="true"] {

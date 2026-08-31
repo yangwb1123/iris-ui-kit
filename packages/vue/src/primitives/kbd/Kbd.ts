@@ -55,7 +55,7 @@ export const IrisKbd = defineComponent({
       background: 'var(--iris-surface)',
       color: 'var(--iris-foreground)',
       border: '1px solid var(--iris-border)',
-      borderRadius: '4px',
+      borderRadius: 'var(--iris-radius-sm, 4px)',
       boxShadow: '0 1px 0 var(--iris-border)',
       lineHeight: '1',
       fontWeight: '500',

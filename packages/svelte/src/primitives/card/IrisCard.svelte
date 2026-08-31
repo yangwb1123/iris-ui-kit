@@ -28,7 +28,7 @@
       'flex-direction': 'column',
       background: 'var(--iris-background)',
       color: 'var(--iris-foreground)',
-      'border-radius': 'var(--iris-radius-md, 8px)',
+      'border-radius': 'var(--iris-radius-md, 6px)',
       overflow: 'hidden',
       transition: hover ? 'transform 160ms ease, box-shadow 160ms ease' : 'none',
     }

@@ -67,14 +67,18 @@
       <!-- Title -->
       <h1
         style:margin="0 0 8px"
-        style:font-size="24px"
+        style:font-size="var(--iris-font-size-3xl, 24px)"
         style:font-weight="700"
         style:color="var(--iris-foreground)"
       >
         {title}
       </h1>
       {#if description}
-        <p style:margin="0 0 24px" style:font-size="14px" style:color="var(--iris-muted)">
+        <p
+          style:margin="0 0 24px"
+          style:font-size="var(--iris-font-size-md, 14px)"
+          style:color="var(--iris-muted)"
+        >
           {description}
         </p>
       {:else}
@@ -91,7 +95,7 @@
           style:background="color-mix(in srgb, var(--iris-danger) 12%, transparent)"
           style:color="var(--iris-danger)"
           style:border-radius="var(--iris-radius-sm, 4px)"
-          style:font-size="14px"
+          style:font-size="var(--iris-font-size-md, 14px)"
         >
           {error}
         </div>
@@ -103,7 +107,7 @@
           <label
             for="iris-login-email"
             style:display="block"
-            style:font-size="14px"
+            style:font-size="var(--iris-font-size-md, 14px)"
             style:font-weight="500"
             style:margin-bottom="6px"
             style:color="var(--iris-foreground)">Email</label
@@ -121,7 +125,7 @@
             style:padding="8px 12px"
             style:border="1px solid var(--iris-border)"
             style:border-radius="var(--iris-radius-md, 6px)"
-            style:font-size="14px"
+            style:font-size="var(--iris-font-size-md, 14px)"
             style:font-family="inherit"
             style:background="var(--iris-background)"
             style:color="var(--iris-foreground)"
@@ -134,7 +138,7 @@
           <label
             for="iris-login-password"
             style:display="block"
-            style:font-size="14px"
+            style:font-size="var(--iris-font-size-md, 14px)"
             style:font-weight="500"
             style:margin-bottom="6px"
             style:color="var(--iris-foreground)">Password</label
@@ -152,7 +156,7 @@
             style:padding="8px 12px"
             style:border="1px solid var(--iris-border)"
             style:border-radius="var(--iris-radius-md, 6px)"
-            style:font-size="14px"
+            style:font-size="var(--iris-font-size-md, 14px)"
             style:font-family="inherit"
             style:background="var(--iris-background)"
             style:color="var(--iris-foreground)"
@@ -176,7 +180,7 @@
             />
             <label
               for="iris-login-remember"
-              style:font-size="14px"
+              style:font-size="var(--iris-font-size-md, 14px)"
               style:color="var(--iris-foreground)">Remember me</label
             >
           </div>
@@ -193,7 +197,7 @@
           style:color="var(--iris-primary-foreground, #fff)"
           style:border="none"
           style:border-radius="var(--iris-radius-md, 6px)"
-          style:font-size="14px"
+          style:font-size="var(--iris-font-size-md, 14px)"
           style:font-weight="600"
           style:font-family="inherit"
           style:cursor={loading ? 'not-allowed' : 'pointer'}

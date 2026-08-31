@@ -154,7 +154,7 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
               width: '16px',
               height: '16px',
               border: 'none',
-              'border-radius': '4px',
+              'border-radius': 'var(--iris-radius-sm, 4px)',
               background: 'transparent',
               color: 'inherit',
               cursor: 'pointer',

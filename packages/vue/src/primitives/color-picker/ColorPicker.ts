@@ -158,7 +158,7 @@ export const IrisColorPicker = defineComponent({
         color: 'var(--iris-foreground)',
         border: '1px solid var(--iris-border)',
         borderRadius: 'var(--iris-radius-sm, 4px)',
-        fontSize: '12px',
+        fontSize: 'var(--iris-font-size-xs, 12px)',
         fontFamily: 'inherit',
         textAlign: 'center',
       }
@@ -254,7 +254,7 @@ export const IrisColorPicker = defineComponent({
                     height: '4px',
                     transform: 'translateY(-50%)',
                     border: '2px solid #fff',
-                    borderRadius: '2px',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
                     boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
                     pointerEvents: 'none',
                   },
@@ -308,7 +308,7 @@ export const IrisColorPicker = defineComponent({
                 display: 'flex',
                 gap: '6px',
                 alignItems: 'center',
-                fontSize: '12px',
+                fontSize: 'var(--iris-font-size-xs, 12px)',
               },
             },
             [

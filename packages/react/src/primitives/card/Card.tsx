@@ -33,7 +33,7 @@ function variantStyle(variant: IrisCardVariant): React.CSSProperties {
     flexDirection: 'column',
     background: 'var(--iris-background)',
     color: 'var(--iris-foreground)',
-    borderRadius: 'var(--iris-radius-md, 8px)',
+    borderRadius: 'var(--iris-radius-md, 6px)',
     overflow: 'hidden',
   }
   switch (variant) {

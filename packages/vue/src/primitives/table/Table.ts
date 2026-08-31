@@ -12,7 +12,6 @@ import {
   type VNode,
 } from 'vue'
 import {
-  applyColumnOrder,
   buildFormValues,
   buildHeaderMatrix,
   compareStates,
@@ -74,7 +73,7 @@ import { renderTableStateRow } from './table-state-renderer'
 import { createTableKeyboard } from './table-keyboard'
 import { computeResponsiveTableColumns } from './table-responsive'
 import { ensureTableStyles } from './table-styles'
-import { applyDetectedTableTypes } from './table-columns'
+import { applyDetectedTableTypes, applyTableColumnOrder } from './table-columns'
 import { renderTableFilterTrigger } from './table-filter-trigger'
 import { renderTableSortIndicator } from './table-sort-indicator'
 import { createTableRowTarget } from './table-row-target'
@@ -350,7 +349,7 @@ export const IrisTable = defineComponent({
       return Number.isFinite(width) && width >= 0 ? width : resolveInitialWidth(column)
     }
     const orderedDisplayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() =>
-      applyColumnOrder(detectedDisplayColumns.value, effectiveColumnOrder.value),
+      applyTableColumnOrder(detectedDisplayColumns.value, effectiveColumnOrder.value),
     )
     const responsiveResult = computed(() =>
       props.responsive

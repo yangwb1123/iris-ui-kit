@@ -168,7 +168,7 @@
           style:outline="none"
           style:background="transparent"
           style:color="var(--iris-foreground)"
-          style:font-size="16px"
+          style:font-size="var(--iris-font-size-lg, 16px)"
           style:font-family="inherit"
         />
       </div>
@@ -187,7 +187,7 @@
             style:padding="24px"
             style:text-align="center"
             style:color="var(--iris-muted)"
-            style:font-size="14px"
+            style:font-size="var(--iris-font-size-md, 14px)"
           >
             {emptyText ?? t('commandPalette.empty')}
           </div>
@@ -222,7 +222,7 @@
                 style:color={row.item.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}
                 style:cursor={row.item.disabled ? 'not-allowed' : 'pointer'}
                 style:text-align="start"
-                style:font-size="14px"
+                style:font-size="var(--iris-font-size-md, 14px)"
                 style:font-family="inherit"
                 style:opacity={row.item.disabled ? '0.5' : '1'}
               >
@@ -232,10 +232,10 @@
                 <span style:flex="1">{row.item.label}</span>
                 {#if row.item.shortcut}
                   <kbd
-                    style:font-size="11px"
+                    style:font-size="var(--iris-font-size-xs, 12px)"
                     style:padding="var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)"
                     style:border="1px solid var(--iris-border)"
-                    style:border-radius="3px"
+                    style:border-radius="var(--iris-radius-sm, 4px)"
                     style:background="var(--iris-surface)"
                     style:color="var(--iris-muted)">{row.item.shortcut}</kbd
                   >

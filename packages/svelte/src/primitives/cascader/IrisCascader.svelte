@@ -204,7 +204,9 @@
     <span style:flex="1" style:text-align="start"
       >{display || (placeholder ?? t('select.placeholder'))}</span
     >
-    <span aria-hidden="true" style:font-size="10px">{open ? '▲' : '▼'}</span>
+    <span aria-hidden="true" style:font-size="var(--iris-font-size-xs, 12px)"
+      >{open ? '▲' : '▼'}</span
+    >
   </button>
 
   {#if open}
@@ -302,7 +304,7 @@
   >
     <span>{node.label}</span>
     {#if hasChildren}
-      <span aria-hidden="true" style:font-size="10px">›</span>
+      <span aria-hidden="true" style:font-size="var(--iris-font-size-xs, 12px)">›</span>
     {/if}
   </li>
 {/snippet}

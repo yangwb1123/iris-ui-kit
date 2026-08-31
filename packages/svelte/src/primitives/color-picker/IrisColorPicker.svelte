@@ -236,7 +236,7 @@
     onkeydown={onHueKeyDown}
     style:position="relative"
     style:height="12px"
-    style:border-radius="6px"
+    style:border-radius="var(--iris-radius-sm, 4px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
     style:background="linear-gradient(to right, #f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)"
   >
@@ -279,7 +279,7 @@
       style:border-radius="var(--iris-radius-sm, 4px)"
       style:background="var(--iris-background)"
       style:color="var(--iris-foreground)"
-      style:font-size="12px"
+      style:font-size="var(--iris-font-size-xs, 12px)"
       style:font-family="monospace"
       style:outline="none"
     />

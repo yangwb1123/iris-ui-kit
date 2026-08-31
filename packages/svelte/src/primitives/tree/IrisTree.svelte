@@ -270,7 +270,7 @@
       data-iris-state="loading"
       style:padding="12px"
       style:color="var(--iris-muted)"
-      style:font-size="14px"
+      style:font-size="var(--iris-font-size-md, 14px)"
     >
       {t('tree.loading')}
     </div>
@@ -279,7 +279,7 @@
       data-iris-state="error"
       style:padding="12px"
       style:color="var(--iris-danger)"
-      style:font-size="14px"
+      style:font-size="var(--iris-font-size-md, 14px)"
     >
       {t('tree.error')}
     </div>
@@ -288,7 +288,7 @@
       data-iris-state="empty"
       style:padding="12px"
       style:color="var(--iris-muted)"
-      style:font-size="14px"
+      style:font-size="var(--iris-font-size-md, 14px)"
     >
       {t('tree.empty')}
     </div>
@@ -325,7 +325,7 @@
         style:border-radius="var(--iris-radius-sm, 4px)"
         style:background={isSelected ? 'var(--iris-surface-hover)' : 'transparent'}
         style:color={fn.node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}
-        style:font-size="14px"
+        style:font-size="var(--iris-font-size-md, 14px)"
         style:outline={isFocused ? '2px solid var(--iris-primary)' : 'none'}
         style:outline-offset="1px"
       >
@@ -348,7 +348,7 @@
             style:color="var(--iris-muted)"
             style:cursor="pointer"
             style:padding="0"
-            style:font-size="10px"
+            style:font-size="var(--iris-font-size-xs, 12px)"
             style:flex-shrink="0">{isExpanded ? '▼' : '▶'}</button
           >
         {:else}
@@ -370,7 +370,11 @@
           />
         {/if}
         {#if loadingNodes.has(fn.node.id)}
-          <span aria-hidden="true" style:color="var(--iris-muted)" style:font-size="11px">…</span>
+          <span
+            aria-hidden="true"
+            style:color="var(--iris-muted)"
+            style:font-size="var(--iris-font-size-xs, 12px)">…</span
+          >
         {/if}
         <span>{fn.node.label}</span>
       </div>

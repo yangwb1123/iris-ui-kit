@@ -23,7 +23,7 @@
     "dist:win": "pnpm run build:cms && electron-builder --win nsis"
   },
   "devDependencies": {
-    "electron": "^42.4.0",
+    "electron": "^44.0.0",
     "electron-builder": "26.15.3",
     "electron-builder-squirrel-windows": "26.15.3"
   },

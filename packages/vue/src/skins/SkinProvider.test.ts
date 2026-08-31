@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createSkinEngine, type Skin } from '@iris-ui-kit/skins'
 import { SkinProvider } from './SkinProvider'
@@ -93,6 +93,7 @@ describe('SkinProvider / useSkin (Vue)', () => {
         'iris.radius.md': 0,
       },
     })
+    await nextTick()
 
     expect(document.documentElement.style.getPropertyValue('--iris-font-size-md')).toBe('18px')
     expect(document.documentElement.style.getPropertyValue('--iris-font-size-4xl')).toBe('34px')

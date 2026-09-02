@@ -30,4 +30,14 @@ describe('injectGlobalStyles', () => {
     const el = document.getElementById(__GLOBAL_STYLE_ID)
     expect(el?.textContent).toContain('prefers-reduced-motion')
   })
+
+  it('styles native scrollbars with live theme tokens without hiding them', () => {
+    injectGlobalStyles()
+    const css = styleEl()?.textContent ?? ''
+    expect(css).toContain('--iris-scrollbar-size: 8px')
+    expect(css).toContain('::-webkit-scrollbar')
+    expect(css).toContain('scrollbar-color: var(--iris-scrollbar-thumb)')
+    expect(css).toContain('[data-iris-virtual-scroll]')
+    expect(css).not.toContain('scrollbar-width: none')
+  })
 })

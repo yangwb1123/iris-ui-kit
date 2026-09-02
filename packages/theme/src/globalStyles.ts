@@ -24,6 +24,71 @@
 const STYLE_ID = 'iris-global-styles'
 
 const CSS = `
+/*
+ * Native scrollbar baseline. Keep scrolling native so wheel, touch, keyboard,
+ * assistive technology and browser find-in-page behavior remain intact. The
+ * variables are deliberately CSS-only: applyTheme updates the color tokens
+ * in place, so a live light/dark or custom-skin change updates scrollbars
+ * without remounting any scroll container.
+ */
+[data-iris-theme] {
+  --iris-scrollbar-size: 8px;
+  --iris-scrollbar-thumb: color-mix(
+    in srgb,
+    var(--iris-muted) 58%,
+    var(--iris-background)
+  );
+  --iris-scrollbar-thumb-hover: var(--iris-primary);
+  --iris-scrollbar-track: transparent;
+}
+[data-iris-theme],
+[data-iris-theme] * {
+  scrollbar-color: var(--iris-scrollbar-thumb) var(--iris-scrollbar-track);
+  scrollbar-width: thin;
+}
+[data-iris-theme]::-webkit-scrollbar,
+[data-iris-theme] *::-webkit-scrollbar {
+  width: var(--iris-scrollbar-size);
+  height: var(--iris-scrollbar-size);
+}
+[data-iris-theme]::-webkit-scrollbar-track,
+[data-iris-theme] *::-webkit-scrollbar-track {
+  background: var(--iris-scrollbar-track);
+}
+[data-iris-theme]::-webkit-scrollbar-thumb,
+[data-iris-theme] *::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  background: var(--iris-scrollbar-thumb);
+  border: 2px solid var(--iris-background);
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+[data-iris-theme]::-webkit-scrollbar-thumb:hover,
+[data-iris-theme] *::-webkit-scrollbar-thumb:hover {
+  background: var(--iris-scrollbar-thumb-hover);
+}
+[data-iris-theme]::-webkit-scrollbar-corner,
+[data-iris-theme] *::-webkit-scrollbar-corner {
+  background: var(--iris-scrollbar-track);
+}
+[data-iris-theme] [data-iris-header-main],
+[data-iris-theme] [data-iris-sidebar-main],
+[data-iris-theme] [data-iris-virtual-scroll],
+[data-iris-theme] [data-iris-scroll-area][data-axis="vertical"],
+[data-iris-theme] [data-iris-scroll-area][data-axis="both"] {
+  scrollbar-gutter: stable;
+}
+@media (forced-colors: active) {
+  [data-iris-theme],
+  [data-iris-theme] * {
+    scrollbar-color: auto;
+  }
+  [data-iris-theme]::-webkit-scrollbar-thumb,
+  [data-iris-theme] *::-webkit-scrollbar-thumb {
+    background: ButtonText;
+    border-color: Canvas;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   [data-iris-theme],
   [data-iris-theme] *,

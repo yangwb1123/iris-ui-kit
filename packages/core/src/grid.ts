@@ -154,6 +154,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
   const rollback = (records: readonly InstalledFeature[]): void => {
     for (let index = records.length - 1; index >= 0; index -= 1) {
       const record = records[index]!
+      if (installed.get(record.name) !== record) continue
       cleanup(record)
       for (const name of record.methodNames) methods.delete(name)
       installed.delete(record.name)
@@ -180,6 +181,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
     let methodEntries: Array<[string, GridMethod]> = []
     try {
       contribution = feature.setup(context) ?? {}
+      if (destroying || status === 'destroyed') throw new Error('Grid Core is destroyed.')
       methodEntries = Object.entries(contribution.methods ?? {}) as Array<[string, GridMethod]>
       for (const [name, method] of methodEntries) {
         if (!name)
@@ -219,16 +221,17 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
     },
     use(...next) {
       assertAlive()
-      const ordered = orderFeatures(next, new Set(installed.keys()))
-      const batch: InstalledFeature[] = []
+      const initialStatus = status
+      const installedBefore = new Set(installed.keys())
+      const ordered = orderFeatures(next, installedBefore)
       try {
         for (const feature of ordered) {
           const record = install(feature)
-          batch.push(record)
           if (status === 'ready') record.contribution.onReady?.()
         }
       } catch (error) {
-        rollback(batch)
+        rollback([...installed.values()].filter((record) => !installedBefore.has(record.name)))
+        if (status !== 'destroyed') status = initialStatus
         throw error
       }
       return this
@@ -362,6 +365,7 @@ export {
   GRID_EDITING_CHANGE_EVENT,
   GRID_EDITING_COMMIT_EVENT,
   type GridEditingBindings,
+  type AdvancedGridEditingValidation,
   type GridEditingCommit,
   type GridEditingFeatureOptions,
   type GridEditingKey,

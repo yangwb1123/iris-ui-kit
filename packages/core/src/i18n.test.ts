@@ -32,6 +32,18 @@ describe('createI18n', () => {
       expect(i18n.t('hi', { name: 'Ann' })).toBe('Hi Ann, {missing}')
     })
 
+    it('does not resolve inherited message or parameter properties', () => {
+      const inheritedMessages = Object.create({ inherited: 'wrong' }) as Record<string, string>
+      const i18n = createI18n({ messages: inheritedMessages })
+      expect(i18n.t('inherited')).toBe('inherited')
+      expect(i18n.t('__proto__')).toBe('__proto__')
+      expect(i18n.t('constructor')).toBe('constructor')
+
+      const params = Object.create({ name: 'inherited' }) as Record<string, string>
+      i18n.setMessages({ hi: 'Hi {name}' })
+      expect(i18n.t('hi', params)).toBe('Hi {name}')
+    })
+
     describe('ICU plural', () => {
       const msg = { items: '{count, plural, =0 {No items} one {# item} other {# items}}' }
 
@@ -64,6 +76,12 @@ describe('createI18n', () => {
         const i18n = createI18n({ messages: msg })
         expect(i18n.t('items')).toBe(msg.items) // no params → template returned
       })
+
+      it('leaves malformed plural blocks intact', () => {
+        const malformed = '{count, plural, one {# item}}'
+        const i18n = createI18n({ messages: { malformed } })
+        expect(i18n.t('malformed', { count: 2 })).toBe(malformed)
+      })
     })
   })
 
@@ -74,7 +92,9 @@ describe('createI18n', () => {
       i18n.subscribe(listener)
       i18n.setLocale('fr-FR')
       expect(i18n.getState().locale).toBe('fr-FR')
-      expect(listener).toHaveBeenCalled()
+      expect(listener).toHaveBeenCalledTimes(1)
+      i18n.setLocale('fr-FR')
+      expect(listener).toHaveBeenCalledTimes(1)
     })
 
     it('setMessages merges over existing overrides', () => {
@@ -125,6 +145,26 @@ describe('createI18n', () => {
       i18n.formatNumber(4, opts)
       expect(spy.mock.calls.length - before).toBe(2)
       spy.mockRestore()
+    })
+
+    it('does not let option serialization alias formatter behavior', () => {
+      const i18n = createI18n({ locale: 'en-US' })
+      i18n.formatNumber(1)
+      const withToJson = {
+        style: 'currency',
+        currency: 'USD',
+        toJSON: () => ({}),
+      } as unknown as Intl.NumberFormatOptions
+      expect(i18n.formatNumber(1234.5, withToJson)).toBe('$1,234.50')
+
+      const inherited = Object.create({
+        style: 'currency',
+        currency: 'USD',
+      }) as Intl.NumberFormatOptions
+      expect(i18n.formatNumber(1234.5, inherited)).toBe('$1,234.50')
+      expect(() =>
+        i18n.formatNumber(1, { signDisplay: (() => 'invalid') as unknown as 'auto' }),
+      ).toThrow(RangeError)
     })
   })
 

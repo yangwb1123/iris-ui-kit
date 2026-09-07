@@ -17,6 +17,11 @@ import type { IrisSelectItem } from './types'
 import { SelectListbox } from './SelectListbox'
 import { renderIrisSelectTrigger } from './SelectTrigger'
 
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' || typeof document === 'undefined'
+    ? React.useEffect
+    : React.useLayoutEffect
+
 export type IrisSelectSize = Size
 
 /**
@@ -228,7 +233,7 @@ export function IrisSelect<T = unknown>({
 
   // L1 (sync layout): push count + scroll into the controller pre-paint and
   // re-clamp the DOM scrollTop when the list shrinks (combobox A8.3).
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!virtual) return
     virtualizer.setCount(safeItems.length)
     virtualizer.setScroll(listScrollTop)
@@ -244,7 +249,7 @@ export function IrisSelect<T = unknown>({
   // and never measured, so `start = index × rowHeight` is exact. Runs before
   // the passive focus effect below, so the focus effect always sees the
   // option already in the (post-scroll) DOM.
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!virtual || !open || activeIndex < 0) return
     const el = listRef.current
     if (!el) return

@@ -56,11 +56,8 @@
   // number the window uses the closed-form fixed formula below.
   const variable = $derived(userFn !== null || isAuto)
 
-  // Auto mode: measured row heights cached by index. `measureVersion` bumps to
-  // recompute offsets when a measurement changes (the virtualizer's keyed cache
-  // is fed from this via remeasure).
-  const measuredHeights = new Map<number, number>()
-  let measureVersion = $state(0)
+  // In auto mode the core virtualizer owns measured heights. Its cache is keyed
+  // by `getItemKey`, so estimates must never retain measurements by index.
 
   // estimateSize source of truth, read by the virtualizer per index. Read through
   // a ref-like (non-reactive) closure so the controller's memo isn't busted when
@@ -68,7 +65,7 @@
   function estimateSize(index: number): number {
     const fn = userFn
     if (fn) return fn(index)
-    if (isAuto) return measuredHeights.get(index) ?? estimatedItemHeight
+    if (isAuto) return estimatedItemHeight
     return fixedHeight
   }
 
@@ -111,6 +108,7 @@
         return fn && it !== undefined ? fn(it, index) : index
       },
       buffer,
+      fixedSize: variable ? null : fixedHeight,
       viewportSize: viewportHeightState,
     })
     vstate = virtualizer.getState()
@@ -145,14 +143,15 @@
     unsubscribe = null
   })
 
-  // Push sizing changes (new user fn, a fresh measurement, or estimate change)
-  // into the controller without recreating it: drop the cache + rebuild the tree
-  // from the current `estimateSize`. Cheap; runs only when sizing changes.
+  // Push sizing configuration changes (new user fn or estimate change)
+  // into the controller without recreating it: update the fixed/variable path,
+  // then rebuild the tree from the current `estimateSize`.
   $effect(() => {
+    void itemHeight
     void userFn
-    void measureVersion
     void estimatedItemHeight
-    if (variable) virtualizer.remeasure()
+    virtualizer.setFixedSize(variable ? null : fixedHeight)
+    virtualizer.remeasure()
   })
 
   // Drive the controller's scroll + viewport from local state so its window,
@@ -178,16 +177,13 @@
     return variable ? (itemInState(i)?.size ?? estimateRef(i)) : fixedHeight
   }
 
-  // Render window. Fixed: closed-form (preserves the exact uniform-height
-  // window). Variable/auto: the controller's measured window (offset-tree walk).
-  const range = $derived((): { start: number; end: number } => {
-    if (variable) return { start: vstate.startIndex, end: vstate.endIndex + 1 }
-    const startRaw = Math.floor(scrollTopState / Math.max(1, fixedHeight))
-    const visibleCount = fixedHeight <= 0 ? 0 : Math.ceil(viewportHeightState / fixedHeight)
-    const start = Math.max(0, startRaw - buffer)
-    const end = Math.min(items.length, startRaw + visibleCount + buffer)
-    return { start, end }
-  })
+  // Render the controller-owned window for both fixed and variable sizing.
+  // This keeps partial-scroll intersection and overscan semantics identical to
+  // the framework-free virtualizer.
+  const range = $derived((): { start: number; end: number } => ({
+    start: vstate.startIndex,
+    end: vstate.endIndex + 1,
+  }))
 
   $effect(() => {
     onRangeChange?.(range())
@@ -241,9 +237,8 @@
     }
   })
 
-  // Auto-measurement: one ResizeObserver watches the rendered rows; each row's
-  // measured height is cached by index and feeds the offset table (via the
-  // remeasure effect above, keyed on measureVersion).
+  // Auto-measurement: one ResizeObserver watches the rendered rows and reports
+  // real sizes to the core keyed cache.
   let rowObserver: ResizeObserver | null = null
   const indexByEl = new WeakMap<Element, number>()
   const elByIndex = new Map<number, HTMLElement>()
@@ -251,17 +246,13 @@
   $effect(() => {
     if (!isAuto || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver((entries) => {
-      let changed = false
       for (const entry of entries) {
         const idx = indexByEl.get(entry.target)
         if (idx === undefined) continue
         const h = (entry.target as HTMLElement).offsetHeight
-        if (h > 0 && measuredHeights.get(idx) !== h) {
-          measuredHeights.set(idx, h)
-          changed = true
-        }
+        if (h <= 0) continue
+        virtualizer.measure(idx, h)
       }
-      if (changed) measureVersion += 1
     })
     rowObserver = ro
     // Rows registered by the `setRow` action before this effect runs are already

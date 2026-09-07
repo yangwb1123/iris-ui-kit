@@ -158,10 +158,12 @@ describe('@iris-ui-kit/core evaluateFormula (batch AO, iris 独有)', () => {
     expect(evaluateFormula(fnTooDeep, row)).toBeNull()
   })
 
-  it('non-string / non-object input is safe', () => {
+  it('malformed formula or row input fails closed without throwing', () => {
     expect(evaluateFormula(null as unknown as string, {} as Row)).toBeNull()
     expect(evaluateFormula(42 as unknown as string, {} as Row)).toBeNull()
     expect(evaluateFormula('price', {})).toBeNull()
+    expect(evaluateFormula('price', null as unknown as Row)).toBeNull()
+    expect(evaluateFormula('price', 42 as unknown as Row)).toBeNull()
   })
 
   it('pure: row values of any type flow through (numbers, strings, nullish)', () => {

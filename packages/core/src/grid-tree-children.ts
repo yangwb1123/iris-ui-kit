@@ -1,4 +1,5 @@
 import type { GridRowKey } from './grid-rows'
+import { hasMalformedTree, wasSeen } from './grid-tree-validation'
 import type { GridTreeMutationResult, GridTreeRowsOptions } from './grid-tree-rows'
 
 /**
@@ -19,6 +20,18 @@ export function setTreeChildren<Row extends Record<string, unknown>>(
   children: readonly Row[],
   options: GridTreeRowsOptions<Row>,
 ): GridTreeMutationResult<Row> {
+  // Child hydration is a write too: do not commit against an ambiguous source
+  // tree, even when the requested parent appeared before a duplicate/cycle.
+  if (hasMalformedTree(nodes, options)) {
+    return {
+      rows: nodes as Row[],
+      matched: containsTreeKey(nodes, key, options),
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
+
   const nextChildren = [...children]
   const seenKeys = new Set<GridRowKey>()
   const seenRows = new Set<Row>()
@@ -112,6 +125,26 @@ export function setTreeChildren<Row extends Record<string, unknown>>(
   return visit(nodes)
 }
 
+function containsTreeKey<Row extends Record<string, unknown>>(
+  nodes: readonly Row[],
+  key: GridRowKey,
+  options: Pick<GridTreeRowsOptions<Row>, 'getRowKey' | 'getChildren'>,
+): boolean {
+  const seenKeys = new Set<GridRowKey>()
+  const seenRows = new Set<Row>()
+  const visit = (siblings: readonly Row[]): boolean => {
+    for (const [index, row] of siblings.entries()) {
+      const rowKey = options.getRowKey(row, index)
+      if (wasSeen(row, rowKey, seenKeys, seenRows)) continue
+      if (Object.is(rowKey, key)) return true
+      const nested = options.getChildren(row)
+      if (nested?.length && visit(nested)) return true
+    }
+    return false
+  }
+  return visit(nodes)
+}
+
 function replaceChildren<Row extends Record<string, unknown>>(
   row: Row,
   currentChildren: readonly Row[],
@@ -124,18 +157,4 @@ function replaceChildren<Row extends Record<string, unknown>>(
   )
   if (!childKey) return undefined
   return { ...row, [childKey]: children } as Row
-}
-
-function wasSeen<Row extends Record<string, unknown>>(
-  row: Row,
-  rowKey: GridRowKey | undefined,
-  seenKeys: Set<GridRowKey>,
-  seenRows: Set<Row>,
-): boolean {
-  if (seenRows.has(row)) return true
-  seenRows.add(row)
-  if (rowKey === undefined) return false
-  if (seenKeys.has(rowKey)) return true
-  seenKeys.add(rowKey)
-  return false
 }

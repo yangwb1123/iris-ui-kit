@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createDataSource, createClientDataSource, createSyncClientDataSource } from './data-source'
+import type { DataSourceQuery } from './data-source'
 import type { DataViewColumn } from './data-view'
 
 interface User extends Record<string, unknown> {
@@ -31,6 +32,76 @@ function make(overrides: Partial<Parameters<typeof createDataSource<User>>[0]> =
     ...overrides,
   })
 }
+
+describe('createDataSource — paging invariants', () => {
+  it('normalizes invalid and fractional initial page sizes before state and queries', async () => {
+    const cases = [
+      { input: 0, expected: 10 },
+      { input: -1, expected: 10 },
+      { input: Number.NaN, expected: 10 },
+      { input: Number.POSITIVE_INFINITY, expected: 10 },
+      { input: Number.NEGATIVE_INFINITY, expected: 10 },
+      { input: 7.9, expected: 7 },
+    ]
+
+    for (const { input, expected } of cases) {
+      const fetcher = vi.fn((query: DataSourceQuery) => {
+        expect(Number.isFinite(query.page)).toBe(true)
+        expect(Number.isInteger(query.page)).toBe(true)
+        expect(Number.isFinite(query.pageSize)).toBe(true)
+        expect(Number.isInteger(query.pageSize)).toBe(true)
+        return { rows: [], total: 0 }
+      })
+      const ds = createDataSource<User>({ fetcher, pageSize: input, immediate: false })
+
+      expect(ds.getState()).toMatchObject({ page: 1, pageSize: expected })
+      await ds.load()
+      expect(fetcher).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, pageSize: expected }),
+        expect.any(AbortSignal),
+      )
+    }
+  })
+
+  it('normalizes fractional and invalid setter inputs in state and query payloads', () => {
+    const queries: Array<Pick<DataSourceQuery, 'page' | 'pageSize'>> = []
+    const fetcher = vi.fn((query: DataSourceQuery) => {
+      queries.push({ page: query.page, pageSize: query.pageSize })
+      return { rows: [], total: 100 }
+    })
+    const ds = createDataSource<User>({ fetcher, pageSize: 6.9, immediate: false })
+
+    void ds.load()
+    ds.setPage(2.9)
+    ds.setPageSize(4.9)
+    for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      ds.setPage(value)
+      ds.setPageSize(value)
+    }
+
+    expect(ds.getState()).toMatchObject({ page: 1, pageSize: 4 })
+    expect(queries).toEqual([
+      { page: 1, pageSize: 6 },
+      { page: 2, pageSize: 6 },
+      { page: 1, pageSize: 4 },
+      ...Array.from({ length: 5 }, () => [
+        { page: 1, pageSize: 4 },
+        { page: 1, pageSize: 4 },
+      ]).flat(),
+    ])
+    expect(
+      queries.every(
+        ({ page, pageSize }) =>
+          Number.isFinite(page) &&
+          Number.isInteger(page) &&
+          page > 0 &&
+          Number.isFinite(pageSize) &&
+          Number.isInteger(pageSize) &&
+          pageSize > 0,
+      ),
+    ).toBe(true)
+  })
+})
 
 describe('createDataSource — paged client mode', () => {
   it('loads the first page and reports total/pageCount/hasMore', async () => {
@@ -244,6 +315,28 @@ describe('createDataSource — per-row mutate', () => {
     expect(ds.isRowPending('2')).toBe(false)
     expect((ds.rowError('2') as Error).message).toBe('nope')
     expect(ds.getState().rows.map((r) => r.id)).toEqual(before)
+  })
+
+  it('rolls back an in-place optimistic row mutation on rejection', async () => {
+    const ds = make({ pageSize: 10 })
+    await ds.load()
+
+    await expect(
+      ds.mutateRow(
+        '1',
+        async () => {
+          throw new Error('boom')
+        },
+        {
+          optimistic: (rows) => {
+            rows[0]!.name = 'broken'
+            return rows
+          },
+        },
+      ),
+    ).rejects.toThrow('boom')
+
+    expect(ds.getState().rows[0]?.name).toBe('Charlie')
   })
 })
 

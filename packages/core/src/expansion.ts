@@ -43,22 +43,36 @@ export function createExpansion<K extends string | number = string>(
   const initial = normalizeKeys(config.defaultExpanded ?? [], mode)
   const store = createStore<K[]>(initial)
 
-  // Set index for O(1) lookups and O(1) deletions (vs filter O(n))
+  // Set index for O(1) lookups and O(1) deletions (vs filter O(n)). Track the
+  // last state array used to build it so direct store writes inside a batch —
+  // where subscribe notifications are deferred — can lazily refresh before the
+  // next membership read or mutation.
   let index = new Set<K>(initial)
+  let lastState: readonly K[] = initial
 
-  function syncIndex(keys: K[]): void {
+  function syncIndex(keys: readonly K[]): void {
     index = new Set<K>(keys)
+    lastState = keys
   }
+
+  function ensureIndex(): void {
+    const state = store.getState()
+    if (state === lastState && state.length === index.size) return
+    syncIndex(state)
+  }
+
   store.subscribe(syncIndex)
 
   function commit(next: K[]): void {
     const value = normalizeKeys(next, mode)
+    if (sameExpansionKeys(store.getState(), value)) return
     store.setState(value)
-    syncIndex(value)
+    syncIndex(store.getState())
     config.onChange?.([...value])
   }
 
   function has(key: K): boolean {
+    ensureIndex()
     return index.has(key)
   }
 
@@ -104,8 +118,23 @@ export function createExpansion<K extends string | number = string>(
       commit([...store.getState(), ...keys])
     },
     collapseAll() {
+      ensureIndex()
       if (index.size === 0) return
       commit([])
     },
   }
+}
+
+function sameExpansionKeys<K extends string | number>(
+  left: readonly K[],
+  right: readonly K[],
+): boolean {
+  return (
+    left.length === right.length && left.every((key, index) => sameExpansionKey(key, right[index]!))
+  )
+}
+
+/** Align array comparisons with Set's SameValueZero key semantics. */
+function sameExpansionKey(a: string | number, b: string | number): boolean {
+  return a === b || (a !== a && b !== b)
 }

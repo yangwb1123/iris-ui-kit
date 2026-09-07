@@ -8,6 +8,7 @@
     onCommit,
     onCancel,
     onTab,
+    sessionIdentity,
     inputRef,
     preview,
     showPreview = false,
@@ -17,15 +18,28 @@
     error?: string | null
     errorId: string
     onInput: (value: string) => void
-    onCommit: () => void
+    onCommit: (sessionIdentity?: object) => void
     onCancel: () => void
-    onTab?: (direction: 1 | -1) => void
+    onTab?: (direction: 1 | -1, sessionIdentity?: object) => void
+    sessionIdentity?: object
     inputRef?: (node: HTMLInputElement | null) => void
     preview?: string
     showPreview?: boolean
   } = $props()
 
   let inputEl = $state<HTMLInputElement | null>(null)
+  let commit: (sessionIdentity?: object) => void = () => undefined
+  let cancel: () => void = () => undefined
+  let tab: ((direction: 1 | -1, sessionIdentity?: object) => void) | undefined = undefined
+  let commitIdentity: object | undefined = undefined
+
+  $effect(() => {
+    commit = onCommit
+    cancel = onCancel
+    tab = onTab
+    commitIdentity = sessionIdentity
+  })
+
   $effect(() => {
     inputRef?.(inputEl)
     return () => inputRef?.(null)
@@ -43,16 +57,16 @@
   onkeydown={(event) => {
     if (event.key === 'Enter') {
       event.preventDefault()
-      onCommit()
+      commit(commitIdentity)
     } else if (event.key === 'Escape') {
       event.preventDefault()
-      onCancel()
-    } else if (event.key === 'Tab' && onTab) {
+      cancel()
+    } else if (event.key === 'Tab' && tab) {
       event.preventDefault()
-      onTab(event.shiftKey ? -1 : 1)
+      tab(event.shiftKey ? -1 : 1, commitIdentity)
     }
   }}
-  onblur={onCommit}
+  onblur={() => commit(commitIdentity)}
   onclick={(event) => event.stopPropagation()}
   style="width: 100%; border: 1px solid {error
     ? 'var(--iris-danger)'

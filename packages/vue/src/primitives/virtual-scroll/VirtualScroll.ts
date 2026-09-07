@@ -99,18 +99,15 @@ export const IrisVirtualScroll = defineComponent({
     // plain number the window uses the closed-form fixed formula below.
     const variable = computed(() => userFn.value !== null || auto.value)
 
-    // Auto mode: measured row heights cached by index; bumping `measureVersion`
-    // recomputes offsets after a measurement changes (semantics preserved; the
-    // virtualizer's keyed cache is fed from this).
-    const measuredHeights = new Map<number, number>()
-    const measureVersion = ref(0)
+    // In auto mode the core virtualizer owns measured heights. Its cache is
+    // keyed by `getItemKey`, so estimates must never retain them by index.
 
     // estimateSize source of truth, read by the virtualizer per index. Reads
     // live `props`, so the controller never needs recreating on a closure swap.
     const estimateSize = (index: number): number => {
       const fn = userFn.value
       if (fn) return fn(index)
-      if (auto.value) return measuredHeights.get(index) ?? props.estimatedItemHeight
+      if (auto.value) return props.estimatedItemHeight
       return fixedHeight.value
     }
 
@@ -129,6 +126,7 @@ export const IrisVirtualScroll = defineComponent({
           return fn && it !== undefined ? fn(it, index) : index
         },
         buffer: props.buffer,
+        fixedSize: variable.value ? null : fixedHeight.value,
         viewportSize: typeof props.height === 'number' ? props.height : 0,
       })
 
@@ -156,13 +154,22 @@ export const IrisVirtualScroll = defineComponent({
     // through remeasure below, preserving scroll + cache.
     watch([() => props.items.length, () => props.buffer, variable], () => wire(buildVirtualizer()))
 
-    // Push sizing changes (new user fn, a fresh measurement, or estimate change)
-    // into the controller without recreating it: drop the cache + rebuild the
-    // tree from the current `estimateSize`. Cheap; runs only when sizing changes.
+    // Re-seat keyed measurements when the data array changes, including a
+    // same-length reorder. The core controller owns the measurement cache.
     watch(
-      [userFn, measureVersion, () => props.estimatedItemHeight],
+      () => props.items,
+      (items) => virtualizer.value.setCount(items.length),
+      { flush: 'post' },
+    )
+
+    // Push sizing configuration changes (new user fn or estimate change)
+    // into the controller without recreating it: update the fixed/variable path,
+    // then rebuild the tree from the current `estimateSize`.
+    watch(
+      [() => props.itemHeight, () => props.estimatedItemHeight],
       () => {
-        if (variable.value) virtualizer.value.remeasure()
+        virtualizer.value.setFixedSize(variable.value ? null : fixedHeight.value)
+        virtualizer.value.remeasure()
       },
       { flush: 'post' },
     )
@@ -185,19 +192,13 @@ export const IrisVirtualScroll = defineComponent({
     const heightOf = (i: number): number =>
       variable.value ? (itemInState(i)?.size ?? estimateSize(i)) : fixedHeight.value
 
-    // Render window. Fixed: closed-form (preserves the exact uniform-height
-    // window). Variable/auto: the controller's measured window (offset-tree walk).
-    const range = computed(() => {
-      if (variable.value) {
-        return { start: vstate.value.startIndex, end: vstate.value.endIndex + 1 }
-      }
-      const h0 = fixedHeight.value
-      const startRaw = Math.floor(scrollTop.value / Math.max(1, h0))
-      const visibleCount = h0 <= 0 ? 0 : Math.ceil(viewportHeight.value / h0)
-      const start = Math.max(0, startRaw - props.buffer)
-      const end = Math.min(props.items.length, startRaw + visibleCount + props.buffer)
-      return { start, end }
-    })
+    // Render the controller-owned window for both fixed and variable sizing.
+    // This keeps partial-scroll intersection and overscan semantics identical to
+    // the framework-free virtualizer.
+    const range = computed(() => ({
+      start: vstate.value.startIndex,
+      end: vstate.value.endIndex + 1,
+    }))
 
     watch(range, (next) => emit('rangeChange', next), { flush: 'post' })
 
@@ -222,8 +223,8 @@ export const IrisVirtualScroll = defineComponent({
 
     let observer: ResizeObserver | null = null
 
-    // Auto-measurement: one ResizeObserver watches rendered rows; measured
-    // heights are cached by index and feed the offset table.
+    // Auto-measurement: one ResizeObserver watches rendered rows and reports
+    // real sizes to the core keyed cache.
     let rowObserver: ResizeObserver | null = null
     const indexByEl = new WeakMap<Element, number>()
     const elByIndex = new Map<number, HTMLElement>()
@@ -250,17 +251,13 @@ export const IrisVirtualScroll = defineComponent({
       }
       if (auto.value && typeof ResizeObserver !== 'undefined') {
         rowObserver = new ResizeObserver((entries) => {
-          let changed = false
           for (const entry of entries) {
             const idx = indexByEl.get(entry.target)
             if (idx === undefined) continue
             const hgt = (entry.target as HTMLElement).offsetHeight
-            if (hgt > 0 && measuredHeights.get(idx) !== hgt) {
-              measuredHeights.set(idx, hgt)
-              changed = true
-            }
+            if (hgt <= 0) continue
+            virtualizer.value.measure(idx, hgt)
           }
-          if (changed) measureVersion.value += 1
         })
         // Row refs run during mount, before this hook — observe the first window.
         for (const el of elByIndex.values()) rowObserver.observe(el)

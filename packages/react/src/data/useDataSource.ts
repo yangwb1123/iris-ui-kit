@@ -1,13 +1,13 @@
 import * as React from 'react'
 import {
   createDataSource,
-  type DataSourceController,
+  type AdvancedDataSourceController,
   type DataSourceConfig,
   type DataSourceState,
 } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
-export interface UseDataSource<T> extends DataSourceController<T> {
+export interface UseDataSource<T> extends AdvancedDataSourceController<T> {
   /**
    * The live data-source state: rows, total, page/pageSize, sort/multiSort,
    * filters/filterRules, loading/loadingMore, hasMore, selectedKeys, and the
@@ -28,7 +28,7 @@ export interface UseDataSource<T> extends DataSourceController<T> {
  * unmount (aborting any in-flight request) so a late response never writes back.
  */
 export function useDataSource<T>(config: DataSourceConfig<T>): UseDataSource<T> {
-  const ref = React.useRef<DataSourceController<T> | null>(null)
+  const ref = React.useRef<AdvancedDataSourceController<T> | null>(null)
   if (ref.current === null) ref.current = createDataSource({ ...config, immediate: false })
   const controller = ref.current
   const immediate = config.immediate !== false

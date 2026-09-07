@@ -39,6 +39,20 @@ export interface GridRowsTransaction<Row extends Record<string, unknown>, Meta =
 
 export const GRID_ROWS_CHANGE_EVENT = 'rows:change'
 
+function sameGridRowKey(left: GridRowKey | undefined, right: GridRowKey | undefined): boolean {
+  return (
+    left === right ||
+    (typeof left === 'number' &&
+      Number.isNaN(left) &&
+      typeof right === 'number' &&
+      Number.isNaN(right))
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
 export interface GridRowsFeatureOptions<Row extends Record<string, unknown>, Meta = unknown> {
   readonly defaultRows?: readonly Row[]
   /** Copy the initial seed before storing it; defaults to true. */
@@ -165,6 +179,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         setChildren: options.setChildren,
       }
     : null
+  let observing = false
 
   const reasoned = (
     commitOptions: GridRowsCommitOptions<Meta> | undefined,
@@ -185,8 +200,15 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
     commitOptions: GridRowsCommitOptions<Meta> = {},
     notify: boolean,
   ): boolean => {
+    if (!Array.isArray(rows) || observing) return false
     const previousRows = store.getState()
     if (Object.is(rows, previousRows)) return false
+    if (
+      rows.length === previousRows.length &&
+      rows.every((row, index) => Object.is(row, previousRows[index]))
+    ) {
+      return false
+    }
     // Keep the store list private. Feature consumers can safely retain or
     // mutate their input array after a commit without changing Grid state.
     const nextRows = [...rows]
@@ -195,18 +217,29 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       store.setState(nextRows)
       return true
     }
-    const transaction: GridRowsTransaction<Row, Meta> = {
-      previousRows: previousSnapshot,
-      // Observers receive their own list snapshot. A listener must not be able
-      // to mutate the store by pushing into `transaction.rows`.
+    const reason = commitOptions.reason ?? 'set'
+    const snapshot = (): GridRowsTransaction<Row, Meta> => ({
+      // Every observer gets its own list snapshots. A callback must not be able
+      // to change the payload later observed by another callback or event.
+      previousRows: [...previousSnapshot],
       rows: [...nextRows],
-      reason: commitOptions.reason ?? 'set',
+      reason,
       meta: commitOptions.meta,
+    })
+    observing = true
+    try {
+      options.onBeforeRowsChange?.(snapshot())
+    } finally {
+      observing = false
     }
-    options.onBeforeRowsChange?.(transaction)
     store.setState(nextRows)
-    options.onRowsChange?.(transaction)
-    emit?.(transaction)
+    observing = true
+    try {
+      options.onRowsChange?.(snapshot())
+      emit?.(snapshot())
+    } finally {
+      observing = false
+    }
     return true
   }
 
@@ -217,19 +250,21 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
     find: (key) => {
       const rows = store.getState()
       if (treeOptions) return findTreeRow(rows, key, treeOptions)
-      const index = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === key)
+      const index = rows.findIndex((row, rowIndex) => sameGridRowKey(keyOf(row, rowIndex), key))
       return index < 0 ? undefined : rows[index]
     },
     commit: (rows, commitOptions) => commit(rows, commitOptions, true),
     loadData: (rows, commitOptions) => commit(rows, reasoned(commitOptions, 'load'), true),
     transact(updater, commitOptions) {
+      if (typeof updater !== 'function') return false
       const current = store.getState()
       // Do not expose the store-owned array to an updater. Returning any
       // same-shape, row-reference-equivalent array is a no-op; mutating the
       // working copy and returning it is an intentional transaction.
       const working = [...current]
       const next = updater(working)
-      if (Array.isArray(next) && next.length === current.length) {
+      if (!Array.isArray(next)) return false
+      if (next.length === current.length) {
         let unchanged = true
         for (let index = 0; index < current.length; index += 1) {
           if (!Object.is(current[index], next[index])) {
@@ -242,20 +277,21 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       return commit(next, commitOptions, true)
     },
     insert: (row, index, commitOptions) =>
-      commit(
-        insertRowInList(store.getState(), rowKeyField, row, index),
-        reasoned(commitOptions, 'insert'),
-        true,
-      ),
+      !isRecord(row)
+        ? false
+        : commit(
+            insertRowInList(store.getState(), rowKeyField, row, index),
+            reasoned(commitOptions, 'insert'),
+            true,
+          ),
     remove: (key, commitOptions) => {
       const rows = store.getState()
       if (treeOptions) {
         const result = removeTreeRows(rows, new Set([key]), treeOptions)
         if (result.blocked || result.removed.size === 0 || !result.changed) return false
-        commit(result.rows, reasoned(commitOptions, 'remove'), true)
-        return true
+        return commit(result.rows, reasoned(commitOptions, 'remove'), true)
       }
-      const index = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === key)
+      const index = rows.findIndex((row, rowIndex) => sameGridRowKey(keyOf(row, rowIndex), key))
       if (index < 0) return false
       return commit(
         options.getRowKey ? removeAt(rows, index) : removeRowFromList(rows, rowKeyField, key),
@@ -268,7 +304,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       if (treeOptions) {
         const result = removeTreeRows(current, new Set(keys), treeOptions)
         if (result.blocked || result.removed.size === 0 || !result.changed) return []
-        commit(result.rows, reasoned(commitOptions, 'remove'), true)
+        if (!commit(result.rows, reasoned(commitOptions, 'remove'), true)) return []
         const removed: GridRowKey[] = []
         for (const key of keys) {
           if (result.removed.has(key) && !removed.includes(key)) removed.push(key)
@@ -290,7 +326,8 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       // resolved. Duplicate keys still remove one matching row at a time.
       for (const key of keys) {
         const index = current.findIndex(
-          (row, rowIndex) => !removedIndexes.has(rowIndex) && keyOf(row, rowIndex) === key,
+          (row, rowIndex) =>
+            !removedIndexes.has(rowIndex) && sameGridRowKey(keyOf(row, rowIndex), key),
         )
         if (index < 0) continue
         removedIndexes.add(index)
@@ -298,17 +335,18 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       }
       if (removedKeys.length === 0) return []
       const next = current.filter((_, index) => !removedIndexes.has(index))
-      commit(next, reasoned(commitOptions, 'remove'), true)
+      if (!commit(next, reasoned(commitOptions, 'remove'), true)) return []
       return removedKeys
     },
     update: (key, patch, commitOptions) => {
+      if (!isRecord(patch)) return false
       const rows = store.getState()
       if (treeOptions) {
         const result = updateTreeRows(rows, key, patch, treeOptions)
         if (!result.matched || result.blocked || !result.changed) return false
         return commit(result.rows, reasoned(commitOptions, 'edit'), true)
       }
-      const index = rows.findIndex((row, rowIndex) => keyOf(row, rowIndex) === key)
+      const index = rows.findIndex((row, rowIndex) => sameGridRowKey(keyOf(row, rowIndex), key))
       if (index < 0) return false
       return commit(
         options.getRowKey
@@ -335,18 +373,19 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       return commit(next, reasoned(commitOptions, 'reorder'), true)
     },
     setChildren: (key, children, commitOptions) => {
-      if (!treeOptions) return false
+      if (!treeOptions || !Array.isArray(children)) return false
       const result = setTreeChildren(store.getState(), key, children, treeOptions)
       if (result.blocked || !result.matched || !result.changed) return false
       return commit(result.rows, reasoned(commitOptions, 'children'), true)
     },
     syncChildren: (key, children) => {
-      if (!treeOptions) return false
+      if (!treeOptions || !Array.isArray(children)) return false
       const result = setTreeChildren(store.getState(), key, children, treeOptions)
       if (result.blocked || !result.matched || !result.changed) return false
       return commit(result.rows, {}, false)
     },
     sync: (rows) => {
+      if (!Array.isArray(rows)) return false
       const current = store.getState()
       if (
         rows.length === current.length &&

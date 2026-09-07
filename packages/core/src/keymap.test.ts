@@ -39,7 +39,7 @@ describe('parseTableKey', () => {
     })
   })
 
-  it('rejects 11 invalid key forms (fail-closed → null)', () => {
+  it('rejects malformed key forms (fail-closed → null)', () => {
     const invalid = [
       '',
       '   ',
@@ -51,10 +51,17 @@ describe('parseTableKey', () => {
       'Option+',
       '++',
       'Ctrl++',
+      'Ctrl+ + Z',
       'F3+F4',
     ]
     for (const spec of invalid) {
       expect(parseTableKey(spec), spec).toBeNull()
+    }
+  })
+
+  it('fails closed for malformed runtime values', () => {
+    for (const spec of [null, undefined, 42, {}]) {
+      expect(parseTableKey(spec as never)).toBeNull()
     }
   })
 })
@@ -120,6 +127,12 @@ describe('normalizeKeymap', () => {
     expect(mixed.edit).toEqual([{ key: 'f3', ctrl: false, shift: false, alt: false }])
     expect(mixed.clear).toEqual(normalizeKeymap().clear)
   })
+
+  it('ignores inherited actions and malformed runtime overrides', () => {
+    const inherited = Object.create({ edit: 'F3' })
+    expect(normalizeKeymap(inherited)).toEqual(normalizeKeymap())
+    expect(normalizeKeymap({ edit: 42 } as never).edit).toEqual(normalizeKeymap().edit)
+  })
 })
 
 describe('formatKeyBinding', () => {
@@ -158,6 +171,13 @@ describe('formatKeyBindings', () => {
 
   it('renders an empty list as an empty string', () => {
     expect(formatKeyBindings([])).toBe('')
+  })
+
+  it('fails closed for malformed runtime bindings', () => {
+    expect(formatKeyBinding(null as never)).toBe('')
+    expect(formatKeyBinding({ key: ' ', ctrl: false, shift: false, alt: false })).toBe('Space')
+    expect(formatKeyBindings(null as never)).toBe('')
+    expect(formatKeyBindings([null as never, parseTableKey('Ctrl+C')!])).toBe('Ctrl+C')
   })
 
   it('round-trips a rebind end-to-end (override → formatted display)', () => {
@@ -202,5 +222,13 @@ describe('matchTableKey', () => {
     expect(matchTableKey({ key: 'F2' }, km.edit)).toBe(false)
     expect(matchTableKey({ key: 'j', ctrlKey: true }, km.query)).toBe(true)
     expect(matchTableKey({ key: 'k', ctrlKey: true }, km.query)).toBe(false)
+  })
+
+  it('fails closed for malformed runtime events and bindings', () => {
+    const km = normalizeKeymap()
+    expect(matchTableKey(null as never, km.edit)).toBe(false)
+    expect(matchTableKey({ key: null } as never, km.edit)).toBe(false)
+    expect(matchTableKey({ key: 'f2' }, null as never)).toBe(false)
+    expect(matchTableKey({ key: 'f2' }, [null as never])).toBe(false)
   })
 })

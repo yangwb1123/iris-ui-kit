@@ -11,6 +11,8 @@
  * wrapping around the ends. Returns the next focusable index, or `current` if
  * none is focusable.
  */
+const isValidCount = (count: number): boolean => Number.isSafeInteger(count) && count > 0
+
 export function nextEnabledIndex(
   current: number,
   delta: number,
@@ -18,7 +20,7 @@ export function nextEnabledIndex(
   isEnabled: (index: number) => boolean = () => true,
   loop = true,
 ): number {
-  if (count <= 0) return -1
+  if (!isValidCount(count) || !Number.isSafeInteger(current)) return -1
   const step = delta === 0 ? 1 : delta > 0 ? 1 : -1
   let index = current
   for (let i = 0; i < count; i += 1) {
@@ -32,7 +34,7 @@ export function nextEnabledIndex(
     }
     if (isEnabled(index)) return index
   }
-  return current
+  return current >= 0 && current < count ? current : -1
 }
 
 /** First focusable index, or -1. */
@@ -40,6 +42,7 @@ export function firstEnabledIndex(
   count: number,
   isEnabled: (index: number) => boolean = () => true,
 ): number {
+  if (!isValidCount(count)) return -1
   for (let i = 0; i < count; i += 1) if (isEnabled(i)) return i
   return -1
 }
@@ -49,6 +52,7 @@ export function lastEnabledIndex(
   count: number,
   isEnabled: (index: number) => boolean = () => true,
 ): number {
+  if (!isValidCount(count)) return -1
   for (let i = count - 1; i >= 0; i -= 1) if (isEnabled(i)) return i
   return -1
 }
@@ -135,6 +139,29 @@ function nearestEnabledInRow(
   return current
 }
 
+function nearestEnabledInColumn(
+  current: GridCell,
+  row: number,
+  col: number,
+  rowCount: number,
+  preferredStep: number,
+  isEnabled: (cell: GridCell) => boolean,
+): GridCell {
+  const inRow = (candidate: number): boolean => candidate >= 0 && candidate < rowCount
+  if (isEnabled({ row, col })) return { row, col }
+  for (let distance = 1; distance < rowCount; distance += 1) {
+    const preferred = row + distance * preferredStep
+    if (inRow(preferred) && isEnabled({ row: preferred, col })) {
+      return { row: preferred, col }
+    }
+    const opposite = row - distance * preferredStep
+    if (inRow(opposite) && isEnabled({ row: opposite, col })) {
+      return { row: opposite, col }
+    }
+  }
+  return current
+}
+
 /**
  * Framework-agnostic 2D roving-focus math — the C-layer material behind grid
  * keyboard navigation (`role="grid"` Table/DataGrid). Given the focused cell and
@@ -151,7 +178,18 @@ export function nextGridCell(
   options: GridNavOptions,
 ): GridCell {
   const { rowCount, colCount, isEnabled = () => true, loop = false, pageSize = 1 } = options
-  if (rowCount <= 0 || colCount <= 0) return current
+  if (!isValidCount(rowCount) || !isValidCount(colCount)) return current
+  if (
+    !Number.isSafeInteger(current.row) ||
+    !Number.isSafeInteger(current.col) ||
+    current.row < 0 ||
+    current.row >= rowCount ||
+    current.col < 0 ||
+    current.col >= colCount
+  ) {
+    return current
+  }
+  const page = Number.isSafeInteger(pageSize) && pageSize >= 0 ? pageSize : 1
   const clampRow = (r: number): number => Math.max(0, Math.min(rowCount - 1, r))
 
   switch (key) {
@@ -168,19 +206,21 @@ export function nextGridCell(
     case 'End':
       return nearestEnabledInRow(current, current.row, colCount - 1, colCount, isEnabled)
     case 'PageUp':
-      return nearestEnabledInRow(
+      return nearestEnabledInColumn(
         current,
-        clampRow(current.row - pageSize),
+        clampRow(current.row - page),
         current.col,
-        colCount,
+        rowCount,
+        -1,
         isEnabled,
       )
     case 'PageDown':
-      return nearestEnabledInRow(
+      return nearestEnabledInColumn(
         current,
-        clampRow(current.row + pageSize),
+        clampRow(current.row + page),
         current.col,
-        colCount,
+        rowCount,
+        1,
         isEnabled,
       )
   }
@@ -204,7 +244,7 @@ export function matchTypeahead(
   const q = query.trim().toLowerCase()
   if (!q || labels.length === 0) return -1
   const n = labels.length
-  const start = fromIndex < 0 || fromIndex >= n ? -1 : fromIndex
+  const start = Number.isSafeInteger(fromIndex) && fromIndex >= 0 && fromIndex < n ? fromIndex : -1
   for (let step = 1; step <= n; step += 1) {
     const idx = (((start + step) % n) + n) % n
     if (isDisabled?.(idx)) continue

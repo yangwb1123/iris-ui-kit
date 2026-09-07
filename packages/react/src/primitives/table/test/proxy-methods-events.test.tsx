@@ -73,7 +73,12 @@ describe('IrisTable proxy methods (vxe loadData/reloadData/commitProxy/getProxyI
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
     act(() => r.current!.reloadData())
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
   })
 
   it('commitProxy merges overrides into the query and fires the request', async () => {

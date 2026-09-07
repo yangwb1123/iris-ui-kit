@@ -1,5 +1,34 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createSelectionModel } from './selection'
+import { computeSelectionFlags, createSelectionModel } from './selection'
+
+describe('computeSelectionFlags', () => {
+  it('derives all/some flags from visible and selected keys', () => {
+    expect(computeSelectionFlags(['a', 'b'], [])).toEqual({
+      allSelected: false,
+      someSelected: false,
+    })
+    expect(computeSelectionFlags(['a', 'b'], ['a'])).toEqual({
+      allSelected: false,
+      someSelected: true,
+    })
+    expect(computeSelectionFlags(['a', 'b'], ['a', 'b'])).toEqual({
+      allSelected: true,
+      someSelected: false,
+    })
+    expect(computeSelectionFlags([], ['a'])).toEqual({
+      allSelected: false,
+      someSelected: false,
+    })
+  })
+
+  it('supports tree-aware selected and indeterminate predicates', () => {
+    const result = computeSelectionFlags(['root', 'child'], [], {
+      isSelected: (key) => key === 'child',
+      isIndeterminate: (key) => key === 'root',
+    })
+    expect(result).toEqual({ allSelected: false, someSelected: true })
+  })
+})
 
 describe('createSelectionModel — multiple', () => {
   it('toggles keys and reports membership', () => {
@@ -41,6 +70,22 @@ describe('createSelectionModel — multiple', () => {
     expect(sel.get()).toEqual([])
   })
 
+  it('does not emit or replace state for empty or equivalent no-op writes', () => {
+    const onChange = vi.fn()
+    const sel = createSelectionModel({ defaultSelected: ['a'], onChange })
+    const states: string[][] = []
+    sel.store.subscribe((state) => states.push(state))
+    const before = sel.store.getState()
+
+    sel.toggleAll([])
+    sel.set(['a', 'a'])
+    sel.sync(['a'])
+
+    expect(sel.store.getState()).toBe(before)
+    expect(states).toEqual([])
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('fires onChange with the next selection', () => {
     const onChange = vi.fn()
     const sel = createSelectionModel({ onChange })
@@ -51,6 +96,25 @@ describe('createSelectionModel — multiple', () => {
   it('seeds from defaultSelected and dedupes', () => {
     const sel = createSelectionModel({ defaultSelected: ['a', 'a', 'b'] })
     expect(sel.get()).toEqual(['a', 'b'])
+  })
+
+  it('removes NaN keys with the same membership semantics used by Set-backed selection', () => {
+    const sel = createSelectionModel<number>({ defaultSelected: [NaN, Infinity, 0, NaN] })
+
+    expect(sel.isSelected(NaN)).toBe(true)
+    expect(sel.get()).toHaveLength(3)
+    expect(Number.isNaN(sel.get()[0]!)).toBe(true)
+    expect(sel.get().slice(1)).toEqual([Infinity, 0])
+
+    sel.deselect(NaN)
+    expect(sel.isSelected(NaN)).toBe(false)
+    expect(sel.get()).toEqual([Infinity, 0])
+
+    sel.select(NaN)
+    expect(sel.isSelected(NaN)).toBe(true)
+    sel.toggle(NaN)
+    expect(sel.isSelected(NaN)).toBe(false)
+    expect(sel.get()).toEqual([Infinity, 0])
   })
 })
 

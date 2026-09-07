@@ -142,7 +142,7 @@ describe('IrisTable parity-AA: proxyConfig', () => {
     })
     expect(container.querySelector('[data-iris-table-row="loading"]')).toBeNull()
     expect(container.querySelector('[data-iris-table-pager]')).not.toBeNull()
-    expect(query).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 10 }))
+    expect(query.mock.calls[0]?.[0]).toMatchObject({ page: 1, pageSize: 10 })
   })
 
   it('remoteSort re-queries on header click with the sort param', async () => {
@@ -153,9 +153,9 @@ describe('IrisTable parity-AA: proxyConfig', () => {
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
     fireEvent.click(header(container, 'name')!)
     await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(
-        expect.objectContaining({ sort: { key: 'name', direction: 'asc' } }),
-      ),
+      expect((query.mock.lastCall as unknown[] | undefined)?.[0]).toMatchObject({
+        sort: { key: 'name', direction: 'asc' },
+      }),
     )
     expect(query).toHaveBeenCalledTimes(2)
   })
@@ -178,7 +178,7 @@ describe('IrisTable parity-AA: proxyConfig', () => {
     const pageBtns = [...container.querySelectorAll('[data-iris-pagination-item="page"]')]
     fireEvent.click(pageBtns[1]!)
     await waitFor(() => {
-      expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }))
+      expect(query.mock.lastCall?.[0]).toMatchObject({ page: 2 })
     })
     expect(cellTexts(container, 'name')).toEqual(['P2'])
     expect(onPageChange).toHaveBeenLastCalledWith(2, 10)
@@ -208,7 +208,10 @@ describe('IrisTable parity-AA: proxyConfig', () => {
       fireEvent.click(option!)
     })
     await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ pageSize: 20, page: 1 })),
+      expect((query.mock.lastCall as unknown[] | undefined)?.[0]).toMatchObject({
+        pageSize: 20,
+        page: 1,
+      }),
     )
   })
 
@@ -387,14 +390,15 @@ describe('IrisTable parity-AA: formConfig', () => {
     fireEvent.input(input, { target: { value: 'A' } })
     fireEvent.submit(container.querySelector('[data-iris-table-form]')!)
     await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(
-        expect.objectContaining({ filters: { name: 'A' }, page: 1 }),
-      ),
+      expect((query.mock.lastCall as unknown[] | undefined)?.[0]).toMatchObject({
+        filters: { name: 'A' },
+        page: 1,
+      }),
     )
     expect(query).toHaveBeenCalledTimes(2)
     fireEvent.reset(container.querySelector('[data-iris-table-form]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(3))
-    expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ filters: {} }))
+    expect((query.mock.lastCall as unknown[] | undefined)?.[0]).toMatchObject({ filters: {} })
   })
 })
 

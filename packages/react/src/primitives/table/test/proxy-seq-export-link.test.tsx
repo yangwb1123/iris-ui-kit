@@ -51,7 +51,12 @@ describe('IrisTable proxy seq (batch L)', () => {
     expect(seqTexts(container)).toEqual(['1', '2', '3', '4', '5'])
     fireEvent.click(container.querySelector('[data-iris-pagination-item="next"]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith({ page: 2, pageSize: 5, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 2,
+      pageSize: 5,
+      sort: null,
+      filters: {},
+    })
     await waitFor(() => expect(seqTexts(container)).toEqual(['6', '7', '8', '9', '10']))
   })
 

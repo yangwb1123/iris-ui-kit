@@ -3,21 +3,31 @@
   import { useGridColumns, useGridCore } from './useGrid'
 
   interface Props {
+    visibility?: Record<string, boolean>
+    defaultVisibility?: Record<string, boolean>
+    order?: string[]
+    defaultOrder?: string[]
+    widths?: Record<string, number>
+    defaultWidths?: Record<string, number>
+    pinned?: Record<string, 'left' | 'right' | null>
+    defaultPinned?: Record<string, 'left' | 'right' | null>
     onCore?: (core: GridCore<{ id: string }>) => void
+    onColumns?: (columns: ReturnType<typeof useGridColumns>) => void
     onVisibilityChange?: (value: Record<string, boolean>) => void
     onWidthsChange?: (value: Record<string, number>) => void
   }
 
-  let { onCore, onVisibilityChange, onWidthsChange }: Props = $props()
+  // Keep the $props proxy intact so the rune bridge can track replacements.
+  let props: Props = $props()
 
   const core = useGridCore<{ id: string }>()
-  const columns = useGridColumns(core, {
-    onVisibilityChange: (value) => onVisibilityChange?.(value),
-    onWidthsChange: (value) => onWidthsChange?.(value),
-  })
+  // svelte-ignore state_referenced_locally — pass the reactive $props proxy to the bridge.
+  const columns = useGridColumns(core, props)
   const columnState = columns.state
-  const reportCore = (): void => onCore?.(core)
+  const reportCore = (): void => props.onCore?.(core)
+  const reportColumns = (): void => props.onColumns?.(columns)
   reportCore()
+  reportColumns()
 </script>
 
 <div
@@ -33,6 +43,13 @@
     onclick={() => columns.model.syncVisibility({ hidden: false })}
   >
     sync visibility
+  </button>
+  <button
+    type="button"
+    data-testid="toggle-visibility"
+    onclick={() => columns.toggleVisibility('hidden')}
+  >
+    toggle visibility
   </button>
   <button
     type="button"
@@ -53,5 +70,17 @@
   </button>
   <button type="button" data-testid="reset-widths" onclick={() => columns.resetWidths()}>
     reset widths
+  </button>
+  <button
+    type="button"
+    data-testid="edit-columns"
+    onclick={() => {
+      columns.setVisibility({ hidden: true })
+      columns.setOrder(['age', 'name'])
+      columns.setWidths({ name: 116 })
+      columns.setPinned('name', null)
+    }}
+  >
+    edit columns
   </button>
 </div>

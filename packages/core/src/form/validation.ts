@@ -1,20 +1,13 @@
-import { debounce } from '../data-view'
 import { getByPath } from '../path'
+import { createValidationCoordinator, type ValidationCoordinator } from './coordinator'
 import type { FormValues, Validator, FormValidators, FieldErrors, Key } from './types'
 
 /**
  * Per-field validation engine.
  *
- * Manages monotonic per-field tokens (stale-result race protection),
- * debounced change validation, and the validator runner.
- *
- * @remarks
- * This engine is used internally by `createFormStore`. When you use
- * `createFormStore`, its `.validateField()`, `.validateForm()`, and
- * `validateOnChange` all delegate here. You normally **don't** need to
- * create one separately unless you're building a custom form pipeline.
- *
- * @see createValidationEngine
+ * The engine is a small compatibility facade over the shared form-validation
+ * coordinator. It remains useful without a form store, while the coordinator
+ * supplies the same lifecycle and stale-result rules to both consumers.
  */
 export interface ValidationEngine<V extends FormValues> {
   validateField(name: string, values: V): Promise<string | undefined>
@@ -25,8 +18,10 @@ export interface ValidationEngine<V extends FormValues> {
   ): Promise<FieldErrors<V>>
   isCurrent(name: string): boolean
   invalidateAll(): void
-  /** Schedule a debounced validate-on-change. Returns the debounced function so
-   *  the caller can tee it up with the current values at invocation time. */
+  cancel(): void
+  destroy(): void
+  readonly disposed: boolean
+  /** Schedule a debounced validate-on-change. */
   scheduleValidate(name: string): void
   /** Same as scheduleValidate but accepts an explicit values snapshot. */
   scheduleValidateWith(name: string, values: V): void
@@ -35,33 +30,9 @@ export interface ValidationEngine<V extends FormValues> {
 /**
  * Create a standalone validation engine for forms.
  *
- * This is the **same engine** used internally by `createFormStore`. Use it
- * directly when you need race-safe async validation **without** a full form
- * store — e.g., preview validation before submit, validate-on-interval, or
- * building a custom form engine.
- *
- * Each field uses a monotonic token: if a newer validation for the same field
- * starts before an older one completes, the older result is silently dropped.
- * This prevents stale async errors from "winning the race."
- *
- * @param validators - Per-field validator map. Each receives `(value, allValues)`.
- * @param validateOnChange - If `true`, `scheduleValidate` triggers validation.
- * @param debounceMs - Debounce window for `scheduleValidate` (0 = sync).
- * @param callbacks - Lifecycle hooks (`onValidating`, `onError`).
- * @param getValues - Snapshot function for debounced validation reads.
- *
- * @example
- * ```ts
- * const engine = createValidationEngine(
- *   { email: (v) => (v ? undefined : 'Required') },
- *   true,
- *   300,
- *   { onValidating: (n, on) => updateSpinner(n, on),
- *     onError: (n, err) => updateError(n, err) },
- *   () => getCurrentValues(),
- * )
- * const err = await engine.validateField('email', values)
- * ```
+ * The public surface intentionally remains compatible with the original
+ * engine. Lifecycle methods are direct coordinator pass-throughs and do not
+ * expose revisions, run IDs, or cancellation errors.
  */
 export function createValidationEngine<V extends FormValues>(
   validators: FormValidators<V>,
@@ -74,127 +45,50 @@ export function createValidationEngine<V extends FormValues>(
   /** Called to get the current values snapshot. Used by the debounced path. */
   getValues: () => V,
 ): ValidationEngine<V> {
-  const tokens = new Map<string, number>()
-  const fieldDebouncers = new Map<string, { run: () => void; cancel: () => void }>()
-
-  const nextToken = (name: string): number => {
-    const t = (tokens.get(name) ?? 0) + 1
-    tokens.set(name, t)
-    return t
-  }
-
-  const isCurrent = (name: string, token: number): boolean => tokens.get(name) === token
-
-  // Form-level monotonic token: guards the whole-form `config.validate`
-  // result (the unguarded Object.assign below). A newer validateForm pass or
-  // `invalidateAll` bumps it, so a stale whole-form result is never merged
-  // in. Separate counter on purpose — a reserved key in the per-field map
-  // would collide with a user field name. `validateField` deliberately does
-  // NOT bump it.
-  let formToken = 0
-  const bumpFormToken = (): number => ++formToken
-  const isFormCurrent = (token: number): boolean => formToken === token
-
-  const toErrorMessage = (err: unknown): string =>
-    err instanceof Error ? err.message : String(err)
-
-  // NOTE: intentionally NOT try/caught here. `validateForm` (below) relies on
-  // a throwing/rejecting validator propagating as a REJECTED promise — it
-  // uses Promise.allSettled and silently drops a rejected entry (a
-  // deliberate, tested "don't let one broken validator crash whole-form
-  // validation" contract). Catching here would turn that rejection into a
-  // resolved error string and surface it instead of swallowing it. The
-  // single-field `validateField` below is where the stuck-flag fix belongs —
-  // it catches its OWN await of this function.
-  const runFieldValidator = async (name: string, values: V): Promise<string | undefined> => {
-    const validator = validators[name as Key<V>] as Validator<V> | undefined
+  const runValidator = (
+    name: string,
+    values: V,
+  ): string | undefined | Promise<string | undefined> => {
+    const map = validators as Record<string, Validator<V> | undefined>
+    // Validator maps are caller-supplied objects; inherited names such as
+    // `toString` are not registered validators.
+    if (!Object.prototype.hasOwnProperty.call(map, name)) return undefined
+    const validator = map[name]
     if (!validator) return undefined
     return validator(getByPath(values, name) as V[Key<V>], values)
   }
 
-  const validateField: ValidationEngine<V>['validateField'] = async (name, values) => {
-    const token = nextToken(name)
-    callbacks.onValidating(name, true)
-    let error: string | undefined
-    try {
-      error = await runFieldValidator(name, values)
-    } catch (err) {
-      // A throwing/rejecting validator must not leave onValidating(name, true)
-      // stuck forever for the SINGLE-FIELD path — surface it as the field's
-      // error instead (validateForm's whole-form contract, above, is
-      // deliberately different and untouched).
-      error = toErrorMessage(err)
-    }
-    if (!isCurrent(name, token)) return undefined
-    callbacks.onValidating(name, false)
-    callbacks.onError(name, error)
-    return error
-  }
-
-  const runPending = (name: string): void => {
-    void validateField(name, getValues())
-  }
-
-  const scheduleValidate = (name: string): void => {
-    if (!validateOnChange) return
-    if (debounceMs <= 0) {
-      void validateField(name, getValues())
-      return
-    }
-    let entry = fieldDebouncers.get(name)
-    if (!entry) {
-      const debounced = debounce(() => runPending(name), debounceMs)
-      entry = { run: debounced, cancel: debounced.cancel }
-      fieldDebouncers.set(name, entry)
-    }
-    entry.run()
-  }
-
-  const scheduleValidateWith = (name: string, values: V): void => {
-    if (!validateOnChange) return
-    void validateField(name, values)
-  }
+  const coordinator: ValidationCoordinator<V> = createValidationCoordinator({
+    validateOnChange,
+    debounceMs,
+    getValues,
+    onFieldValidating: callbacks.onValidating,
+    onFieldError: callbacks.onError,
+  })
 
   return {
-    validateField,
-    async validateForm(vals, values, config) {
-      // Capture the form token at pass start — a newer pass (or
-      // invalidateAll) bumps it, superseding this one's whole-form result.
-      const formTokenAtStart = bumpFormToken()
-      const names = Object.keys(vals) as Key<V>[]
-      const tokenById = new Map<Key<V>, number>()
-      for (const name of names) tokenById.set(name, nextToken(name))
-
-      const results = await Promise.allSettled(
-        names.map(async (name) => [name, await runFieldValidator(name, values)] as const),
+    validateField: async (name, values) => {
+      const result = await coordinator.runField(name, values, runValidator)
+      return result.status === 'current' ? result.error : undefined
+    },
+    validateForm: async (vals, values, config) => {
+      const result = await coordinator.runForm(
+        Object.keys(vals),
+        values,
+        runValidator,
+        config?.validate,
       )
-      const nextErrors: FieldErrors<V> = {}
-      for (const result of results) {
-        if (result.status === 'rejected') continue
-        const [name, error] = result.value
-        const token = tokenById.get(name)
-        if (error && token !== undefined && isCurrent(name, token)) {
-          nextErrors[name] = error
-        }
-      }
-      if (config?.validate) {
-        const formErrors = await config.validate(values)
-        // Stale whole-form result — computed against values a newer pass
-        // (or invalidateAll) superseded. Skip the merge; the per-field
-        // entries above are already individually guarded.
-        if (!isFormCurrent(formTokenAtStart)) return nextErrors
-        Object.assign(nextErrors, formErrors)
-      }
-      return nextErrors
+      return result.status === 'cancelled' || result.status === 'destroyed' ? {} : result.errors
     },
-    isCurrent: (name) => isCurrent(name, tokens.get(name) ?? 0),
-    invalidateAll: () => {
-      tokens.clear()
-      // Also drop any in-flight whole-form result: a cleared per-field map
-      // cannot invalidate it, but the form token can.
-      bumpFormToken()
+    isCurrent: coordinator.isCurrent,
+    invalidateAll: coordinator.invalidateAll,
+    cancel: coordinator.cancel,
+    destroy: coordinator.destroy,
+    get disposed() {
+      return coordinator.disposed
     },
-    scheduleValidate,
-    scheduleValidateWith,
+    scheduleValidate: (name) => coordinator.scheduleValidate(name, runValidator),
+    scheduleValidateWith: (name, values) =>
+      coordinator.scheduleValidateWith(name, values, runValidator),
   }
 }

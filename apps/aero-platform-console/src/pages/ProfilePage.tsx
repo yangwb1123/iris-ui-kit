@@ -20,6 +20,10 @@ export function ProfilePage({ client }: { client: AeroIdClient }): React.ReactEl
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
   const [saveError, setSaveError] = React.useState<Error>()
+  const [eraseConfirmation, setEraseConfirmation] = React.useState('')
+  const [erasing, setErasing] = React.useState(false)
+  const [eraseError, setEraseError] = React.useState<Error>()
+  const [eraseJob, setEraseJob] = React.useState<Record<string, unknown>>()
 
   React.useEffect(() => {
     if (resource.data) setDraft(resource.data)
@@ -44,6 +48,21 @@ export function ProfilePage({ client }: { client: AeroIdClient }): React.ReactEl
       setSaveError(reason instanceof Error ? reason : new Error('保存失败'))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const accountID = String(resource.data?.account_id ?? '')
+  const erase = async () => {
+    if (!accountID || eraseConfirmation.trim() !== accountID) return
+    setErasing(true)
+    setEraseError(undefined)
+    try {
+      setEraseJob(await client.createEraseJob())
+      setEraseConfirmation('')
+    } catch (reason) {
+      setEraseError(reason instanceof Error ? reason : new Error('账户删除任务创建失败'))
+    } finally {
+      setErasing(false)
     }
   }
 
@@ -78,6 +97,42 @@ export function ProfilePage({ client }: { client: AeroIdClient }): React.ReactEl
             </IrisButton>
           </div>
         </form>
+      </IrisCard>
+      <IrisCard variant="outline" header="危险操作" className="danger-zone">
+        <IrisAlert tone="danger" title="删除聚合账户">
+          该操作会创建异步 erase
+          Saga，并请求各来源系统删除可删除的数据。结果必须在“同步与导出”中跟踪；unknown
+          状态不能视为删除失败后直接重试。
+        </IrisAlert>
+        {eraseError ? <IrisAlert tone="danger">{eraseError.message}</IrisAlert> : null}
+        {eraseJob ? (
+          <IrisAlert tone="success" title="删除任务已创建">
+            任务 ID：{String(eraseJob.job_id ?? eraseJob.id ?? '已接受')}，状态：
+            {String(eraseJob.status ?? 'pending')}
+          </IrisAlert>
+        ) : null}
+        <label className="form-row">
+          <span>输入账户 ID 确认</span>
+          <IrisInput
+            value={eraseConfirmation}
+            placeholder={accountID || '账户 ID 暂不可用'}
+            aria-describedby="erase-account-help"
+            onChange={(event) => setEraseConfirmation(event.target.value)}
+          />
+        </label>
+        <p id="erase-account-help" className="muted">
+          仅当输入与当前账户 ID {accountID || '—'} 完全一致时才能提交。
+        </p>
+        <div className="form-actions">
+          <IrisButton
+            variant="outline"
+            loading={erasing}
+            disabled={!accountID || eraseConfirmation.trim() !== accountID}
+            onClick={() => void erase()}
+          >
+            创建账户删除任务
+          </IrisButton>
+        </div>
       </IrisCard>
     </section>
   )

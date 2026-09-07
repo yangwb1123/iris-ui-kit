@@ -1,11 +1,12 @@
+import { onMount } from 'svelte'
 import {
   createDataSource,
-  type DataSourceController,
+  type AdvancedDataSourceController,
   type DataSourceConfig,
   type DataSourceState,
 } from '@iris-ui-kit/core'
 
-export interface UseDataSource<T> extends DataSourceController<T> {
+export interface UseDataSource<T> extends AdvancedDataSourceController<T> {
   /**
    * The live data-source state: rows, total, page/pageSize, sort/multiSort,
    * filters/filterRules, loading/loadingMore, hasMore, selectedKeys, and the
@@ -25,8 +26,8 @@ export interface UseDataSource<T> extends DataSourceController<T> {
  * need a reactive owner).
  *
  * Constructed with `immediate: false` so no fetch fires during setup; the initial
- * load is kicked from an `$effect` and the controller is torn down (aborting any
- * in-flight request) via the effect teardown on unmount, so a late response never
+ * load is kicked from `onMount` and the controller is torn down (aborting any
+ * in-flight request) via the mount teardown on unmount, so a late response never
  * writes back.
  */
 export function useDataSource<T>(config: DataSourceConfig<T>): UseDataSource<T> {
@@ -43,10 +44,11 @@ export function useDataSource<T>(config: DataSourceConfig<T>): UseDataSource<T> 
     })
   })
 
-  // Kick the initial load on mount; abort any in-flight fetch + detach the
-  // controller's internal subscriptions on unmount (a late response must not
-  // write back to a torn-down instance).
-  $effect(() => {
+  // Keep the initial load lifecycle-only: a caller's synchronous fetcher may
+  // read and write reactive state, which must not become an effect dependency.
+  // Abort any in-flight fetch + detach the controller's internal subscriptions
+  // on unmount (a late response must not write back to a torn-down instance).
+  onMount(() => {
     if (immediate) void controller.load()
     return () => controller.destroy()
   })

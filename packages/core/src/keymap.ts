@@ -82,11 +82,11 @@ export const DEFAULT_TABLE_KEYMAP: Record<IrisTableKeyAction, readonly string[]>
 
 /** Parse one key spec. Invalid specs (no key part, unknown tokens…) → null. */
 export function parseTableKey(spec: string): TableKeyBinding | null {
-  const parts = spec
-    .split('+')
-    .map((part) => part.trim().toLowerCase())
-    .filter((part) => part !== '')
-  if (parts.length === 0) return null
+  if (typeof spec !== 'string') return null
+  const parts = spec.split('+').map((part) => part.trim().toLowerCase())
+  // Empty segments are malformed, but whitespace around a real segment is
+  // deliberately accepted (`Ctrl + Shift + Z`).
+  if (parts.length === 0 || parts.some((part) => part === '')) return null
   let ctrl = false
   let shift = false
   let alt = false
@@ -100,6 +100,18 @@ export function parseTableKey(spec: string): TableKeyBinding | null {
   // Exactly ONE non-modifier token — `'Meta'`/`'Ctrl+'`/`'F3+F4'` are invalid.
   if (keys.length !== 1) return null
   return { key: keys[0]!, ctrl, shift, alt }
+}
+
+function isTableKeyBinding(value: unknown): value is TableKeyBinding {
+  if (typeof value !== 'object' || value === null) return false
+  const binding = value as Record<string, unknown>
+  return (
+    typeof binding.key === 'string' &&
+    binding.key.length > 0 &&
+    typeof binding.ctrl === 'boolean' &&
+    typeof binding.shift === 'boolean' &&
+    typeof binding.alt === 'boolean'
+  )
 }
 
 function parseAll(specs: readonly string[]): TableKeyBinding[] {
@@ -119,8 +131,12 @@ function parseAll(specs: readonly string[]): TableKeyBinding[] {
 export function normalizeKeymap(overrides?: IrisTableKeymap): NormalizedTableKeymap {
   const out = {} as NormalizedTableKeymap
   for (const action of TABLE_KEY_ACTIONS) {
-    const override = overrides?.[action]
-    const source = override !== undefined ? [override] : DEFAULT_TABLE_KEYMAP[action]
+    const hasOwnOverride =
+      overrides !== null &&
+      overrides !== undefined &&
+      Object.prototype.hasOwnProperty.call(overrides, action)
+    const override = hasOwnOverride ? overrides[action] : undefined
+    const source = typeof override === 'string' ? [override] : DEFAULT_TABLE_KEYMAP[action]
     const parsed = parseAll(source)
     out[action] = parsed.length > 0 ? parsed : parseAll(DEFAULT_TABLE_KEYMAP[action])
   }
@@ -136,11 +152,13 @@ export function normalizeKeymap(overrides?: IrisTableKeymap): NormalizedTableKey
  * shared-flag read). Round-trips every binding `normalizeKeymap` can emit.
  */
 export function formatKeyBinding(binding: TableKeyBinding): string {
+  if (!isTableKeyBinding(binding)) return ''
   const parts: string[] = []
   if (binding.ctrl) parts.push('Ctrl')
   if (binding.shift) parts.push('Shift')
   if (binding.alt) parts.push('Alt')
-  const key = binding.key
+  const key = binding.key === ' ' ? 'space' : binding.key.trim().toLowerCase()
+  if (key === '') return ''
   if (key === 'space') parts.push('Space')
   else if (key.length === 1) parts.push(key.toUpperCase())
   else parts.push(key.charAt(0).toUpperCase() + key.slice(1))
@@ -149,16 +167,33 @@ export function formatKeyBinding(binding: TableKeyBinding): string {
 
 /** Format a binding LIST as a display string: `' / '`-joined aliases, empty → `''`. */
 export function formatKeyBindings(bindings: readonly TableKeyBinding[]): string {
-  return bindings.map(formatKeyBinding).join(' / ')
+  if (!Array.isArray(bindings)) return ''
+  return bindings
+    .map(formatKeyBinding)
+    .filter((formatted) => formatted !== '')
+    .join(' / ')
 }
 
 /** Exact match: key (case-insensitive) + ALL modifier flags equal. */
 export function matchTableKey(event: TableKeyEvent, bindings: readonly TableKeyBinding[]): boolean {
+  if (
+    typeof event !== 'object' ||
+    event === null ||
+    typeof event.key !== 'string' ||
+    !Array.isArray(bindings)
+  ) {
+    return false
+  }
   const key = event.key === ' ' ? 'space' : event.key.toLowerCase()
-  const ctrl = (event.ctrlKey ?? false) || (event.metaKey ?? false)
-  const shift = event.shiftKey ?? false
-  const alt = event.altKey ?? false
+  const ctrl = event.ctrlKey === true || event.metaKey === true
+  const shift = event.shiftKey === true
+  const alt = event.altKey === true
   return bindings.some(
-    (b) => b.key === key && b.ctrl === ctrl && b.shift === shift && b.alt === alt,
+    (b) =>
+      isTableKeyBinding(b) &&
+      b.key === key &&
+      b.ctrl === ctrl &&
+      b.shift === shift &&
+      b.alt === alt,
   )
 }

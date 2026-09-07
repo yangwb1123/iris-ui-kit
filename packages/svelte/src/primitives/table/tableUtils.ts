@@ -1,11 +1,19 @@
 import {
   applyTableMask,
-  compareValues,
-  computeResponsiveColumns,
-  computeVirtualRange,
-  flattenLeafColumns,
-  memoizedFormulaValue,
-  RESPONSIVE_NARROW_WIDTH,
+  clampColumnWidth,
+  COLUMN_RESIZE_STEP,
+  computeVisibleColumnIndices,
+  DEFAULT_COLUMN_MIN_WIDTH,
+  DEFAULT_COLUMN_WIDTH,
+  filterTableRows,
+  mergeFilterValues,
+  isValidColumnWidth,
+  isTableColumnEditable,
+  materializeTableFormulaValues,
+  resolveColumnWidth,
+  resolveTableColumnValue,
+  resolveGridTemplateColumns,
+  resolveInitialWidth,
   type FormulaTables,
 } from '@iris-ui-kit/core'
 import type {
@@ -55,48 +63,12 @@ export interface IrisTableProps {
  * These are framework-agnostic and do NOT use Svelte runes ($state/$derived).
  */
 export const TABLE_CONST = {
-  DEFAULT_COL_WIDTH: 140,
-  DEFAULT_MIN_WIDTH: 60,
-  RESIZE_STEP: 16,
+  DEFAULT_COL_WIDTH: DEFAULT_COLUMN_WIDTH,
+  DEFAULT_MIN_WIDTH: DEFAULT_COLUMN_MIN_WIDTH,
+  RESIZE_STEP: COLUMN_RESIZE_STEP,
 } as const
 
-export function computeResponsiveTableColumns(
-  columns: IrisTableColumn[],
-  containerWidth: number,
-  leadingWidth: number,
-  widthOf: (column: IrisTableColumn) => number,
-): { columns: IrisTableColumn[]; overflow: boolean } {
-  if (containerWidth <= 0 || containerWidth >= RESPONSIVE_NARROW_WIDTH) {
-    return { columns, overflow: false }
-  }
-  const isPinned = (column: IrisTableColumn): boolean =>
-    column.children && column.children.length > 0
-      ? column.children.some(isPinned)
-      : column.pinned !== undefined
-  const fitted = computeResponsiveColumns(columns, Math.max(1, containerWidth - leadingWidth), {
-    widthOf: (column) => widthOf(column as IrisTableColumn),
-    isPinned: (column) => isPinned(column as IrisTableColumn),
-    narrowWidth: RESPONSIVE_NARROW_WIDTH - leadingWidth,
-  }) as IrisTableColumn[]
-  const natural = fitted.reduce(
-    (sum, column) =>
-      sum +
-      (column.children && column.children.length > 0
-        ? flattenLeafColumns([column]).reduce((nested, leaf) => nested + widthOf(leaf), 0)
-        : widthOf(column)),
-    leadingWidth,
-  )
-  return { columns: fitted, overflow: natural > containerWidth }
-}
-
-export function resolveInitialWidth(col: IrisTableColumn): number {
-  if (typeof col.width === 'number') return col.width
-  if (typeof col.width === 'string') {
-    const m = col.width.match(/^(\d+(?:\.\d+)?)px$/)
-    if (m) return Number(m[1])
-  }
-  return TABLE_CONST.DEFAULT_COL_WIDTH
-}
+export { resolveInitialWidth }
 
 export function resolveResponsiveWidth(
   column: IrisTableColumn,
@@ -104,9 +76,7 @@ export function resolveResponsiveWidth(
   defaultColumnWidths: IrisTableColumnWidths | undefined,
 ): number {
   const configured = columnWidths?.[column.key] ?? defaultColumnWidths?.[column.key]
-  if (typeof configured === 'number' && Number.isFinite(configured) && configured >= 0) {
-    return configured
-  }
+  if (isValidColumnWidth(configured)) return configured
   return resolveInitialWidth(column)
 }
 
@@ -130,21 +100,11 @@ export function getCellValue(
   column: IrisTableColumn,
   formulaTables?: FormulaTables,
 ): unknown {
-  // Batch EM: a formula column reads the COMPUTED value. This
-  // choke point feeds sorting, filtering, summary, the cell render, edit
-  // drafts, pattern hints and range copy, so the computed value flows
-  // everywhere.
-  if (column.formula) return memoizedFormulaValue(column.formula, row, formulaTables)
-  const key = (column.dataIndex ?? column.key) as string
-  return row[key]
+  return resolveTableColumnValue(row, column, formulaTables)
 }
 
-/** Batch EM: a formula column is DISPLAY-ONLY even when `editable` — every
- * editing entry point (inline, row mode, click trigger, data-editable attr,
- * cursor) reads this same condition. */
-export function isEditableColumn(column: IrisTableColumn): boolean {
-  return !!column.editable && !column.formula
-}
+/** Compatibility name for the Core edit-capability predicate. */
+export const isEditableColumn = isTableColumnEditable
 
 /** CSV/range-copy shadow rows (batch EM): core `toCsv`/`serializeTableRange`
  * read `row[dataIndex]` directly, so formula columns materialize their
@@ -156,31 +116,11 @@ export function withComputedFormulaCells(
   columns: readonly IrisTableColumn[],
   formulaTables?: FormulaTables,
 ): Record<string, unknown>[] {
-  const formulaCols = columns.filter((c) => c.formula)
-  if (formulaCols.length === 0) return rows as Record<string, unknown>[]
-  return rows.map((row) => {
-    let shadow: Record<string, unknown> | null = null
-    for (const col of formulaCols) {
-      const key = (col.dataIndex ?? col.key) as string
-      const next: Record<string, unknown> = shadow ?? { ...row }
-      next[key as string] = memoizedFormulaValue(col.formula!, row, formulaTables)
-      shadow = next
-    }
-    return shadow as Record<string, unknown>
-  })
+  return materializeTableFormulaValues(rows, columns, formulaTables)
 }
 
 /** Serialize checked filter sets for a remote query (vxe comma parity). */
-export function mergeFilterValues(
-  filters: Record<string, string>,
-  filterValues: IrisTableFilterValues,
-): Record<string, string> {
-  const next = { ...filters }
-  for (const [key, values] of Object.entries(filterValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
-}
+export { mergeFilterValues }
 
 /** Apply text filters and checked OR sets to a sorted row list. */
 export function applyTableFilters(
@@ -190,32 +130,17 @@ export function applyTableFilters(
   filterValues: IrisTableFilterValues,
   formulaTables?: FormulaTables,
 ): Array<Record<string, unknown>> {
-  const active = Object.entries(textFilters).filter(([, value]) => value != null && value !== '')
-  const checked = Object.entries(filterValues).filter(([, values]) => values.length > 0)
-  if (active.length === 0 && checked.length === 0) return rows
-  return rows.filter(
-    (row) =>
-      active.every(([key, value]) => {
-        const col = columns.find((column) => column.key === key)
-        if (!col) return true
-        const raw = getCellValue(row, col, formulaTables)
-        if (col.filterMethod) return col.filterMethod(raw, row, value)
-        return String(raw ?? '')
-          .toLowerCase()
-          .includes(value.toLowerCase())
-      }) &&
-      checked.every(([key, values]) => {
-        const col = columns.find((column) => column.key === key)
-        if (!col) return true
-        return values.includes(String(getCellValue(row, col, formulaTables) ?? ''))
-      }),
-  )
+  return filterTableRows(rows, columns, {
+    getValue: (row, column) => getCellValue(row, column, formulaTables),
+    filters: textFilters,
+    filterValues,
+  })
 }
 
 export function clampWidth(col: IrisTableColumn, w: number): number {
   const minW = col.minWidth ?? TABLE_CONST.DEFAULT_MIN_WIDTH
   const maxW = col.maxWidth ?? Infinity
-  return Math.max(minW, Math.min(maxW, Math.round(w)))
+  return clampColumnWidth(w, minW, maxW)
 }
 
 export function summaryCellStyle(col: IrisTableColumn): string {
@@ -230,90 +155,9 @@ export function buildGridTemplate(
   leafColumns: IrisTableColumn[],
   effectiveWidths: IrisTableColumnWidths,
 ): string {
-  const parts: string[] = []
-  if (hasDetail) parts.push('40px')
-  if (showSelection) parts.push('40px')
-  for (const col of leafColumns) {
-    parts.push(`${effectiveWidths[col.key] ?? resolveInitialWidth(col)}px`)
-  }
-  return parts.join(' ')
-}
-
-export function createSortComparator(
-  effectiveSort: IrisTableSortState | null,
-  leafColumns: IrisTableColumn[],
-  getValue: (row: Record<string, unknown>, col: IrisTableColumn) => unknown,
-): ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null {
-  if (!effectiveSort) return null
-  const column = leafColumns.find((c) => c.key === effectiveSort.key)
-  if (!column) return null
-  const dir = effectiveSort.direction === 'asc' ? 1 : -1
-  const sorter =
-    column.sorter ?? ((a, b) => compareValues(getValue(a, column), getValue(b, column)))
-  return (a, b) => sorter(a, b) * dir
-}
-
-export interface SpanPlan {
-  occupied: Set<string>
-  spans: Map<string, { rowspan: number; colspan: number }>
-}
-
-/** Build the complete span occupancy map once per reactive render pass. */
-export function buildSpanPlan(
-  rowCount: number,
-  colCount: number,
-  method: (params: {
-    rowIndex: number
-    columnIndex: number
-  }) => { rowspan?: number; colspan?: number } | null | undefined,
-): SpanPlan {
-  const occupied = new Set<string>()
-  const spans = new Map<string, { rowspan: number; colspan: number }>()
-  for (let r = 0; r < rowCount; r += 1) {
-    for (let c = 0; c < colCount; c += 1) {
-      const key = `${r}:${c}`
-      if (occupied.has(key)) continue
-      const span = method({ rowIndex: r, columnIndex: c })
-      const rowspan = span?.rowspan ?? 1
-      const colspan = span?.colspan ?? 1
-      if (rowspan > 1 || colspan > 1) {
-        spans.set(key, { rowspan, colspan })
-        for (let rr = 1; rr < rowspan; rr += 1) occupied.add(`${r + rr}:${c}`)
-        for (let cc = 1; cc < colspan; cc += 1) occupied.add(`${r}:${c + cc}`)
-      }
-    }
-  }
-  return { occupied, spans }
-}
-
-/** Ordered multi-column comparator shared by all Svelte table consumers. */
-export function createMultiSortComparator(
-  list: IrisTableSortState[],
-  leafCols: IrisTableColumn[],
-  getValue: (row: Record<string, unknown>, col: IrisTableColumn) => unknown,
-): ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null {
-  if (list.length === 0) return null
-  const colMap = new Map(leafCols.map((c) => [c.key, c]))
-  const chain: Array<{
-    dir: number
-    sorter: (a: Record<string, unknown>, b: Record<string, unknown>) => number
-  }> = []
-  for (const s of list) {
-    const col = colMap.get(s.key)
-    if (!col) continue
-    chain.push({
-      dir: s.direction === 'asc' ? 1 : -1,
-      sorter: col.sorter ?? ((a, b) => compareValues(getValue(a, col), getValue(b, col))),
-    })
-  }
-  if (chain.length === 0) return null
-  return (a, b) => {
-    for (const step of chain) {
-      const cmp = step.sorter(a, b)
-      if (cmp !== 0) return cmp * step.dir
-    }
-    return 0
-  }
+  return resolveGridTemplateColumns(leafColumns, effectiveWidths, {
+    leadingTracks: [...(hasDetail ? [40] : []), ...(showSelection ? [40] : [])],
+  })
 }
 
 export function computeVisibleColSet(
@@ -322,21 +166,15 @@ export function computeVisibleColSet(
   scrollLeft: number,
   viewportWidth: number,
   effectiveWidths: IrisTableColumnWidths,
+  pinOf: (column: IrisTableColumn) => 'left' | 'right' | null,
 ): Set<number> | null {
-  if (!columnVirtualization) return null
-  const w = computeVirtualRange({
-    itemCount: leafColumns.length,
-    scrollTop: scrollLeft,
+  return computeVisibleColumnIndices(columnVirtualization, {
+    columns: leafColumns,
+    scrollOffset: scrollLeft,
     viewportSize: viewportWidth,
-    itemSize: (i) => effectiveWidths[leafColumns[i].key] ?? resolveInitialWidth(leafColumns[i]),
-    buffer: 2,
+    itemSize: (column) => resolveColumnWidth(column, effectiveWidths),
+    isAlwaysVisible: (column) => pinOf(column) !== null,
   })
-  const set = new Set<number>()
-  for (let i = w.startIndex; i <= w.endIndex; i++) set.add(i)
-  leafColumns.forEach((col, i) => {
-    if (col.pinned) set.add(i)
-  })
-  return set
 }
 
 export function cellId(rowIdent: string | number, colKey: string): string {

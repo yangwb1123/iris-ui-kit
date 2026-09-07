@@ -1,51 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createMachine, type Scheduler } from './machine'
-
-/**
- * A deterministic, manually-advanced fake scheduler. Tests step time explicitly
- * via `advance(ms)` so `after` transitions fire reproducibly — no real-time
- * waits, no jsdom flake (the flaky-Solid-tooltip cautionary tale).
- */
-function fakeScheduler() {
-  let now = 0
-  let seq = 0
-  const timers = new Map<number, { at: number; fn: () => void }>()
-  const scheduler: Scheduler = {
-    setTimeout(fn, ms) {
-      const id = seq++
-      timers.set(id, { at: now + ms, fn })
-      return id
-    },
-    clearTimeout(handle) {
-      timers.delete(handle as number)
-    },
-  }
-  const advance = (ms: number): void => {
-    const target = now + ms
-    // Fire due timers in chronological order, accounting for timers scheduled
-    // by firing callbacks (chained `after`s).
-    let safety = 0
-    for (;;) {
-      let next: { id: number; at: number; fn: () => void } | undefined
-      for (const [id, t] of timers) {
-        if (t.at <= target && (!next || t.at < next.at)) next = { id, ...t }
-      }
-      if (!next) break
-      now = next.at
-      timers.delete(next.id)
-      next.fn()
-      if (++safety > 10_000) throw new Error('timer loop')
-    }
-    now = target
-  }
-  return {
-    scheduler,
-    advance,
-    get pending() {
-      return timers.size
-    },
-  }
-}
+import { createMachine } from './machine'
+import { fakeScheduler } from './machine.test-support'
 
 describe('createMachine (back-compat flat behavior)', () => {
   type State = 'closed' | 'open'
@@ -358,5 +313,122 @@ describe('createMachine — one level of nested states', () => {
     expect(fake.pending).toBe(0)
     fake.advance(100)
     expect(m.store.getState().value).toBe('stopped')
+  })
+
+  it('keeps the compound parent active across child-to-child transitions', () => {
+    const fake = fakeScheduler()
+    const log: string[] = []
+    type State = 'idle' | 'running' | 'fast' | 'slow' | 'stopped'
+    type Event = { type: 'START' } | { type: 'SLOW' } | { type: 'NEXT' } | { type: 'HALT' }
+    const m = createMachine<State, Record<string, never>, Event>({
+      initial: 'idle',
+      context: {},
+      scheduler: fake.scheduler,
+      states: {
+        idle: { on: { START: { target: 'running' } } },
+        running: {
+          initial: 'fast',
+          entry: [() => log.push('enter:running')],
+          exit: [() => log.push('exit:running')],
+          after: { 100: { target: 'stopped' } },
+          on: { HALT: { target: 'stopped' } },
+          states: {
+            fast: {
+              entry: [() => log.push('enter:fast')],
+              exit: [() => log.push('exit:fast')],
+              on: { SLOW: { target: 'slow' } },
+            },
+            slow: {
+              entry: [() => log.push('enter:slow')],
+              exit: [() => log.push('exit:slow')],
+              on: { NEXT: { target: 'fast' } },
+            },
+          },
+        },
+        fast: {},
+        slow: {},
+        stopped: {},
+      },
+    })
+
+    m.send({ type: 'START' })
+    m.send({ type: 'SLOW' })
+    expect(m.store.getState().value).toBe('slow')
+    expect(fake.pending).toBe(1) // the parent's after remains active
+    expect(log).toEqual(['enter:running', 'enter:fast', 'exit:fast', 'enter:slow'])
+
+    m.send({ type: 'NEXT' })
+    expect(m.store.getState().value).toBe('fast')
+    m.send({ type: 'HALT' }) // still bubbles to the active parent
+    expect(m.store.getState().value).toBe('stopped')
+    expect(log).toEqual([
+      'enter:running',
+      'enter:fast',
+      'exit:fast',
+      'enter:slow',
+      'exit:slow',
+      'enter:fast',
+      'exit:fast',
+      'exit:running',
+    ])
+  })
+
+  it('leaves the compound parent when a child targets a top-level state', () => {
+    const log: string[] = []
+    type State = 'idle' | 'running' | 'fast' | 'stopped'
+    type Event = { type: 'START' } | { type: 'ABORT' }
+    const m = createMachine<State, Record<string, never>, Event>({
+      initial: 'idle',
+      context: {},
+      states: {
+        idle: { on: { START: { target: 'running' } } },
+        running: {
+          initial: 'fast',
+          exit: [() => log.push('exit:running')],
+          states: {
+            fast: {
+              exit: [() => log.push('exit:fast')],
+              on: { ABORT: { target: 'stopped' } },
+            },
+          },
+        },
+        fast: {},
+        stopped: {},
+      },
+    })
+
+    m.send({ type: 'START' })
+    m.send({ type: 'ABORT' })
+    expect(m.store.getState().value).toBe('stopped')
+    expect(log).toEqual(['exit:fast', 'exit:running'])
+  })
+
+  it('leaves the compound parent when a child after targets a top-level state', () => {
+    const fake = fakeScheduler()
+    const log: string[] = []
+    type State = 'idle' | 'running' | 'fast' | 'stopped'
+    type Event = { type: 'START' }
+    const m = createMachine<State, Record<string, never>, Event>({
+      initial: 'idle',
+      context: {},
+      scheduler: fake.scheduler,
+      states: {
+        idle: { on: { START: { target: 'running' } } },
+        running: {
+          initial: 'fast',
+          exit: [() => log.push('exit:running')],
+          states: {
+            fast: { after: { 10: { target: 'stopped' } }, exit: [() => log.push('exit:fast')] },
+          },
+        },
+        fast: {},
+        stopped: {},
+      },
+    })
+
+    m.send({ type: 'START' })
+    fake.advance(10)
+    expect(m.store.getState().value).toBe('stopped')
+    expect(log).toEqual(['exit:fast', 'exit:running'])
   })
 })

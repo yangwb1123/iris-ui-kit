@@ -7,6 +7,7 @@ export interface PlatformConfig {
   redirectUri: string
   aeroIdApiBase: string
   auditConsoleUrl?: string
+  snaplinkConsoleUrl?: string
   aeroImConsoleUrl?: string
   aeroVaultConsoleUrl?: string
 }
@@ -85,6 +86,9 @@ export function loadPlatformConfig(): PlatformConfig {
     aeroIdApiBase: trimSlash(aeroIdApiBase),
     auditConsoleUrl: optionalUrl(
       firstValue(runtime.auditConsoleUrl, import.meta.env.VITE_AUDIT_CONSOLE_URL),
+    ),
+    snaplinkConsoleUrl: optionalUrl(
+      firstValue(runtime.snaplinkConsoleUrl, import.meta.env.VITE_SNAPLINK_CONSOLE_URL),
     ),
     aeroImConsoleUrl: optionalUrl(
       firstValue(runtime.aeroImConsoleUrl, import.meta.env.VITE_AERO_IM_CONSOLE_URL),

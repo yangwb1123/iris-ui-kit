@@ -43,10 +43,12 @@ export function createGridExpansionFeature<
   return {
     name: 'expansion',
     setup(context) {
+      let active = true
       const model = createExpansion<K>({
         mode: options.mode,
         defaultExpanded: options.defaultExpanded,
         onChange(keys) {
+          if (!active) return
           options.onChange?.([...keys])
           context.emit<GridExpansionChange<K>>(GRID_EXPANSION_CHANGE_EVENT, {
             expandedKeys: [...keys],
@@ -67,6 +69,11 @@ export function createGridExpansionFeature<
       }
       return {
         methods: featureMethods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained bridge model may outlive the grid component. Stop its
+        // feature callback after teardown, like the range/clipboard features.
+        dispose: () => {
+          active = false
+        },
       }
     },
   }

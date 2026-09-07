@@ -103,6 +103,7 @@ export {
   type GridVirtualRangeOptions,
   type GridVirtualWindow,
 } from './virtual'
+export * from './grid-virtual-exports'
 export {
   createVirtualizer,
   type Virtualizer,
@@ -120,6 +121,7 @@ export {
 export {
   createPaginatedResource,
   type PaginatedResource,
+  type AdvancedPaginatedResource,
   type PaginatedState,
   type PaginatedResourceConfig,
   type PaginationMode,
@@ -138,6 +140,7 @@ export {
   type TableHtmlOptions,
 } from './table-export'
 export { rowsFromCsv, previewColumnsFromRows } from './table-import'
+export * from './table-exports'
 export { compareStates } from './state-compare'
 export {
   readTableViews,
@@ -152,7 +155,7 @@ export {
   type TableNamedView,
   type TableTab,
 } from './table-views'
-export { leftPinnedCount, pinnedCountFromBudget, type PinnedColumnLike } from './pinned-drag'
+export * from './column-layout-exports'
 export {
   setFileSaveHandler,
   getFileSaveHandler,
@@ -167,38 +170,7 @@ export {
   copyText,
   type ClipboardHandler,
 } from './clipboard'
-export {
-  compareValues,
-  cycleSort,
-  filterSort,
-  createMemoizedFilterSort,
-  matchesRule,
-  debounce,
-  aggregate,
-  summarize,
-  groupRows,
-  flattenTree,
-  withSortedChildren,
-  treeMatchKeys,
-  paginate,
-  pageCount,
-  getPageRange,
-  createGroupedView,
-  type AggregateOp,
-  type AggregateSpec,
-  type TreeRow,
-  type FlattenTreeOptions,
-  type SortDirection,
-  type SortState,
-  type DataViewColumn,
-  type DataViewQuery,
-  type FilterOperator,
-  type FilterRule,
-  type PageItem,
-  type GroupedViewConfig,
-  type GroupedViewState,
-  type GroupedViewStore,
-} from './data-view'
+export * from './data-view-exports'
 export { rangeStats, type RangeColumnStats, type RangeStatsRange } from './range-stats'
 export {
   valueDistribution,
@@ -232,7 +204,10 @@ export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } f
 export { diffRows, type RowDiff, type RowDiffCellChange, type RowDiffKind } from './diff-rows'
 export { generateRows, type GenerateRowColumn, type GenerateRowsKind } from './generate-rows'
 export {
+  computeSelectionFlags,
   createSelectionModel,
+  type SelectionFlags,
+  type SelectionFlagsOptions,
   type SelectionModel,
   type SelectionConfig,
   type SelectionMode,
@@ -262,15 +237,7 @@ export {
   type CalendarNavState,
   type CreateCalendarNavOptions,
 } from './calendar-nav'
-export {
-  flattenLeafColumns,
-  buildHeaderMatrix,
-  dataIndexOf,
-  readCell,
-  type ColumnTreeNode,
-  type HeaderCell,
-  type ColumnAccessor,
-} from './columns'
+export * from './grid-columns-exports'
 export {
   applyColumnPreset,
   COLUMN_PRESET_DEFAULTS,
@@ -281,12 +248,20 @@ export {
   type ColumnPreset,
   type ColumnPresetDescriptor,
 } from './column-preset'
-export { detectColumnType, type DetectedColumnType } from './column-type'
 export {
+  applyDetectedColumnDefaults,
+  detectColumnType,
+  type DetectedColumnDefaultsNode,
+  type DetectedColumnType,
+} from './column-type'
+export {
+  computeResponsiveColumnLayout,
   computeResponsiveColumns,
   RESPONSIVE_NARROW_WIDTH,
-  type ResponsiveColumn,
+  type ComputeResponsiveColumnLayoutOptions,
   type ComputeResponsiveColumnsOptions,
+  type ResponsiveColumn,
+  type ResponsiveColumnLayout,
 } from './responsive'
 export {
   evaluateFormula,
@@ -310,14 +285,32 @@ export {
   type CreateCellEditOptions,
 } from './cell-edit'
 export {
+  createTableRowEditModel,
+  type TableRowEditActive,
+  type TableRowEditCommit,
+  type TableRowEditKey,
+  type TableRowEditValidation,
+  type TableRowEditModel,
+  type TableRowEditOptions,
+  type TableRowEditSession,
+  type TableRowEditState,
+} from './table-row-edit'
+export {
   createDataSource,
   createClientDataSource,
   createSyncClientDataSource,
   type DataSourceController,
+  type AdvancedDataSourceController,
   type DataSourceConfig,
   type DataSourceState,
   type DataSourceQuery,
   type DataSourceMode,
+  type DataSourceMutationDescriptor,
+  type DataSourceMutationOutcome,
+  type DataSourceMutationStatus,
+  type DataSourceOutboxOptions,
+  DataSourceMutationDeferredError,
+  DataSourceMutationUndeliveredError,
   type MutateOptions as DataSourceMutateOptions,
   type RowMutateOptions,
 } from './data-source'
@@ -409,13 +402,30 @@ export {
 } from './remote-table'
 export { buildFormValues, mergeFormFilters, seedFormValues } from './table-form'
 export {
+  filterTableRows,
+  mergeFilterValues,
+  type TableFilterColumn,
+  type TableFilterOptions,
+  type TableFilterValues,
+} from './table-filter'
+export {
   insertRowInList,
   removeRowFromList,
   removeRowsFromList,
   reorderRowsInList,
+  reorderRowsInListAt,
+  resolveRowDragProjection,
+  resolveTableRowKey,
   updateRowInList,
   cloneRowInList,
 } from './table-rows'
+export { reconcileProjectedRows, type ReconcileProjectedRowsOptions } from './table-projection'
+export {
+  buildTableGroupPlan,
+  type TableGroupColumn,
+  type TableGroupPlanEntry,
+  type TableGroupPlanOptions,
+} from './table-group'
 export {
   createTabsNav,
   isClosable,

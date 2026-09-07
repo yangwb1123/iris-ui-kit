@@ -117,6 +117,26 @@ a {
   flex-wrap: wrap;
 }
 
+.table-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pagination-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--iris-space-sm, 12px);
+  padding-block-start: var(--iris-space-md, 16px);
+}
+
+.pagination-footer [data-iris-alert] {
+  flex: 1 1 320px;
+}
+
 section > [data-iris-alert],
 section > [data-iris-card] {
   margin-block-end: var(--iris-space-md, 16px);
@@ -141,6 +161,11 @@ section > [data-iris-card] {
   font-weight: 750;
 }
 
+.metric-value-text {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
 .status-row {
   justify-content: space-between;
   min-height: 36px;
@@ -156,6 +181,17 @@ section > [data-iris-card] {
   gap: var(--iris-space-md, 16px);
 }
 
+.projection-form {
+  display: grid;
+  gap: var(--iris-space-md, 16px);
+}
+
+.audit-filter-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--iris-space-md, 16px);
+}
+
 .form-row {
   display: grid;
   grid-template-columns: minmax(110px, 180px) minmax(0, 1fr);
@@ -167,9 +203,31 @@ section > [data-iris-card] {
   width: 100%;
 }
 
+.form-row select,
+.form-row > input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--iris-foreground);
+  background: var(--iris-background);
+  border: 1px solid var(--iris-border);
+  border-radius: var(--iris-radius-md, 8px);
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.audit-filter-actions {
+  grid-column: 1 / -1;
+  gap: var(--iris-space-sm, 8px);
+}
+
+.card-header-row {
+  display: inline-flex;
+  gap: var(--iris-space-sm, 8px);
+  align-items: center;
 }
 
 .table-scroll {
@@ -205,6 +263,22 @@ section > [data-iris-card] {
   color: var(--iris-muted);
 }
 
+.danger-zone {
+  border-color: color-mix(in srgb, var(--iris-danger, #dc2626) 45%, var(--iris-border));
+}
+
+.json-viewer {
+  max-height: 480px;
+  margin: 0;
+  padding: var(--iris-space-md, 16px);
+  overflow: auto;
+  color: var(--iris-foreground);
+  background: color-mix(in srgb, var(--iris-muted) 8%, transparent);
+  border-radius: var(--iris-radius-md, 8px);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 720px) {
   .page-header,
   .status-row {
@@ -219,5 +293,9 @@ section > [data-iris-card] {
   .form-row {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .audit-filter-form {
+    grid-template-columns: 1fr;
   }
 }

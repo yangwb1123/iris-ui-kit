@@ -1,4 +1,4 @@
-import { aggregate } from '@iris-ui-kit/core'
+import { projectTableSummary } from '@iris-ui-kit/core'
 import { createMemo, For, Show, type Accessor, type JSX } from 'solid-js'
 import type { IrisTableColumn } from './types'
 import type { TableColumnFadeController } from './table-column-fade'
@@ -31,10 +31,12 @@ const spacerStyle = {
 export function TableSummary<Row extends Record<string, unknown>>(
   props: TableSummaryProps<Row>,
 ): JSX.Element {
+  const summary = createMemo(() =>
+    projectTableSummary(props.bodyRows(), props.leafColumns(), props.getCellValue),
+  )
+
   return (
-    <Show
-      when={props.bodyRows().length > 0 && props.leafColumns().some((column) => column.summary)}
-    >
+    <Show when={summary().shouldRender}>
       <div
         role="row"
         data-iris-table-row="summary"
@@ -61,12 +63,9 @@ export function TableSummary<Row extends Record<string, unknown>>(
         <For each={props.leafColumns()}>
           {(column, colIndexAccessor) => {
             const colIndex = colIndexAccessor()
-            const op = column.summary
-            // Keep the aggregate reactive to formulaTables identity changes even
-            // when the body row array itself is unchanged.
-            const value = createMemo(() =>
-              op ? aggregate(props.bodyRows(), (row) => props.getCellValue(row, column), op) : null,
-            )
+            const summaryCell = () => summary().cells[colIndex]!
+            const op = () => summaryCell().operation
+            const value = () => summaryCell().value
             const inWindow = (): boolean => {
               const set = props.visibleColSet()
               return !set || set.has(colIndex)
@@ -77,7 +76,7 @@ export function TableSummary<Row extends Record<string, unknown>>(
                   role="cell"
                   data-iris-table-cell={column.key}
                   data-iris-table-pinned={props.pinOf(column)}
-                  data-iris-table-summary-cell={op ? '' : undefined}
+                  data-iris-table-summary-cell={op() ? '' : undefined}
                   {...props.columnFade.columnFadeAttrs(column)}
                   style={{
                     display: 'flex',
@@ -101,7 +100,7 @@ export function TableSummary<Row extends Record<string, unknown>>(
                     ...(props.pinnedStyle(column.key) ?? {}),
                   }}
                 >
-                  <Show when={op != null && value() != null}>
+                  <Show when={op() != null && value() != null}>
                     <Show when={column.renderSummary} fallback={String(value())}>
                       {column.renderSummary!(value()!, props.bodyRows())}
                     </Show>

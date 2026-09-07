@@ -16,6 +16,8 @@ export function createTableViewsController(options: {
   config: () => TableViewConfig | undefined
   sort: Readonly<Ref<IrisTableSortState | null>>
   setSort: (sort: IrisTableSortState | null) => void
+  capture?: () => Omit<Partial<IrisTableViewSnapshot>, 'sort'>
+  applySnapshot?: (snapshot: IrisTableViewSnapshot) => void
   onActiveViewChange: (key: string | null) => void
 }): {
   activeKey: Readonly<Ref<string | null>>
@@ -41,6 +43,9 @@ export function createTableViewsController(options: {
   const applySnapshot = (snapshot: IrisTableViewSnapshot): void => {
     if (Object.prototype.hasOwnProperty.call(snapshot, 'sort'))
       options.setSort(snapshot.sort ?? null)
+    // Present non-sort fields replay through the owning feature setters;
+    // absent fields (legacy snapshots) leave the current state untouched.
+    options.applySnapshot?.(snapshot)
   }
   const select = (key: string): void => {
     const view = views.value.find((candidate) => candidate.name === key)
@@ -55,7 +60,10 @@ export function createTableViewsController(options: {
     const currentSort = options.sort.value
     const entry: NamedView = {
       name: trimmed,
-      snapshot: { sort: currentSort ? { ...currentSort } : null },
+      snapshot: {
+        sort: currentSort ? { ...currentSort } : null,
+        ...options.capture?.(),
+      },
     }
     const index = views.value.findIndex((view) => view.name === trimmed)
     persist(

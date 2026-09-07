@@ -5,7 +5,9 @@ import {
   clampRect,
   serializeSession,
   restoreSession,
+  type SnapZone,
   type WindowManager,
+  type WindowRect,
 } from './window'
 
 const AREA = { x: 0, y: 0, width: 1000, height: 600 }
@@ -171,6 +173,67 @@ describe('pure geometry helpers', () => {
       height: 40,
     })
   })
+
+  it('does not emit non-finite or oversized geometry for hostile numeric input', () => {
+    expect(
+      clampRect(
+        {
+          x: Number.NaN,
+          y: Number.POSITIVE_INFINITY,
+          width: Number.POSITIVE_INFINITY,
+          height: -10,
+        },
+        { x: 0, y: 0, width: 100, height: 80 },
+        { width: 200, height: Number.NaN },
+      ),
+    ).toEqual({ x: 0, y: 0, width: 100, height: 0 })
+  })
+
+  it('fails closed for null geometry and throwing accessors', () => {
+    expect(clampRect(null as unknown as WindowRect, AREA, { width: 10, height: 10 })).toEqual({
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    })
+    expect(snapRect(null as unknown as SnapZone, null as unknown as WindowRect)).toEqual({
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    })
+
+    let reads = 0
+    const hostile = {
+      get x() {
+        reads += 1
+        throw new Error('x')
+      },
+      get y() {
+        reads += 1
+        throw new Error('y')
+      },
+      get width() {
+        reads += 1
+        throw new Error('width')
+      },
+      get height() {
+        reads += 1
+        throw new Error('height')
+      },
+    } as unknown as WindowRect
+    expect(clampRect(hostile, AREA, { width: 10, height: 10 })).toEqual({
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    })
+    expect(reads).toBe(4)
+
+    const wm = make()
+    wm.setWorkArea(null as unknown as WindowRect)
+    expect(wm.getState().workArea).toEqual(AREA)
+  })
 })
 
 describe('session serialize / restore', () => {
@@ -220,6 +283,17 @@ describe('session serialize / restore', () => {
     expect(wm.getState().windows).toHaveLength(0)
   })
 
+  it('returns an owned geometry snapshot', () => {
+    const wm = make()
+    const id = wm.open({ appId: 'x', title: 'X', rect: { x: 10, y: 20 } })
+    const session = serializeSession(wm.getState())
+    session[0]!.rect.x = 999
+    session[0]!.minSize.width = 999
+    const window = wm.getState().windows.find((entry) => entry.id === id)!
+    expect(window.rect.x).toBe(10)
+    expect(window.minSize.width).toBe(200)
+  })
+
   it('round-trips the per-window workspace', () => {
     const wm = createWindowManager({ workArea: AREA, workspaces: 3 })
     wm.open({ appId: 'a', title: 'A' }) // ws 0
@@ -231,6 +305,19 @@ describe('session serialize / restore', () => {
     restoreSession(wm2, session)
     expect(wm2.getState().windows.find((w) => w.appId === 'b')!.workspace).toBe(2)
     expect(wm2.getState().windows.find((w) => w.appId === 'a')!.workspace).toBe(0)
+  })
+
+  it('restores the active workspace implied by the focused window', () => {
+    const wm = createWindowManager({ workArea: AREA, workspaces: 3 })
+    wm.open({ appId: 'a', title: 'A' })
+    wm.setWorkspace(2)
+    const focused = wm.open({ appId: 'b', title: 'B' })
+    const restored = createWindowManager({ workArea: AREA, workspaces: 3 })
+    const ids = restoreSession(restored, serializeSession(wm.getState()))
+    expect(restored.getState().currentWorkspace).toBe(2)
+    expect(restored.getState().focusedId).toBe(ids[1])
+    expect(restored.getState().windows.find((entry) => entry.id === ids[1])!.appId).toBe('b')
+    void focused
   })
 })
 
@@ -311,6 +398,15 @@ describe('createWindowManager — z-index rebalance', () => {
     // But we can verify the system doesn't crash
     expect(maxZ).toBeGreaterThan(0)
     expect(wm.getState().windows).toHaveLength(2)
+  })
+
+  it('keeps z-values unique when the automatic rebalance threshold is crossed', () => {
+    const wm = make()
+    const a = wm.open({ appId: 'a', title: 'A' })
+    const b = wm.open({ appId: 'b', title: 'B' })
+    for (let i = 0; i < 99_999; i++) wm.focus(i % 2 === 0 ? a : b)
+    const zValues = wm.getState().windows.map((window) => window.z)
+    expect(new Set(zValues).size).toBe(zValues.length)
   })
 })
 

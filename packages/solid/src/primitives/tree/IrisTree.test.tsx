@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, fireEvent, cleanup } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
+import { render, fireEvent, cleanup, waitFor } from '@solidjs/testing-library'
 import { IrisTree, type IrisTreeNode } from './IrisTree'
 
 afterEach(cleanup)
@@ -153,6 +154,18 @@ describe('IrisTree', () => {
       expect(onCheckedChange.mock.calls.at(-1)![0]).toContain('a1')
     })
 
+    it('does not reseed uncontrolled checks from a fresh defaultChecked prop', () => {
+      const [version, setVersion] = createSignal(0)
+      const { container } = render(() => {
+        version()
+        return <IrisTree nodes={nodes} checkable defaultExpandedIds={['a']} defaultChecked={[]} />
+      })
+      fireEvent.click(checkboxFor(container, 'a')!)
+      setVersion(1)
+      expect(checkboxFor(container, 'a')!.checked).toBe(true)
+      expect(checkboxFor(container, 'a1')!.checked).toBe(true)
+    })
+
     it('a partially-checked parent is aria-checked=mixed and indeterminate', () => {
       const { container } = render(() => (
         <IrisTree nodes={nodes} checkable defaultExpandedIds={['a']} defaultChecked={['a1']} />
@@ -168,6 +181,23 @@ describe('IrisTree', () => {
       const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
       expect(checkboxFor(container, 'a')).toBeNull()
       expect(checkboxFor(container, 'a1')).toBeNull()
+    })
+
+    it('cascades to lazy children when eager children is an empty placeholder', async () => {
+      const lazy = [
+        {
+          id: 'root',
+          label: 'Root',
+          children: [],
+          loadChildren: async () => [{ id: 'child', label: 'Child' }],
+        },
+      ]
+      const { container, getByText } = render(() => <IrisTree nodes={lazy} checkable />)
+      const root = container.querySelector('[data-iris-tree-node="root"]')!
+      fireEvent.click(root.querySelector('[data-iris-tree-expand]') as HTMLElement)
+      await waitFor(() => expect(getByText('Child')).not.toBeNull())
+      fireEvent.click(checkboxFor(container, 'root')!)
+      expect(checkboxFor(container, 'child')!.checked).toBe(true)
     })
   })
 

@@ -20,19 +20,27 @@ export function createFormHistory<V>(options: {
 }): FormHistory {
   const history: string[] = []
   let index = -1
+  const max =
+    typeof options.max === 'number' && !Number.isNaN(options.max)
+      ? options.max === Infinity
+        ? Infinity
+        : Math.max(0, Math.floor(options.max))
+      : 0
 
   const save = (): void => {
-    if (options.max <= 0) return
-    let snapshot: string
+    if (max <= 0) return
+    let snapshot: string | undefined
     try {
-      snapshot = JSON.stringify(options.read())
+      const encoded = JSON.stringify(options.read())
+      if (typeof encoded !== 'string') return
+      snapshot = encoded
     } catch {
       return
     }
     history.splice(index + 1)
     if (history.at(-1) === snapshot) return
     history.push(snapshot)
-    if (history.length > options.max) history.shift()
+    if (history.length > max) history.shift()
     index = history.length - 1
   }
 
@@ -44,15 +52,45 @@ export function createFormHistory<V>(options: {
     },
     undo: () => {
       if (index <= 0) return
-      index -= 1
-      options.invalidate()
-      options.write(JSON.parse(history[index]!))
+      const previous = index
+      const target = index - 1
+      let values: V
+      try {
+        values = JSON.parse(history[target]!) as V
+      } catch {
+        return
+      }
+      index = target
+      try {
+        options.invalidate()
+        // A re-entrant save/clear supersedes this navigation.
+        if (index !== target) return
+        options.write(values)
+      } catch (error) {
+        if (index === target) index = previous
+        throw error
+      }
     },
     redo: () => {
       if (index >= history.length - 1) return
-      index += 1
-      options.invalidate()
-      options.write(JSON.parse(history[index]!))
+      const previous = index
+      const target = index + 1
+      let values: V
+      try {
+        values = JSON.parse(history[target]!) as V
+      } catch {
+        return
+      }
+      index = target
+      try {
+        options.invalidate()
+        // A re-entrant save/clear supersedes this navigation.
+        if (index !== target) return
+        options.write(values)
+      } catch (error) {
+        if (index === target) index = previous
+        throw error
+      }
     },
     canUndo: () => index > 0,
     canRedo: () => index < history.length - 1,

@@ -102,7 +102,7 @@ export function useGridSelection<
     controlled,
     selection: () => {
       const current = internal()
-      return controlled() ? (options.value ?? []) : current
+      return controlled() ? [...(options.value ?? [])] : [...current]
     },
     rebase: () => {
       if (latest.value !== undefined) model.sync(latest.value)
@@ -133,7 +133,8 @@ export function useGridExpansion<
       onChange: (keys) => latest.onChange?.(keys),
     }),
   )
-  return { model, expandedKeys: useStore(model.store) }
+  const state = useStore(model.store)
+  return { model, expandedKeys: () => [...state()] }
 }
 
 export interface UseGridRowsOptions<Row extends Record<string, unknown>, Meta = unknown> {
@@ -233,6 +234,15 @@ export function useGridEditing<Row extends Record<string, unknown>>(
   }
 }
 
+function cloneGridColumnsState(state: GridColumnsState): GridColumnsState {
+  return {
+    visibility: { ...state.visibility },
+    order: [...state.order],
+    widths: { ...state.widths },
+    pinned: { ...state.pinned },
+  }
+}
+
 export interface UseGridColumnsOptions {
   visibility?: Record<string, boolean>
   defaultVisibility?: Record<string, boolean>
@@ -275,18 +285,76 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
       onPinnedChange: (k, v) => latest.onPinnedChange?.(k, v),
     }),
   )
-  const state = useStore(model.store)
+  const internal = useStore(model.store)
+  const state = (): GridColumnsState => cloneGridColumnsState(internal())
+  let uncontrolledVisibility = { ...(options.defaultVisibility ?? {}) }
+  let uncontrolledOrder = [...(options.defaultOrder ?? [])]
+  let uncontrolledWidths = { ...(options.defaultWidths ?? {}) }
+  let uncontrolledPinned = { ...(options.defaultPinned ?? {}) }
+  let wasVisibilityControlled = options.visibility !== undefined
+  let wasOrderControlled = options.order !== undefined
+  let wasWidthsControlled = options.widths !== undefined
+  let wasPinnedControlled = options.pinned !== undefined
+  createEffect(() => {
+    const visibility = options.visibility
+    const order = options.order
+    const widths = options.widths
+    const pinned = options.pinned
+    const controlledVisibility = visibility !== undefined
+    const controlledOrder = order !== undefined
+    const controlledWidths = widths !== undefined
+    const controlledPinned = pinned !== undefined
+    // Touch entries as well as each map/array so reactive prop proxies observe
+    // in-place controlled updates. Do not read the model store here: callers
+    // may own a separate reactive sync for the same core feature.
+    void (visibility ? JSON.stringify(Object.entries(visibility)) : '')
+    void (order ? JSON.stringify(order) : '')
+    void (widths ? JSON.stringify(Object.entries(widths)) : '')
+    void (pinned ? JSON.stringify(Object.entries(pinned)) : '')
+
+    if (controlledVisibility) model.syncVisibility(visibility)
+    else if (wasVisibilityControlled) model.syncVisibility(uncontrolledVisibility)
+    if (controlledOrder) model.syncOrder(order)
+    else if (wasOrderControlled) model.syncOrder(uncontrolledOrder)
+    if (controlledWidths) model.syncWidths(widths)
+    else if (wasWidthsControlled) model.syncWidths(uncontrolledWidths)
+    if (controlledPinned) model.syncPinned(pinned)
+    else if (wasPinnedControlled) model.syncPinned(uncontrolledPinned)
+
+    wasVisibilityControlled = controlledVisibility
+    wasOrderControlled = controlledOrder
+    wasWidthsControlled = controlledWidths
+    wasPinnedControlled = controlledPinned
+  })
+  createEffect(() => {
+    const current = internal()
+    if (!wasVisibilityControlled) uncontrolledVisibility = { ...current.visibility }
+    if (!wasOrderControlled) uncontrolledOrder = [...current.order]
+    if (!wasWidthsControlled) uncontrolledWidths = { ...current.widths }
+    if (!wasPinnedControlled) uncontrolledPinned = { ...current.pinned }
+  })
+  const rebase = (): void => {
+    if (options.visibility !== undefined) model.syncVisibility(options.visibility)
+    if (options.order !== undefined) model.syncOrder(options.order)
+    if (options.widths !== undefined) model.syncWidths(options.widths)
+    if (options.pinned !== undefined) model.syncPinned(options.pinned)
+  }
+  const apply = (write: () => void): void => {
+    rebase()
+    write()
+    rebase()
+  }
   return {
     model,
     state,
-    setVisibility: (v) => model.setVisibility(v),
-    toggleVisibility: (k) => model.toggleVisibility(k),
-    setOrder: (v) => model.setOrder(v),
-    clearOrder: () => model.setOrder(undefined),
-    setWidths: (v) => model.setWidths(v),
-    setWidth: (k, v) => model.setWidth(k, v),
-    resetWidths: () => model.setWidths({}),
-    setPinned: (k, v) => model.setPinned(k, v),
+    setVisibility: (v) => apply(() => model.setVisibility(v)),
+    toggleVisibility: (k) => apply(() => model.toggleVisibility(k)),
+    setOrder: (v) => apply(() => model.setOrder(v)),
+    clearOrder: () => apply(() => model.setOrder(undefined)),
+    setWidths: (v) => apply(() => model.setWidths(v)),
+    setWidth: (k, v) => apply(() => model.setWidth(k, v)),
+    resetWidths: () => apply(() => model.setWidths({})),
+    setPinned: (k, v) => apply(() => model.setPinned(k, v)),
   }
 }
 
@@ -298,6 +366,13 @@ export interface UseGridPaginationOptions {
   total?: number
   defaultTotal?: number
   onChange?: (change: GridPaginationChange) => void
+}
+function controlledPagination(options: UseGridPaginationOptions): Partial<GridPaginationState> {
+  return {
+    ...(options.page !== undefined ? { page: options.page } : {}),
+    ...(options.pageSize !== undefined ? { pageSize: options.pageSize } : {}),
+    ...(options.total !== undefined ? { total: options.total } : {}),
+  }
 }
 export function useGridPagination<Row extends Record<string, unknown> = Record<string, unknown>>(
   core: GridCore<Row>,
@@ -322,6 +397,10 @@ export function useGridPagination<Row extends Record<string, unknown> = Record<s
         onChange: (v) => latest.onChange?.(v),
       }),
   )
+  createEffect(() => {
+    const next = controlledPagination(options)
+    if (Object.keys(next).length > 0) model.sync(next)
+  })
   return {
     model,
     pagination: useStore(model.store),

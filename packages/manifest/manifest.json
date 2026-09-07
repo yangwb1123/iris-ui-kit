@@ -39136,11 +39136,7 @@
             "update:selection",
             "update:sort"
           ],
-          "slots": [
-            "empty",
-            "error",
-            "loading"
-          ],
+          "slots": [],
           "publicTypes": [
             "IrisTableAggregateOp",
             "IrisTableCellEditEvent",
@@ -39995,6 +39991,12 @@
               "description": "Optional tab strip; tab clicks apply listed view names in order."
             },
             {
+              "name": "pinnedColumns",
+              "type": "Record<string, 'left' | 'right' | null>",
+              "optional": true,
+              "description": "Controlled effective pin side by column key; absent keys use declarations."
+            },
+            {
               "name": "pinnedDrag",
               "type": "boolean",
               "optional": true,
@@ -40168,7 +40170,13 @@
               "name": "getSubRows",
               "type": "(row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined",
               "optional": true,
-              "description": "Read a row's children to enable tree mode."
+              "description": "Read a row's children to enable tree mode. Tree usage with `getSubRows` or `lazyLoad` requires a stable `rowKey`; keyless tree siblings are unsupported."
+            },
+            {
+              "name": "lazyLoad",
+              "type": "(",
+              "optional": true,
+              "description": "Lazy tree loading: the first expand calls this loader; `load` supplies and caches children."
             },
             {
               "name": "persistState",

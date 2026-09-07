@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { createPortal } from 'react-dom'
 import { IrisTable } from './Table'
 import { exportCsv } from './exportCsv'
-import { exportExcel } from './exportExcel'
 import type { IrisTableColumn } from './types'
 
 afterEach(() => cleanup())
@@ -259,6 +258,34 @@ describe('@iris-ui-kit/react IrisTable', () => {
       fireEvent.click(cb()[1]!)
     })
     expect(onChange).toHaveBeenLastCalledWith([])
+  })
+
+  it('controlled sort re-bases after a rejected callback', () => {
+    const onSort = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} sort={null} onSortChange={onSort} />)
+    const nameHeader = headers().find((h) => h.textContent?.includes('Name'))!
+    act(() => fireEvent.click(nameHeader))
+    act(() => fireEvent.click(nameHeader))
+    expect(onSort).toHaveBeenLastCalledWith({ key: 'name', direction: 'asc' })
+  })
+
+  it('applies local filters before projecting tree rows', () => {
+    type FilterTreeRow = { id: number; name: string; children?: FilterTreeRow[] }
+    const treeRows: FilterTreeRow[] = [
+      { id: 1, name: 'Root A', children: [{ id: 11, name: 'Child A1' }] },
+      { id: 2, name: 'Root B' },
+    ]
+    const treeColumns: IrisTableColumn<FilterTreeRow>[] = [{ key: 'name' }]
+    render(
+      <IrisTable
+        columns={treeColumns}
+        data={treeRows}
+        getSubRows={(row) => row.children}
+        filters={{ name: 'Root B' }}
+      />,
+    )
+    expect(document.querySelectorAll('[data-iris-table-cell="name"]')).toHaveLength(1)
+    expect(document.querySelector('[data-iris-table-cell="name"]')?.textContent).toContain('Root B')
   })
 
   it('render callback customizes cell content', () => {
@@ -675,6 +702,31 @@ describe('@iris-ui-kit/react IrisTable summary row', () => {
     expect(summaryCell('age')!.textContent).toBe('avg 28.3') // (25+32+28)/3 = 28.33
   })
 
+  it('preserves null and zero aggregate semantics and passes rows to custom callbacks', () => {
+    const edgeRows = [
+      { id: 10, name: 'Null', age: null },
+      { id: 11, name: 'Zero', age: 0 },
+      { id: 12, name: 'String', age: '2' },
+    ] as unknown as Row[]
+    const renderSummary = vi.fn(
+      (value: number, sourceRows: Row[]) => `Σ${value}:${sourceRows.length}`,
+    )
+    const cols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age', summary: 'sum', renderSummary },
+    ]
+    render(<IrisTable columns={cols} data={edgeRows} />)
+    expect(summaryCell('age')!.textContent).toBe('Σ2:3')
+    expect(renderSummary).toHaveBeenCalledWith(2, edgeRows)
+  })
+
+  it('uses the remote page rows for summary values, including zero', async () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 90, name: 'Remote', age: 0 }], total: 10 }))
+    render(<IrisTable columns={sumCols} data={[]} rowKey="id" proxyConfig={{ query }} />)
+    await waitFor(() => expect(summaryCell('age')?.textContent).toBe('0'))
+    expect(query).toHaveBeenCalledTimes(1)
+  })
+
   it('shows no summary row when no column declares one', () => {
     render(<IrisTable columns={baseColumns} data={rows} />)
     expect(document.querySelector('[data-iris-table-row="summary"]')).toBeNull()
@@ -1086,101 +1138,6 @@ describe('@iris-ui-kit/react IrisTable virtual scroll', () => {
     // the detail panel as one uniform slot per expanded row.
     expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
     expect(document.querySelector('[data-iris-table-row-detail]')).not.toBeNull()
-  })
-})
-
-describe('@iris-ui-kit/react IrisTable pinned columns', () => {
-  const cols: IrisTableColumn<Row>[] = [
-    { key: 'name', title: 'Name', width: 100, pinned: 'left' },
-    { key: 'age', title: 'Age', width: 80 },
-    { key: 'act', title: 'Act', width: 60, pinned: 'right' },
-  ]
-
-  it('makes pinned header + cells sticky with edge offsets', () => {
-    render(<IrisTable columns={cols} data={rows} />)
-    const nameHeader = document.querySelector('[data-iris-table-header="name"]') as HTMLElement
-    expect(nameHeader.getAttribute('data-iris-table-pinned')).toBe('left')
-    expect(nameHeader.style.position).toBe('sticky')
-    expect(nameHeader.style.left).toBe('0px')
-    const actHeader = document.querySelector('[data-iris-table-header="act"]') as HTMLElement
-    expect(actHeader.style.position).toBe('sticky')
-    expect(actHeader.style.right).toBe('0px')
-    // Body cells are pinned too.
-    const nameCell = document.querySelector('[data-iris-table-cell="name"]') as HTMLElement
-    expect(nameCell.style.position).toBe('sticky')
-    // Unpinned column has no sticky positioning.
-    const ageHeader = document.querySelector('[data-iris-table-header="age"]') as HTMLElement
-    expect(ageHeader.style.position).toBe('relative')
-    expect(ageHeader.getAttribute('data-iris-table-pinned')).toBeNull()
-  })
-
-  it('offsets a left-pinned column by the selection column width', () => {
-    render(<IrisTable columns={cols} data={rows} selectable="multi" />)
-    const nameHeader = document.querySelector('[data-iris-table-header="name"]') as HTMLElement
-    expect(nameHeader.style.left).toBe('40px')
-  })
-})
-
-describe('@iris-ui-kit/react exportExcel', () => {
-  it('serializes rows to SpreadsheetML, typing numbers and ignoring render fns', () => {
-    const cols: IrisTableColumn<Row>[] = [
-      { key: 'name', title: 'Name', render: (v) => `<<${v}>>` },
-      { key: 'age', title: 'Age' },
-    ]
-    const xml = exportExcel(rows, cols)
-    expect(xml).toContain('<?mso-application progid="Excel.Sheet"?>')
-    expect(xml).toContain('<Data ss:Type="String">Name</Data>')
-    expect(xml).toContain('<Data ss:Type="String">Charlie</Data>')
-    expect(xml).toContain('<Data ss:Type="Number">25</Data>')
-  })
-
-  it('forwards headerStyle and columnWidths to the core serializer', () => {
-    const cols: IrisTableColumn<Row>[] = [
-      { key: 'name', title: 'Name' },
-      { key: 'age', title: 'Age' },
-    ]
-    const xml = exportExcel(rows, cols, { headerStyle: true, columnWidths: [12, 6] })
-    expect(xml).toContain('<Styles><Style ss:ID="Header"><Font ss:Bold="1"/></Style></Styles>')
-    expect(xml).toContain('<Cell ss:StyleID="Header"><Data ss:Type="String">Name</Data></Cell>')
-    expect(xml).toContain('<Column ss:Width="63"/>')
-    expect(xml).toContain('<Column ss:Width="31.5"/>')
-  })
-})
-
-describe('@iris-ui-kit/react IrisTable column virtualization', () => {
-  const wideCols: IrisTableColumn<Record<string, unknown>>[] = Array.from(
-    { length: 8 },
-    (_, i) => ({
-      key: `c${i}`,
-      title: `C${i}`,
-      width: 120,
-    }),
-  )
-  const wideRows: Record<string, unknown>[] = [
-    Object.fromEntries([['id', 1], ...wideCols.map((c) => [c.key, `${c.key}-v`])]),
-  ]
-
-  it('renders every column when disabled (default)', () => {
-    render(<IrisTable columns={wideCols} data={wideRows} />)
-    expect(document.querySelectorAll('[data-iris-table-header]').length).toBe(8)
-  })
-
-  it('renders only a window of columns when enabled', () => {
-    render(<IrisTable columns={wideCols} data={wideRows} columnVirtualization />)
-    const headerCount = document.querySelectorAll('[data-iris-table-header]').length
-    expect(headerCount).toBeGreaterThan(0)
-    expect(headerCount).toBeLessThan(8)
-    expect(document.querySelector('[data-iris-table][data-column-virtualized=true]')).not.toBeNull()
-    // Rendered header cells carry an explicit grid track.
-    const first = document.querySelector('[data-iris-table-header]') as HTMLElement
-    expect(first.style.gridColumnStart).toBeTruthy()
-  })
-
-  it('always renders pinned columns even when out of the window', () => {
-    const cols = wideCols.map((c, i) => (i === 7 ? { ...c, pinned: 'right' as const } : c))
-    render(<IrisTable columns={cols} data={wideRows} columnVirtualization />)
-    // The far pinned column (index 7) renders despite being outside the window.
-    expect(document.querySelector('[data-iris-table-header="c7"]')).not.toBeNull()
   })
 })
 

@@ -10,7 +10,12 @@ import { useStore } from '../useStore'
 import { useGridFeature } from './useGridFeature'
 
 function sameKeys<K extends SelectionKey>(left: readonly K[], right: readonly K[]): boolean {
-  return left.length === right.length && left.every((key, index) => Object.is(key, right[index]))
+  return (
+    left.length === right.length &&
+    left.every(
+      (key, index) => key === right[index] || (key !== key && right[index] !== right[index]),
+    )
+  )
 }
 
 export interface UseGridSelectionOptions<K extends SelectionKey = string> {
@@ -48,13 +53,39 @@ export function useGridSelection<
   )
   const internalSelection = useStore(model.store)
   const controlled = options.value !== undefined
+  const wasControlled = React.useRef(controlled)
+  const uncontrolledSnapshot = React.useRef<K[]>([])
+  const hasUncontrolledSnapshot = React.useRef(!controlled)
+  const lastControlledSnapshot = React.useRef<K[]>([...(options.value ?? [])])
+  const leavingControlled = wasControlled.current && !controlled
+
+  // Capture only genuine uncontrolled state. A rejected controlled mutation may
+  // have left the model ahead of the prop; never let that proposal become the
+  // next uncontrolled snapshot during the handoff render.
+  if (!controlled && !leavingControlled) {
+    uncontrolledSnapshot.current = [...internalSelection]
+    hasUncontrolledSnapshot.current = true
+  }
+  if (controlled) lastControlledSnapshot.current = [...(options.value ?? [])]
+  const uncontrolledValue = leavingControlled
+    ? hasUncontrolledSnapshot.current
+      ? uncontrolledSnapshot.current
+      : lastControlledSnapshot.current
+    : internalSelection
 
   React.useEffect(() => {
     if (controlled) {
       const next = options.value ?? []
+      lastControlledSnapshot.current = [...next]
+      if (!sameKeys(model.get(), next)) model.sync(next)
+    } else if (wasControlled.current) {
+      const next = hasUncontrolledSnapshot.current
+        ? uncontrolledSnapshot.current
+        : lastControlledSnapshot.current
       if (!sameKeys(model.get(), next)) model.sync(next)
     }
-  }, [controlled, model, options.value])
+    wasControlled.current = controlled
+  }, [controlled, model, options.value ? [...options.value] : undefined])
 
   const rebase = React.useCallback(() => {
     if (latest.current.value !== undefined) model.sync(latest.current.value)
@@ -63,7 +94,7 @@ export function useGridSelection<
   return {
     core,
     model,
-    selection: controlled ? (options.value ?? []) : internalSelection,
+    selection: [...(controlled ? (options.value ?? []) : uncontrolledValue)],
     controlled,
     rebase,
   }

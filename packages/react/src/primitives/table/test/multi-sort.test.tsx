@@ -94,10 +94,15 @@ describe('IrisTable multiSort (vxe-grid batch F)', () => {
       />,
     )
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
-    expect(query).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     act(() => fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!))
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -106,7 +111,7 @@ describe('IrisTable multiSort (vxe-grid batch F)', () => {
     })
     act(() => fireEvent.click(container.querySelector('[data-iris-table-header="age"]')!))
     await waitFor(() => expect(query).toHaveBeenCalledTimes(3))
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -135,7 +140,7 @@ describe('IrisTable multiSort (vxe-grid batch F)', () => {
     act(() => fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!))
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
     // No `sorts` key — the single-column channel stays byte-identical.
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: { key: 'name', direction: 'asc' },

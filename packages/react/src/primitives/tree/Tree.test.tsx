@@ -245,6 +245,30 @@ describe('@iris-ui-kit/react IrisTree lazy loading', () => {
     expect(root.getAttribute('data-error')).toBe('')
     expect(root.getAttribute('aria-expanded')).toBe('false')
   })
+
+  it('cascades checkboxes to lazy children despite an empty placeholder', async () => {
+    const lazy: IrisTreeNode[] = [
+      {
+        id: 'root',
+        label: 'Root',
+        children: [],
+        loadChildren: async () => [{ id: 'child', label: 'Child' }],
+      },
+    ]
+    render(<IrisTree nodes={lazy} checkable />)
+    await act(async () => {
+      fireEvent.click(document.querySelector('[data-iris-tree-toggle]') as HTMLElement)
+    })
+    const rootCheckbox = document.querySelector(
+      '[data-iris-tree-node="root"] [data-iris-tree-checkbox]',
+    ) as HTMLInputElement
+    const childCheckbox = document.querySelector(
+      '[data-iris-tree-node="child"] [data-iris-tree-checkbox]',
+    ) as HTMLInputElement
+    expect(childCheckbox).not.toBeNull()
+    act(() => fireEvent.click(rootCheckbox))
+    expect(childCheckbox.checked).toBe(true)
+  })
 })
 
 describe('@iris-ui-kit/react IrisTree RTL', () => {
@@ -310,6 +334,48 @@ describe('@iris-ui-kit/react IrisTree data states', () => {
       expect(checkboxFor('a')!.checked).toBe(true)
       expect(onCheckedChange).toHaveBeenCalled()
       expect(onCheckedChange.mock.calls.at(-1)![0]).toContain('a1')
+    })
+
+    it('keeps checked rendering stable across rerenders and toggles', () => {
+      const { rerender } = render(
+        <IrisTree
+          nodes={nodes}
+          checkable
+          expanded={['root', 'a']}
+          defaultChecked={[]}
+          ariaLabel="first"
+        />,
+      )
+      rerender(
+        <IrisTree
+          nodes={nodes}
+          checkable
+          expanded={['root', 'a']}
+          defaultChecked={[]}
+          ariaLabel="second"
+        />,
+      )
+
+      act(() => {
+        fireEvent.click(checkboxFor('a')!)
+      })
+
+      expect(checkboxFor('a')!.checked).toBe(true)
+      expect(checkboxFor('a1')!.checked).toBe(true)
+
+      // A parent may allocate the uncontrolled default on every render; it is
+      // still only an initial seed and must not erase the user's check.
+      rerender(
+        <IrisTree
+          nodes={nodes}
+          checkable
+          expanded={['root', 'a']}
+          defaultChecked={[]}
+          ariaLabel="third"
+        />,
+      )
+      expect(checkboxFor('a')!.checked).toBe(true)
+      expect(checkboxFor('a1')!.checked).toBe(true)
     })
 
     it('a partially-checked parent is indeterminate', () => {

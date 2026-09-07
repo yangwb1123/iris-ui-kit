@@ -6,9 +6,9 @@ import type { IrisTableColumn } from './types'
 afterEach(() => cleanup())
 
 interface Row extends Record<string, unknown> {
-  id: number
+  id?: number
   name: string
-  age: number
+  age: number | ''
   price?: number
   progress?: number
   date?: string
@@ -103,6 +103,40 @@ describe('@iris-ui-kit/react IrisTable shortcuts (batch AN, iris 独有)', () =>
     ])
     expect(cell.textContent).toBe('')
     expect(editor()).toBeNull() // no editor involved
+  })
+
+  it('Delete clears a rowId-backed keyless row from the sorted view', () => {
+    const onDataChange = vi.fn()
+    const unkeyed: Row[] = [
+      { name: 'B', age: 1 },
+      { name: 'A', age: 2 },
+    ]
+    render(
+      <IrisTable
+        columns={cols}
+        data={unkeyed}
+        rowKey="id"
+        rowId={(row) => row.name}
+        defaultSort={{ key: 'name', direction: 'asc' }}
+        keyboardNavigation
+        tableShortcuts
+        onDataChange={onDataChange}
+      />,
+    )
+    const cell = focusGridCell(0, 1)
+    expect(cell.textContent).toBe('2')
+    act(() => fireEvent.keyDown(cell, { key: 'Delete' }))
+    expect(onDataChange).toHaveBeenCalledTimes(1)
+    expect(onDataChange).toHaveBeenCalledWith([
+      { name: 'B', age: 1 },
+      { name: 'A', age: '' },
+    ])
+    expect(
+      document.querySelector('[data-iris-table-row="A"] [data-iris-table-cell="age"]')?.textContent,
+    ).toBe('')
+    expect(
+      document.querySelector('[data-iris-table-row="B"] [data-iris-table-cell="age"]')?.textContent,
+    ).toBe('1')
   })
 
   it('Backspace clears the focused cell too', () => {

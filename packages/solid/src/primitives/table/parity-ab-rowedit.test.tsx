@@ -103,6 +103,40 @@ describe('IrisTable parity-AB: row edit mode (editConfig.mode="row")', () => {
     expect(rowEls[1]!.querySelectorAll('[data-iris-table-editor]').length).toBe(2)
   })
 
+  it('a stale blur from a closed editor cannot commit a reopened same-id session', () => {
+    const onCellEdit = vi.fn()
+    const { container } = render(() => (
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        editConfig={{ mode: 'row' }}
+        onCellEdit={onCellEdit}
+      />
+    ))
+    const row = bodyRows(container)[0]!
+    fireEvent.click(row.querySelector('[data-iris-table-cell="name"]')!)
+    const oldEditor = row.querySelector<HTMLInputElement>(
+      '[data-iris-table-cell="name"] [data-iris-table-editor]',
+    )!
+    fireEvent.keyDown(oldEditor, { key: 'Enter' })
+    fireEvent.click(row.querySelector('[data-iris-table-cell="name"]')!)
+    const reopened = row.querySelector<HTMLInputElement>(
+      '[data-iris-table-cell="name"] [data-iris-table-editor]',
+    )!
+    fireEvent.input(reopened, { target: { value: 'reopened' } })
+
+    fireEvent.blur(oldEditor)
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(row.querySelector('[data-iris-table-cell="name"] [data-iris-table-editor]')).toBe(
+      reopened,
+    )
+
+    fireEvent.keyDown(reopened, { key: 'Enter' })
+    expect(onCellEdit).toHaveBeenCalledTimes(1)
+    expect(onCellEdit).toHaveBeenCalledWith(expect.objectContaining({ newValue: 'reopened' }))
+  })
+
   it('a sync validation failure keeps the row open with the error visible', () => {
     const validatedCols: IrisTableColumn<Row>[] = [
       {

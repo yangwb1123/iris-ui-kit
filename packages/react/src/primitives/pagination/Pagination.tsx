@@ -102,7 +102,7 @@ export function IrisPagination({
             ? {
                 background: 'var(--iris-primary)',
                 color: 'var(--iris-primary-foreground, #fff)',
-                borderColor: 'var(--iris-primary)',
+                border: '1px solid var(--iris-primary)',
               }
             : {}),
         }}

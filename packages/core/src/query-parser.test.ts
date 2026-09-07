@@ -23,6 +23,43 @@ describe('parseTableQuery — empty input', () => {
     expect(r.filters).toEqual({})
     expect(r.rules).toEqual([])
   })
+
+  it('does not share mutable empty or error snapshots', () => {
+    const empty = parse('')
+    empty.filters.leaked = 'value'
+    empty.inValues.leaked = ['value']
+    empty.rules.push({ key: 'leaked', operator: 'gt', value: 1 })
+
+    const nextEmpty = parse('')
+    expect(nextEmpty).toEqual({ filters: {}, inValues: {}, rules: [], sort: null, error: null })
+
+    const error = parse('not a clause')
+    error.filters.leaked = 'value'
+    error.inValues.leaked = ['value']
+    error.rules.push({ key: 'leaked', operator: 'gt', value: 1 })
+    const nextError = parse('not a clause')
+    expect(nextError.filters).toEqual({})
+    expect(nextError.inValues).toEqual({})
+    expect(nextError.rules).toEqual([])
+    expect(nextError.error).not.toBeNull()
+  })
+})
+
+describe('parseTableQuery — runtime input hardening', () => {
+  it('fails closed instead of throwing for malformed runtime inputs', () => {
+    expect(() => parseTableQuery(null as unknown as string)).not.toThrow()
+    expect(parseTableQuery(null as unknown as string).error).toBe('Invalid query')
+    expect(() =>
+      parseTableQuery('age > 1', { fields: [null] as unknown as string[] }),
+    ).not.toThrow()
+    expect(parseTableQuery('age > 1', { fields: [null] as unknown as string[] }).error).toBe(
+      'Invalid query fields',
+    )
+    expect(() => parseTableQuery('age > 1', 1 as unknown as { fields?: string[] })).not.toThrow()
+    expect(parseTableQuery('age > 1', null as unknown as { fields?: string[] }).error).toBe(
+      'Invalid query options',
+    )
+  })
 })
 
 describe('parseTableQuery — comparison operators', () => {
@@ -80,6 +117,10 @@ describe('parseTableQuery — quoted values', () => {
     expect(r.error).not.toBeNull()
     expect(r.filters).toEqual({})
   })
+
+  it('rejects an unmatched quote even when it is not the value prefix', () => {
+    expect(parse("name = John's and age > 1", FIELDS).error).not.toBeNull()
+  })
 })
 
 describe('parseTableQuery — in-lists', () => {
@@ -108,6 +149,12 @@ describe('parseTableQuery — in-lists', () => {
     const r = parse('role in ()', FIELDS)
     expect(r.error).not.toBeNull()
   })
+
+  it('rejects repeated in-lists joined by AND instead of dropping one', () => {
+    const r = parse('role in (Test) and role in (PM)', FIELDS)
+    expect(r.error).not.toBeNull()
+    expect(r.inValues).toEqual({})
+  })
 })
 
 describe('parseTableQuery — sort clause', () => {
@@ -133,6 +180,11 @@ describe('parseTableQuery — sort clause', () => {
     expect(r.error).not.toBeNull()
   })
 
+  it('rejects a sort clause without a field', () => {
+    expect(parse('sort by', FIELDS).error).not.toBeNull()
+    expect(parse('sort by').error).not.toBeNull()
+  })
+
   it('rejects a dangling or repeated boolean separator', () => {
     expect(parse('role = Test or', FIELDS).error).not.toBeNull()
     expect(parse('and role = Test', FIELDS).error).not.toBeNull()
@@ -142,6 +194,11 @@ describe('parseTableQuery — sort clause', () => {
   it('rejects nested or trailing syntax after an in-list', () => {
     expect(parse('role in (a) in (b)', FIELDS).error).not.toBeNull()
     expect(parse('role in (a,)', FIELDS).error).not.toBeNull()
+  })
+
+  it('rejects unbalanced parentheses outside the list grammar', () => {
+    expect(parse('age > 1)', FIELDS).error).not.toBeNull()
+    expect(parse('age > (1', FIELDS).error).not.toBeNull()
   })
 })
 
@@ -191,6 +248,35 @@ describe('parseTableQuery — AND / OR', () => {
     expect(r.rules).toEqual([{ key: 'age', operator: 'gt', value: 25 }])
     expect(r.filters).toEqual({ role: 'Test' })
   })
+
+  it('rejects repeated text filters joined by AND instead of dropping one', () => {
+    expect(parse('role = Test and role = PM', FIELDS).error).not.toBeNull()
+    expect(parse('name contains a and name contains b', FIELDS).error).not.toBeNull()
+  })
+
+  it('does not lose a later same-channel clause after a cross-field OR', () => {
+    expect(parse('role = Test or age > 25 or role = PM', FIELDS).error).not.toBeNull()
+  })
+})
+
+describe('parseTableQuery — field safety and numeric coercion', () => {
+  it('preserves prototype-sensitive field names as own data properties', () => {
+    const text = parse('__proto__ = value', undefined)
+    expect(Object.prototype.hasOwnProperty.call(text.filters, '__proto__')).toBe(true)
+    expect(text.filters['__proto__']).toBe('value')
+    expect(Object.getPrototypeOf(text.filters)).toBe(Object.prototype)
+
+    const list = parse('constructor in (value)', undefined)
+    expect(list.error).toBeNull()
+    expect(list.inValues.constructor).toEqual(['value'])
+  })
+
+  it('keeps overflowing numeric-looking relational values finite', () => {
+    const value = '9'.repeat(400)
+    const r = parse(`age > ${value}`, FIELDS)
+    expect(r.error).toBeNull()
+    expect(r.rules).toEqual([{ key: 'age', operator: 'gt', value }])
+  })
 })
 
 describe('parseTableQuery — field validation & casing', () => {
@@ -198,6 +284,10 @@ describe('parseTableQuery — field validation & casing', () => {
     const r = parse('AGE > 25', FIELDS)
     expect(r.rules).toEqual([{ key: 'age', operator: 'gt', value: 25 }])
     expect(parse('Role = Test', FIELDS).filters).toEqual({ role: 'Test' })
+  })
+
+  it('resolves case-insensitive duplicate field names deterministically', () => {
+    expect(parse('NAME = Alice', ['Name', 'name', 'age']).filters).toEqual({ Name: 'Alice' })
   })
 
   it('errors on an unknown field when fields are given', () => {

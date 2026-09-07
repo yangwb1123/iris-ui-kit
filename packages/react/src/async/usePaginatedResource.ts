@@ -3,7 +3,7 @@ import {
   createPaginatedResource,
   type PageQuery,
   type PageResult,
-  type PaginatedResource,
+  type AdvancedPaginatedResource,
   type PaginatedState,
   type PaginationMode,
 } from '@iris-ui-kit/core'
@@ -20,10 +20,11 @@ export interface UsePaginatedResourceReturn<T> extends PaginatedState<T> {
   isLoading: boolean
   isError: boolean
   hasMore: boolean
-  goToPage: PaginatedResource<T>['goToPage']
-  loadMore: PaginatedResource<T>['loadMore']
-  refresh: PaginatedResource<T>['refresh']
-  setPageSize: PaginatedResource<T>['setPageSize']
+  goToPage: AdvancedPaginatedResource<T>['goToPage']
+  loadMore: AdvancedPaginatedResource<T>['loadMore']
+  refresh: AdvancedPaginatedResource<T>['refresh']
+  setPageSize: AdvancedPaginatedResource<T>['setPageSize']
+  cancel: AdvancedPaginatedResource<T>['cancel']
 }
 
 /**
@@ -38,26 +39,34 @@ export interface UsePaginatedResourceReturn<T> extends PaginatedState<T> {
  * ```
  */
 export function usePaginatedResource<T>(
-  fetcher: (query: PageQuery) => Promise<PageResult<T>>,
+  fetcher: (query: PageQuery, signal?: AbortSignal) => Promise<PageResult<T>>,
   options: UsePaginatedResourceOptions = {},
 ): UsePaginatedResourceReturn<T> {
   const latest = React.useRef(fetcher)
   latest.current = fetcher
 
-  const ref = React.useRef<PaginatedResource<T> | null>(null)
+  const ref = React.useRef<AdvancedPaginatedResource<T> | null>(null)
   if (ref.current === null) {
-    ref.current = createPaginatedResource<T>((query) => latest.current(query), {
-      pageSize: options.pageSize,
-      mode: options.mode,
-    })
+    ref.current = createPaginatedResource<T>(
+      (query, signal) => {
+        const current = latest.current
+        return signal === undefined ? current(query) : current(query, signal)
+      },
+      {
+        pageSize: options.pageSize,
+        mode: options.mode,
+      },
+    )
   }
   const resource = ref.current
   const state = useStore(resource.store)
 
   const initial = React.useRef({ immediate: options.immediate ?? false, mode: options.mode })
   React.useEffect(() => {
-    if (!initial.current.immediate) return
-    void (initial.current.mode === 'infinite' ? resource.loadMore() : resource.goToPage(1))
+    if (initial.current.immediate) {
+      void (initial.current.mode === 'infinite' ? resource.loadMore() : resource.goToPage(1))
+    }
+    return () => resource.cancel()
   }, [resource])
 
   return {
@@ -70,5 +79,6 @@ export function usePaginatedResource<T>(
     loadMore: resource.loadMore,
     refresh: resource.refresh,
     setPageSize: resource.setPageSize,
+    cancel: resource.cancel,
   }
 }

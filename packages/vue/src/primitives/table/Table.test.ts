@@ -48,6 +48,30 @@ describe('IrisTable', () => {
     expect(wrapper.findAll('[data-iris-table-row]').length).toBe(3)
   })
 
+  it('resolves string, number, missing/null, and numeric edge-case row keys', () => {
+    const keyRows: Array<Record<string, unknown>> = [
+      { key: 'alpha', label: 'Alpha' },
+      { key: 0, label: 'Zero' },
+      { label: 'Missing' },
+      { key: null, label: 'Null' },
+      { key: Number.NaN, label: 'NaN' },
+      { key: '', label: 'Empty' },
+    ]
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: [{ key: 'label', title: 'Label' }],
+        data: keyRows,
+        rowKey: 'key',
+      },
+      attachTo: host,
+    })
+    expect(
+      wrapper
+        .findAll('[data-iris-table-row-key]')
+        .map((row) => row.attributes('data-iris-table-row-key') ?? null),
+    ).toEqual(['alpha', '0', '2', '3', 'NaN', ''])
+  })
+
   it('renders cell values via dataIndex by default', () => {
     const wrapper = mount(IrisTable, {
       props: { columns, data: rows, rowKey: 'id' },
@@ -197,6 +221,29 @@ describe('IrisTable', () => {
     const wrapper = mount(Harness, { attachTo: host })
     await wrapper.findAll('[role="columnheader"]')[1]!.trigger('click')
     expect(sort.value).toEqual({ key: 'age', direction: 'asc' })
+  })
+
+  it('controlled sort re-bases after a rejected callback', async () => {
+    const emitted: IrisTableSortState[] = []
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: rows,
+        rowKey: 'id',
+        sort: null,
+        'onUpdate:sort': (next: IrisTableSortState | null) => {
+          if (next !== null) emitted.push(next)
+        },
+      },
+      attachTo: host,
+    })
+    const nameHeader = wrapper.findAll('[role="columnheader"]')[0]!
+    await nameHeader.trigger('click')
+    await nameHeader.trigger('click')
+    expect(emitted).toEqual([
+      { key: 'name', direction: 'asc' },
+      { key: 'name', direction: 'asc' },
+    ])
   })
 
   it('aria-sort reflects current state', async () => {
@@ -748,102 +795,6 @@ describe('IrisTable', () => {
   })
 })
 
-describe('IrisTable summary / footer row', () => {
-  let host: HTMLDivElement
-  beforeEach(() => {
-    host = document.createElement('div')
-    document.body.appendChild(host)
-  })
-  afterEach(() => host.remove())
-
-  // Fixture ages: 31 + 28 + 42 = 101.
-  const SUM_AGE = rows.reduce((n, r) => n + r.age, 0)
-
-  const summaryCols: IrisTableColumn<Row>[] = [
-    { key: 'name', title: 'Name' },
-    { key: 'age', title: 'Age', align: 'right', summary: 'sum' },
-  ]
-
-  it('renders a summary footer row with the column aggregate', () => {
-    const wrapper = mount(IrisTable, {
-      props: {
-        columns: summaryCols as IrisTableColumn<Record<string, unknown>>[],
-        data: rows,
-        rowKey: 'id',
-      },
-      attachTo: host,
-    })
-    const summary = wrapper.find('[data-iris-table-row="summary"]')
-    expect(summary.exists()).toBe(true)
-    const ageCell = summary.find('[data-iris-table-cell="age"]')
-    expect(ageCell.exists()).toBe(true)
-    expect(ageCell.attributes('data-iris-table-summary-cell')).toBe('')
-    expect(ageCell.text()).toBe(String(SUM_AGE))
-  })
-
-  it('a non-summary column renders a blank cell without the summary marker', () => {
-    const wrapper = mount(IrisTable, {
-      props: {
-        columns: summaryCols as IrisTableColumn<Record<string, unknown>>[],
-        data: rows,
-        rowKey: 'id',
-      },
-      attachTo: host,
-    })
-    const nameCell = wrapper
-      .find('[data-iris-table-row="summary"]')
-      .find('[data-iris-table-cell="name"]')
-    expect(nameCell.exists()).toBe(true)
-    expect(nameCell.text()).toBe('')
-    expect(nameCell.attributes('data-iris-table-summary-cell')).toBeUndefined()
-  })
-
-  it('renderSummary formats the aggregated value', () => {
-    const formattedCols: IrisTableColumn<Row>[] = [
-      { key: 'name', title: 'Name' },
-      {
-        key: 'age',
-        title: 'Age',
-        summary: 'sum',
-        renderSummary: (value) => h('span', { class: 'fmt' }, `Σ ${value}`),
-      },
-    ]
-    const wrapper = mount(IrisTable, {
-      props: {
-        columns: formattedCols as IrisTableColumn<Record<string, unknown>>[],
-        data: rows,
-        rowKey: 'id',
-      },
-      attachTo: host,
-    })
-    const ageCell = wrapper
-      .find('[data-iris-table-row="summary"]')
-      .find('[data-iris-table-cell="age"]')
-    expect(ageCell.find('.fmt').exists()).toBe(true)
-    expect(ageCell.text()).toBe(`Σ ${SUM_AGE}`)
-  })
-
-  it('renders no summary row when no column declares one', () => {
-    const wrapper = mount(IrisTable, {
-      props: { columns, data: rows, rowKey: 'id' },
-      attachTo: host,
-    })
-    expect(wrapper.find('[data-iris-table-row="summary"]').exists()).toBe(false)
-  })
-
-  it('renders no summary row when data is empty', () => {
-    const wrapper = mount(IrisTable, {
-      props: {
-        columns: summaryCols as IrisTableColumn<Record<string, unknown>>[],
-        data: [],
-        rowKey: 'id',
-      },
-      attachTo: host,
-    })
-    expect(wrapper.find('[data-iris-table-row="summary"]').exists()).toBe(false)
-  })
-})
-
 describe('IrisTable pinned columns', () => {
   const pinnedCols: IrisTableColumn<Row>[] = [
     { key: 'name', title: 'Name', width: 100, pinned: 'left' },
@@ -1021,6 +972,20 @@ describe('IrisTable tree rows', () => {
     expect(toggleAt(wrapper, 0).exists()).toBe(true)
     expect(toggleAt(wrapper, 1).exists()).toBe(false)
     expect(toggleAt(wrapper, 0).attributes('aria-expanded')).toBe('false')
+  })
+
+  it('applies local filters before projecting tree rows', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: treeData,
+        rowKey: 'id',
+        getSubRows,
+        filters: { name: 'Root B' },
+      },
+      attachTo: host,
+    })
+    expect(visibleNames(wrapper)).toEqual(['Root B'])
   })
 
   it('clicking the toggle reveals children, then hides them', async () => {

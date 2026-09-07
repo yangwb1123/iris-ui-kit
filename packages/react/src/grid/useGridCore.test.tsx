@@ -106,6 +106,76 @@ describe('useGridSelection', () => {
     expect(onChange).toHaveBeenLastCalledWith(['c', 'b'])
     view.unmount()
   })
+
+  it('does not promote a rejected controlled selection when control is removed', () => {
+    const onChange = vi.fn()
+    let setControlled!: (value: boolean) => void
+    function Harness() {
+      const [controlled, updateControlled] = React.useState(false)
+      const [value] = React.useState(['a'])
+      setControlled = updateControlled
+      const core = useGridCore()
+      const selection = useGridSelection(core, {
+        value: controlled ? value : undefined,
+        defaultValue: ['seed'],
+        onChange,
+      })
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            selection.rebase()
+            selection.model.toggle('b')
+          }}
+        >
+          {selection.selection.join(',')}
+        </button>
+      )
+    }
+
+    const view = render(<Harness />)
+    act(() => setControlled(true))
+    fireEvent.click(view.getByRole('button'))
+    expect(onChange).toHaveBeenLastCalledWith(['a', 'b'])
+    expect(view.getByRole('button').textContent).toBe('a')
+
+    act(() => setControlled(false))
+    expect(view.getByRole('button').textContent).toBe('seed')
+    view.unmount()
+  })
+
+  it('keeps selected and expanded bridge snapshots detached from mutable arrays', () => {
+    const value = ['a']
+    let selectedSnapshot: string[] | undefined
+    let expandedSnapshot: string[] | undefined
+    function Harness() {
+      const core = useGridCore()
+      const selection = useGridSelection(core, { value })
+      const expansion = useGridExpansion(core, { defaultValue: ['open'] })
+      selectedSnapshot ??= selection.selection
+      expandedSnapshot ??= expansion.expandedKeys
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            selection.model.toggle('b')
+            expansion.model.toggle('next')
+          }}
+        >
+          {selection.selection.join(',')}|{expansion.expandedKeys.join(',')}
+        </button>
+      )
+    }
+
+    const view = render(<Harness />)
+    expandedSnapshot!.push('polluted')
+    value.push('mutated')
+    fireEvent.click(view.getByRole('button'))
+
+    expect(selectedSnapshot).toEqual(['a'])
+    expect(view.getByRole('button').textContent).toBe('a,mutated|open,next')
+    view.unmount()
+  })
 })
 
 describe('useGridRows', () => {

@@ -199,4 +199,21 @@ describe('validateEditRules unique rule (batch AK)', () => {
       valid: true,
     })
   })
+
+  it('uses a resolver when the validation key is a display alias', () => {
+    interface AliasRow {
+      name: string
+      displayName: string
+    }
+    const list: AliasRow[] = [
+      { name: 'Alice', displayName: 'A' },
+      { name: 'Bob', displayName: 'B' },
+    ]
+    const result = validateEditRules([{ unique: true }], 'Alice', list[1]!, false, {
+      rows: list,
+      columnKey: 'displayName',
+      getValue: (row) => row.name,
+    })
+    expect(result).toEqual({ valid: false, messages: ['Value must be unique'] })
+  })
 })

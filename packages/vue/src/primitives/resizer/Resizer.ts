@@ -1,4 +1,13 @@
-import { computed, defineComponent, h, ref, type PropType, type VNode } from 'vue'
+import {
+  computed,
+  defineComponent,
+  effectScope,
+  h,
+  onBeforeUnmount,
+  ref,
+  type PropType,
+  type VNode,
+} from 'vue'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisResizerHandle =
@@ -103,47 +112,71 @@ export const IrisResizer = defineComponent({
       ...((attrs.style as Record<string, string> | undefined) ?? {}),
     }))
 
-    const renderHandle = (handle: IrisResizerHandle): VNode => {
-      const handleRef = ref<HTMLElement | null>(null)
+    const handleRefs = new Map<IrisResizerHandle, ReturnType<typeof ref<HTMLElement | null>>>()
+    const handleScopes = new Map<IrisResizerHandle, ReturnType<typeof effectScope>>()
+    const wiredHandles = new Set<IrisResizerHandle>()
+    const getHandleRef = (handle: IrisResizerHandle) => {
+      let handleRef = handleRefs.get(handle)
+      if (!handleRef) {
+        handleRef = ref<HTMLElement | null>(null)
+        handleRefs.set(handle, handleRef)
+      }
+      return handleRef
+    }
+    const wireHandle = (handle: IrisResizerHandle): void => {
+      if (wiredHandles.has(handle)) return
+      wiredHandles.add(handle)
+      const handleRef = getHandleRef(handle)
+      const scope = effectScope()
+      handleScopes.set(handle, scope)
       let startSize: IrisResizerSize = { width: 0, height: 0 }
       let aspect = 1
+      scope.run(() => {
+        useDrag({
+          handle: handleRef,
+          disabled: computed(() => props.disabled),
+          onStart: () => {
+            startSize = { ...props.modelValue }
+            aspect = startSize.width / Math.max(1, startSize.height)
+            emit('resizeStart', startSize)
+          },
+          onDrag: ({ dx, dy }) => {
+            const t = handle.includes('top')
+            const b = handle.includes('bottom')
+            const l = handle.includes('left')
+            const r = handle.includes('right')
 
-      useDrag({
-        handle: handleRef,
-        disabled: computed(() => props.disabled),
-        onStart: () => {
-          startSize = { ...props.modelValue }
-          aspect = startSize.width / Math.max(1, startSize.height)
-          emit('resizeStart', startSize)
-        },
-        onDrag: ({ dx, dy }) => {
-          const t = handle.includes('top')
-          const b = handle.includes('bottom')
-          const l = handle.includes('left')
-          const r = handle.includes('right')
+            let nextW = startSize.width
+            let nextH = startSize.height
+            if (r) nextW = startSize.width + dx
+            if (l) nextW = startSize.width - dx
+            if (b) nextH = startSize.height + dy
+            if (t) nextH = startSize.height - dy
 
-          let nextW = startSize.width
-          let nextH = startSize.height
-          if (r) nextW = startSize.width + dx
-          if (l) nextW = startSize.width - dx
-          if (b) nextH = startSize.height + dy
-          if (t) nextH = startSize.height - dy
+            if (props.keepAspect && (t || b) && (l || r)) {
+              // For corners, lock to aspect by driving height from width.
+              nextH = nextW / aspect
+            }
 
-          if (props.keepAspect && (t || b) && (l || r)) {
-            // For corners, lock to aspect by driving height from width.
-            nextH = nextW / aspect
-          }
+            nextW = Math.max(props.minWidth, Math.min(props.maxWidth, nextW))
+            nextH = Math.max(props.minHeight, Math.min(props.maxHeight, nextH))
 
-          nextW = Math.max(props.minWidth, Math.min(props.maxWidth, nextW))
-          nextH = Math.max(props.minHeight, Math.min(props.maxHeight, nextH))
-
-          emit('update:modelValue', { width: nextW, height: nextH })
-        },
-        onEnd: () => {
-          emit('resizeEnd', { ...props.modelValue })
-        },
+            emit('update:modelValue', { width: nextW, height: nextH })
+          },
+          onEnd: () => {
+            emit('resizeEnd', { ...props.modelValue })
+          },
+        })
       })
+    }
+    onBeforeUnmount(() => {
+      for (const scope of handleScopes.values()) scope.stop()
+      handleScopes.clear()
+    })
 
+    const renderHandle = (handle: IrisResizerHandle): VNode => {
+      wireHandle(handle)
+      const handleRef = getHandleRef(handle)
       return h('div', {
         ref: (el: unknown) => {
           handleRef.value = (el ?? null) as HTMLElement | null

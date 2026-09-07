@@ -1,6 +1,11 @@
 import * as React from 'react'
 import { createVirtualizer, type Virtualizer } from '@iris-ui-kit/core'
 
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' || typeof document === 'undefined'
+    ? React.useEffect
+    : React.useLayoutEffect
+
 export type IrisVirtualScrollAlign = 'start' | 'center' | 'end'
 
 export interface IrisVirtualScrollHandle {
@@ -91,11 +96,8 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   // plain number the window uses the closed-form fixed formula below.
   const variable = userFn !== null || auto
 
-  // Auto mode: measured row heights cached by index. `measureVersion` bumps to
-  // recompute offsets when a measurement changes (keeps the existing semantics;
-  // the virtualizer's keyed cache is fed from this).
-  const measuredRef = React.useRef<Map<number, number>>(new Map())
-  const [measureVersion, setMeasureVersion] = React.useState(0)
+  // In auto mode the core virtualizer owns measured heights. Its cache is keyed
+  // by `getItemKey`, so estimates must never retain measurements by index.
 
   // Items are keyed by position so we can pass a stable getItemKey to the
   // virtualizer (its measured cache survives reorder); `keyOf` is read through
@@ -109,7 +111,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   const estimateSize = React.useCallback(
     (index: number): number => {
       if (userFn) return userFn(index)
-      if (auto) return measuredRef.current.get(index) ?? estimatedItemHeight
+      if (auto) return estimatedItemHeight
       return fixedHeight
     },
     [userFn, auto, estimatedItemHeight, fixedHeight],
@@ -153,19 +155,32 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     }
   }
   const virtualizer = providedVirtualizer ?? internalVirtualizerRef.current!.model
+  // ResizeObserver callbacks can outlive an internal controller rebuild.
+  const virtualizerRef = React.useRef(virtualizer)
+  virtualizerRef.current = virtualizer
+  // Re-seat keyed measurements when the data array changes, including a
+  // same-length reorder. The core controller owns the measurement cache.
+  useIsomorphicLayoutEffect(() => {
+    virtualizer.setCount(items.length)
+  }, [virtualizer, items])
 
-  // Push sizing changes (new user fn, a fresh measurement, or estimate change)
-  // into the controller without recreating it: drop the cache + rebuild the
-  // tree from the current `estimateSize`. Cheap; runs only when sizing changes.
-  React.useLayoutEffect(() => {
-    if (variable) virtualizer.remeasure()
-  }, [virtualizer, userFn, measureVersion, estimatedItemHeight, variable])
+  // Push sizing configuration changes (new user fn or estimate change)
+  // into the controller without recreating it: update the fixed/variable path,
+  // then rebuild the tree from the current `estimateSize`.
+  useIsomorphicLayoutEffect(() => {
+    if (providedVirtualizer === undefined) {
+      virtualizer.setFixedSize(variable ? null : fixedHeight)
+      virtualizer.remeasure()
+    } else if (variable) {
+      virtualizer.remeasure()
+    }
+  }, [virtualizer, providedVirtualizer, userFn, estimatedItemHeight, variable, fixedHeight])
 
   // Drive the controller's scroll + viewport from local state so its window,
   // total size, and offsets reflect the live scroll position. Done in a layout
   // effect (not render) so the external store mutation doesn't tear with
   // useSyncExternalStore; a no-op when unchanged.
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     virtualizer.setViewportSize(viewportHeight)
     virtualizer.setScroll(scrollTop)
   }, [virtualizer, viewportHeight, scrollTop])
@@ -238,8 +253,8 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     }
   }, [])
 
-  // Auto-measurement: one ResizeObserver watches the rendered rows; each row's
-  // measured height is cached by index and feeds the offset table.
+  // Auto-measurement: one ResizeObserver watches the rendered rows and reports
+  // real sizes to the core keyed cache.
   const rowObserverRef = React.useRef<ResizeObserver | null>(null)
   const indexByEl = React.useRef<WeakMap<Element, number>>(new WeakMap())
   const elByIndex = React.useRef<Map<number, HTMLElement>>(new Map())
@@ -247,17 +262,13 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   React.useEffect(() => {
     if (!auto || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver((entries) => {
-      let changed = false
       for (const entry of entries) {
         const idx = indexByEl.current.get(entry.target)
         if (idx === undefined) continue
         const h = (entry.target as HTMLElement).offsetHeight
-        if (h > 0 && measuredRef.current.get(idx) !== h) {
-          measuredRef.current.set(idx, h)
-          changed = true
-        }
+        if (h <= 0) continue
+        virtualizerRef.current.measure(idx, h)
       }
-      if (changed) setMeasureVersion((v) => v + 1)
     })
     rowObserverRef.current = ro
     // Row ref-callbacks run during commit, before this passive effect — so the
@@ -290,7 +301,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   // the sync a deep-scroll collapse (tree expand collapse while far down the
   // list) would render a blank window until the browser's scroll event caught
   // up. A layout effect keeps the fix pre-paint (no blank frame).
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = viewportRef.current
     if (!el) return
     const max = Math.max(0, totalHeight - viewportHeight)

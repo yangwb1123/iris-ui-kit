@@ -45,6 +45,27 @@ describe('IrisTable pinned boundary drag', () => {
     expect(onCount).toHaveBeenCalledWith(2)
   })
 
+  it('uses controlled pin entries over static declarations', () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data: rows, pinnedColumns: { a: null, b: 'left' } },
+    })
+    expect(
+      container
+        .querySelector('[data-iris-table-header="a"]')
+        ?.getAttribute('data-iris-table-pinned'),
+    ).toBeNull()
+    expect(
+      container
+        .querySelector('[data-iris-table-header="b"]')
+        ?.getAttribute('data-iris-table-pinned'),
+    ).toBe('left')
+    expect(
+      container
+        .querySelector('[data-iris-table-header="c"]')
+        ?.getAttribute('data-iris-table-pinned'),
+    ).toBeNull()
+  })
+
   it('fails closed without a left-pinned boundary', () => {
     const unpinned = columns.map(({ pinned: _pinned, ...column }) => column)
     const { container } = render(IrisTable, {

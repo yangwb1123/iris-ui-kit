@@ -3,6 +3,7 @@ import type { PlatformConfig } from '../config'
 import { PageHeader } from '../components/PageHeader'
 
 const services = [
+  ['身份与访问', 'Snaplink 的身份、MFA、会话、角色和授权策略。', 'snaplinkConsoleUrl'],
   ['审计治理', '全平台审计查询、完整性、导出、保留与受控重放。', 'auditConsoleUrl'],
   ['消息与通知', 'Aero IM 的会话、通知、工作区和资源权限。', 'aeroImConsoleUrl'],
   ['文件与对象', 'Aero Vault 的 Bucket、对象、共享和对象 ACL。', 'aeroVaultConsoleUrl'],

@@ -8,7 +8,8 @@ import { createStore, type ReadonlyStore } from './store'
  * select-all. Generic over the key type `K` (`string | number`) so it fits
  * components whose values are string keys, numeric ids, or a mix.
  *
- * It is **uncontrolled-internal** (owns its store) and always fires `onChange`.
+ * It is **uncontrolled-internal** (owns its store) and fires `onChange` for each
+ * effective change.
  * For a controlled component, the adapter owns the controlled cell and calls
  * {@link SelectionModel.set} from an effect when the prop changes — the model
  * stays simple and framework-agnostic. Retrofitting a component onto it is a net
@@ -30,6 +31,38 @@ import { createStore, type ReadonlyStore } from './store'
 export type SelectionMode = 'single' | 'multiple'
 
 export type SelectionKey = string | number
+
+export interface SelectionFlags {
+  readonly allSelected: boolean
+  readonly someSelected: boolean
+}
+
+export interface SelectionFlagsOptions<K extends SelectionKey> {
+  /** Optional tree-aware selected predicate. Defaults to `selected` membership. */
+  readonly isSelected?: (key: K) => boolean
+  /** Optional predicate for partially-selected/indeterminate keys. */
+  readonly isIndeterminate?: (key: K) => boolean
+}
+
+/**
+ * Derive header checkbox flags from the effective visible key set. This keeps
+ * the common all/some projection framework-free while allowing tree adapters
+ * to inject cascade-aware selected and indeterminate predicates.
+ */
+export function computeSelectionFlags<K extends SelectionKey>(
+  keys: readonly K[],
+  selected: readonly K[],
+  options: SelectionFlagsOptions<K> = {},
+): SelectionFlags {
+  const selectedSet = new Set(selected)
+  const isSelected = options.isSelected ?? ((key: K) => selectedSet.has(key))
+  const isIndeterminate = options.isIndeterminate ?? (() => false)
+  const allSelected = keys.length > 0 && keys.every((key) => isSelected(key))
+  return {
+    allSelected,
+    someSelected: !allSelected && keys.some((key) => isSelected(key) || isIndeterminate(key)),
+  }
+}
 
 export interface SelectionConfig<K extends SelectionKey = string> {
   mode?: SelectionMode
@@ -118,6 +151,7 @@ export function createSelectionModel<K extends SelectionKey = string>(
 
   function commit(next: K[]): void {
     const value = normalize(next, mode)
+    if (sameSelectionKeys(store.getState(), value)) return
     storeVersion++
     store.setState(value)
     lastState = value
@@ -138,7 +172,9 @@ export function createSelectionModel<K extends SelectionKey = string>(
         return
       }
       commit(
-        index.has(key) ? store.getState().filter((k) => k !== key) : [...store.getState(), key],
+        index.has(key)
+          ? store.getState().filter((k) => !sameSelectionKey(k, key))
+          : [...store.getState(), key],
       )
     },
     select(key) {
@@ -149,13 +185,15 @@ export function createSelectionModel<K extends SelectionKey = string>(
     deselect(key) {
       ensureIndex()
       if (!index.has(key)) return
-      commit(store.getState().filter((k) => k !== key))
+      commit(store.getState().filter((k) => !sameSelectionKey(k, key)))
     },
     set(keys) {
       commit(keys)
     },
     sync(keys) {
-      store.setState(normalize(keys, mode))
+      const value = normalize(keys, mode)
+      if (sameSelectionKeys(store.getState(), value)) return
+      store.setState(value)
     },
     toggleAll(keys) {
       ensureIndex()
@@ -175,6 +213,20 @@ export function createSelectionModel<K extends SelectionKey = string>(
       commit([])
     },
   }
+}
+
+/** Align array comparisons and removal checks with Set's SameValueZero semantics. */
+function sameSelectionKey(a: SelectionKey, b: SelectionKey): boolean {
+  return a === b || (a !== a && b !== b)
+}
+
+function sameSelectionKeys<K extends SelectionKey>(
+  left: readonly K[],
+  right: readonly K[],
+): boolean {
+  return (
+    left.length === right.length && left.every((key, index) => sameSelectionKey(key, right[index]!))
+  )
 }
 
 /** Dedupe (preserve order); in single mode keep at most the last key. */

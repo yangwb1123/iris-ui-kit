@@ -21,6 +21,21 @@ describe('createExpansion — multiple', () => {
     expect(e.get()).toEqual(before)
   })
 
+  it('does not emit or replace state for equivalent expand-all/set no-ops', () => {
+    const onChange = vi.fn()
+    const e = createExpansion({ defaultExpanded: ['a'], onChange })
+    const states: string[][] = []
+    e.store.subscribe((state) => states.push(state))
+    const before = e.store.getState()
+
+    e.expandAll(['a', 'a'])
+    e.set(['a', 'a'])
+
+    expect(e.store.getState()).toBe(before)
+    expect(states).toEqual([])
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('fires onChange', () => {
     const onChange = vi.fn()
     const e = createExpansion({ onChange })
@@ -41,6 +56,26 @@ describe('createExpansion — boundary safety', () => {
     expect(e.get()).toEqual(['a', 'b'])
     expect(e.isExpanded('a')).toBe(true)
     expect(e.isExpanded('polluted')).toBe(false)
+  })
+
+  it('dedupes SameValueZero numeric keys while preserving insertion order', () => {
+    const e = createExpansion<number>({ defaultExpanded: [NaN, Infinity, 0, NaN, -0, Infinity] })
+
+    expect(e.get()).toHaveLength(3)
+    expect(Number.isNaN(e.get()[0]!)).toBe(true)
+    expect(e.get().slice(1)).toEqual([Infinity, 0])
+    expect(e.isExpanded(NaN)).toBe(true)
+    expect(e.isExpanded(Infinity)).toBe(true)
+    expect(e.isExpanded(0)).toBe(true)
+
+    e.collapse(NaN)
+    expect(e.get()).toEqual([Infinity, 0])
+
+    e.expand(NaN)
+    expect(e.get()).toHaveLength(3)
+    expect(e.get()[0]).toBe(Infinity)
+    expect(e.get()[1]).toBe(0)
+    expect(Number.isNaN(e.get()[2]!)).toBe(true)
   })
 
   it('does not retain mutable set, merge, or expandAll inputs', () => {
@@ -92,6 +127,53 @@ describe('createExpansion — single (accordion)', () => {
     expect(e.get()).toEqual(['b'])
     e.toggle('b')
     expect(e.get()).toEqual([])
+  })
+})
+
+describe('createExpansion — external store writes', () => {
+  it('isExpanded uses a fresh index after external store.setState()', () => {
+    const e = createExpansion()
+    e.expand('a')
+    expect(e.isExpanded('a')).toBe(true)
+
+    e.store.setState(['b', 'c'])
+    expect(e.isExpanded('a')).toBe(false)
+    expect(e.isExpanded('b')).toBe(true)
+    expect(e.isExpanded('c')).toBe(true)
+  })
+
+  it('toggle uses a fresh index during an external batch write', () => {
+    const e = createExpansion<string>()
+
+    e.store.batch(() => {
+      e.store.setState(['x'])
+      expect(e.isExpanded('x')).toBe(true)
+      e.toggle('x')
+      expect(e.get()).toEqual([])
+    })
+
+    expect(e.get()).toEqual([])
+    expect(e.isExpanded('x')).toBe(false)
+  })
+
+  it('stays consistent when a store subscriber re-enters with another expansion change', () => {
+    const e = createExpansion<string>()
+    let reentered = false
+
+    e.store.subscribe((keys) => {
+      if (!reentered && keys.length === 1 && keys[0] === 'a') {
+        reentered = true
+        e.expand('b')
+      }
+    })
+
+    e.expand('a')
+    expect(e.get()).toEqual(['a', 'b'])
+    expect(e.isExpanded('b')).toBe(true)
+
+    e.collapse('b')
+    expect(e.get()).toEqual(['a'])
+    expect(e.isExpanded('b')).toBe(false)
   })
 })
 

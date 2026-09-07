@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { aggregate } from '@iris-ui-kit/core'
+import { projectTableSummary } from '@iris-ui-kit/core'
 import { justifyFor } from './cell-helpers'
 import { summaryStickyAttr } from './interaction-helpers'
 import type { IrisTableAlign, IrisTableColumn } from './types'
@@ -68,6 +68,8 @@ export function TableSummaryRow<Row extends Record<string, unknown>>({
   columnFadeStyle,
   getCellValue,
 }: TableSummaryRowProps<Row>): React.ReactElement {
+  const summary = projectTableSummary(rows, leafColumns, getCellValue, aggregateAccuracy)
+
   return (
     <div
       role="row"
@@ -100,18 +102,7 @@ export function TableSummaryRow<Row extends Record<string, unknown>>({
         const spanState =
           footerRowIndex === undefined ? null : footerCellSpan(footerRowIndex, columnIndex)
         if (spanState?.skipped) return null
-        const operation = column.summary
-        const rawValue = operation
-          ? aggregate(rows, (row) => getCellValue(row, column), operation)
-          : null
-        const accuracy =
-          aggregateAccuracy !== undefined && aggregateAccuracy >= 0 && aggregateAccuracy <= 100
-            ? aggregateAccuracy
-            : undefined
-        const value =
-          rawValue != null && accuracy !== undefined && Number.isFinite(rawValue)
-            ? Number(rawValue.toFixed(accuracy))
-            : rawValue
+        const { operation, value } = summary.cells[columnIndex]!
         return (
           <div
             key={column.key}

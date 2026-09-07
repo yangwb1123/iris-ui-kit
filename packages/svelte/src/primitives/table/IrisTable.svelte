@@ -1,25 +1,35 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
-  import type { Snippet } from 'svelte'
-  type RowSnippet = Snippet<[Record<string, unknown>]>
   import {
-    buildFormValues,
+    applyColumnOrder,
+    applyDetectedColumnDefaults,
     buildHeaderMatrix,
+    computeGridSpanPlan,
     compareStates,
+    createTableMultiSortComparator,
+    createTableSortComparator,
+    sortTableRows,
+    computePinnedColumnOffsets,
+    computeResponsiveColumnLayout,
+    computeVisibleColumnIndices,
+    resolveColumnWidth,
     createRemoteTableSource,
     detectColumnType,
     flattenLeafColumns,
-    flattenTree,
+    projectTableBodyRows,
     mergeFormFilters,
-    reconcileTreeRows,
+    reconcileProjectedRows,
+    reorderRowsInList,
+    resolveRowDragProjection,
+    resolveTableRowKey,
     reorderTreeRows,
-    seedFormValues,
-    tableDisplayText,
     toCsvRows,
     withSortedChildren,
     type DetectedColumnType,
+    type GridSpanPlan,
     type RemoteTableSource,
     type RemoteTableSourceState,
+    type TableBodyRowView,
     type TreeRow,
   } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
@@ -36,74 +46,43 @@
     useGridSorting,
   } from '../../grid'
   import { useDrag } from '../drag/useDrag.svelte'
-  import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
-  import TableCellEditor from './TableCellEditor.svelte'
-  import TableChrome from './TableChrome.svelte'
-  import TableContextMenu from './TableContextMenu.svelte'
-  import TableDragHandle from './TableDragHandle.svelte'
-  import TableFilterPanel from './TableFilterPanel.svelte'
-  import TableHeader from './TableHeader.svelte'
-  import TableTabs from './TableTabs.svelte'
-  import TableViews from './TableViews.svelte'
-  import TableSummary from './TableSummary.svelte'
   import type { IrisTableProps } from './props'
+  import TablePresentation from './TablePresentation.svelte'
+  import { readClipboardText } from './table-clipboard'
+  import { createTableColumnFade } from './table-column-fade.svelte'
+  import { createTableDragBridge } from './table-drag'
+  import { createTableFilterController } from './table-filter.svelte'
+  import { createTableFormController } from './table-form.svelte'
+  import { buildTableGridTemplate } from './table-grid.svelte'
+  import { createTableHandle } from './table-handle'
+  import { createTableKeyboard } from './table-keyboard'
+  import { createTablePersistController } from './table-persist.svelte'
+  import { captureTablePersistSnapshot, restoreTablePersistPiece } from './table-persist-helpers'
+  import { createPinnedDragMath } from './table-pinned-drag'
+  import { createTableRowEditController } from './table-row-edit.svelte'
+  import { createTableSelectionController } from './table-selection.svelte'
+  import { ensureTableStyles } from './table-styles'
+  import { createTableUndoController } from './table-undo.svelte'
+  import { createTableViewsController } from './table-views.svelte'
+  import { applyTableViewSnapshot, captureTableViewSnapshot } from './table-view-snapshot'
   import type {
     IrisTableColumn,
     IrisTableSortState,
     IrisTableColumnWidths,
     IrisTableDensity,
-    IrisTablePersistPiece,
-    IrisTablePersistedState,
   } from './types'
-  import { createTableDragBridge } from './table-drag'
-  import { createTableHandle } from './table-handle'
   import { exportCsv as serializeTableCsv } from './exportCsv'
   import {
     applyTableFilters,
-    buildSpanPlan,
     clampWidth,
-    computeVisibleColSet,
-    createMultiSortComparator,
-    createSortComparator,
     getCellValue as resolveTableCellValue,
     mergeFilterValues,
-    resolveInitialWidth,
     resolveResponsiveWidth,
-    editPreviewText,
     TABLE_CONST,
     cellId,
     isEditableColumn,
     withComputedFormulaCells,
-    type SpanPlan,
-    computeResponsiveTableColumns,
   } from './tableUtils'
-  import { createTableFilterController } from './table-filter.svelte'
-  import { createTableRowEditController } from './table-row-edit.svelte'
-  import { createTableUndoController } from './table-undo.svelte'
-  import { createTableKeyboard } from './table-keyboard'
-  import { handleTableRowKeyDown } from './table-events'
-  import { applyDetectedTableTypes, applyTableColumnOrder } from './table-columns'
-  import { createPinnedDragMath } from './table-pinned-drag'
-  import { createTableViewsController } from './table-views.svelte'
-  import { createTablePersistController } from './table-persist.svelte'
-  import { createTableColumnFade } from './table-column-fade.svelte'
-  import { buildTableGridTemplate } from './table-grid.svelte'
-  import { ensureTableStyles } from './table-styles'
-  import TableSortIndicator from './TableSortIndicator.svelte'
-  import TableStateRow from './TableStateRow.svelte'
-  import TableScrollTop from './TableScrollTop.svelte'
-
-  /** Read clipboard text; null when the browser API is unavailable or denied. */
-  async function readClipboardText(): Promise<string | null> {
-    if (typeof navigator === 'undefined') return null
-    const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
-    if (!nav.clipboard?.readText) return null
-    try {
-      return await nav.clipboard.readText()
-    } catch {
-      return null
-    }
-  }
   const EMPTY_PROXY_STATE: RemoteTableSourceState<Record<string, unknown>> = {
     data: [],
     total: 0,
@@ -152,6 +131,7 @@
     editPreview = false,
     pattern = false,
     patternFill = false,
+    pinnedColumns,
     pinnedDrag = false,
     onColumnPinnedChange,
     onPinnedCountChange,
@@ -185,6 +165,7 @@
     defaultExpandedRowKeys,
     onExpandedRowsChange,
     getSubRows,
+    lazyLoad,
     keyboardNavigation = false,
     cellRange = false,
     clipConfig,
@@ -197,9 +178,6 @@
     ...rest
   }: IrisTableProps = $props()
 
-  // Keep every adapter-side value consumer on one formula-aware resolver.
-  // `formulaTables` is read at call time so replacing the map updates render,
-  // sort, filter, summary, clipboard and exports without remounting.
   const getCellValue = (row: Record<string, unknown>, column: IrisTableColumn): unknown =>
     resolveTableCellValue(row, column, formulaTables)
 
@@ -223,27 +201,26 @@
   let responsiveWidth = $state(0)
   const gridCore = useGridCore<Record<string, unknown>>()
   // svelte-ignore state_referenced_locally — columns options seed the stable Core feature;
-  // controlled props are synchronized explicitly by the effects below.
   const columnsFeature = useGridColumns(gridCore, {
     visibility: columnVisibility,
     order: columnOrder,
     widths: columnWidths,
     defaultWidths: defaultColumnWidths,
+    pinned: pinnedColumns,
     onOrderChange: (next) => onColumnOrderChange?.(next),
     onWidthsChange: (next) => onColumnWidthsChange?.(next),
+    onPinnedChange: (key, side) => onColumnPinnedChange?.(key, side),
   })
   const columnState = columnsFeature.state
   // svelte-ignore state_referenced_locally — this sentinel is initialized from
-  // the first prop value and updated by the replacement effect below.
   let orderPropControlled = $state(columnOrder !== undefined)
   // svelte-ignore state_referenced_locally — this sentinel is initialized from
-  // the first prop value and updated by the replacement effect below.
   let visibilityPropControlled = $state(columnVisibility !== undefined)
   // svelte-ignore state_referenced_locally — this sentinel is initialized from
-  // the first prop value and updated by the replacement effect below.
   let widthPropControlled = $state(columnWidths !== undefined)
+  // svelte-ignore state_referenced_locally — this sentinel is initialized from
+  let pinnedPropControlled = $state(pinnedColumns !== undefined)
   // svelte-ignore state_referenced_locally — defaults seed the independent
-  // uncontrolled snapshot and are intentionally not re-seeded after mount.
   let uncontrolledWidths = $state<IrisTableColumnWidths>({ ...(defaultColumnWidths ?? {}) })
 
   const effectiveVisibility = $derived<Record<string, boolean>>(
@@ -262,9 +239,6 @@
         : $columnState.widths,
   )
 
-  // Bridge option objects seed once; prop replacements must be mirrored with
-  // Core's silent sync methods so controlled parents remain authoritative and
-  // inbound updates never echo callbacks or columns:change events.
   $effect(() => {
     const visibility = columnVisibility
     columnsFeature.model.syncVisibility(visibility ?? {})
@@ -275,8 +249,6 @@
     if (order !== undefined) {
       columnsFeature.model.syncOrder(order)
     } else if (orderPropControlled) {
-      // Removing control must not expose a rejected controlled proposal held by
-      // the Core model; the source declaration becomes the render order again.
       columnsFeature.model.syncOrder([])
     }
     orderPropControlled = order !== undefined
@@ -289,16 +261,31 @@
     if (widths !== undefined) {
       columnsFeature.model.syncWidths(widths)
     } else if (widthPropControlled) {
-      // Removing control restores the pre-control uncontrolled/default snapshot,
-      // not a rejected controlled proposal held by the Core model.
       columnsFeature.model.syncWidths(uncontrolledWidths)
     }
     widthPropControlled = widths !== undefined
   })
+  $effect(() => {
+    const pinned = pinnedColumns
+    if (pinned !== undefined) {
+      columnsFeature.model.syncPinned(pinned)
+    } else if (pinnedPropControlled) {
+      columnsFeature.model.syncPinned({})
+    }
+    pinnedPropControlled = pinned !== undefined
+  })
+
+  const pinOf = (column: IrisTableColumn): 'left' | 'right' | null => {
+    if (
+      pinnedColumns !== undefined &&
+      Object.prototype.hasOwnProperty.call(pinnedColumns, column.key)
+    ) {
+      return pinnedColumns[column.key] ?? null
+    }
+    return column.pinned ?? null
+  }
 
   const columnFadeController = createTableColumnFade<Record<string, unknown>>({
-    // Read the already-bridged Core snapshot. Fade only decorates the render;
-    // it never writes visibility or emits a second change channel.
     visibility: () => effectiveVisibility,
     enabled: () => columnFade,
     columns: () => columns,
@@ -310,7 +297,7 @@
   const detectedDisplayColumns = $derived(
     !autoDetectTypes || Object.keys(detectedTypes).length === 0
       ? sourceDisplayColumns
-      : applyDetectedTableTypes(sourceDisplayColumns, detectedTypes),
+      : applyDetectedColumnDefaults(sourceDisplayColumns, detectedTypes),
   )
 
   const responsiveLeadingWidth = $derived(
@@ -322,19 +309,18 @@
   const responsiveWidthOf = (column: IrisTableColumn): number =>
     resolveResponsiveWidth(column, effectiveWidths, defaultColumnWidths)
   const orderedDisplayColumns = $derived(
-    applyTableColumnOrder(detectedDisplayColumns, effectiveColumnOrder),
+    applyColumnOrder(detectedDisplayColumns, effectiveColumnOrder),
   )
   const responsiveResult = $derived(
     responsive
-      ? computeResponsiveTableColumns(
-          orderedDisplayColumns,
-          responsiveWidth,
-          responsiveLeadingWidth,
-          responsiveWidthOf,
-        )
+      ? computeResponsiveColumnLayout(orderedDisplayColumns, responsiveWidth, {
+          leadingWidth: responsiveLeadingWidth,
+          widthOf: responsiveWidthOf,
+          isPinnedLeaf: (column) => pinOf(column) !== null,
+        })
       : { columns: orderedDisplayColumns, overflow: false },
   )
-  const responsiveDisplayColumns = $derived(responsiveResult.columns)
+  const responsiveDisplayColumns = $derived(responsiveResult.columns as IrisTableColumn[])
   const responsiveOverflow = $derived(responsiveResult.overflow)
   const displayColumns = $derived(responsiveDisplayColumns)
 
@@ -342,7 +328,6 @@
   const leafColumns = $derived(grouped ? flattenLeafColumns(displayColumns) : displayColumns)
   const headerMatrix = $derived(grouped ? buildHeaderMatrix(displayColumns) : null)
   // svelte-ignore state_referenced_locally — sorting options seed the stable Core feature;
-  // controlled props are synchronized explicitly by the effect below.
   const {
     model: sortingModel,
     sort: sortingSort,
@@ -353,14 +338,10 @@
     defaultMultiSort,
     onSortChange: (next) => {
       onUpdateSort?.(next)
-      // remoteSort parity: sort changes re-query the server (page resets to 1
-      // in the core controller, vxe behavior).
       if (remoteSort) proxyRef?.setParams({ sort: next })
     },
     onMultiSortChange: (next) => {
       onUpdateMultiSort?.(next)
-      // remoteSort parity (multi mode): the FULL sort list re-queries the
-      // server; the single `sort` param stays the single-column channel.
       if (remoteSort) proxyRef?.setParams({ sorts: next })
     },
   })
@@ -375,33 +356,73 @@
     if (multiSortState !== undefined) sortingModel.syncMultiSort(multiSortState ?? [])
   })
 
-  // The ONE sort funnel — named views and persistState restores go through
-  // the Core model (controlled/uncontrolled + remoteSort re-query).
-  function applySort(next: IrisTableSortState | null): void {
+  function setSort(next: IrisTableSortState | null): void {
+    if (sort !== undefined) sortingModel.syncSort(sort ?? null)
     sortingModel.setSort(next)
+  }
+
+  function applySort(next: IrisTableSortState | null): void {
+    setSort(next)
+  }
+
+  const captureViewSnapshot = () =>
+    captureTableViewSnapshot({
+      multiSort,
+      multiSortState: effectiveMultiSort,
+      filters: onFiltersChange ? effectiveFilters : undefined,
+      filterValues: onFilterValuesChange ? effectiveFilterValues : undefined,
+      columnWidths: onColumnWidthsChange ? effectiveWidths : undefined,
+      expandedRowKeys:
+        onExpandedRowsChange && (hasDetail || treeMode) ? [...$expandedKeys] : undefined,
+      pageSize: proxyRef && proxyConfig?.onPageChange ? proxyState.params.pageSize : undefined,
+    })
+
+  function applyViewSnapshot(snapshot: import('./types').IrisTableViewSnapshot): void {
+    const viewProxy = proxyRef
+    const onPageChange = proxyConfig?.onPageChange
+    applyTableViewSnapshot(snapshot, {
+      multiSort,
+      setMultiSort: (next) => sortingModel.setMultiSort(next),
+      setFilters: onFiltersChange ? (next) => filteringModel.setFilters(next) : undefined,
+      setFilterValues: onFilterValuesChange
+        ? (next) => filteringModel.setFilterValues(next)
+        : undefined,
+      setColumnWidths: onColumnWidthsChange ? (next) => onColumnWidthsChange(next) : undefined,
+      setExpandedRowKeys:
+        onExpandedRowsChange && (hasDetail || treeMode) ? (next) => expansion.set(next) : undefined,
+      requestPageSize:
+        viewProxy && onPageChange
+          ? (pageSize) => {
+              onPageChange(1, pageSize)
+              void viewProxy.request({ pageSize, page: 1 })
+            }
+          : undefined,
+    })
   }
 
   const tableViews = createTableViewsController({
     config: () => views,
     sort: () => effectiveSort,
     applySort,
+    capture: captureViewSnapshot,
+    applySnapshot: applyViewSnapshot,
     onActiveViewChange: (key) => onActiveViewChange?.(key),
   })
 
   function setMultiSort(next: IrisTableSortState[]): void {
+    if (multiSortState !== undefined) sortingModel.syncMultiSort(multiSortState ?? [])
     sortingModel.setMultiSort(next)
   }
   const multiSortComparator = $derived<
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
   >(() => {
     const tables = formulaTables
-    return createMultiSortComparator(effectiveMultiSort, leafColumns, (row, column) =>
+    return createTableMultiSortComparator(effectiveMultiSort, leafColumns, (row, column) =>
       resolveTableCellValue(row, column, tables),
     )
   })
 
   // svelte-ignore state_referenced_locally — filtering options seed the stable Core feature;
-  // controlled props are synchronized explicitly by the effect below.
   const {
     model: filteringModel,
     filters: filteringFilters,
@@ -441,8 +462,9 @@
     if (proxyRef) return
     const source = untrack(() => {
       const src = createRemoteTableSource<Record<string, unknown>>({
-        query: (params) => proxyConfig!.query(params),
+        query: (params, signal) => proxyConfig!.query(params, signal),
         autoLoad: false,
+        resilient: proxyConfig?.resilient,
         initialParams: {
           page: proxyConfig?.defaultPage ?? 1,
           pageSize: proxyConfig?.pageSize ?? 10,
@@ -456,15 +478,6 @@
       proxyUnsub = src.subscribe((s) => {
         proxyState = s
       })
-      // autoLoad parity: kick the first request here (never during render).
-      // Batch EJ (persistState): a restored pageSize hooks in BEFORE the
-      // first request — `onPageChange(1, restored)` + exactly ONE request
-      // with the restored size (react batch-AG / `request(partial)` applies
-      // the params and fires once; a plain `request()` would double-fetch).
-      // Applied only when `proxyConfig.onPageChange` exists (documented:
-      // pageSize is only meaningful with it) and nothing restored falls
-      // through to the normal autoLoad kick. `persistCtrl` is initialized
-      // later in setup — the parse happens once, before effects run.
       const restoredPageSize = persistCtrl.parsed?.pageSize
       if (
         typeof restoredPageSize === 'number' &&
@@ -529,24 +542,19 @@
     () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
   >(() => {
     const tables = formulaTables
-    return createSortComparator(effectiveSort, leafColumns, (row, column) =>
+    return createTableSortComparator(effectiveSort, leafColumns, (row, column) =>
       resolveTableCellValue(row, column, tables),
     )
   })
 
   const sortedRows = $derived((): Array<Record<string, unknown>> => {
-    // remoteSort parity: the server owns the ordering — never re-sort locally.
-    // Multi mode uses the chained multi comparator exclusively (an empty list
-    // means unsorted); single mode keeps the single comparator.
     if (remoteSort) return baseData
-    if (multiSort) {
-      const compare = multiSortComparator()
-      if (!compare) return baseData
-      return [...baseData].sort(compare)
-    }
-    const compare = sortComparator()
-    if (!compare) return baseData
-    return [...baseData].sort(compare)
+    return sortTableRows(baseData, leafColumns, {
+      mode: multiSort ? 'multiple' : 'single',
+      sort: effectiveSort,
+      multiSort: effectiveMultiSort,
+      getValue: (row, column) => resolveTableCellValue(row, column, formulaTables),
+    })
   })
 
   $effect(() => {
@@ -555,123 +563,40 @@
     else proxyRef?.setParams({ sort: effectiveSort ?? null })
   })
 
-  // svelte-ignore state_referenced_locally — initial seed only; re-seeding is keyed on the field signature below.
-  let formDraft = $state<Record<string, string>>(seedFormValues(formConfig?.fields))
-  let formApplied = $state<Record<string, string>>({})
-  // Field signature = key + default by VALUE, so re-seeding is keyed on the
-  // signature ($derived compares by value, not identity): an inline
-  // formConfig object with a fresh identity each render never wipes user
-  // input. The formConfig object itself is read untracked below.
-  const formFieldSignature = $derived(
-    (formConfig?.fields ?? []).map((f) => `${f.key}=${f.defaultValue ?? ''}`).join('\u0000'),
-  )
-  // svelte-ignore state_referenced_locally — the object is read untracked by
-  // design: re-seeding is keyed on the field signature only, so an inline
-  // formConfig identity never wipes user input.
-  let lastFormSignature: string | undefined
-  $effect(() => {
-    const cfg = untrack(() => formConfig)
-    const signature = formFieldSignature
-    // Keyed on the signature VALUE (the only tracked dependency): a fresh
-    // inline formConfig object per render never re-seeds.
-    if (signature === lastFormSignature) return
-    lastFormSignature = signature
-    formDraft = seedFormValues(cfg?.fields)
-    formApplied = {}
-  })
-  function setFormValue(key: string, value: string): void {
-    if (formDraft[key] === value) return
-    formDraft = { ...formDraft, [key]: value }
-  }
-  function handleFormSubmit(e: Event): void {
-    e.preventDefault()
-    const values = buildFormValues(formConfig?.fields, formDraft)
-    formConfig?.onSearch?.(values)
-    formApplied = values
-    if (proxyRef) {
-      void proxyRef.setParams({
-        filters: mergeFilterValues(
-          mergeFormFilters(effectiveFilters, values),
-          effectiveFilterValues,
-        ),
-        page: 1,
-      })
-    }
-  }
-  function handleFormReset(e: Event): void {
-    e.preventDefault()
-    const defaults = seedFormValues(formConfig?.fields)
-    formDraft = defaults
-    const values = buildFormValues(formConfig?.fields, defaults)
-    formApplied = values
-    formConfig?.onReset?.(values)
-    if (proxyRef) {
-      if (
-        proxyRef.setParams({
-          filters: mergeFilterValues(
-            mergeFormFilters(effectiveFilters, values),
-            effectiveFilterValues,
-          ),
-          page: 1,
-        }) === false
-      ) {
-        void proxyRef.refetch()
-      }
-    }
-  }
-  $effect(() => {
-    if (!hasProxy || !remoteFilter) return
-    proxyRef?.setParams({
-      filters: mergeFilterValues(
-        mergeFormFilters(effectiveFilters, formApplied),
-        effectiveFilterValues,
-      ),
-    })
+  const tableForm = createTableFormController({
+    config: () => formConfig,
+    filters: () => effectiveFilters,
+    filterValues: () => effectiveFilterValues,
+    hasProxy: () => hasProxy,
+    remoteFilter: () => remoteFilter,
+    proxy: () => proxyRef,
   })
 
   const filteredRows = $derived((): Array<Record<string, unknown>> => {
     if (remoteFilter) return sortedRows()
     const merged: Record<string, string> = hasProxy
       ? effectiveFilters
-      : mergeFormFilters(effectiveFilters, formApplied)
+      : mergeFormFilters(effectiveFilters, tableForm.applied)
     return applyTableFilters(
       sortedRows(),
-      displayColumns,
+      leafColumns,
       merged,
       effectiveFilterValues,
       formulaTables,
     )
   })
 
-  function handleHeaderClick(column: IrisTableColumn): void {
-    if (multiSort) {
-      if (column.sortable) sortingModel.cycleMultiSort(column.key)
-      return
-    }
-    if (column.sortable) sortingModel.cycleSort(column.key)
-  }
-
-  function handleHeaderKeyDown(event: KeyboardEvent, column: IrisTableColumn): void {
-    if (!column.sortable || (event.key !== 'Enter' && event.key !== ' ')) return
-    event.preventDefault()
-    handleHeaderClick(column)
-  }
-
   function clearSort(): void {
     if (multiSort) {
-      // Keep the historical single-sort callback for consumers that listen to
-      // the generic clear channel, while the multi-sort state itself is owned
-      // and emitted by Core.
       onUpdateSort?.(null)
       setMultiSort([])
       return
     }
-    sortingModel.setSort(null)
+    setSort(null)
   }
 
   function clearFilter(): void {
-    formDraft = seedFormValues(formConfig?.fields)
-    formApplied = {}
+    tableForm.clear()
     filteringModel.clear()
     if (proxyRef) {
       const changed = proxyRef.setParams({ filters: {}, page: 1 })
@@ -679,26 +604,36 @@
     }
   }
 
-  // Grid Rows is the single mutation boundary for edits, paste, drag and
-  // imperative row operations. The undo bridge is created later, once the
-  // selection/root/editing callbacks exist; this lazy hook keeps the default
-  // path completely inert when `undo` is omitted.
   let recordUndoRows: ((rows: Array<Record<string, unknown>>) => void) | null = null
   let suppressUndoRecord = false
   let rowEditorOpen = (): boolean => false
   let pendingLocalRows = $state<Array<Record<string, unknown>> | null>(null)
   // svelte-ignore state_referenced_locally — the initial rows seed the live
-  // snapshot; the synchronization effect below tracks later source changes.
   let liveRowsRef: Array<Record<string, unknown>> = baseData
   let liveRevision = $state(0)
 
+  const readRowChildren = (
+    row: Record<string, unknown>,
+  ): readonly Record<string, unknown>[] | undefined => {
+    if (lazyLoad !== undefined) {
+      const children = row.children
+      if (Array.isArray(children)) return children as Record<string, unknown>[]
+    }
+    return getSubRows?.(row)
+  }
+  const writeLazyChildren = (
+    row: Record<string, unknown>,
+    children: Record<string, unknown>[],
+  ): Record<string, unknown> => ({
+    ...row,
+    children,
+  })
+
   // svelte-ignore state_referenced_locally — the initial rows seed the core;
-  // the effect below keeps the source synchronized after props change.
   const { model: gridRows } = useGridRows(gridCore, baseData, {
     getRowKey: (row, index) => rowId(row, index),
-    // Static tree children share the Core rows mutation boundary. Lazy
-    // children remain adapter-owned because they live in the source row.
-    getChildren: getSubRows,
+    getChildren: getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
+    setChildren: lazyLoad !== undefined ? writeLazyChildren : undefined,
     onRowsChange: (transaction) => {
       const next = [...transaction.rows]
       liveRowsRef = next
@@ -739,7 +674,7 @@
         : null,
     clearSort,
     clearFilter,
-    removeRows: removeRowsForHandle,
+    removeRows: (keys) => selectionController.removeRows(keys),
     getFilteredData: () => [...bodyData],
     exportCurrentViewCsv: () =>
       serializeTableCsv(
@@ -785,12 +720,45 @@
     defaultValue: defaultSelection,
     onChange: (keys) => onUpdateSelection?.(keys),
   })
+  // Preserve the last real uncontrolled snapshot across a rejected controlled
+  // proposal; an initially controlled bridge falls back to its accepted prop.
+  // svelte-ignore state_referenced_locally — handoff flags seed the bridge once.
+  let selectionWasControlled = $state(selection !== undefined)
+  // svelte-ignore state_referenced_locally — handoff flags seed the bridge once.
+  let hasUncontrolledSelection = $state(selection === undefined)
+  // svelte-ignore state_referenced_locally — defaults seed the bridge once.
+  let uncontrolledSelectionSnapshot = $state<Array<string | number>>(
+    selection === undefined ? [...$selectedKeys] : [],
+  )
+  // svelte-ignore state_referenced_locally — the prop seeds the bridge once.
+  let lastControlledSelection = $state<Array<string | number>>([...(selection ?? [])])
 
   $effect(() => {
-    if (selControlled) selectionModel.sync(selection!)
+    const current = $selectedKeys
+    const controlled = selection !== undefined
+    if (controlled) {
+      lastControlledSelection = [...selection!]
+      selectionModel.sync(selection!)
+    } else if (selectionWasControlled) {
+      selectionModel.sync(
+        hasUncontrolledSelection ? uncontrolledSelectionSnapshot : lastControlledSelection,
+      )
+    } else {
+      uncontrolledSelectionSnapshot = [...current]
+      hasUncontrolledSelection = true
+    }
+    selectionWasControlled = controlled
   })
 
-  const displaySelection = $derived(selControlled ? selection! : $selectedKeys)
+  const displaySelection = $derived.by(() => {
+    if (selControlled) return [...(selection ?? [])]
+    if (selectionWasControlled) {
+      return [
+        ...(hasUncontrolledSelection ? uncontrolledSelectionSnapshot : lastControlledSelection),
+      ]
+    }
+    return [...$selectedKeys]
+  })
   function rebaseToProp(): void {
     if (selControlled) selectionModel.sync(selection!)
   }
@@ -811,30 +779,97 @@
   }
 
   function rowId(row: Record<string, unknown>, index: number): string | number {
-    const v = row[rowKey]
-    if (typeof v === 'string' || typeof v === 'number') return v
-    return index
+    return resolveTableRowKey(row, rowKey, index)
   }
 
-  const treeMode = $derived(getSubRows !== undefined)
+  let lazyLoading = $state<Set<string>>(new Set())
+  let lazyLoaded = $state<Set<string>>(new Set())
+  let lazyEpoch = 0
+  let lastLazySource: Array<Record<string, unknown>> | undefined
+  let lazyWriteSource: Array<Record<string, unknown>> | undefined
+  $effect(() => {
+    const source = baseData
+    if (source !== lastLazySource) {
+      const isLazyWrite = source === lazyWriteSource
+      lastLazySource = source
+      lazyEpoch += 1
+      lazyLoading = new Set()
+      if (!isLazyWrite) lazyLoaded = new Set()
+      lazyWriteSource = undefined
+    }
+  })
+  const hasLazyChildren = (row: Record<string, unknown>, key: string): boolean => {
+    if (lazyLoad === undefined || !Array.isArray(row.children)) return false
+    return row.children.length > 0 || lazyLoaded.has(key)
+  }
+
+  function loadLazyChildren(
+    row: Record<string, unknown>,
+    key: string,
+    effectiveKey: string | number,
+  ): void {
+    if (lazyLoad === undefined || hasLazyChildren(row, key) || lazyLoading.has(key)) return
+    const requestEpoch = lazyEpoch
+    lazyLoading = new Set(lazyLoading).add(key)
+    let loaded = false
+    const load = (children: Record<string, unknown>[]): void => {
+      if (loaded || requestEpoch !== lazyEpoch) return
+      loaded = true
+      const committed = gridRows.setChildren(effectiveKey, children)
+      if (!committed) {
+        const current = gridRows.find(effectiveKey)
+        const loadedEmpty =
+          current !== undefined && Array.isArray(current.children) && current.children.length === 0
+        if (!loadedEmpty) {
+          if (requestEpoch === lazyEpoch) {
+            const next = new Set(lazyLoading)
+            next.delete(key)
+            lazyLoading = next
+          }
+          return
+        }
+      }
+      lazyLoaded = new Set(lazyLoaded).add(key)
+      lazyWriteSource = liveRowsRef
+      void bodyData
+      expansion.toggle(key)
+      const next = new Set(lazyLoading)
+      next.delete(key)
+      lazyLoading = next
+    }
+    try {
+      lazyLoad(row, load)
+    } catch {
+      if (requestEpoch === lazyEpoch) {
+        const next = new Set(lazyLoading)
+        next.delete(key)
+        lazyLoading = next
+      }
+    }
+  }
+
+  const treeMode = $derived(getSubRows !== undefined || lazyLoad !== undefined)
   const treeComparator = $derived(() => (multiSort ? multiSortComparator() : sortComparator()))
-  const flatTree = $derived<Array<TreeRow<Record<string, unknown>>> | null>(
-    treeMode
-      ? flattenTree(filteredRows(), {
+  const treeProjection = $derived.by<TableBodyRowView<Record<string, unknown>>[] | null>(() => {
+    void liveRevision
+    return treeMode
+      ? projectTableBodyRows(filteredRows(), {
           getKey: (r) => String(rowId(r, 0)),
           getChildren: treeComparator()
-            ? withSortedChildren((r) => getSubRows!(r), treeComparator()!)
-            : (r) => getSubRows!(r),
+            ? withSortedChildren(readRowChildren, treeComparator()!)
+            : readRowChildren,
           isExpanded: (k) => $expandedKeys.includes(k),
         })
-      : null,
+      : null
+  })
+  const flatTree = $derived<Array<TreeRow<Record<string, unknown>>> | null>(
+    treeProjection?.map((view) => view.treeMeta!) ?? null,
   )
-  const bodyData = $derived(flatTree ? flatTree.map((tr) => tr.row) : filteredRows())
+  const bodyData = $derived(
+    treeProjection ? treeProjection.map((view) => view.row) : filteredRows(),
+  )
 
-  /** Resolve a row from the live Core snapshot during a row-mode session. */
   function liveRowFor(row: Record<string, unknown>, index: number): Record<string, unknown> {
-    // Keep the row body reactive when a transaction replaces an object while
-    // the Svelte row editor remains mounted for its sibling columns.
     void liveRevision
     const key = rowId(row, index)
     return (
@@ -844,86 +879,36 @@
     )
   }
 
-  /** Map clipboard's effective-row projection back to the Core row source. */
   const reconcileClipboardRows = (
     sourceRows: readonly Record<string, unknown>[],
     previousRows: readonly Record<string, unknown>[],
     rows: readonly Record<string, unknown>[],
-  ): Record<string, unknown>[] => {
-    const visibleKeys = new Map<Record<string, unknown>, string | number>()
-    bodyData.forEach((row, index) => visibleKeys.set(row, rowId(row, index)))
-    const keyOf = (
-      row: Record<string, unknown>,
-      index: number,
-      source?: readonly Record<string, unknown>[],
-    ): string | number => {
-      const visibleKey = visibleKeys.get(row)
-      if (visibleKey !== undefined) return visibleKey
-      const sourceIndex = source?.indexOf(row) ?? -1
-      return rowId(row, sourceIndex >= 0 ? sourceIndex : index)
-    }
-    const patches = new Map<string | number, Record<string, unknown>>()
-    rows.forEach((row, index) => {
-      if (Object.is(row, previousRows[index])) return
-      const previous = previousRows[index]
-      if (!previous) return
-      const sourceIndex = sourceRows.indexOf(previous)
-      patches.set(keyOf(previous, sourceIndex >= 0 ? sourceIndex : index, sourceRows), row)
+  ): Record<string, unknown>[] =>
+    reconcileProjectedRows(sourceRows, previousRows, rows, {
+      visibleRows: bodyData,
+      getRowKey: rowId,
+      getChildren: getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
+      setChildren: lazyLoad !== undefined ? writeLazyChildren : undefined,
     })
-    if (getSubRows) {
-      return reconcileTreeRows(sourceRows, patches, {
-        getRowKey: (row, index) => keyOf(row, index),
-        getChildren: getSubRows,
-      })
-    }
-    return sourceRows.map((row, index) => patches.get(keyOf(row, index, sourceRows)) ?? row)
-  }
 
-  const allRowIds = $derived(bodyData.map((r, i) => rowId(r, i)))
-  const allSelected = $derived(
-    allRowIds.length > 0 && allRowIds.every((id) => displaySelection.includes(id)),
-  )
-  const someSelected = $derived(
-    !allSelected && allRowIds.some((id) => displaySelection.includes(id)),
-  )
-
-  function isSelected(id: string | number): boolean {
-    return displaySelection.includes(id)
-  }
-
-  function toggleRow(id: string | number): void {
-    // Mode (single vs multiple) is fixed from `selectable` at model creation;
-    // the model owns the toggle/replace semantics.
-    if (selectable === 'single' || selectable === 'multi') {
-      rebaseToProp()
-      selectionModel.toggle(id)
-    }
-  }
-
-  function toggleAll(): void {
-    rebaseToProp()
-    selectionModel.toggleAll(allRowIds)
-  }
-
-  function removeRowsForHandle(keys: Array<string | number>): void {
-    const removedKeys = gridRows.removeMany(keys)
-    if (removedKeys.length === 0) return
-    const rows = gridRows.get()
-    const selected = displaySelection
-    const removed = new Set(removedKeys)
-    const nextSelection = selected.filter((key) => !removed.has(key))
-    if (nextSelection.length !== selected.length) {
-      rebaseToProp()
-      selectionModel.set(nextSelection)
-    }
-    onDataChange?.(rows)
-  }
+  const selectionController = createTableSelectionController({
+    rowIds: () => bodyData.map((row, index) => rowId(row, index)),
+    selection: () => displaySelection,
+    selectable: () => selectable,
+    rebase: rebaseToProp,
+    selectionModel,
+    gridRows,
+    onDataChange: (rows) => onDataChange?.(rows),
+  })
+  const allSelected = $derived(selectionController.allSelected)
+  const someSelected = $derived(selectionController.someSelected)
+  const isSelected = selectionController.isSelected
+  const toggleRow = selectionController.toggleRow
+  const toggleAll = selectionController.toggleAll
 
   function setColumnWidth(key: string, width: number): void {
     const next = { ...effectiveWidths, [key]: width }
     if (!widthsControlled) uncontrolledWidths = next
-    // Core is the sole mutation throat; its feature callback preserves the
-    // existing sparse width-map callback contract.
     columnsFeature.setWidths(next)
   }
 
@@ -935,7 +920,7 @@
       handle: () => resizeHandleEls[col.key],
       disabled: () => !resizableColumns,
       onStart: () => {
-        startWidth = effectiveWidths[col.key] ?? resolveInitialWidth(col)
+        startWidth = resolveColumnWidth(col, effectiveWidths)
       },
       onDrag: ({ dx }) => {
         setColumnWidth(col.key, clampWidth(col, startWidth + dx))
@@ -950,124 +935,79 @@
       },
     }
   }
-  // Focus + Arrow-Left/Right nudge the column width by RESIZE_STEP (keyboard
-  // analogue of the pointer drag); clicking the grip must not bubble to sort.
   function onResizeHandleKeydown(e: KeyboardEvent, col: IrisTableColumn): void {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
     e.preventDefault()
     e.stopPropagation()
-    const cur = effectiveWidths[col.key] ?? resolveInitialWidth(col)
+    const cur = resolveColumnWidth(col, effectiveWidths)
     const delta = e.key === 'ArrowRight' ? TABLE_CONST.RESIZE_STEP : -TABLE_CONST.RESIZE_STEP
     setColumnWidth(col.key, clampWidth(col, cur + delta))
   }
 
-  // ── Batch EJ (persistState): view-state persistence (iris 独有) ────────────
-  // Collector snapshot — what can be restored is what gets saved.
-  // columnVisibility has no change channel in this Svelte bridge. The
-  // columnOrder callback is reserved for controlled drag proposals, while
-  // persistence keeps both pieces inert until their persistence contract is
-  // extended — neither is collected or replayed here.
-  // pageSize joins only in proxy mode; its restore is the documented special
-  // case (the proxy-creation effect applies it BEFORE the first query).
-  const persistSnapshot = $derived((): IrisTablePersistedState => {
-    const s: IrisTablePersistedState = {}
-    if (onUpdateSort) s.sort = effectiveSort
-    if (onFiltersChange) s.filters = effectiveFilters
-    if (onColumnWidthsChange) s.columnWidths = effectiveWidths
-    // Read proxyState UNCONDITIONALLY so the snapshot tracks it — a branch
-    // that shortcuts before the read would never re-evaluate once the proxy
-    // effect lands `proxyRef` (deriveds only re-run on TRACKED changes).
+  const persistSnapshot = $derived(() => {
     const proxy = proxyState
-    if (proxyRef && proxy) s.pageSize = proxy.params.pageSize
-    return s
+    return captureTablePersistSnapshot({
+      sort: onUpdateSort ? effectiveSort : undefined,
+      filters: onFiltersChange ? effectiveFilters : undefined,
+      columnWidths: onColumnWidthsChange ? effectiveWidths : undefined,
+      pageSize: proxyRef && proxy ? proxy.params.pageSize : undefined,
+    })
   })
 
-  // Restore gate — one per-piece change callback + type guard (a tampered
-  // storage entry can't land raw values in the callbacks). `sort` reuses the
-  // SAME throat as named views (`applySort`): controlled/uncontrolled +
-  // remoteSort re-query in one funnel. `pageSize` only declares eligibility —
-  // the proxy-creation effect performs the actual restore pre-query.
-  function restorePersistPiece(piece: IrisTablePersistPiece, value: unknown): boolean {
-    switch (piece) {
-      case 'sort': {
-        if (!onUpdateSort) return false
-        if (value !== null && (typeof value !== 'object' || Array.isArray(value))) return false
-        applySort(value as IrisTableSortState | null)
-        return true
-      }
-      case 'filters': {
-        if (!onFiltersChange || typeof value !== 'object' || value === null || Array.isArray(value))
-          return false
-        filteringModel.setFilters(value as Record<string, string>)
-        return true
-      }
-      case 'columnVisibility':
-        // No change channel (controlled prop only) — permanently inert.
-        return false
-      case 'columnOrder':
-        // The order callback belongs to the drag proposal contract; persistence
-        // deliberately remains inert for this piece.
-        return false
-      case 'columnWidths': {
-        if (
-          !onColumnWidthsChange ||
-          typeof value !== 'object' ||
-          value === null ||
-          Array.isArray(value)
-        )
-          return false
-        onColumnWidthsChange(value as IrisTableColumnWidths)
-        return true
-      }
-      case 'pageSize':
-        // Applied by the proxy-creation effect before the first query;
-        // eligible only when a proxy with onPageChange exists (documented).
-        return proxyConfig?.onPageChange !== undefined && typeof value === 'number' && value > 0
-      default:
-        return false
-    }
-  }
+  const restorePersistStatePiece = (
+    piece: import('./types').IrisTablePersistPiece,
+    value: unknown,
+  ) =>
+    restoreTablePersistPiece(piece, value, {
+      applySort: onUpdateSort ? (next) => applySort(next) : undefined,
+      applyFilters: onFiltersChange ? (next) => filteringModel.setFilters(next) : undefined,
+      applyColumnWidths: onColumnWidthsChange ? (next) => onColumnWidthsChange(next) : undefined,
+      canRestorePageSize: (pageSize) =>
+        proxyConfig?.onPageChange !== undefined && typeof pageSize === 'number' && pageSize > 0,
+    })
 
-  // The coordinator: parse ONCE at setup (SSR window guard — a strict no-op
-  // server-side); the two effects below declare the mount ordering.
   const persistCtrl = createTablePersistController({
     config: () => persistState,
-    restorePiece: restorePersistPiece,
+    restorePiece: restorePersistStatePiece,
   })
 
-  // Restore (mount, declared BEFORE the save subscription — react mount
-  // ordering: proxy effect → restore → save, so the mount commit keeps the
-  // RESTORED values via per-channel skip-first). Untracked on purpose: the
-  // callback dispatches must never re-trigger the restore.
   $effect(() => {
     untrack(() => persistCtrl.restore())
   })
 
-  // Save: serialize the CURRENT pieces on every change — the reads inside
-  // persistSnapshot() are reactive, so any collected-piece change (plus a
-  // config swap) re-runs this; skip-first channels keep their RESTORED
-  // values and the whole-object write is atomic + JSON-deduped.
   $effect(() => {
     const cfg = persistState
     const snapshot = persistSnapshot()
     persistCtrl.save(cfg, snapshot)
   })
 
+  const pinnedOffsets = $derived(
+    computePinnedColumnOffsets(
+      leafColumns,
+      (column) => resolveColumnWidth(column, effectiveWidths),
+      pinOf,
+      (rowDrag ? 40 : 0) + (seq ? 60 : 0) + (hasDetail ? 40 : 0) + (selectable !== 'none' ? 40 : 0),
+    ),
+  )
+  const pinnedStyle = (key: string): string => {
+    const pinned = pinnedOffsets[key]
+    if (!pinned) return ''
+    return `position: sticky; ${pinned.side}: ${pinned.offset}px; z-index: 1; background: var(--iris-background)`
+  }
+
   const pinnedDragMath = createPinnedDragMath({
     enabled: () => pinnedDrag,
     columns: () => leafColumns,
-    widthOf: (column) => effectiveWidths[column.key] ?? resolveInitialWidth(column),
+    pinOf,
+    widthOf: (column) => resolveColumnWidth(column, effectiveWidths),
+    controlled: () => pinnedColumns !== undefined,
+    setPinned: (key, side) => columnsFeature.setPinned(key, side),
     onColumnPinnedChange: (key, side) => onColumnPinnedChange?.(key, side),
     onPinnedCountChange: (count) => onPinnedCountChange?.(count),
   })
   const pinnedBoundaryKey = $derived(pinnedDragMath.boundaryKey())
   const resolvePinnedCount = pinnedDragMath.resolvePinnedCount
   const commitPinnedCount = pinnedDragMath.commitPinnedCount
-
-  const showSelection = $derived(selectable !== 'none')
-  const lead = $derived(
-    (rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 1 : 0),
-  )
 
   const gridTemplate = $derived(() =>
     buildTableGridTemplate(
@@ -1076,13 +1016,10 @@
       Boolean(rowDrag),
       seq,
       hasDetail,
-      showSelection,
+      selectable !== 'none',
       columnFadeController.isCollapsed,
     ),
   )
-  // Cell-mode editing is shared with the other adapters through Grid Core;
-  // row-mode remains in the dedicated Svelte controller because it owns a
-  // multi-cell session and tab traversal.
   function recordCellCommit(
     row: Record<string, unknown>,
     column: IrisTableColumn,
@@ -1149,7 +1086,6 @@
     column: IrisTableColumn,
     rowIdent: string | number,
   ): void {
-    // Batch EM: a formula column is display-only — never enters cell mode.
     if (!isEditableColumn(column)) return
     const current = getCellValue(row, column)
     cellEditing.startCellEdit(rowIdent, column.key, current == null ? '' : String(current))
@@ -1170,18 +1106,19 @@
   const rowMode = $derived(editConfig?.mode === 'row')
   const rowEdit = createTableRowEditController({
     getColumns: () => leafColumns,
-    getRows: () => bodyData,
+    getRows: () => gridRows.get(),
     findRow: (key) => gridRows.find(key),
     getRowId: rowId,
     getCellValue,
     onCommit: (event) => {
-      onCellEdit?.(event)
-      // Row mode bypasses the Core cell-edit feature, so write its immutable
-      // replacement through the same rows transaction for local and proxy
-      // tables. The transaction callback records one undo snapshot when on.
       const ident = rowId(event.row, event.rowIndex)
       const valueKey = (event.column.dataIndex ?? event.column.key) as string
-      gridRows.update(ident, { [valueKey]: event.newValue }, { reason: 'cell-edit' })
+      const changed = gridRows.update(
+        ident,
+        { [valueKey]: event.newValue },
+        { reason: 'cell-edit' },
+      )
+      if (changed) onCellEdit?.(event)
     },
   })
   rowEditorOpen = () => rowEdit.active !== null
@@ -1192,15 +1129,9 @@
     localRows = next
   })
 
-  const stateRowStyle = 'padding: 32px 12px; text-align: center; color: var(--iris-muted)'
-
-  // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
   let rootEl = $state<HTMLDivElement | null>(null)
   let focusedCell = $state<{ row: number; col: number } | null>(null)
 
-  // Replay and imperative commits use a guarded rows transaction so a replay
-  // never records itself as a fresh history entry. Ordinary mutations are
-  // observed by the `onRowsChange` hook above.
   const setTableRows = (rows: Array<Record<string, unknown>>): void => {
     suppressUndoRecord = true
     try {
@@ -1249,19 +1180,19 @@
     getColumnDrag: () => columnDrag,
     commitReorderRows: (activeId, overId) => {
       const visibleRows = bodyData
-      const fromVisible = visibleRows.findIndex(
-        (row, index) => String(rowId(row, index)) === activeId,
+      const projection = resolveRowDragProjection(visibleRows, activeId, overId, (row, index) =>
+        rowId(row, index),
       )
-      const toVisible = visibleRows.findIndex((row, index) => String(rowId(row, index)) === overId)
-      const fromRow = fromVisible >= 0 ? visibleRows[fromVisible] : undefined
-      const toRow = toVisible >= 0 ? visibleRows[toVisible] : undefined
-      const fromKey = fromRow === undefined ? undefined : rowId(fromRow, fromVisible)
-      const toKey = toRow === undefined ? undefined : rowId(toRow, toVisible)
+      const {
+        fromIndex: fromVisible,
+        toIndex: toVisible,
+        fromRow,
+        toRow,
+        fromKey,
+        toKey,
+      } = projection
       const modelFrom = fromKey === undefined ? undefined : gridRows.find(fromKey)
       const modelTo = toKey === undefined ? undefined : gridRows.find(toKey)
-      // Prefer the rows model when the visible projection resolves to the
-      // same source objects. Index-keyed/sorted projections retain the
-      // projection-aware fallback below.
       if (
         fromKey !== undefined &&
         toKey !== undefined &&
@@ -1275,22 +1206,15 @@
       }
       const getChildren = getSubRows
       if (getChildren !== undefined) {
-        // Reorder the canonical source tree, never the flattened visible
-        // projection. A cross-parent drop is rejected until a persisted
-        // re-parenting contract is available.
-        const visibleKeys = new Map(bodyData.map((row, index) => [row, String(rowId(row, index))]))
-        const fromVisible = bodyData.findIndex(
-          (row, index) => String(rowId(row, index)) === activeId,
+        const visibleKeys = new Map(
+          visibleRows.map((row, index) => [row, String(rowId(row, index))]),
         )
-        const toVisible = bodyData.findIndex((row, index) => String(rowId(row, index)) === overId)
         if (fromVisible < 0 || toVisible < 0) return null
         const result = reorderTreeRows(
           gridRows.get(),
           activeId,
           overId,
           {
-            // Every drop target is visible; leave hidden descendants keyless so
-            // a synthetic sibling index cannot mask a visible target.
             getRowKey: (row) => visibleKeys.get(row),
             getChildren,
           },
@@ -1299,24 +1223,20 @@
         if (!result.changed || !gridRows.commit(result.rows, { reason: 'row-drag' })) return null
         return gridRows.get()
       }
-      // Keep the flat bridge's historical source-list behavior when no tree
-      // accessor is supplied.
-      const rows = [...baseData]
-      const from = rows.findIndex((row, index) => String(rowId(row, index)) === activeId)
-      const to = rows.findIndex((row, index) => String(rowId(row, index)) === overId)
-      if (from < 0 || to < 0 || from === to) return null
-      const [moved] = rows.splice(from, 1)
-      rows.splice(to, 0, moved!)
-      if (!gridRows.commit(rows, { reason: 'row-drag' })) return null
+      const source = baseData
+      const rows = reorderRowsInList(
+        source,
+        (row, index) => String(rowId(row, index)),
+        activeId,
+        overId,
+      )
+      if (rows === source || !gridRows.commit(rows, { reason: 'row-drag' })) return null
       return gridRows.get()
     },
     commitRows: (rows) => {
       gridRows.commit(rows, { reason: 'row-drag' })
     },
     commitColumnOrder: (order) => {
-      // columnDrag normally belongs to the caller's columns array. Only an
-      // explicitly supplied columnOrder owner opts into the Core order channel;
-      // controlled parents remain authoritative because the render reads the prop.
       if (orderPropControlled) columnsFeature.setOrder(order)
     },
     onDataChange: (rows) => onDataChange?.(rows),
@@ -1391,18 +1311,9 @@
     return () => ro.disconnect()
   })
 
-  // -------- Column virtualization (opt-in) --------
-  // Render only the horizontally-visible columns (+ pinned + a small overscan)
-  // for very wide tables. The root becomes a horizontal scroll container; we
-  // track its scrollLeft + measured clientWidth and feed them to the core
-  // `computeVirtualRange` to get the visible window. Off-screen tracks stay
-  // sized (the grid template is unchanged), so alignment/resize keep working.
   let scrollLeft = $state(0)
   let viewportWidth = $state(0)
 
-  // Measure the root's width on mount + on resize (when columnVirtualization is
-  // on). Guard ResizeObserver — jsdom and old runtimes lack it; a single mount
-  // measurement still seeds the window.
   $effect(() => {
     if (!columnVirtualization || !rootEl) return
     const el = rootEl
@@ -1420,575 +1331,159 @@
     scrollLeft = (e.currentTarget as HTMLElement).scrollLeft
   }
 
-  // Set of leaf-column indices to render: the visible window (+ overscan),
-  // always unioned with pinned columns. `null` ⇒ render every column (off).
   const visibleColSet = $derived.by<Set<number> | null>(() => {
-    const visible = computeVisibleColSet(
-      columnVirtualization,
-      leafColumns,
-      scrollLeft,
-      viewportWidth,
-      effectiveWidths,
-    )
-    if (!visible) return null
-    // A fading leaf remains mounted even when it is outside the horizontal
-    // window; its stable leaf index still controls grid-column-start.
-    const next = new Set(visible)
-    leafColumns.forEach((column, index) => {
-      if (columnFadeController.fadeByLeaf[column.key]) next.add(index)
+    return computeVisibleColumnIndices(columnVirtualization, {
+      columns: leafColumns,
+      scrollOffset: scrollLeft,
+      viewportSize: viewportWidth,
+      itemSize: (column) => resolveColumnWidth(column, effectiveWidths),
+      isAlwaysVisible: (column) =>
+        pinOf(column) !== null || columnFadeController.fadeByLeaf[column.key] !== undefined,
     })
-    return next
   })
 
-  // 1-based grid track for a leaf-column index (after the optional detail +
-  // selection tracks), so a rendered cell lands in the right place even when
-  // earlier cells are skipped.
-  function colTrack(i: number): number {
-    return (rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 2 : 1) + i
-  }
-
-  // Sequence numbers (vxe seqConfig parity): a leading read-only column whose
-  // value is rowIndex + seqStartIndex, or seqMethod's return, or — in proxy
-  // mode with proxyConfig.seq — cumulative across pages.
-  function seqValue(index: number): string | number {
-    if (seqMethod) return seqMethod({ rowIndex: index, columnIndex: 0 })
-    if (proxyRef && proxyConfig?.seq && seq) {
-      return (proxyState.params.page - 1) * proxyState.params.pageSize + index + 1
-    }
-    return index + seqStartIndex
-  }
-
-  // Span bookkeeping (vxe spanMethod parity): a pure per-pass plan over the
-  // full body grid, rebuilt reactively whenever the body rows, columns or
-  // spanMethod change — correct across virtual-window boundaries (windowed
-  // cells consult the same plan) and needs no render-time ref mutation.
-  const spanPlan = $derived.by<SpanPlan | null>(() => {
+  const spanPlan = $derived.by<GridSpanPlan | null>(() => {
     if (spanMethod === undefined) return null
-    return buildSpanPlan(bodyData.length, leafColumns.length, spanMethod)
+    return computeGridSpanPlan(bodyData.length, leafColumns.length, spanMethod)
   })
 
-  // Active sort info for a column: multi mode reads the click-order list,
-  // single mode the single-column state.
-  function sortAria(col: IrisTableColumn): 'none' | 'ascending' | 'descending' | undefined {
-    if (multiSort) {
-      const idx = effectiveMultiSort.findIndex((s) => s.key === col.key)
-      if (idx < 0) return col.sortable ? 'none' : undefined
-      return effectiveMultiSort[idx]!.direction === 'asc' ? 'ascending' : 'descending'
-    }
-    if (effectiveSort?.key !== col.key) return col.sortable ? 'none' : undefined
-    return effectiveSort.direction === 'asc' ? 'ascending' : 'descending'
-  }
-
-  // Proxy mode drives the table's loading/error UI from the controller state
-  // (reusing the existing loading/error props rendering below).
-  const tableLoading = $derived(hasProxy ? proxyState.loading : loading)
-  const tableError = $derived(hasProxy ? proxyState.error !== null : error)
-  function handleRetry(): void {
-    if (proxyRef) void proxyRef.refetch()
-    onRetry?.()
-  }
-
-  // Virtualize flat mode, and tree mode too — tree rows are uniform height, so
-  // the only blocker is variable-height detail panels: virtualize unless BOTH
-  // tree mode and detail panels are on. `!(treeMode && hasDetail)` is De
-  // Morgan-equivalent to React's `!treeMode || !hasDetail` (same truth table
-  // across all four flat/tree × detail combinations). When `virtualScroll` is
-  // unset this is false, so the non-virtual body path renders unchanged.
-  const useVirtual = $derived(virtualScroll != null && !(treeMode && hasDetail))
   onMount(() => ensureTableStyles(columnFade))
   $effect(() => {
     if (columnFade) ensureTableStyles(true)
   })
 </script>
 
-{#snippet sortIndicator(col: IrisTableColumn)}
-  <TableSortIndicator
-    column={col}
-    {multiSort}
-    multiSortState={effectiveMultiSort}
-    sortState={effectiveSort}
-  />
-{/snippet}
-
-<TableTabs tabs={tableTabs} activeKey={tableViews.activeTab} onApply={tableViews.applyTableTab} />
-<TableViews
-  config={views}
-  views={tableViews.viewList}
-  activeKey={tableViews.activeViewKey}
-  onSelect={tableViews.selectView}
-  onSave={tableViews.saveView}
-  onDelete={tableViews.deleteView}
-/>
-
-<TableChrome
-  config={formConfig}
-  draft={formDraft}
-  setValue={setFormValue}
-  onSubmit={handleFormSubmit}
-  onReset={handleFormReset}
+<TablePresentation
+  {rest}
+  rootRef={(node) => (rootEl = node)}
+  {style}
+  {keyboardNavigation}
+  {treeMode}
+  {cellRange}
+  {clipConfig}
+  {activeCellRange}
+  {copyActiveRange}
+  {handleRootKeyDown}
+  {dragEnabled}
+  {handleDragPointerMove}
+  {handleDragPointerUp}
+  {handleDragPointerCancel}
+  {columnVirtualization}
+  {responsive}
+  {responsiveOverflow}
+  {handleRootScroll}
+  {bordered}
+  {printable}
+  {scrollToTop}
+  {effectiveDensity}
+  {tableTabs}
+  {tableViews}
+  {views}
+  {formConfig}
+  formDraft={tableForm.draft}
+  setFormValue={tableForm.setValue}
+  handleFormSubmit={tableForm.submit}
+  handleFormReset={tableForm.reset}
   {toolbar}
   {undo}
-  canUndo={undoController.canUndo()}
-  canRedo={undoController.canRedo()}
-  onUndo={undoController.undo}
-  onRedo={undoController.redo}
+  {undoController}
   {selectable}
-  selectedKeys={displaySelection}
-  refresh={() => {
+  {displaySelection}
+  refreshProxy={() => {
     if (proxyRef) void proxyRef.refetch()
   }}
-  enabled={hasProxy}
+  setProxyParams={(partial) => proxyRef?.setParams(partial)}
+  {hasProxy}
   {pagerConfig}
-  snapshot={proxyState}
-  setParams={(partial) => proxyRef?.setParams(partial)}
-  onPageChange={proxyConfig?.onPageChange}
+  {proxyState}
+  {proxyConfig}
   {importPreview}
   {densityToggle}
-  {effectiveDensity}
-  onDensityToggle={cycleDensity}
+  {cycleDensity}
+  {displayColumns}
+  columnFade={columnFadeController}
+  {grouped}
+  {headerMatrix}
+  {rowDrag}
+  {rowDragSnapshot}
+  {handleRowDragPointerDown}
+  {columnDrag}
+  {columnDragSnapshot}
+  {handleColumnDragPointerDown}
+  {seq}
+  {hasDetail}
+  {selection}
+  {allSelected}
+  {someSelected}
+  {toggleAll}
+  {multiSort}
+  {effectiveMultiSort}
+  {effectiveSort}
+  {sortingModel}
+  {sort}
+  {multiSortState}
+  filterValues={effectiveFilterValues}
+  {filterController}
+  {leafColumns}
+  {contextMenu}
+  {bodyData}
+  {flatTree}
+  {virtualScroll}
+  {rowId}
+  {liveRowFor}
+  {isSelected}
+  {toggleRow}
+  {rowMode}
+  {rowEdit}
+  {editConfig}
+  {editingCellId}
+  {editingColumnKey}
+  {editingDraft}
+  {editError}
+  {pattern}
+  {patternFill}
+  {striped}
+  {spanPlan}
+  {visibleColSet}
+  {gridTemplate}
+  {resizableColumns}
+  {registerResizeHandle}
+  {effectiveWidths}
+  {onResizeHandleKeydown}
+  {pinnedDrag}
+  {pinnedBoundaryKey}
+  {pinOf}
+  {pinnedStyle}
+  {resolvePinnedCount}
+  {commitPinnedCount}
+  {loading}
+  {error}
+  {errorState}
+  {loadingState}
+  {emptyState}
+  {onRetry}
+  {seqStartIndex}
+  {seqMethod}
+  {renderDetail}
+  {onRowClick}
+  {isRowExpandable}
+  expandedKeys={$expandedKeys}
+  expansionToggle={(key) => expansion.toggle(key)}
+  {lazyLoad}
+  {hasLazyChildren}
+  {lazyLoading}
+  {loadLazyChildren}
+  {getCellValue}
+  {beginEdit}
+  setCellDraft={(value) => cellEditing.setCellDraft(value)}
+  {commitEdit}
+  {cancelEdit}
+  startRange={(row, col) => cellRangeCtrl.startRange(row, col)}
+  extendRange={(row, col) => cellRangeCtrl.extendRange(row, col)}
+  {cellTabIndex}
+  {isInRange}
+  setFocusedCell={(cell) => (focusedCell = cell)}
+  {formulaTables}
+  {editPreview}
   {t}
 />
-
-<div
-  {...rest}
-  bind:this={rootEl}
-  role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
-  data-iris-table
-  data-density={effectiveDensity}
-  data-printable={printable ? 'true' : undefined}
-  data-iris-column-fade-active={columnFadeController.columnFadeActive ? 'true' : undefined}
-  data-column-virtualized={columnVirtualization ? 'true' : undefined}
-  onkeydown={keyboardNavigation || cellRange || clipConfig ? handleRootKeyDown : undefined}
-  onpointermove={dragEnabled ? handleDragPointerMove : undefined}
-  onpointerup={dragEnabled ? handleDragPointerUp : undefined}
-  onpointercancel={dragEnabled ? handleDragPointerCancel : undefined}
-  onpointerleave={dragEnabled ? handleDragPointerCancel : undefined}
-  onscroll={columnVirtualization ? handleRootScroll : undefined}
-  style="background: var(--iris-background); color: var(--iris-foreground); font-size: var(--iris-font-size-md, 14px); border: {bordered
-    ? '1px solid var(--iris-border)'
-    : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization ||
-  responsiveOverflow
-    ? 'auto'
-    : 'hidden'};{responsiveOverflow ? ' overflow-x: auto;' : ''}{style ? ' ' + style : ''}"
->
-  {#if clipConfig && clipConfig.copy !== false && activeCellRange()}
-    <button type="button" data-iris-table-range-copy onclick={copyActiveRange}>
-      {t('table.range.copy')}
-    </button>
-  {/if}
-  <!-- Header row -->
-  <TableHeader
-    columns={displayColumns}
-    columnFade={columnFadeController}
-    {grouped}
-    {headerMatrix}
-    {rowDrag}
-    {columnDrag}
-    {columnDragSnapshot}
-    {handleColumnDragPointerDown}
-    {seq}
-    {hasDetail}
-    {showSelection}
-    {selectable}
-    {selection}
-    {allSelected}
-    {someSelected}
-    {toggleAll}
-    {lead}
-    {sortAria}
-    {handleHeaderClick}
-    {handleHeaderKeyDown}
-    {sortIndicator}
-    {gridTemplate}
-    {visibleColSet}
-    {colTrack}
-    {resizableColumns}
-    {registerResizeHandle}
-    {effectiveWidths}
-    {onResizeHandleKeydown}
-    {pinnedDrag}
-    {pinnedBoundaryKey}
-    {resolvePinnedCount}
-    {commitPinnedCount}
-    filterValues={effectiveFilterValues}
-    onFilterOpen={filterController.open}
-    showAsterisk={editConfig?.showAsterisk === true}
-    {t}
-  />
-
-  <TableContextMenu
-    root={rootEl}
-    config={contextMenu}
-    columns={leafColumns}
-    getRows={() => bodyData}
-  />
-
-  {#if filterController.openKey}
-    {@const filterColumn = displayColumns.find((column) => column.key === filterController.openKey)}
-    {#if filterColumn}
-      <TableFilterPanel
-        column={filterColumn}
-        values={filterController.draft}
-        onToggle={filterController.toggle}
-        onApply={() => filterController.apply(filterColumn.key)}
-        onClear={() => filterController.clear(filterColumn.key)}
-        onClose={filterController.close}
-        {t}
-      />
-    {/if}
-  {/if}
-
-  <!-- Body -->
-  {#if tableError}
-    <TableStateRow
-      kind="error"
-      style={stateRowStyle}
-      {errorState}
-      retryable={Boolean(onRetry || hasProxy)}
-      onRetry={handleRetry}
-      {t}
-    />
-  {:else if tableLoading}
-    <TableStateRow kind="loading" style={stateRowStyle} {loadingState} retryable={false} {t} />
-  {:else if bodyData.length === 0}
-    <TableStateRow kind="empty" style={stateRowStyle} {emptyState} retryable={false} {t} />
-  {:else if useVirtual}
-    <!-- Virtualize flat mode, and tree mode too — tree rows are uniform height,
-         so the only thing that bars it is variable-height detail panels, hence
-         the `!hasDetail` guard. `bodyData` is the flattened visible rows (=
-         `sortedRows()` in flat mode); `flatTree?.[index]` supplies each row's
-         tree meta (depth + toggle), with `index` the absolute row index from
-         the scroller. -->
-    <IrisVirtualScroll
-      data-iris-table-body=""
-      items={bodyData}
-      itemHeight={virtualScroll!.itemHeight}
-      height={virtualScroll!.height}
-      buffer={virtualScroll!.buffer}
-      keyOf={(row, index) => rowId(row as Record<string, unknown>, index)}
-    >
-      {#snippet item({ item: row, index })}
-        {@render bodyRow(
-          row as Record<string, unknown>,
-          index,
-          flatTree ? flatTree[index] : null,
-          true,
-        )}
-      {/snippet}
-    </IrisVirtualScroll>
-  {:else}
-    <div role="rowgroup" data-iris-table-body>
-      {#each bodyData as row, index}
-        {@const id = rowId(row, index)}
-        {@render bodyRow(row, index, flatTree ? flatTree[index] : null, false)}
-        <!-- Full-width detail panel beneath an expanded, expandable row (spans
-             all grid tracks). Only in the non-virtualized path. -->
-        {#if hasDetail && isRowExpandable(row, index) && $expandedKeys.includes(String(id))}
-          <div
-            role="row"
-            data-iris-table-row-detail={String(id)}
-            style="display: grid; grid-template-columns: {gridTemplate()}"
-          >
-            <div
-              role="cell"
-              data-iris-table-detail-cell=""
-              style="grid-column: 1 / -1; padding: 8px 12px; border-bottom: 1px solid var(--iris-border)"
-            >
-              {renderDetail?.(row, index)}
-            </div>
-          </div>
-        {/if}
-      {/each}
-    </div>
-  {/if}
-
-  <!-- One body row. Shared by the non-virtual `{#each}` and the virtual
-       scroller's `item` snippet so the markup is identical either way. The
-       virtual path passes `fillHeight` so the row fills its absolutely-sized
-       window slot; `treeMeta` carries the per-row depth/toggle (flatTree[index]
-       at the row's absolute index). -->
-  {#snippet bodyRow(
-    row: Record<string, unknown>,
-    index: number,
-    treeMeta: TreeRow<Record<string, unknown>> | null,
-    fillHeight: boolean,
-  )}
-    {@const id = rowId(row, index)}
-    {@const renderedRow = liveRowFor(row, index)}
-    {@const selected = isSelected(id)}
-    {@const rowEditing = rowMode && rowEdit.active?.key === id}
-    <!-- svelte-ignore a11y_interactive_supports_focus -->
-    <div
-      role="row"
-      aria-selected={selectable !== 'none' ? selected : undefined}
-      data-iris-table-row
-      data-iris-table-row-key={String(id)}
-      data-iris-table-row-index={index}
-      data-iris-row-editing={rowEditing ? 'true' : undefined}
-      data-state={selected ? 'selected' : undefined}
-      aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
-      aria-setsize={treeMeta ? treeMeta.setSize : undefined}
-      aria-posinset={treeMeta ? treeMeta.posInset : undefined}
-      onclick={onRowClick ? () => onRowClick(renderedRow, index) : undefined}
-      onkeydown={onRowClick
-        ? (event) => handleTableRowKeyDown(event, renderedRow, index, onRowClick)
-        : undefined}
-      tabindex={onRowClick ? 0 : undefined}
-      style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
-        ? ' height: 100%;'
-        : ''} background: {selected
-        ? 'var(--iris-surface-selected)'
-        : rowEditing
-          ? 'var(--iris-surface-selected)'
-          : striped && index % 2 === 1
-            ? 'var(--iris-surface)'
-            : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease{columnFadeController.columnFadeActive
-        ? ', grid-template-columns var(--iris-duration-md, 200ms) ease'
-        : ''}; cursor: default"
-    >
-      {#if rowDrag}
-        <TableDragHandle
-          id={String(id)}
-          active={rowDragSnapshot.activeId === String(id)}
-          over={rowDragSnapshot.overId === String(id)}
-          onPress={(event) => handleRowDragPointerDown(event, String(id))}
-        />
-      {/if}
-      {#if seq}
-        <div
-          role="cell"
-          data-iris-table-cell="__seq"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; font-size: var(--iris-font-size-md, 14px); border-bottom: 1px solid var(--iris-border); color: var(--iris-muted); user-select: none"
-        >
-          {seqValue(index)}
-        </div>
-      {/if}
-      {#if hasDetail}
-        <div
-          role="cell"
-          data-iris-table-cell="__expand"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; font-size: var(--iris-font-size-md, 14px); border-bottom: 1px solid var(--iris-border)"
-        >
-          {#if isRowExpandable(row, index)}
-            <button
-              type="button"
-              data-iris-table-expand-toggle=""
-              aria-expanded={$expandedKeys.includes(String(id))}
-              aria-label={t(
-                $expandedKeys.includes(String(id)) ? 'treeSelect.collapse' : 'treeSelect.expand',
-              )}
-              onclick={(e) => {
-                e.stopPropagation()
-                expansion.toggle(String(id))
-              }}
-              style="border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--iris-foreground); transform: {$expandedKeys.includes(
-                String(id),
-              )
-                ? 'rotate(90deg)'
-                : 'none'}; transition: transform 150ms">▶</button
-            >
-          {/if}
-        </div>
-      {/if}
-      {#if showSelection}
-        <div
-          role="cell"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
-        >
-          <input
-            type="checkbox"
-            checked={selected}
-            onchange={() => toggleRow(id)}
-            onclick={(e) => e.stopPropagation()}
-            aria-label={t('table.selectRow', { key: id })}
-          />
-        </div>
-      {/if}
-      {#each leafColumns as col, ci}
-        {#if !visibleColSet || visibleColSet.has(ci)}
-          {@const spanKey = `${index}:${ci}`}
-          {@const spanEntry = spanPlan?.spans.get(spanKey)}
-          {@const spanCovered = spanPlan ? spanPlan.occupied.has(spanKey) : false}
-          {@const editId = cellId(id, col.key)}
-          {@const rowSession = rowMode ? rowEdit.session(editId) : undefined}
-          {@const isEditing = rowSession !== undefined || (!rowMode && editingCellId === editId)}
-          {@const patternHint =
-            (pattern || patternFill) &&
-            !rowMode &&
-            editingColumnKey === col.key &&
-            !isEditing &&
-            editingDraft !== '' &&
-            String(getCellValue(renderedRow, col) ?? '') === editingDraft}
-          {#if !spanCovered}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <div
-              role="cell"
-              data-iris-table-cell={col.key}
-              data-iris-table-pinned={col.pinned}
-              {...columnFadeController.columnFadeAttrs(col)}
-              data-editable={isEditableColumn(col) ? '' : undefined}
-              data-editing={isEditing ? '' : undefined}
-              data-iris-input-hint={patternHint ? 'true' : undefined}
-              data-grid-row={keyboardNavigation ? index : undefined}
-              data-grid-col={keyboardNavigation ? ci : undefined}
-              data-iris-cell-row={cellRange ? index : undefined}
-              data-iris-cell-col={cellRange ? ci : undefined}
-              data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
-              tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
-              onfocus={keyboardNavigation
-                ? () => (focusedCell = { row: index, col: ci })
-                : undefined}
-              onclick={rowMode && editConfig?.trigger !== 'manual'
-                ? () => rowEdit.handleCellClick(renderedRow, col, index, id)
-                : cellRange
-                  ? (e: MouseEvent) => {
-                      if (e.shiftKey) {
-                        cellRangeCtrl.extendRange(index, ci)
-                      } else {
-                        cellRangeCtrl.startRange(index, ci)
-                      }
-                    }
-                  : editConfig?.trigger === 'click' && isEditableColumn(col)
-                    ? () => beginEdit(renderedRow, col, id)
-                    : undefined}
-              onkeydown={cellRange
-                ? (event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') return
-                    event.preventDefault()
-                    if (event.shiftKey) cellRangeCtrl.extendRange(index, ci)
-                    else cellRangeCtrl.startRange(index, ci)
-                  }
-                : undefined}
-              ondblclick={rowMode && editConfig?.trigger !== 'manual'
-                ? () => rowEdit.switchTo(renderedRow, index, col.key)
-                : isEditableColumn(col) &&
-                    editConfig?.trigger !== 'click' &&
-                    editConfig?.trigger !== 'manual'
-                  ? () => beginEdit(renderedRow, col, id)
-                  : undefined}
-              style="display: flex; align-items: center; justify-content: {(col.align ??
-                (typeof getCellValue(renderedRow, col) === 'number' ? 'right' : 'left')) === 'right'
-                ? 'flex-end'
-                : col.align === 'center'
-                  ? 'center'
-                  : 'flex-start'};{visibleColSet
-                ? ` grid-column-start: ${colTrack(ci)};`
-                : ''}{spanEntry && spanEntry.colspan > 1
-                ? ` grid-column-end: span ${spanEntry.colspan};`
-                : ''} padding: {isEditing
-                ? '4px'
-                : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {isEditableColumn(
-                col,
-              )
-                ? 'cell'
-                : 'default'}{cellRange && isInRange(index, ci)
-                ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
-                : ''}{isEditing ? '; flex-wrap: wrap' : ''}{patternHint
-                ? '; background-image: linear-gradient(var(--iris-input-hint, rgba(251, 191, 36, 0.16)), var(--iris-input-hint, rgba(251, 191, 36, 0.16)))'
-                : ''}{columnFadeController.columnFadeStyle(col) ? '; opacity: 0' : ''}"
-            >
-              {#if treeMeta && ci === 0}
-                <span
-                  data-iris-table-tree-indent=""
-                  style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth *
-                    16}px"
-                >
-                  {#if treeMeta.hasChildren}
-                    <button
-                      type="button"
-                      data-iris-table-tree-toggle=""
-                      aria-expanded={treeMeta.expanded}
-                      aria-label={t(
-                        treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand',
-                      )}
-                      onclick={(e) => {
-                        e.stopPropagation()
-                        expansion.toggle(treeMeta.key)
-                      }}
-                      style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded
-                        ? 'rotate(90deg)'
-                        : 'none'}; transition: transform 150ms">▶</button
-                    >
-                  {:else}
-                    <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
-                  {/if}
-                </span>
-              {/if}
-              {#if isEditing}
-                <TableCellEditor
-                  type={col.editor}
-                  value={rowMode ? (rowSession?.draft ?? '') : editingDraft}
-                  error={rowMode ? (rowSession?.error ?? null) : editError}
-                  errorId={`${editId}-error`}
-                  onInput={(value) => {
-                    if (rowMode) rowEdit.setDraft(editId, value)
-                    else cellEditing.setCellDraft(value)
-                  }}
-                  onCommit={() => {
-                    if (rowMode) rowEdit.commit(editId, renderedRow, col, index, id)
-                    else commitEdit(renderedRow, col, index)
-                  }}
-                  onCancel={() => (rowMode ? rowEdit.cancel() : cancelEdit())}
-                  showPreview={editPreview && col.formatter !== undefined}
-                  preview={editPreview && col.formatter !== undefined
-                    ? editPreviewText(
-                        renderedRow,
-                        col,
-                        rowMode ? (rowSession?.draft ?? '') : editingDraft,
-                        formulaTables,
-                      )
-                    : undefined}
-                  onTab={rowMode && rowSession
-                    ? (direction) => rowEdit.tab(editId, renderedRow, col, index, id, direction)
-                    : undefined}
-                  inputRef={rowMode ? (node) => rowEdit.registerInput(col.key, node) : undefined}
-                />
-              {:else if col.render}
-                {@render (col.render(getCellValue(renderedRow, col), renderedRow) as RowSnippet)(
-                  renderedRow,
-                )}
-              {:else}
-                {tableDisplayText(renderedRow, col, getCellValue)}
-              {/if}
-            </div>
-          {/if}
-        {/if}
-      {/each}
-    </div>
-  {/snippet}
-  {#if !tableError && !tableLoading}
-    <TableSummary
-      {bodyData}
-      {leafColumns}
-      columnFade={columnFadeController}
-      {rowDrag}
-      {seq}
-      {hasDetail}
-      {showSelection}
-      {visibleColSet}
-      {gridTemplate}
-      {colTrack}
-      {getCellValue}
-    />
-  {/if}
-
-  <TableScrollTop
-    root={rootEl}
-    enabled={scrollToTop && !printable}
-    hasVirtual={useVirtual}
-    rows={bodyData.length}
-    loading={tableLoading}
-    error={tableError}
-  />
-</div>
-{#if responsive && responsiveOverflow && !printable}
-  <div
-    data-iris-scroll-hint=""
-    role="status"
-    aria-live="polite"
-    style="display: flex; align-items: center; gap: var(--iris-space-xxs, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px); color: var(--iris-muted); background: var(--iris-surface); border-inline: 1px solid var(--iris-border); border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-sm, 13px)"
-  >
-    <span aria-hidden="true">⇆</span>
-    <span>{t('table.scrollHint')}</span>
-  </div>
-{/if}

@@ -38,8 +38,21 @@ import {
 } from '@iris-ui-kit/core/grid'
 import type { ExpansionModel } from '@iris-ui-kit/core'
 import type { CellEditState } from '@iris-ui-kit/core'
-import { toStore } from '../useStore'
+import { toStore, toStoreSnapshot } from '../useStore'
 import type { Readable } from 'svelte/store'
+import { syncGridColumnsVisibility } from './syncGridColumns.svelte'
+import { syncGridPagination } from './syncGridPagination.svelte'
+
+function cloneGridColumnsState(
+  state: ReturnType<GridColumnsModel['get']>,
+): ReturnType<GridColumnsModel['get']> {
+  return {
+    visibility: { ...state.visibility },
+    order: [...state.order],
+    widths: { ...state.widths },
+    pinned: { ...state.pinned },
+  }
+}
 
 export interface UseGridCoreOptions<Row extends Record<string, unknown>> {
   readonly features?: readonly GridFeature<Row>[]
@@ -91,7 +104,11 @@ export function useGridSelection<
       onChange: options.onChange,
     }),
   )
-  return { model, selection: toStore(model.store), controlled: options.value !== undefined }
+  return {
+    model,
+    selection: toStoreSnapshot(model.store, (keys) => [...keys]),
+    controlled: options.value !== undefined,
+  }
 }
 
 export interface UseGridExpansionOptions<K extends GridExpansionKey = string> {
@@ -118,7 +135,7 @@ export function useGridExpansion<
       onChange: options.onChange,
     }),
   )
-  return { model, expandedKeys: toStore(model.store) }
+  return { model, expandedKeys: toStoreSnapshot(model.store, (keys) => [...keys]) }
 }
 
 export interface UseGridRowsOptions<Row extends Record<string, unknown>, Meta = unknown> {
@@ -251,11 +268,33 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
       onPinnedChange: options.onPinnedChange,
     }),
   )
+  const state = toStoreSnapshot(model.store, cloneGridColumnsState)
+  syncGridColumnsVisibility(model, state, () => ({
+    visibility: options.visibility,
+    defaultVisibility: options.defaultVisibility,
+    order: options.order,
+    defaultOrder: options.defaultOrder,
+    widths: options.widths,
+    defaultWidths: options.defaultWidths,
+    pinned: options.pinned,
+    defaultPinned: options.defaultPinned,
+  }))
+  const rebase = (): void => {
+    if (options.visibility !== undefined) model.syncVisibility(options.visibility)
+    if (options.order !== undefined) model.syncOrder(options.order)
+    if (options.widths !== undefined) model.syncWidths(options.widths)
+    if (options.pinned !== undefined) model.syncPinned(options.pinned)
+  }
+  const apply = (write: () => void): void => {
+    rebase()
+    write()
+    rebase()
+  }
   return {
     model,
-    state: toStore(model.store),
-    setVisibility: (v) => model.setVisibility(v),
-    toggleVisibility: (k) => model.toggleVisibility(k),
+    state,
+    setVisibility: (v) => apply(() => model.setVisibility(v)),
+    toggleVisibility: (k) => apply(() => model.toggleVisibility(k)),
     setOrder: (v) => model.setOrder(v),
     clearOrder: () => model.setOrder(undefined),
     setWidths: (v) => model.setWidths(v),
@@ -291,9 +330,14 @@ export function useGridPagination<Row extends Record<string, unknown> = Record<s
         defaultPage: options.page ?? options.defaultPage,
         defaultPageSize: options.pageSize ?? options.defaultPageSize,
         defaultTotal: options.total ?? options.defaultTotal,
-        onChange: options.onChange,
+        onChange: (change) => options.onChange?.(change),
       }),
   )
+  syncGridPagination(model, () => ({
+    ...(options.page !== undefined ? { page: options.page } : {}),
+    ...(options.pageSize !== undefined ? { pageSize: options.pageSize } : {}),
+    ...(options.total !== undefined ? { total: options.total } : {}),
+  }))
   return {
     model,
     pagination: toStore(model.store),

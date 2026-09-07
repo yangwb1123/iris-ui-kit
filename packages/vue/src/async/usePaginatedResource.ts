@@ -13,7 +13,7 @@ import {
   createPaginatedResource,
   type PageQuery,
   type PageResult,
-  type PaginatedResource,
+  type AdvancedPaginatedResource,
   type PaginatedState,
   type PaginationMode,
 } from '@iris-ui-kit/core'
@@ -35,10 +35,11 @@ export interface UsePaginatedResourceReturn<T> {
   isLoading: ComputedRef<boolean>
   isError: ComputedRef<boolean>
   hasMore: ComputedRef<boolean>
-  goToPage: PaginatedResource<T>['goToPage']
-  loadMore: PaginatedResource<T>['loadMore']
-  refresh: PaginatedResource<T>['refresh']
-  setPageSize: PaginatedResource<T>['setPageSize']
+  goToPage: AdvancedPaginatedResource<T>['goToPage']
+  loadMore: AdvancedPaginatedResource<T>['loadMore']
+  refresh: AdvancedPaginatedResource<T>['refresh']
+  setPageSize: AdvancedPaginatedResource<T>['setPageSize']
+  cancel: AdvancedPaginatedResource<T>['cancel']
 }
 
 /**
@@ -58,14 +59,16 @@ export interface UsePaginatedResourceReturn<T> {
  * is treated as one — use `computed`/`ref` for reactive fetchers.
  */
 export function usePaginatedResource<T>(
-  fetcher: MaybeRefOrGetter<(query: PageQuery) => Promise<PageResult<T>>>,
+  fetcher: MaybeRefOrGetter<(query: PageQuery, signal?: AbortSignal) => Promise<PageResult<T>>>,
   options: UsePaginatedResourceOptions = {},
 ): UsePaginatedResourceReturn<T> {
   // Plain-object holder (the Vue analog of React's `latest.current` ref):
   // core only ever sees the wrapper below, which re-reads `holder.current` at
   // call time — so every page load (and `refresh`'s replay) uses the fresh
   // closure for the component's whole lifetime.
-  const holder: { current: (query: PageQuery) => Promise<PageResult<T>> } = {
+  const holder: {
+    current: (query: PageQuery, signal?: AbortSignal) => Promise<PageResult<T>>
+  } = {
     // isRef-only resolution. NEVER toValue() here: the element type is itself
     // a function, so toValue(fetcher) would *invoke the fetcher at setup*
     // (spurious request) and toValue(getter) would do the same. isRef narrows
@@ -79,6 +82,7 @@ export function usePaginatedResource<T>(
     // adds no unsafety beyond F3.
     current: (isRef(fetcher) ? fetcher.value : fetcher) as (
       query: PageQuery,
+      signal?: AbortSignal,
     ) => Promise<PageResult<T>>,
   }
   if (isRef(fetcher)) {
@@ -96,16 +100,25 @@ export function usePaginatedResource<T>(
     )
   }
 
-  const resource = createPaginatedResource<T>((query) => holder.current(query), {
-    pageSize: options.pageSize,
-    mode: options.mode,
-  })
+  const resource = createPaginatedResource<T>(
+    (query, signal) => {
+      const current = holder.current
+      return signal === undefined ? current(query) : current(query, signal)
+    },
+    {
+      pageSize: options.pageSize,
+      mode: options.mode,
+    },
+  )
 
   const state = ref(resource.getState()) as Ref<PaginatedState<T>>
   const unsubscribe = resource.subscribe((next) => {
     state.value = next
   })
-  onBeforeUnmount(unsubscribe)
+  onBeforeUnmount(() => {
+    unsubscribe()
+    resource.cancel()
+  })
 
   if (options.immediate) {
     onMounted(() => {
@@ -132,5 +145,6 @@ export function usePaginatedResource<T>(
     loadMore: resource.loadMore,
     refresh: resource.refresh,
     setPageSize: resource.setPageSize,
+    cancel: resource.cancel,
   }
 }

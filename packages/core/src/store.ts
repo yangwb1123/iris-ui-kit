@@ -179,9 +179,15 @@ export function derived<S extends readonly unknown[], R>(
       }
     }
     if (!inputsChanged) return false
-    inputs = next
     const computed = combiner(...next)
-    if (equals(value, computed)) return false
+    // Commit the input snapshot only after the combiner succeeds. Otherwise a
+    // thrown combiner leaves the cache believing that an uncomputed source
+    // value was incorporated, and later getState() calls return stale output.
+    if (equals(value, computed)) {
+      inputs = next
+      return false
+    }
+    inputs = next
     value = computed
     return true
   }

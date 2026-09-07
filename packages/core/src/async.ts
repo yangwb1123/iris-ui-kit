@@ -80,6 +80,7 @@ export function createAsyncResource<T, P extends unknown[] = []>(
   }
 
   const load = async (...params: P): Promise<T | undefined> => {
+    if (scope.disposed) return undefined
     const current = ++token
     lastParams = params
     abortInFlight()
@@ -87,6 +88,10 @@ export function createAsyncResource<T, P extends unknown[] = []>(
     const ac = hasAC ? new AbortController() : null
     controller = ac
     store.setState((s) => ({ ...s, status: 'loading', error: undefined }))
+    // A synchronous subscriber may supersede or destroy this resource while
+    // the loading notification is being delivered. Do not start the fetcher
+    // after that re-entrant lifecycle change.
+    if (current !== token || scope.disposed) return undefined
     try {
       // Signal is appended after params; a fetcher may accept it as an optional
       // trailing arg, or ignore it (JS drops extra args).
@@ -119,6 +124,7 @@ export function createAsyncResource<T, P extends unknown[] = []>(
     load,
     reload: () => load(...((lastParams ?? []) as P)),
     mutate: (updater) => {
+      if (scope.disposed) return
       store.setState((s) => {
         const next =
           typeof updater === 'function' ? (updater as (prev: T | undefined) => T)(s.data) : updater
@@ -126,12 +132,14 @@ export function createAsyncResource<T, P extends unknown[] = []>(
       })
     },
     cancel: () => {
+      if (scope.disposed) return
       // Invalidate the in-flight load (token bump) and abort its request, but
       // leave the displayed state as-is.
       token += 1
       abortInFlight()
     },
     reset: () => {
+      if (scope.disposed) return
       // Invalidate any in-flight load so it can't apply after reset.
       token += 1
       abortInFlight()

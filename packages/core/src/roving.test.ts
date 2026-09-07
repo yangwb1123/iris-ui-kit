@@ -32,6 +32,24 @@ describe('nextEnabledIndex', () => {
   it('returns -1 for an empty set', () => {
     expect(nextEnabledIndex(0, 1, 0)).toBe(-1)
   })
+
+  it('rejects non-finite and fractional counts without scanning forever', () => {
+    const disabled = () => false
+    expect(nextEnabledIndex(0, 1, Number.NaN, disabled)).toBe(-1)
+    expect(nextEnabledIndex(0, 1, Number.POSITIVE_INFINITY, disabled)).toBe(-1)
+    expect(nextEnabledIndex(0, 1, 2.5, disabled)).toBe(-1)
+    expect(firstEnabledIndex(-1, disabled)).toBe(-1)
+    expect(firstEnabledIndex(Number.POSITIVE_INFINITY, disabled)).toBe(-1)
+    expect(lastEnabledIndex(2.5, disabled)).toBe(-1)
+    expect(nextEnabledIndex(0, 1, Number.MAX_SAFE_INTEGER)).toBe(1)
+  })
+
+  it('does not return an invalid current index', () => {
+    expect(nextEnabledIndex(Number.NaN, 1, 3)).toBe(-1)
+    expect(nextEnabledIndex(1.5, 1, 3)).toBe(-1)
+    expect(nextEnabledIndex(Number.POSITIVE_INFINITY, 1, 3)).toBe(-1)
+    expect(nextEnabledIndex(-1, 1, 3)).toBe(0)
+  })
 })
 
 describe('firstEnabledIndex / lastEnabledIndex', () => {
@@ -41,7 +59,9 @@ describe('firstEnabledIndex / lastEnabledIndex', () => {
     expect(lastEnabledIndex(4, enabled)).toBe(2)
   })
   it('returns -1 when none enabled', () => {
-    expect(firstEnabledIndex(3, () => false)).toBe(-1)
+    const disabled = () => false
+    expect(firstEnabledIndex(3, disabled)).toBe(-1)
+    expect(lastEnabledIndex(3, disabled)).toBe(-1)
   })
 })
 
@@ -79,6 +99,17 @@ describe('nextGridCell (2D roving)', () => {
     }) // skips col 2
   })
 
+  it('returns the current cell when every candidate is disabled', () => {
+    const current = Object.freeze({ row: 1, col: 1 })
+    const disabled = () => false
+    expect(nextGridCell(current, 'ArrowRight', { ...grid, isEnabled: disabled, loop: true })).toBe(
+      current,
+    )
+    expect(nextGridCell(current, 'ArrowDown', { ...grid, isEnabled: disabled })).toBe(current)
+    expect(nextGridCell(current, 'Home', { ...grid, isEnabled: disabled })).toBe(current)
+    expect(nextGridCell(current, 'PageDown', { ...grid, isEnabled: disabled })).toBe(current)
+  })
+
   it('Home / End jump to the row first / last enabled cell', () => {
     expect(nextGridCell({ row: 2, col: 2 }, 'Home', grid)).toEqual({ row: 2, col: 0 })
     expect(nextGridCell({ row: 2, col: 1 }, 'End', grid)).toEqual({ row: 2, col: 3 })
@@ -95,6 +126,14 @@ describe('nextGridCell (2D roving)', () => {
     expect(nextGridCell({ row: 2, col: 1 }, 'PageDown', big)).toEqual({ row: 7, col: 1 })
     // clamps at the edge
     expect(nextGridCell({ row: 1, col: 1 }, 'PageUp', big)).toEqual({ row: 0, col: 1 })
+    const disabledTarget = ({ row, col }: { row: number; col: number }) => row !== 1 || col !== 1
+    expect(
+      nextGridCell({ row: 0, col: 1 }, 'PageDown', {
+        rowCount: 3,
+        colCount: 3,
+        isEnabled: disabledTarget,
+      }),
+    ).toEqual({ row: 2, col: 1 }) // keeps the same column when the target row is disabled
   })
 
   it('returns the current cell for an empty grid', () => {
@@ -102,6 +141,53 @@ describe('nextGridCell (2D roving)', () => {
       row: 0,
       col: 0,
     })
+  })
+
+  it('rejects invalid dimensions and current cells without producing invalid targets', () => {
+    const current = { row: 1, col: 1 }
+    const disabled = () => false
+    expect(nextGridCell(current, 'ArrowDown', { rowCount: -1, colCount: 3 })).toBe(current)
+    expect(nextGridCell(current, 'ArrowDown', { rowCount: Number.NaN, colCount: 3 })).toBe(current)
+    expect(
+      nextGridCell(current, 'ArrowDown', {
+        rowCount: Number.POSITIVE_INFINITY,
+        colCount: 3,
+        isEnabled: disabled,
+      }),
+    ).toBe(current)
+    expect(nextGridCell(current, 'ArrowDown', { rowCount: 2.5, colCount: 3 })).toBe(current)
+    expect(nextGridCell(current, 'ArrowDown', { rowCount: 3, colCount: Number.NaN })).toBe(current)
+    expect(
+      nextGridCell(current, 'ArrowDown', { rowCount: 3, colCount: Number.POSITIVE_INFINITY }),
+    ).toBe(current)
+    expect(nextGridCell({ row: Number.NaN, col: 1 }, 'Home', { rowCount: 3, colCount: 3 })).toEqual(
+      {
+        row: Number.NaN,
+        col: 1,
+      },
+    )
+    expect(nextGridCell({ row: -1, col: 1 }, 'End', { rowCount: 3, colCount: 3 })).toEqual({
+      row: -1,
+      col: 1,
+    })
+    expect(nextGridCell({ row: 1, col: 1.5 }, 'End', { rowCount: 3, colCount: 3 })).toEqual({
+      row: 1,
+      col: 1.5,
+    })
+    expect(nextGridCell({ row: 1.5, col: 1 }, 'End', { rowCount: 3, colCount: 3 })).toEqual({
+      row: 1.5,
+      col: 1,
+    })
+  })
+
+  it('falls back to one row for an invalid page size', () => {
+    const current = { row: 1, col: 1 }
+    for (const pageSize of [Number.NaN, Number.POSITIVE_INFINITY, -1, 1.5]) {
+      expect(nextGridCell(current, 'PageDown', { rowCount: 3, colCount: 3, pageSize })).toEqual({
+        row: 2,
+        col: 1,
+      })
+    }
   })
 
   describe('matchTypeahead', () => {
@@ -118,6 +204,14 @@ describe('nextGridCell (2D roving)', () => {
       expect(matchTypeahead(items, 'b', -1, (i) => i === 1)).toBe(2) // skip Banana → Blueberry
       expect(matchTypeahead(items, 'z', -1)).toBe(-1)
       expect(matchTypeahead(items, '  ', 0)).toBe(-1)
+    })
+    it('trims labels and queries, wraps, and treats invalid fromIndex as before the list', () => {
+      const labels = Object.freeze(['  Apple  ', 'BANANA'])
+      expect(matchTypeahead(labels, ' b ', 1)).toBe(1)
+      expect(matchTypeahead(labels, 'a', 1)).toBe(0)
+      expect(matchTypeahead(labels, 'a', Number.NaN)).toBe(0)
+      expect(matchTypeahead(labels, 'a', 0.5)).toBe(0)
+      expect(matchTypeahead(labels, 'b', Number.POSITIVE_INFINITY)).toBe(1)
     })
   })
 })

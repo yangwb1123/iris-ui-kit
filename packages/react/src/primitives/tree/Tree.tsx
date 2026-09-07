@@ -3,6 +3,7 @@ import {
   createTreeSelection,
   flattenTreeSelectionNodes,
   type TreeSelectionNode,
+  type TreeSelectionModel,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
@@ -166,28 +167,38 @@ export function IrisTree({
   const checkNodes = React.useMemo<TreeSelectionNode[]>(() => {
     return flattenTreeSelectionNodes(safeNodes, {
       getKey: (node) => node.id,
-      getChildren: (node) => node.children ?? lazyCache.get(node.id),
+      getChildren: (node) => {
+        if (node.children && node.children.length > 0) return node.children
+        if (lazyCache.has(node.id)) return lazyCache.get(node.id)
+        return node.children
+      },
       isDisabled: (node) => node.disabled === true,
     })
   }, [safeNodes, lazyCache])
 
   const onCheckedRef = React.useRef(onCheckedChange)
   onCheckedRef.current = onCheckedChange
-  // Rebuild when the tree shape changes; defaultChecked re-seeds then.
-  const checkModel = React.useMemo(
-    () =>
-      createTreeSelection({
-        nodes: checkNodes,
-        defaultChecked,
-        onChange: (keys) => onCheckedRef.current?.(keys),
-      }),
-    [checkNodes, defaultChecked],
-  )
+  // `defaultChecked` is an uncontrolled seed, not a synchronization channel.
+  // Use the flattened shape as the dependency so fresh equivalent props do not
+  // discard user changes, while real hierarchy/disabled changes rebuild the
+  // index and preserve the currently checked leaves.
+  const checkShape = React.useMemo(() => JSON.stringify(checkNodes), [checkNodes])
+  const checkModelRef = React.useRef<TreeSelectionModel<string> | null>(null)
+  const checkModel = React.useMemo(() => {
+    const previous = checkModelRef.current
+    const model = createTreeSelection({
+      nodes: checkNodes,
+      defaultChecked: previous?.getCheckedLeaves() ?? defaultChecked,
+      onChange: (keys) => onCheckedRef.current?.(keys),
+    })
+    checkModelRef.current = model
+    return model
+  }, [checkShape])
   // Re-render when the checked set changes.
   React.useSyncExternalStore(
     checkModel.selection.store.subscribe,
-    checkModel.selection.get,
-    checkModel.selection.get,
+    checkModel.selection.store.getState,
+    checkModel.selection.store.getState,
   )
 
   const [activeId, setActiveId] = React.useState<string | null>(flat[0]?.node.id ?? null)

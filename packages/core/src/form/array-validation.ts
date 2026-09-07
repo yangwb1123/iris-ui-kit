@@ -5,16 +5,33 @@ type RuntimeValidator<V> = (
   values: V,
 ) => string | undefined | Promise<string | undefined>
 
-const indexedArrayField = /^(\w+(?:\.\w+)*)\[(\d+)\]\.(.+)$/
-const arrayFieldPattern = /^(\w+(?:\.\w+)*)\[\]\.(.+)$/
-
 function validatorFor<V>(validators: object, key: string): RuntimeValidator<V> | undefined {
   const map = validators as Readonly<Record<string, RuntimeValidator<V> | undefined>>
-  const direct = map[key]
-  if (direct) return direct
+  if (Object.prototype.hasOwnProperty.call(map, key)) {
+    const direct = map[key]
+    if (direct) return direct
+  }
 
-  const match = key.match(indexedArrayField)
-  return match ? map[`${match[1]}[].${match[3]}`] : undefined
+  // Replace every concrete array index so nested arrays and path segments
+  // containing hyphens/spaces use the same `items[].field` pattern contract.
+  const pattern = key.replace(/\[(\d+)\]/g, '[]')
+  return pattern !== key && Object.prototype.hasOwnProperty.call(map, pattern)
+    ? map[pattern]
+    : undefined
+}
+
+function expandArrayPattern(values: object, name: string): string[] {
+  const marker = name.indexOf('[]')
+  if (marker < 0) return [name]
+  const arrayPath = name.slice(0, marker)
+  const suffix = name.slice(marker + 2)
+  const value = getByPath(values, arrayPath)
+  if (!Array.isArray(value)) return []
+  const names: string[] = []
+  for (let index = 0; index < value.length; index++) {
+    names.push(...expandArrayPattern(values, `${arrayPath}[${index}]${suffix}`))
+  }
+  return names
 }
 
 /**
@@ -38,43 +55,14 @@ export async function runFormFieldValidator<V extends object>(
 
 export interface FormValidationPlan {
   names: string[]
-  tokenById: Map<string, number>
 }
 
-/**
- * Expand `items[].field` validator keys to the concrete rows in current values
- * and reserve validation tokens before the concurrent form-wide pass starts.
- */
-export function createFormValidationPlan(
-  values: object,
-  validators: object,
-  nextToken: (name: string) => number,
-): FormValidationPlan {
+/** Expand `items[].field` validator keys to concrete rows in current values. */
+export function createFormValidationPlan(values: object, validators: object): FormValidationPlan {
   const baseNames = Object.keys(validators)
   const names: string[] = []
 
-  for (const name of baseNames) {
-    const match = name.match(arrayFieldPattern)
-    if (!match) {
-      names.push(name)
-      continue
-    }
-    const [, arrayPath, subField] = match
-    const value = getByPath(values, arrayPath)
-    const length = Array.isArray(value) ? value.length : 0
-    for (let index = 0; index < length; index++) {
-      names.push(`${arrayPath}[${index}].${subField}`)
-    }
-  }
+  for (const name of baseNames) names.push(...expandArrayPattern(values, name))
 
-  const tokenById = new Map<string, number>()
-  for (const name of baseNames) {
-    const token = nextToken(name)
-    if (!arrayFieldPattern.test(name)) tokenById.set(name, token)
-  }
-  for (const name of names) {
-    if (!tokenById.has(name)) tokenById.set(name, nextToken(name))
-  }
-
-  return { names, tokenById }
+  return { names }
 }

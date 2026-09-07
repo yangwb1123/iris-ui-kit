@@ -351,6 +351,26 @@ describe('derived', () => {
     expect(d.getState()).toBe(40)
   })
 
+  it('retries a failed combiner instead of poisoning the cached inputs', () => {
+    const source = createStore(1)
+    let fail = false
+    const d = derived([source], (value) => {
+      if (fail) throw new Error('combiner failed')
+      return value * 2
+    })
+    const listener = vi.fn()
+    d.subscribe(listener)
+
+    fail = true
+    expect(() => source.setState(2)).toThrow('combiner failed')
+    fail = false
+
+    // The failed computation must not make the derived store believe that 2
+    // was successfully incorporated into its cache.
+    expect(d.getState()).toBe(4)
+    expect(listener).toHaveBeenCalledTimes(0)
+  })
+
   it('is read-only: setState throws', () => {
     const a = createStore(1)
     const d = derived([a], (x) => x)

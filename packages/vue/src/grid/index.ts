@@ -2,6 +2,7 @@ import {
   computed,
   onBeforeUnmount,
   onMounted,
+  ref,
   shallowRef,
   watch,
   type ComputedRef,
@@ -42,7 +43,7 @@ import {
   type SortState,
 } from '@iris-ui-kit/core/grid'
 import type { ExpansionModel } from '@iris-ui-kit/core'
-import { useStore } from '../useStore'
+import { useStore, useStoreSelector } from '../useStore'
 
 export interface UseGridCoreOptions<Row extends Record<string, unknown>> {
   readonly features?: readonly GridFeature<Row>[]
@@ -95,17 +96,38 @@ export function useGridSelection<
   )
   const state = useStore(model.store)
   const controlled = computed(() => options.value !== undefined)
+  let wasControlled = controlled.value
+  let hasUncontrolledSnapshot = !wasControlled
+  const uncontrolledSnapshot = ref<K[]>(wasControlled ? [] : [...state.value])
+  const lastControlledSnapshot = ref<K[]>([...(options.value ?? [])])
   watch(
-    () => options.value,
+    () => (options.value === undefined ? undefined : [...options.value]),
     (value) => {
-      if (value !== undefined) model.sync(value)
+      const nextControlled = value !== undefined
+      if (nextControlled) {
+        lastControlledSnapshot.value = [...value]
+        model.sync(value)
+      } else if (wasControlled) {
+        model.sync(
+          (hasUncontrolledSnapshot
+            ? uncontrolledSnapshot.value
+            : lastControlledSnapshot.value) as K[],
+        )
+      }
+      wasControlled = nextControlled
     },
     { immediate: true },
   )
+  watch(state, (value) => {
+    if (!wasControlled) {
+      uncontrolledSnapshot.value = [...value]
+      hasUncontrolledSnapshot = true
+    }
+  })
   return {
     model,
     controlled,
-    selection: computed(() => (controlled.value ? (options.value ?? []) : state.value)),
+    selection: computed(() => (controlled.value ? [...(options.value ?? [])] : [...state.value])),
   }
 }
 
@@ -117,7 +139,7 @@ export interface UseGridExpansionOptions<K extends GridExpansionKey = string> {
 }
 export interface UseGridExpansionResult<K extends GridExpansionKey = string> {
   model: ExpansionModel<K>
-  expandedKeys: ShallowRef<K[]>
+  expandedKeys: ComputedRef<K[]>
 }
 export function useGridExpansion<
   Row extends Record<string, unknown> = Record<string, unknown>,
@@ -132,7 +154,8 @@ export function useGridExpansion<
       onChange: (keys) => latest.value.onChange?.(keys),
     }),
   )
-  return { model, expandedKeys: useStore(model.store) as ShallowRef<K[]> }
+  const state = useStore(model.store)
+  return { model, expandedKeys: computed(() => [...state.value]) }
 }
 
 export interface UseGridRowsOptions<Row extends Record<string, unknown>, Meta = unknown> {
@@ -173,6 +196,15 @@ export function useGridRows<
     }),
   )
   return { model, rows: useStore(model.store) as ShallowRef<Row[]> }
+}
+
+function cloneGridColumnsState(state: GridColumnsState): GridColumnsState {
+  return {
+    visibility: { ...state.visibility },
+    order: [...state.order],
+    widths: { ...state.widths },
+    pinned: { ...state.pinned },
+  }
 }
 
 export interface UseGridColumnsOptions {
@@ -219,22 +251,79 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
       onPinnedChange: (k, v) => latest.value.onPinnedChange?.(k, v),
     }),
   )
-  const state = useStore(model.store)
+  const state = useStoreSelector(model.store, (current) =>
+    cloneGridColumnsState(current),
+  ) as ShallowRef<GridColumnsState>
+  const uncontrolledVisibility = shallowRef({ ...(options.defaultVisibility ?? {}) })
+  const uncontrolledOrder = shallowRef([...(options.defaultOrder ?? [])])
+  const uncontrolledWidths = shallowRef({ ...(options.defaultWidths ?? {}) })
+  const uncontrolledPinned = shallowRef({ ...(options.defaultPinned ?? {}) })
+  const visibilityPropControlled = ref(options.visibility !== undefined)
+  const orderPropControlled = ref(options.orderControlled ?? options.order !== undefined)
+  const widthsPropControlled = ref(options.widths !== undefined)
+  const pinnedPropControlled = ref(options.pinned !== undefined)
+
   watch(
-    () => options.visibility,
-    (v) => v !== undefined && model.syncVisibility(v),
+    state,
+    (current) => {
+      if (!visibilityPropControlled.value) uncontrolledVisibility.value = { ...current.visibility }
+      if (!orderPropControlled.value) uncontrolledOrder.value = [...current.order]
+      if (!widthsPropControlled.value) uncontrolledWidths.value = { ...current.widths }
+      if (!pinnedPropControlled.value) uncontrolledPinned.value = { ...current.pinned }
+
+      if (visibilityPropControlled.value && options.visibility !== undefined)
+        model.syncVisibility(options.visibility)
+      if (orderPropControlled.value) model.syncOrder(options.order ?? [])
+      if (widthsPropControlled.value && options.widths !== undefined)
+        model.syncWidths(options.widths)
+      if (pinnedPropControlled.value && options.pinned !== undefined)
+        model.syncPinned(options.pinned)
+    },
+    { flush: 'sync' },
   )
   watch(
-    () => options.order,
-    (v) => v !== undefined && model.syncOrder(v),
+    () => options.visibility,
+    (value) => {
+      const wasControlled = visibilityPropControlled.value
+      const controlled = value !== undefined
+      visibilityPropControlled.value = controlled
+      if (controlled) model.syncVisibility(value)
+      else if (wasControlled) model.syncVisibility(uncontrolledVisibility.value)
+    },
+    { deep: true, immediate: true, flush: 'sync' },
+  )
+  watch(
+    () => ({
+      controlled: options.orderControlled ?? options.order !== undefined,
+      value: options.order,
+    }),
+    ({ controlled, value }) => {
+      const wasControlled = orderPropControlled.value
+      orderPropControlled.value = controlled
+      if (controlled) model.syncOrder(value ?? [])
+      else if (wasControlled) model.syncOrder(uncontrolledOrder.value)
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   watch(
     () => options.widths,
-    (v) => v !== undefined && model.syncWidths(v),
+    (value) => {
+      const wasControlled = widthsPropControlled.value
+      widthsPropControlled.value = value !== undefined
+      if (value !== undefined) model.syncWidths(value)
+      else if (wasControlled) model.syncWidths(uncontrolledWidths.value)
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   watch(
     () => options.pinned,
-    (v) => v !== undefined && model.syncPinned(v),
+    (value) => {
+      const wasControlled = pinnedPropControlled.value
+      pinnedPropControlled.value = value !== undefined
+      if (value !== undefined) model.syncPinned(value)
+      else if (wasControlled) model.syncPinned(uncontrolledPinned.value)
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   return {
     model,

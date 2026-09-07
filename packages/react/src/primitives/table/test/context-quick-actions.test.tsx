@@ -13,9 +13,9 @@ afterEach(() => {
 })
 
 interface Row extends Record<string, unknown> {
-  id: number
+  id?: number
   name: string
-  age: number
+  age: number | ''
 }
 
 const rows: Row[] = [
@@ -42,7 +42,7 @@ function menuItems(): HTMLElement[] {
 function menuItem(key: string): HTMLElement | null {
   return document.querySelector(`[data-iris-table-context-menu-item="${key}"]`)
 }
-function openMenu(rowId: number, key: string): void {
+function openMenu(rowId: string | number, key: string): void {
   fireEvent.contextMenu(cell(rowId, key), { clientX: 100, clientY: 80 })
 }
 
@@ -204,6 +204,33 @@ describe('@iris-ui-kit/react IrisTable context quick actions (batch BW, iris 独
     // The live cell re-renders cleared; the sibling row is untouched.
     expect(cell(1, 'name').textContent).toBe('')
     expect(cell(2, 'name').textContent).toBe('Bob')
+  })
+
+  it('clear uses rowId to update the source row from a sorted keyless view', () => {
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={[
+          { name: 'B', age: 1 },
+          { name: 'A', age: 2 },
+        ]}
+        rowKey="id"
+        rowId={(row) => row.name}
+        defaultSort={{ key: 'name', direction: 'asc' }}
+        contextMenu={{ items: () => [], onSelect: vi.fn() }}
+        onDataChange={onDataChange}
+      />,
+    )
+    openMenu('A', 'age')
+    fireEvent.click(menuItem('__iris-clear-cell')!)
+    expect(onDataChange).toHaveBeenCalledTimes(1)
+    expect(onDataChange).toHaveBeenCalledWith([
+      { name: 'B', age: 1 },
+      { name: 'A', age: '' },
+    ])
+    expect(cell('A', 'age').textContent).toBe('')
+    expect(cell('B', 'age').textContent).toBe('1')
   })
 
   it('clear is a no-op on locked and permission-readonly cells', () => {

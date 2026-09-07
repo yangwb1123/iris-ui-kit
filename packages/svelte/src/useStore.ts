@@ -13,6 +13,11 @@ export function toStore<T>(store: ReadonlyStore<T>): Readable<T> {
   return readable(store.getState(), (set) => store.subscribe(set))
 }
 
+/** Bridge a copied snapshot from a read-only core store. */
+export function toStoreSnapshot<T>(store: ReadonlyStore<T>, copy: (value: T) => T): Readable<T> {
+  return readable(copy(store.getState()), (set) => store.subscribe((value) => set(copy(value))))
+}
+
 /**
  * Bridge a DERIVED slice of a core store into a Svelte readable — it emits only
  * when `selector(state)` changes per `equals` (default `Object.is`), not on

@@ -106,6 +106,7 @@ export function createGridFilteringModel(
   })
 
   const commitFilters = (filters: Readonly<Record<string, string>>, notify: boolean): void => {
+    if (sameFilters(store.getState().filters, filters)) return
     const next = cloneFilters(filters)
     store.setState((state) => ({ ...state, filters: next }))
     if (!notify) return
@@ -114,6 +115,7 @@ export function createGridFilteringModel(
   }
 
   const commitFilterValues = (values: Readonly<GridFilterValues>, notify: boolean): void => {
+    if (sameFilterValues(store.getState().filterValues, values)) return
     const next = cloneFilterValues(values)
     store.setState((state) => ({ ...state, filterValues: next }))
     if (!notify) return
@@ -151,12 +153,20 @@ export function createGridFilteringModel(
       commitFilterValues(next, true)
     },
     clear() {
-      const next: GridFilteringState = { filters: {}, filterValues: {} }
-      store.setState(next)
-      options.onFiltersChange?.({})
-      emit?.({ channel: 'filters', filters: {} })
-      options.onFilterValuesChange?.({})
-      emit?.({ channel: 'values', filterValues: {} })
+      const current = store.getState()
+      const filtersChanged = !sameFilters(current.filters, {})
+      const filterValuesChanged = !sameFilterValues(current.filterValues, {})
+      if (!filtersChanged && !filterValuesChanged) return
+
+      store.setState({ filters: {}, filterValues: {} })
+      if (filtersChanged) {
+        options.onFiltersChange?.({})
+        emit?.({ channel: 'filters', filters: {} })
+      }
+      if (filterValuesChanged) {
+        options.onFilterValuesChange?.({})
+        emit?.({ channel: 'values', filterValues: {} })
+      }
     },
   }
 }

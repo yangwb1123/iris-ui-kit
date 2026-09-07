@@ -73,6 +73,12 @@ export interface FormStore<V extends FormValues> {
   setErrors(errors: FieldErrors<V>): void
   validateField(name: FieldPath<V>): Promise<string | undefined>
   validateForm(): Promise<FieldErrors<V>>
+  /** Logically cancel validation, submission, and pending debounced work. */
+  cancel(): void
+  /** Permanently tear down the form. Idempotent. */
+  destroy(): void
+  /** True after destroy(); false after cancel(). */
+  readonly disposed: boolean
   validateStep(index?: number): Promise<boolean>
   stepCount(): number
   goToStep(index: number): void

@@ -38,6 +38,26 @@ describe('Svelte IrisTable Grid Core columns SSR/hydration guard', () => {
     expect(typeof window).toBe('undefined')
   })
 
+  it('renders controlled pin state deterministically without emitting while syncing', () => {
+    const updates: unknown[] = []
+    const html = render(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name', pinned: 'left' as const },
+          { key: 'age', title: 'Age' },
+        ],
+        data,
+        rowKey: 'id',
+        pinnedColumns: { name: null, age: 'right' },
+        onColumnPinnedChange: (next) => updates.push(next),
+      },
+    }).body
+
+    expect(html).not.toContain('data-iris-table-pinned="left"')
+    expect(html).toContain('data-iris-table-pinned="right"')
+    expect(updates).toEqual([])
+  })
+
   it('renders a controlled top-level order deterministically without emitting while syncing', () => {
     const updates: unknown[] = []
     const renderTable = (): string =>

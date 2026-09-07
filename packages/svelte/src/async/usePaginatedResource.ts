@@ -1,10 +1,10 @@
 import { readable, derived, type Readable } from 'svelte/store'
-import { onMount } from 'svelte'
+import { onDestroy, onMount } from 'svelte'
 import {
   createPaginatedResource,
   type PageQuery,
   type PageResult,
-  type PaginatedResource,
+  type AdvancedPaginatedResource,
   type PaginatedState,
   type PaginationMode,
 } from '@iris-ui-kit/core'
@@ -25,17 +25,18 @@ export interface UsePaginatedResourceReturn<T> {
   isLoading: Readable<boolean>
   isError: Readable<boolean>
   hasMore: Readable<boolean>
-  goToPage: PaginatedResource<T>['goToPage']
-  loadMore: PaginatedResource<T>['loadMore']
-  refresh: PaginatedResource<T>['refresh']
-  setPageSize: PaginatedResource<T>['setPageSize']
+  goToPage: AdvancedPaginatedResource<T>['goToPage']
+  loadMore: AdvancedPaginatedResource<T>['loadMore']
+  refresh: AdvancedPaginatedResource<T>['refresh']
+  setPageSize: AdvancedPaginatedResource<T>['setPageSize']
+  cancel: AdvancedPaginatedResource<T>['cancel']
 }
 
 /**
  * Svelte binding for paginated resources.
  */
 export function usePaginatedResource<T>(
-  fetcher: (query: PageQuery) => Promise<PageResult<T>>,
+  fetcher: (query: PageQuery, signal?: AbortSignal) => Promise<PageResult<T>>,
   options: UsePaginatedResourceOptions = {},
 ): UsePaginatedResourceReturn<T> {
   const resource = createPaginatedResource<T>(fetcher, {
@@ -46,6 +47,8 @@ export function usePaginatedResource<T>(
   const state = readable<PaginatedState<T>>(resource.getState(), (set) => {
     return resource.subscribe(set)
   })
+
+  onDestroy(() => resource.cancel())
 
   if (options.immediate) {
     onMount(() => {
@@ -67,5 +70,6 @@ export function usePaginatedResource<T>(
     loadMore: resource.loadMore,
     refresh: resource.refresh,
     setPageSize: resource.setPageSize,
+    cancel: resource.cancel,
   }
 }

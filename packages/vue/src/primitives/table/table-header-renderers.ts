@@ -1,5 +1,10 @@
 import { h, type Ref, type Slots, type VNode } from 'vue'
-import type { HeaderCell } from '@iris-ui-kit/core'
+import {
+  countLeadingGridTracks,
+  leadingGridTrack,
+  type GridLeadingTrack,
+  type HeaderCell,
+} from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import type { IrisTableColumn } from './types'
 
@@ -37,11 +42,14 @@ export interface GroupedHeaderRenderContext {
 
 /** Render a multi-level CSS-grid header while keeping setup state in Table.ts. */
 export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: HeaderMatrix): VNode {
-  const lead =
-    (ctx.showDrag ? 1 : 0) +
-    (ctx.showSeq ? 1 : 0) +
-    (ctx.showDetail ? 1 : 0) +
-    (ctx.showSelection ? 1 : 0)
+  const leadingTracks = {
+    rowDrag: ctx.showDrag,
+    sequence: ctx.showSeq,
+    detail: ctx.showDetail,
+    selection: ctx.showSelection,
+  }
+  const utilityTrack = (track: GridLeadingTrack): string =>
+    String(leadingGridTrack(track, leadingTracks) ?? 0)
   const cells: VNode[] = []
   if (ctx.showDrag) {
     cells.push(
@@ -49,7 +57,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
         key: '__drag__',
         role: 'columnheader',
         'data-iris-table-header': '__drag',
-        style: { gridColumn: '1', gridRow: '1 / -1' },
+        style: { gridColumn: utilityTrack('rowDrag'), gridRow: '1 / -1' },
       }),
     )
   }
@@ -59,7 +67,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
         key: '__seq__',
         role: 'columnheader',
         'data-iris-table-header': '__seq',
-        style: { gridColumn: ctx.showDrag ? '2' : '1', gridRow: '1 / -1' },
+        style: { gridColumn: utilityTrack('sequence'), gridRow: '1 / -1' },
       }),
     )
   }
@@ -69,7 +77,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
         key: '__expand__',
         role: 'columnheader',
         style: {
-          gridColumn: `${(ctx.showDrag ? 1 : 0) + (ctx.showSeq ? 1 : 0) + 1}`,
+          gridColumn: utilityTrack('detail'),
           gridRow: '1 / -1',
         },
       }),
@@ -84,7 +92,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
           role: 'columnheader',
           'data-iris-table-header': '',
           style: {
-            gridColumn: `${(ctx.showDrag ? 1 : 0) + (ctx.showSeq ? 1 : 0) + (ctx.showDetail ? 1 : 0) + 1}`,
+            gridColumn: utilityTrack('selection'),
             gridRow: '1 / -1',
             display: 'flex',
             alignItems: 'center',
@@ -159,7 +167,7 @@ export function renderGroupedHeader(ctx: GroupedHeaderRenderContext, matrix: Hea
               : {}),
             'aria-sort': sortable ? ctx.ariaSortFor(col) : undefined,
             style: {
-              gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
+              gridColumn: `${countLeadingGridTracks(leadingTracks) + cell.colStart} / span ${cell.colSpan}`,
               gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
               display: 'flex',
               alignItems: 'center',

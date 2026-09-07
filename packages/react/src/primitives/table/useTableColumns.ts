@@ -1,16 +1,18 @@
 import * as React from 'react'
 import {
+  applyColumnOrder,
   applyColumnPreset,
+  applyDetectedColumnDefaults,
+  applyColumnVisibility,
   buildHeaderMatrix,
-  computeResponsiveColumns,
+  computeResponsiveColumnLayout,
   flattenLeafColumns,
-  RESPONSIVE_NARROW_WIDTH,
+  resolveColumnWidth,
   type DetectedColumnType,
   type HeaderCell,
 } from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableColumnWidths } from './types'
 import { EXPAND_COL_WIDTH, SELECTION_COL_WIDTH } from './styles'
-import { responsiveNaturalWidth, resolvedColumnWidth } from './column-layout'
 
 const SEQ_COL_WIDTH = 60
 const DRAG_COL_WIDTH = 40
@@ -69,20 +71,14 @@ export function useTableColumns<Row extends Record<string, unknown>>(
   const resetColumnWidths = options.resetColumnWidths
   const pinOf = React.useCallback(
     (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
-      if (col.key in options.pinnedColumns) return options.pinnedColumns[col.key]
+      if (Object.prototype.hasOwnProperty.call(options.pinnedColumns, col.key)) {
+        return options.pinnedColumns[col.key] ?? null
+      }
       return col.pinned ?? null
     },
     [options.pinnedColumns],
   )
   const setColumnPinned = options.setColumnPinned
-
-  const columnOrderIndex = React.useMemo(() => {
-    const map = new Map<string, number>()
-    options.columnOrder?.forEach((key, index) => {
-      if (!map.has(key)) map.set(key, index)
-    })
-    return map
-  }, [options.columnOrder])
 
   const presetColumns = React.useMemo(() => {
     const hasPreset = (cols: readonly IrisTableColumn<Row>[]): boolean =>
@@ -102,42 +98,17 @@ export function useTableColumns<Row extends Record<string, unknown>>(
   const detectTypesRef = React.useRef(false)
   const detectedColumns = React.useMemo(() => {
     if (!options.autoDetectTypes || Object.keys(detectedTypes).length === 0) return presetColumns
-    const applyDetected = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
-      const kind = detectedTypes[col.key]
-      const next = kind
-        ? {
-            ...col,
-            ...(kind === 'number'
-              ? {
-                  ...(col.align === undefined ? { align: 'right' as const } : null),
-                  ...(col.sortType === undefined ? { sortType: 'number' as const } : null),
-                }
-              : {
-                  ...(col.align === undefined ? { align: 'left' as const } : null),
-                  ...(col.sortType === undefined ? { sortType: 'string' as const } : null),
-                }),
-          }
-        : col
-      return next.children && next.children.length > 0
-        ? { ...next, children: next.children.map(applyDetected) }
-        : next
-    }
-    return presetColumns.map(applyDetected)
+    return applyDetectedColumnDefaults(presetColumns, detectedTypes, { fillSortType: true })
   }, [options.autoDetectTypes, presetColumns, detectedTypes])
 
-  const orderedColumns = React.useMemo(() => {
-    if (!options.columnOrder || options.columnOrder.length === 0) return detectedColumns
-    const ordered = detectedColumns.filter((col) => columnOrderIndex.has(col.key))
-    const rest = detectedColumns.filter((col) => !columnOrderIndex.has(col.key))
-    ordered.sort((a, b) => columnOrderIndex.get(a.key)! - columnOrderIndex.get(b.key)!)
-    return [...ordered, ...rest]
-  }, [detectedColumns, options.columnOrder, columnOrderIndex])
+  const orderedColumns = React.useMemo(
+    () => applyColumnOrder(detectedColumns, options.columnOrder),
+    [detectedColumns, options.columnOrder],
+  )
 
   const displayColumns = React.useMemo(() => {
     let cols = orderedColumns
-    if (options.columnVisibility) {
-      cols = cols.filter((col) => options.columnVisibility![col.key] !== false)
-    }
+    cols = applyColumnVisibility(cols, options.columnVisibility)
     if (cols.some((col) => col.visibleMethod)) {
       cols = cols.filter((col) => (col.visibleMethod ? col.visibleMethod() !== false : true))
     }
@@ -149,21 +120,13 @@ export function useTableColumns<Row extends Record<string, unknown>>(
     (options.showRowNumbers ? SEQ_COL_WIDTH : 0) +
     (hasDetail ? EXPAND_COL_WIDTH : 0) +
     (options.selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
-  const responsiveDisplayColumns = React.useMemo(() => {
-    if (!options.responsive) return displayColumns
-    const isPinned = (col: IrisTableColumn<Row>): boolean =>
-      col.children && col.children.length > 0
-        ? col.children.some((child) => isPinned(child))
-        : pinOf(col) !== null
-    const budget =
-      options.responsiveWidth > 0
-        ? Math.max(1, options.responsiveWidth - responsiveLeadingWidth)
-        : options.responsiveWidth
-    return computeResponsiveColumns(displayColumns, budget, {
-      widthOf: (col) => resolvedColumnWidth(col as IrisTableColumn<Row>, columnWidths),
-      isPinned: (col) => isPinned(col as IrisTableColumn<Row>),
-      narrowWidth: RESPONSIVE_NARROW_WIDTH - responsiveLeadingWidth,
-    }) as IrisTableColumn<Row>[]
+  const responsiveResult = React.useMemo(() => {
+    if (!options.responsive) return { columns: displayColumns, overflow: false }
+    return computeResponsiveColumnLayout(displayColumns, options.responsiveWidth, {
+      leadingWidth: responsiveLeadingWidth,
+      widthOf: (col) => resolveColumnWidth(col as IrisTableColumn<Row>, columnWidths),
+      isPinnedLeaf: (col) => pinOf(col as IrisTableColumn<Row>) !== null,
+    })
   }, [
     options.responsive,
     options.responsiveWidth,
@@ -172,26 +135,8 @@ export function useTableColumns<Row extends Record<string, unknown>>(
     columnWidths,
     pinOf,
   ])
-  const responsiveOverflow = React.useMemo(() => {
-    if (
-      !options.responsive ||
-      options.responsiveWidth <= 0 ||
-      options.responsiveWidth >= RESPONSIVE_NARROW_WIDTH
-    ) {
-      return false
-    }
-    const natural = responsiveDisplayColumns.reduce(
-      (sum, col) => sum + responsiveNaturalWidth(col, columnWidths),
-      responsiveLeadingWidth,
-    )
-    return natural > options.responsiveWidth
-  }, [
-    options.responsive,
-    options.responsiveWidth,
-    responsiveDisplayColumns,
-    columnWidths,
-    responsiveLeadingWidth,
-  ])
+  const responsiveDisplayColumns = responsiveResult.columns as IrisTableColumn<Row>[]
+  const responsiveOverflow = responsiveResult.overflow
 
   const grouped = React.useMemo(
     () => safeColumns.some((col) => col.children && col.children.length > 0),

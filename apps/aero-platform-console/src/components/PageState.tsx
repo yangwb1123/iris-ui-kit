@@ -23,3 +23,27 @@ export function PageError({ error, retry }: { error: Error; retry(): void }): Re
     </IrisAlert>
   )
 }
+
+export function PageMore({
+  available,
+  loading,
+  error,
+  load,
+}: {
+  available: boolean
+  loading: boolean
+  error?: Error
+  load(): void
+}): React.ReactElement | null {
+  if (!available && !error) return null
+  return (
+    <div className="pagination-footer">
+      {error ? <IrisAlert tone="warning">{error.message}</IrisAlert> : null}
+      {available ? (
+        <IrisButton variant="outline" loading={loading} onClick={load}>
+          加载更多
+        </IrisButton>
+      ) : null}
+    </div>
+  )
+}

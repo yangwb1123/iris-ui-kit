@@ -1,9 +1,6 @@
 import * as React from 'react'
-import type { IrisTableColumn } from './types'
+import { clampColumnWidth, COLUMN_RESIZE_STEP } from '@iris-ui-kit/core'
 import { useDrag } from '../drag/useDrag'
-import { DEFAULT_PINNED_WIDTH } from './styles'
-
-const RESIZE_STEP = 16
 
 /** Auto-fit measurement (batch DG, iris 独有): the widest rendered content
  * width for a column — header + body cells' `scrollWidth`. Cells are
@@ -46,7 +43,7 @@ export function ColumnResizeHandle({
   const ref = React.useRef<HTMLSpanElement | null>(null)
   const startRef = React.useRef(0)
   const [hint, setHint] = React.useState<{ width: number; x: number; y: number } | null>(null)
-  const clamp = (w: number): number => Math.max(minWidth, Math.min(maxWidth, Math.round(w)))
+  const clamp = (w: number): number => clampColumnWidth(w, minWidth, maxWidth)
   // Prefer the explicit override; fall back to the rendered header width.
   const measure = (): number =>
     width ?? ref.current?.parentElement?.getBoundingClientRect().width ?? minWidth
@@ -83,11 +80,11 @@ export function ColumnResizeHandle({
         if (e.key === 'ArrowLeft') {
           e.preventDefault()
           e.stopPropagation()
-          onResize(colKey, clamp(measure() - RESIZE_STEP))
+          onResize(colKey, clamp(measure() - COLUMN_RESIZE_STEP))
         } else if (e.key === 'ArrowRight') {
           e.preventDefault()
           e.stopPropagation()
-          onResize(colKey, clamp(measure() + RESIZE_STEP))
+          onResize(colKey, clamp(measure() + COLUMN_RESIZE_STEP))
         }
       }}
       style={{
@@ -125,70 +122,6 @@ export function ColumnResizeHandle({
       ) : null}
     </span>
   )
-}
-
-/** Width resolution shared by the pinned boundary (batch CV) and pinnedOffsets:
- * explicit override → column-declared number → default approximation. */
-export function isValidColumnWidth(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-}
-
-export function resolvedColumnWidth<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-  widths: Record<string, number>,
-): number {
-  const override = widths[col.key]
-  if (isValidColumnWidth(override)) return override
-  if (isValidColumnWidth(col.width)) return col.width
-  return DEFAULT_PINNED_WIDTH
-}
-
-/** Natural width of a responsive top-level column. Groups keep their unit
- * intact during narrow-width collapse, so their budget is the sum of leaves. */
-export function responsiveNaturalWidth<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-  widths: Record<string, number>,
-): number {
-  if (col.children && col.children.length > 0) {
-    return col.children.reduce((sum, child) => sum + responsiveNaturalWidth(child, widths), 0)
-  }
-  return resolvedColumnWidth(col, widths)
-}
-
-/** Number of leading leaf columns pinned left, capped at `cap` (the first
- * right-pinned index — a left boundary never crosses into the right block).
- * Reads through the SAME pinOf throat as every render path. */
-export function leftPinnedCount<Row extends Record<string, unknown>>(
-  cols: readonly IrisTableColumn<Row>[],
-  pinOf: (col: IrisTableColumn<Row>) => 'left' | 'right' | null,
-  cap: number,
-): number {
-  let count = 0
-  for (let i = 0; i < cap; i += 1) {
-    if (pinOf(cols[i]!) === 'left') count = i + 1
-    else return count
-  }
-  return count
-}
-
-/** New left-pinned count for a boundary drag (batch CV): the widest prefix
- * whose cumulative width stays within `budget` (the boundary position
- * relative to the lead columns' trailing edge = current pinned width + dx),
- * clamped to `cap`. Widths approximate via resolvedColumnWidth — the same
- * fallback chain as pinnedOffsets (documented fiat). */
-export function pinnedCountFromBudget<Row extends Record<string, unknown>>(
-  cols: readonly IrisTableColumn<Row>[],
-  widthOf: (col: IrisTableColumn<Row>) => number,
-  budget: number,
-  cap: number,
-): number {
-  let acc = 0
-  for (let i = 0; i < cap; i += 1) {
-    const w = widthOf(cols[i]!)
-    if (acc + w <= budget) acc += w
-    else return i
-  }
-  return cap
 }
 
 /**

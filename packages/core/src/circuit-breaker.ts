@@ -52,6 +52,10 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
   let state: CircuitState = 'closed'
   // Consecutive failures while closed; irrelevant in open/half-open.
   let failures = 0
+  // Only one dependency call may probe a half-open breaker at a time. Without
+  // this guard, concurrent callers can all observe `half-open` and bypass the
+  // intended single-trial recovery check.
+  let halfOpenInFlight = false
   // Timestamp (per `now`) of the transition into `open`; the reset window is
   // measured from here.
   let openedAt = 0
@@ -73,13 +77,22 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
   }
 
   const run = async <T>(fn: () => Promise<T>): Promise<T> => {
+    let halfOpenTrial = false
     if (state === 'open') {
       if (now() - openedAt < resetMs) {
         // Still cooling down: fail fast without touching the dependency.
         throw new CircuitOpenError()
       }
+      // Reserve the single trial before notifying transition subscribers, since
+      // a subscriber may synchronously re-enter run().
+      halfOpenInFlight = true
+      halfOpenTrial = true
       // Cooldown elapsed — spend the next call as a single half-open trial.
       set('half-open')
+    } else if (state === 'half-open') {
+      if (halfOpenInFlight) throw new CircuitOpenError()
+      halfOpenInFlight = true
+      halfOpenTrial = true
     }
 
     try {
@@ -100,6 +113,8 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
       }
       // Non-failure errors propagate untouched and never count toward the trip.
       throw err
+    } finally {
+      if (halfOpenTrial) halfOpenInFlight = false
     }
   }
 

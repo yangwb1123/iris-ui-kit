@@ -1,4 +1,5 @@
 import type {
+  ResilientFetcherOptions,
   TableNamedView,
   TableTab,
   TableViewConfig,
@@ -58,7 +59,12 @@ export interface IrisTableProxyQueryParams {
  */
 export interface IrisTableProxyConfig<Row = Record<string, unknown>> {
   /** Fetch one page. 1-based `page`; `sort`/`sorts`/`filters` are the ACTIVE state. */
-  query: (params: IrisTableProxyQueryParams) => Promise<{ rows: Row[]; total: number }>
+  query: (
+    params: IrisTableProxyQueryParams,
+    signal?: AbortSignal,
+  ) => Promise<{ rows: Row[]; total: number }>
+  /** Optional Core resilient fetching (dedup/TTL/SWR, breaker, and rate limiting). */
+  resilient?: ResilientFetcherOptions
   /** Auto-load the first page on mount (vxe autoLoad parity). Default true. */
   autoLoad?: boolean
   /** Sort changes re-query the server instead of sorting client-side. Default false. */

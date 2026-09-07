@@ -1,5 +1,9 @@
 import * as React from 'react'
-import { memoizedFormulaValue, type FormulaTables, type ParsedTableQuery } from '@iris-ui-kit/core'
+import {
+  resolveTableColumnValue,
+  type FormulaTables,
+  type ParsedTableQuery,
+} from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 /** Shared table layout constants and render-time formula/value helpers. */
@@ -39,34 +43,20 @@ export const FNR_BUTTON_STYLE: React.CSSProperties = {
   fontFamily: 'inherit',
 }
 
-// Formula evaluation is render-scoped to preserve the existing cross-table
-// reference semantics while keeping the hot-path value lookup in one module.
-let currentFormulaTables: FormulaTables | undefined
-
-export function setCurrentFormulaTables(formulaTables: FormulaTables | undefined): void {
-  currentFormulaTables = formulaTables
-}
-
-export function getFormulaValue<Row extends Record<string, unknown>>(
-  formula: string,
-  row: Row,
-): unknown {
-  return memoizedFormulaValue(formula, row, currentFormulaTables)
-}
-
+/** Resolve a table value with the owning table's formula snapshot. */
 export function getCellValue<Row extends Record<string, unknown>>(
   row: Row,
   column: IrisTableColumn<Row>,
+  formulaTables?: FormulaTables,
 ): unknown {
-  if (column.formula) return getFormulaValue(column.formula, row)
-  const key = (column.dataIndex ?? column.key) as keyof Row
-  return row[key]
+  return resolveTableColumnValue(row, column, formulaTables)
 }
 
 export function coerceEditDraft<Row extends Record<string, unknown>>(
   row: Row,
   col: IrisTableColumn<Row>,
   draft: unknown,
+  formulaTables?: FormulaTables,
 ): unknown {
   if (col.editor === 'select') {
     if (!col.editOptions) return String(draft)
@@ -76,5 +66,7 @@ export function coerceEditDraft<Row extends Record<string, unknown>>(
   }
   const value = String(draft)
   if (col.editor !== 'number') return value
-  return value === '' || Number.isNaN(Number(value)) ? getCellValue(row, col) : Number(value)
+  return value === '' || Number.isNaN(Number(value))
+    ? getCellValue(row, col, formulaTables)
+    : Number(value)
 }

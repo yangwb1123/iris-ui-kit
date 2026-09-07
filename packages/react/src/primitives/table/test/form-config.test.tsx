@@ -160,7 +160,7 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch D)', () => {
     fireEvent.change(nameInput(container), { target: { value: 'Cha' } })
     fireEvent.click(submitButton(container))
     await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ filters: { name: 'Cha' } })),
+      expect(query.mock.lastCall?.[0]).toMatchObject({ filters: { name: 'Cha' } }),
     )
     // Parent changes the filters prop: the applied form value must survive
     // (the sync effect merges formApplied instead of overwriting with the
@@ -176,9 +176,9 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch D)', () => {
       />,
     )
     await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(
-        expect.objectContaining({ filters: { status: 'active', name: 'Cha' } }),
-      ),
+      expect(query.mock.lastCall?.[0]).toMatchObject({
+        filters: { status: 'active', name: 'Cha' },
+      }),
     )
   })
 
@@ -195,13 +195,18 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch D)', () => {
       />,
     )
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
-    expect(query).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     fireEvent.change(nameInput(container), { target: { value: 'Cha' } })
     fireEvent.click(submitButton(container))
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
     // The prop filter map merges with the form values (form wins on conflict);
     // the filters value change resets the page to 1 (vxe behavior).
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -253,7 +258,12 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch D)', () => {
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
     fireEvent.click(resetButton(container))
     await waitFor(() => expect(query.mock.calls.length).toBe(3))
-    expect(query).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     expect(nameInput(container).value).toBe('')
     // The parent is notified with the reset values (defaults re-applied).
     expect(onReset).toHaveBeenCalledWith({})
@@ -335,7 +345,7 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch D)', () => {
     fireEvent.change(nameInput(container), { target: { value: 'Ali' } })
     fireEvent.click(submitButton(container))
     await waitFor(() => expect(query.mock.calls.length).toBe(2))
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,

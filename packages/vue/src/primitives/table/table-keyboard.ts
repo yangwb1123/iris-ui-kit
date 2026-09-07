@@ -68,39 +68,25 @@ export function createTableKeyboard(options: {
     const col = target.dataset.irisCellCol
     if (row === undefined || col === undefined) return
     event.preventDefault()
-    const current = options.range.getState().active ?? { row: Number(row), col: Number(col) }
-    const nextRow =
-      event.key === 'ArrowUp'
-        ? Math.max(0, current.row - 1)
-        : event.key === 'ArrowDown'
-          ? Math.min(options.rows().length - 1, current.row + 1)
-          : current.row
-    const nextCol =
-      event.key === 'ArrowLeft'
-        ? Math.max(0, current.col - 1)
-        : event.key === 'ArrowRight'
-          ? Math.min(options.columns().length - 1, current.col + 1)
-          : current.col
-    options.range.extendRange(nextRow, nextCol)
+    const state = options.range.getState()
+    const current = state.anchor
+      ? (state.active ?? { row: Number(row), col: Number(col) })
+      : { row: Number(row), col: Number(col) }
+    const next = nextGridCell(current, event.key as GridNavKey, {
+      rowCount: options.rows().length,
+      colCount: options.columns().length,
+    })
+    options.range.extendRange(next.row, next.col)
   }
   const isInRange = (row: number, col: number): boolean => {
-    const { anchor, active } = options.rangeState.value
-    return Boolean(
-      anchor &&
-      active &&
-      row >= Math.min(anchor.row, active.row) &&
-      row <= Math.max(anchor.row, active.row) &&
-      col >= Math.min(anchor.col, active.col) &&
-      col <= Math.max(anchor.col, active.col),
-    )
+    // Touch the reactive snapshot so Core remains the source of containment
+    // semantics without making Vue render depend on a stale closure.
+    void options.rangeState.value
+    return options.range.isInRange(row, col)
   }
   const activeCellRange = (): Range | null => {
-    const { anchor, active } = options.rangeState.value
-    if (!anchor || !active) return null
-    return {
-      start: { row: Math.min(anchor.row, active.row), col: Math.min(anchor.col, active.col) },
-      end: { row: Math.max(anchor.row, active.row), col: Math.max(anchor.col, active.col) },
-    }
+    void options.rangeState.value
+    return options.range.getRange()
   }
   const copyActiveRange = (): void => {
     const range = activeCellRange()

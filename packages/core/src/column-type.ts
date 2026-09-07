@@ -23,6 +23,14 @@
 /** A detected column value kind. `'string'` is the universal fail-safe. */
 export type DetectedColumnType = 'string' | 'number' | 'date' | 'boolean'
 
+/** Column shape accepted by the detected-default projection. */
+export interface DetectedColumnDefaultsNode {
+  key: string
+  children?: DetectedColumnDefaultsNode[]
+  align?: 'left' | 'center' | 'right'
+  sortType?: 'number' | 'string' | 'auto'
+}
+
 /** Maximum samples considered — the first N non-nullish values. */
 const DETECT_MAX_SAMPLES = 50
 
@@ -65,4 +73,49 @@ export function detectColumnType(values: readonly unknown[]): DetectedColumnType
     else if (kind !== next) return 'string'
   }
   return kind ?? 'string'
+}
+
+/**
+ * Apply auto-detected alignment defaults to a column forest without mutating
+ * the source. When requested, React-compatible sortType defaults are filled
+ * at the same time; explicit column values always win.
+ */
+export function applyDetectedColumnDefaults<C extends DetectedColumnDefaultsNode>(
+  columns: C[],
+  detected: Readonly<Record<string, DetectedColumnType>>,
+  options: { fillSortType?: boolean } = {},
+): C[] {
+  if (Object.keys(detected).length === 0) return columns
+
+  const active = new WeakSet<object>()
+  const apply = (column: C): C => {
+    if (column === null || (typeof column !== 'object' && typeof column !== 'function')) {
+      return column
+    }
+    if (active.has(column)) return column
+    active.add(column)
+
+    const hasDetected = Object.prototype.hasOwnProperty.call(detected, column.key)
+    const kind = hasDetected ? detected[column.key] : undefined
+    const fillSortType = options.fillSortType === true
+    const next = kind
+      ? ({
+          ...column,
+          ...(column.align === undefined
+            ? { align: kind === 'number' ? ('right' as const) : ('left' as const) }
+            : null),
+          ...(fillSortType && column.sortType === undefined
+            ? { sortType: kind === 'number' ? ('number' as const) : ('string' as const) }
+            : null),
+        } as C)
+      : column
+    const children = Array.isArray(next.children) ? next.children : undefined
+    const result =
+      children && children.length > 0
+        ? ({ ...next, children: children.map((child) => apply(child as C)) } as C)
+        : next
+    active.delete(column)
+    return result
+  }
+  return columns.map(apply)
 }

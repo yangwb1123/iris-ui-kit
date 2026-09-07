@@ -54,8 +54,9 @@ export function useTableProxy<Row extends Record<string, unknown>>(
 
   const createProxySource = (): RemoteTableSource<Row> =>
     createRemoteTableSource<Row>({
-      query: (params) => queryRef.current!(params),
+      query: (params, signal) => queryRef.current!(params, signal),
       autoLoad: false,
+      resilient: options.proxyConfig?.resilient,
       initialParams: {
         page: options.proxyConfig?.defaultPage ?? 1,
         pageSize: options.proxyConfig?.pageSize ?? 10,

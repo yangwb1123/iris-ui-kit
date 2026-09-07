@@ -7,6 +7,11 @@ import {
 } from '@iris-ui-kit/core/grid'
 import { useGridFeature } from './useGridFeature'
 
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' || typeof document === 'undefined'
+    ? React.useEffect
+    : React.useLayoutEffect
+
 export interface UseGridVirtualOptions<Item> {
   items: readonly Item[]
   estimateSize: number | ((index: number) => number)
@@ -51,24 +56,24 @@ export function useGridVirtual<
 
   // An item identity change can be a same-length reorder. setCount intentionally
   // rebuilds the offset tree so keyed measurements are re-seated correctly.
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     model.setCount(options.items.length)
   }, [model, options.items])
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     model.setBuffer(options.buffer ?? 0)
   }, [model, options.buffer])
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     model.setFixedSize(typeof options.estimateSize === 'number' ? options.estimateSize : null)
     model.remeasure()
   }, [model, options.estimateSize])
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (options.viewportSize !== undefined) model.setViewportSize(options.viewportSize)
   }, [model, options.viewportSize])
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (options.scrollOffset !== undefined) model.setScroll(options.scrollOffset)
   }, [model, options.scrollOffset])
 

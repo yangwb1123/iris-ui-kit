@@ -54,6 +54,15 @@ describe('parsePath', () => {
   it('parses bracket-index numeric as number', () => {
     expect(parsePath('items[42]')).toEqual(['items', 42])
   })
+  it('preserves quoted numeric strings when formatting segment arrays', () => {
+    const path = "items['0'].name"
+    expect(parsePath(path)).toEqual(['items', '0', 'name'])
+    expect(formatPath(parsePath(path))).toBe(path)
+    expect(parsePath(formatPath(['items', '0', 'name']))).toEqual(['items', '0', 'name'])
+  })
+  it('preserves literal dotted segments when formatting segment arrays', () => {
+    expect(parsePath(formatPath(['video.url']))).toEqual(['video.url'])
+  })
 
   // Malformed input validation
   it('throws in dev for unclosed bracket', () => {
@@ -96,12 +105,29 @@ describe('parsePath', () => {
     }
   })
 
-  it('throws in dev for consecutive dots', () => {
+  it('throws in dev and warns with an empty fallback in production for empty segments', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      parsePath('a..b')
-    } catch (e) {
-      expect(e).toBeInstanceOf(PathError)
-      expect((e as PathError).message).toContain('empty segment')
+      vi.stubEnv('NODE_ENV', 'development')
+      expect(() => parsePath('a..b')).toThrow(PathError)
+      vi.stubEnv('NODE_ENV', 'production')
+      expect(parsePath('a..b')).toEqual([])
+      expect(warn).toHaveBeenCalled()
+    } finally {
+      vi.unstubAllEnvs()
+      warn.mockRestore()
+    }
+  })
+
+  it('rejects leading, trailing, and bracket-adjacent empty segments', () => {
+    for (const path of ['.a', 'a.', 'a.[0]', 'a[0]b']) {
+      expect(isPathSafe(path)).toBe(false)
+    }
+  })
+
+  it('rejects mismatched and empty quoted bracket keys', () => {
+    for (const path of ['a[\'b"]', "a['']"]) {
+      expect(isPathSafe(path)).toBe(false)
     }
   })
 
@@ -321,6 +347,11 @@ describe('getByPath', () => {
     const obj2 = { 'video.url': 'http://example.com' }
     expect(getByPath(obj2, escapePathSegment('video.url'))).toBe('http://example.com')
   })
+  it('does not read inherited properties', () => {
+    const obj = Object.create({ nested: { secret: 'inherited' } }) as object
+    expect(getByPath(obj, 'nested.secret')).toBeUndefined()
+    expect(getByPath({}, 'toString')).toBeUndefined()
+  })
 })
 
 describe('setByPath', () => {
@@ -359,6 +390,17 @@ describe('setByPath', () => {
     const next2 = setByPath(o, 'video.url', 'nested2')
     expect(next2.video.url).toBe('nested2')
   })
+  it('does not clone inherited intermediate parents', () => {
+    const obj = Object.create({ nested: { inherited: true } }) as object
+    const next = setByPath(obj, 'nested.own', true) as { nested: Record<string, boolean> }
+    expect(next.nested).toEqual({ own: true })
+  })
+  it('writes reserved segment-array keys as own properties', () => {
+    const next = setByPath({}, ['__proto__', 'polluted'], true) as Record<string, unknown>
+    expect(Object.prototype.hasOwnProperty.call(next, '__proto__')).toBe(true)
+    expect(getByPath(next, ['__proto__', 'polluted'])).toBe(true)
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
 })
 
 describe('deleteByPath', () => {
@@ -374,6 +416,20 @@ describe('deleteByPath', () => {
     const o = { a: 1 }
     expect(deleteByPath(o, 'b')).toEqual({ a: 1 })
     expect(deleteByPath(o, 'x.y.z')).toBe(o)
+  })
+  it('does not delete inherited properties or sparse array holes', () => {
+    const obj = Object.create({ nested: { inherited: true } }) as object
+    expect(deleteByPath(obj, ['nested', 'inherited'])).toBe(obj)
+    const items: string[] = []
+    items.length = 2
+    const withHole = { items }
+    expect(deleteByPath(withHole, 'items[1]')).toBe(withHole)
+    expect(deleteByPath({ items: ['a', 'b'] }, ['items', Number.NaN])).toEqual({
+      items: ['a', 'b'],
+    })
+    expect(deleteByPath({ items: ['a', 'b'] }, ['items', 1.5])).toEqual({
+      items: ['a', 'b'],
+    })
   })
 })
 
@@ -402,5 +458,35 @@ describe('rekeyByArrayMutation', () => {
     const errors = { 'itemsX[0].a': 'x', items: 'top', 'items.foo': 'notIndexed' }
     const next = rekeyByArrayMutation(errors, 'items', () => 0)
     expect(next).toEqual(errors)
+  })
+  it('does not remap malformed or reserved keys after partial recovery', () => {
+    const errors = {
+      'items[0]oops.sku': 'malformed',
+      'items[0].constructor': 'reserved',
+      'items[1].sku': 'valid',
+    }
+    const next = rekeyByArrayMutation(errors, 'items', (i) => i + 1)
+    expect(next).toEqual({
+      'items[0]oops.sku': 'malformed',
+      'items[0].constructor': 'reserved',
+      'items[2].sku': 'valid',
+    })
+  })
+  it('preserves an own __proto__ map key without changing the result prototype', () => {
+    const errors = Object.create(null) as Record<string, string>
+    Object.defineProperty(errors, '__proto__', {
+      configurable: true,
+      enumerable: true,
+      value: 'kept',
+      writable: true,
+    })
+    const next = rekeyByArrayMutation(errors, 'items', () => 0)
+    expect(Object.prototype.hasOwnProperty.call(next, '__proto__')).toBe(true)
+    expect(next.__proto__).toBe('kept')
+  })
+  it('preserves keys for an invalid remap index', () => {
+    const errors = { 'items[0].sku': 'error' }
+    expect(rekeyByArrayMutation(errors, 'items', () => Number.NaN)).toEqual(errors)
+    expect(rekeyByArrayMutation(errors, 'items', () => -1)).toEqual(errors)
   })
 })

@@ -238,7 +238,7 @@ describe('@iris-ui-kit/react IrisTable urlState (batch DV, iris 独有)', () => 
     // first request — it restores through onSortChange right after (the
     // pre-query injection is page/pageSize only, the persistState precedent);
     // with remote sort off no second query follows, exactly one total.
-    expect(query).toHaveBeenCalledWith(expect.objectContaining({ page: 3, pageSize: 20 }))
+    expect(query.mock.calls[0]?.[0]).toMatchObject({ page: 3, pageSize: 20 })
     expect(query).toHaveBeenCalledTimes(1)
     expect(onPageChange).toHaveBeenCalledWith(3, 20)
     expect(onSortChange).toHaveBeenCalledWith({ key: 'age', direction: 'asc' })

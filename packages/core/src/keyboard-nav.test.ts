@@ -40,6 +40,16 @@ describe('createKeyboardNav', () => {
       expect(nav.index).toBe(1) // first enabled, because 0 is disabled
     })
 
+    it('normalizes an out-of-range initialIndex before checking disabled items', () => {
+      const nav = createKeyboardNav({
+        count: 3,
+        initialIndex: 99,
+        isEnabled: (i) => i !== 2,
+      })
+      expect(nav.index).toBe(0)
+      expect(nav.handleKeyDown(key('Enter'))).toEqual({ type: 'select', target: 0 })
+    })
+
     it('returns -1 when all items are disabled', () => {
       const nav = createKeyboardNav({
         count: 5,
@@ -352,6 +362,14 @@ describe('createKeyboardNav', () => {
       const nav = createKeyboardNav({ count: 10, initialIndex: 3 })
       nav.reset(10)
       expect(nav.index).toBe(3)
+    })
+
+    it('does not store non-integer focus indices', () => {
+      const nav = createKeyboardNav({ count: 3 })
+      nav.focus(Number.NaN)
+      expect(nav.index).toBe(-1)
+      nav.focus(1.5)
+      expect(nav.index).toBe(-1)
     })
   })
 

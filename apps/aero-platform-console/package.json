@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/check-iris-packages.mjs",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "check:iris-packages": "node scripts/check-iris-packages.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
@@ -13,9 +15,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui-kit/plugin-locale-zh": "workspace:^",
-    "@iris-ui-kit/react": "workspace:*",
-    "@iris-ui-kit/tokens": "workspace:*",
+    "@iris-ui-kit/plugin-locale-zh": "0.1.0",
+    "@iris-ui-kit/react": "0.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -23,6 +24,9 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.4.3"
+    "jsdom": "25.0.1",
+    "typescript": "5.9.3",
+    "vite": "^6.4.3",
+    "vitest": "3.2.6"
   }
 }

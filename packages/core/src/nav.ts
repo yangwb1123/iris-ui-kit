@@ -44,71 +44,135 @@ export interface FlatNavNode extends Omit<NavNode, 'children'> {
   parentKey?: string | null
 }
 
+function hasOwn(value: object, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function isNavNode(value: unknown): value is NavNode {
+  return (
+    value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    hasOwn(value, 'key') &&
+    typeof (value as { key?: unknown }).key === 'string'
+  )
+}
+
+/** Treat malformed child collections as leaves and ignore malformed children. */
+function childrenOf(node: NavNode): NavNode[] | undefined {
+  if (!hasOwn(node, 'children') || !Array.isArray(node.children)) return undefined
+  return node.children.filter(isNavNode)
+}
+
 /** A node is a branch (group / submenu) when it has at least one child. */
 export function isBranch(node: NavNode): boolean {
-  return Array.isArray(node.children) && node.children.length > 0
+  return childrenOf(node)?.length ? true : false
+}
+
+function orderOf(node: NavNode): number {
+  const order = hasOwn(node, 'order') ? node.order : undefined
+  return typeof order === 'number' && Number.isFinite(order) ? order : Number.POSITIVE_INFINITY
 }
 
 function byOrder(a: NavNode, b: NavNode): number {
-  return (a.order ?? Number.POSITIVE_INFINITY) - (b.order ?? Number.POSITIVE_INFINITY)
+  const left = orderOf(a)
+  const right = orderOf(b)
+  return left < right ? -1 : left > right ? 1 : 0
 }
 
 /**
  * A render-ready copy of the tree: `hidden` nodes dropped and each level sorted
- * by `order` (stable for equal/absent orders). Recurses into children.
+ * by `order` (stable for equal/absent orders). Cyclic and malformed child
+ * references are skipped without mutating the source tree.
  */
 export function visibleNav(nodes: NavNode[]): NavNode[] {
-  return nodes
-    .filter((n) => !n.hidden)
-    .map((n) => (n.children ? { ...n, children: visibleNav(n.children) } : n))
-    .sort(byOrder)
+  interface Frame {
+    list: NavNode[]
+    index: number
+    output: NavNode[]
+    parent?: { node: NavNode; output: NavNode[]; key: string }
+  }
+
+  const root: Frame = { list: Array.isArray(nodes) ? nodes : [], index: 0, output: [] }
+  const stack: Frame[] = [root]
+  const active = new Set<string>()
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!
+    if (frame.index < frame.list.length) {
+      const node = frame.list[frame.index++]
+      if (!isNavNode(node) || (hasOwn(node, 'hidden') && node.hidden) || active.has(node.key)) {
+        continue
+      }
+
+      if (hasOwn(node, 'children') && Array.isArray(node.children)) {
+        active.add(node.key)
+        stack.push({
+          list: childrenOf(node) ?? [],
+          index: 0,
+          output: [],
+          parent: { node, output: frame.output, key: node.key },
+        })
+      } else {
+        frame.output.push(node)
+      }
+      continue
+    }
+
+    stack.pop()
+    frame.output.sort(byOrder)
+    if (frame.parent) {
+      active.delete(frame.parent.key)
+      frame.parent.output.push({ ...frame.parent.node, children: frame.output })
+    } else {
+      return frame.output
+    }
+  }
+
+  return []
 }
 
 /**
  * Depth-first flatten of every node (parents before their children).
  *
  * Safe against cyclic references: tracks visited nodes via a `Set<string>` and
- * aborts recursion when a cycle is detected (dev-mode console.warn). A hard
- * depth limit of 1000 prevents stack overflow on deeply nested or corrupted trees.
+ * skips repeated keys (dev-mode console.warn). Traversal is iterative so deeply
+ * nested trees do not overflow the call stack.
  *
  * This mirrors the same cycle protection in {@link flattenTree} (data-view/tree.ts).
  */
 export function flattenNav(nodes: NavNode[]): NavNode[] {
   const out: NavNode[] = []
   const seen = new Set<string>()
-  const MAX_DEPTH = 1000
+  const stack: Array<{ list: NavNode[]; index: number }> = [
+    { list: Array.isArray(nodes) ? nodes : [], index: 0 },
+  ]
 
-  const walk = (list: NavNode[], depth: number): void => {
-    if (depth > MAX_DEPTH) {
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!
+    if (frame.index >= frame.list.length) {
+      stack.pop()
+      continue
+    }
+
+    const node = frame.list[frame.index++]
+    if (!isNavNode(node)) continue
+    if (seen.has(node.key)) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(
-          '[iris-ui] flattenNav: maximum depth (' +
-            MAX_DEPTH +
-            ') exceeded — ' +
-            'possible cyclic reference. Truncating navigation tree.',
+          '[iris-ui] flattenNav: cycle detected at node "' +
+            node.key +
+            '" — ' +
+            'skipping already-visited node. Check your NavNode children for circular references.',
         )
       }
-      return
+      continue
     }
-    for (const n of list) {
-      if (seen.has(n.key)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(
-            '[iris-ui] flattenNav: cycle detected at node "' +
-              n.key +
-              '" — ' +
-              'skipping already-visited node. Check your NavNode children for circular references.',
-          )
-        }
-        continue
-      }
-      seen.add(n.key)
-      out.push(n)
-      if (n.children) walk(n.children, depth + 1)
-    }
+    seen.add(node.key)
+    out.push(node)
+    const children = childrenOf(node)
+    if (children && children.length > 0) stack.push({ list: children, index: 0 })
   }
 
-  walk(nodes, 0)
   return out
 }
 
@@ -123,17 +187,37 @@ export function findNavNode(nodes: NavNode[], key: string): NavNode | undefined 
  */
 export function findNavPath(nodes: NavNode[], key: string): NavNode[] {
   const path: NavNode[] = []
-  const walk = (list: NavNode[]): boolean => {
-    for (const n of list) {
-      path.push(n)
-      if (n.key === key) return true
-      if (n.children && walk(n.children)) return true
+  const active = new Set<string>()
+  const stack: Array<{ list: NavNode[]; index: number; key?: string }> = [
+    { list: Array.isArray(nodes) ? nodes : [], index: 0 },
+  ]
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!
+    if (frame.index >= frame.list.length) {
+      stack.pop()
+      if (frame.key !== undefined) {
+        active.delete(frame.key)
+        path.pop()
+      }
+      continue
+    }
+
+    const node = frame.list[frame.index++]
+    if (!isNavNode(node) || active.has(node.key)) continue
+    path.push(node)
+    if (node.key === key) return path
+
+    const children = childrenOf(node)
+    if (children && children.length > 0) {
+      active.add(node.key)
+      stack.push({ list: children, index: 0, key: node.key })
+    } else {
       path.pop()
     }
-    return false
   }
-  walk(nodes)
-  return path
+
+  return []
 }
 
 /**
@@ -142,8 +226,15 @@ export function findNavPath(nodes: NavNode[], key: string): NavNode[] {
  */
 export function firstLeaf(node: NavNode): NavNode {
   let current = node
-  while (current.children && current.children.length > 0) current = current.children[0]!
-  return current
+  const seen = new Set<string>()
+  while (isNavNode(current)) {
+    if (seen.has(current.key)) return current
+    seen.add(current.key)
+    const children = childrenOf(current)
+    if (!children || children.length === 0) return current
+    current = children[0]!
+  }
+  return node
 }
 
 /**
@@ -166,8 +257,11 @@ export function branchTrail(nodes: NavNode[], key: string): string[] {
  * default access rule used by the `roles`-array form of {@link filterNavByAccess}.
  */
 export function nodeAllowsRoles(node: NavNode, userRoles: readonly string[]): boolean {
-  if (!node.roles || node.roles.length === 0) return true
-  return node.roles.some((r) => userRoles.includes(r))
+  if (!hasOwn(node, 'roles') || node.roles === undefined) return true
+  if (!Array.isArray(node.roles)) return false
+  if (node.roles.length === 0) return true
+  if (!Array.isArray(userRoles)) return false
+  return node.roles.some((role) => typeof role === 'string' && userRoles.includes(role))
 }
 
 /**
@@ -191,19 +285,53 @@ export function filterNavByAccess(
 ): NavNode[] {
   const can: (node: NavNode) => boolean = Array.isArray(access)
     ? (node) => nodeAllowsRoles(node, access)
-    : (access as (node: NavNode) => boolean)
-  const out: NavNode[] = []
-  for (const n of nodes) {
-    if (!can(n)) continue
-    if (n.children && n.children.length > 0) {
-      const children = filterNavByAccess(n.children, can, pruneEmptyBranches)
-      if (children.length === 0 && pruneEmptyBranches) continue
-      out.push({ ...n, children })
+    : typeof access === 'function'
+      ? access
+      : () => false
+  interface Frame {
+    list: NavNode[]
+    index: number
+    output: NavNode[]
+    parent?: { node: NavNode; output: NavNode[]; key: string }
+  }
+
+  const root: Frame = { list: Array.isArray(nodes) ? nodes : [], index: 0, output: [] }
+  const stack: Frame[] = [root]
+  const active = new Set<string>()
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!
+    if (frame.index < frame.list.length) {
+      const node = frame.list[frame.index++]
+      if (!isNavNode(node) || active.has(node.key) || !can(node)) continue
+
+      const children = childrenOf(node)
+      if (children && children.length > 0) {
+        active.add(node.key)
+        stack.push({
+          list: children,
+          index: 0,
+          output: [],
+          parent: { node, output: frame.output, key: node.key },
+        })
+      } else {
+        frame.output.push(node)
+      }
+      continue
+    }
+
+    stack.pop()
+    if (frame.parent) {
+      active.delete(frame.parent.key)
+      if (frame.output.length > 0 || !pruneEmptyBranches) {
+        frame.parent.output.push({ ...frame.parent.node, children: frame.output })
+      }
     } else {
-      out.push(n)
+      return frame.output
     }
   }
-  return out
+
+  return []
 }
 
 /**
@@ -216,29 +344,42 @@ export function filterNavByAccess(
 export function buildNavTree(flat: FlatNavNode[]): NavNode[] {
   const nodes = new Map<string, NavNode>()
   const parents = new Map<string, string | null>()
-  for (const item of flat) {
-    if (nodes.has(item.key)) continue
-    const { parentKey, ...node } = item
+  for (const item of Array.isArray(flat) ? flat : []) {
+    if (!isNavNode(item) || nodes.has(item.key)) continue
+    const parentKey =
+      hasOwn(item, 'parentKey') && typeof item.parentKey === 'string' ? item.parentKey : null
+    const { parentKey: _parentKey, ...node } = item
     nodes.set(item.key, { ...node })
-    parents.set(item.key, parentKey ?? null)
+    parents.set(item.key, parentKey)
+  }
+
+  const cycleKeys = new Set<string>()
+  const state = new Map<string, 'visiting' | 'done'>()
+  for (const start of nodes.keys()) {
+    if (state.get(start) === 'done') continue
+    const path: string[] = []
+    const positions = new Map<string, number>()
+    let cursor: string | null | undefined = start
+    while (cursor !== null && cursor !== undefined && nodes.has(cursor)) {
+      const position = positions.get(cursor)
+      if (position !== undefined) {
+        for (let i = position; i < path.length; i += 1) cycleKeys.add(path[i]!)
+        break
+      }
+      if (state.get(cursor) === 'done') break
+      positions.set(cursor, path.length)
+      state.set(cursor, 'visiting')
+      path.push(cursor)
+      cursor = parents.get(cursor)
+    }
+    for (const key of path) state.set(key, 'done')
   }
 
   const roots: NavNode[] = []
-  const createsCycle = (key: string, parentKey: string): boolean => {
-    const seen = new Set([key])
-    let cursor: string | null | undefined = parentKey
-    while (cursor) {
-      if (seen.has(cursor)) return true
-      seen.add(cursor)
-      cursor = parents.get(cursor)
-    }
-    return false
-  }
-
   for (const [key, node] of nodes) {
     const parentKey = parents.get(key)
-    const parent = parentKey ? nodes.get(parentKey) : undefined
-    if (!parent || (parentKey && createsCycle(key, parentKey))) {
+    const parent = parentKey !== null && parentKey !== undefined ? nodes.get(parentKey) : undefined
+    if (!parent || (parentKey !== null && parentKey !== undefined && cycleKeys.has(key))) {
       roots.push(node)
       continue
     }
@@ -259,6 +400,7 @@ const routeSegments = (value: string): string[] => {
  * Query/hash fragments and trailing slashes do not affect matching.
  */
 export function matchRoutePattern(path: string, pattern: string): boolean {
+  if (typeof path !== 'string' || typeof pattern !== 'string') return false
   const actual = routeSegments(path)
   const expected = routeSegments(pattern)
   let i = 0

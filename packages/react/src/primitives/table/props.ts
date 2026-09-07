@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { ResilientFetcherOptions } from '@iris-ui-kit/core'
 import type { IrisTableFormField } from './types'
 import type { IrisTableAdvancedProps } from './props/advanced'
 import type { IrisTableEditingProps } from './props/editing'
@@ -16,7 +17,10 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
    */
   query: (
     params: import('./types').IrisTableProxyQueryParams,
+    signal?: AbortSignal,
   ) => Promise<{ rows: Row[]; total: number }>
+  /** Optional Core resilient fetching (dedup/TTL/SWR, breaker, and rate limiting). */
+  resilient?: ResilientFetcherOptions
   /** Auto-load the first page on mount (vxe autoLoad parity). Default true. */
   autoLoad?: boolean
   /** Sort changes re-query the server instead of sorting client-side (vxe proxyConfig.sort). Default false. */

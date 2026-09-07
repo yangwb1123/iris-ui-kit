@@ -152,6 +152,20 @@ const cases: { name: string; Comp: Component<never>; props: Record<string, unkno
       columnOrder: ['age', 'name'],
     },
   },
+  {
+    name: 'Table (controlled pins)',
+    Comp: IrisTable as unknown as Component<never>,
+    props: {
+      columns: [
+        { key: 'name', title: 'Name', width: 100, pinned: 'left' },
+        { key: 'age', title: 'Age', width: 80 },
+        { key: 'status', title: 'Status', width: 60, pinned: 'right' },
+      ],
+      data: [{ id: 1, name: 'Alpha', age: 42, status: 'ready' }],
+      rowKey: 'id',
+      pinnedColumns: { name: null, age: 'left', status: 'right' },
+    },
+  },
 ]
 
 afterEach(() => {
@@ -234,6 +248,24 @@ describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overl
       printable: true,
     })
     expect(body).toContain('data-printable="true"')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('controlled pinned columns render immediately in SSR without callbacks', () => {
+    const onPinned = vi.fn()
+    const { body, errors, warnings } = ssr(IrisTable as unknown as Component<never>, {
+      columns: [
+        { key: 'name', title: 'Name', width: 100, pinned: 'left' },
+        { key: 'age', title: 'Age', width: 80 },
+      ],
+      data: [{ id: 1, name: 'Alpha', age: 42 }],
+      pinnedColumns: { name: null, age: 'right' },
+      onColumnPinnedChange: onPinned,
+    })
+    expect(body).toContain('data-iris-table-pinned="right"')
+    expect(body).not.toContain('data-iris-table-pinned="left"')
+    expect(onPinned).not.toHaveBeenCalled()
     expect(errors).toEqual([])
     expect(warnings).toEqual([])
   })

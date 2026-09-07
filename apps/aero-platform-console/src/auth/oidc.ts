@@ -2,13 +2,44 @@ import type { PlatformConfig } from '../config'
 
 const pendingLifetimeMs = 10 * 60 * 1000
 const maxTokenResponseBytes = 64 * 1024
+const maxDiscoveryResponseBytes = 64 * 1024
+const maxJwksResponseBytes = 256 * 1024
+const clockSkewSeconds = 60
 
 interface DiscoveryDocument {
   issuer: string
   authorization_endpoint: string
   token_endpoint: string
+  jwks_uri: string
   end_session_endpoint?: string
   code_challenge_methods_supported?: string[]
+  id_token_signing_alg_values_supported?: string[]
+}
+
+interface IDTokenHeader {
+  alg?: string
+  kid?: string
+}
+
+interface IDTokenClaims {
+  iss?: string
+  aud?: string | string[]
+  azp?: string
+  sub?: string
+  nonce?: string
+  exp?: number
+  iat?: number
+  nbf?: number
+}
+
+interface SigningJsonWebKey extends JsonWebKey {
+  alg?: string
+  kid?: string
+  use?: string
+}
+
+interface JsonWebKeySet {
+  keys?: SigningJsonWebKey[]
 }
 
 interface PendingAuthorization {
@@ -94,6 +125,145 @@ function cleanCallbackUrl(source: URL): string {
   return `${source.origin}${source.pathname}${source.hash}`
 }
 
+function decodeBase64Url(value: string, label: string): Uint8Array {
+  if (!value || !/^[A-Za-z0-9_-]+$/.test(value)) throw new OidcError(`${label} 格式无效`)
+  const padded = `${value.replace(/-/g, '+').replace(/_/g, '/')}${'='.repeat((4 - (value.length % 4)) % 4)}`
+  let raw: string
+  try {
+    raw = atob(padded)
+  } catch {
+    throw new OidcError(`${label} 格式无效`)
+  }
+  return Uint8Array.from(raw, (character) => character.charCodeAt(0))
+}
+
+function decodeTokenPart<T>(value: string, label: string): T {
+  try {
+    const decoded: unknown = JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(decodeBase64Url(value, label)),
+    )
+    if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) {
+      throw new OidcError(`${label} 格式无效`)
+    }
+    return decoded as T
+  } catch (reason) {
+    if (reason instanceof OidcError) throw reason
+    throw new OidcError(`${label} 格式无效`)
+  }
+}
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  return copy.buffer
+}
+
+async function readBoundedJSON<T>(response: Response, maxBytes: number, label: string): Promise<T> {
+  const declaredLength = Number(response.headers.get('content-length'))
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    throw new OidcError(`${label} 响应过大`)
+  }
+  const reader = response.body?.getReader()
+  if (!reader) throw new OidcError(`${label} 响应无效`)
+  const chunks: Uint8Array[] = []
+  let total = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined)
+      throw new OidcError(`${label} 响应过大`)
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  try {
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as T
+  } catch {
+    throw new OidcError(`${label} 响应无效`)
+  }
+}
+
+function verificationAlgorithm(alg: string): AlgorithmIdentifier | RsaHashedImportParams {
+  if (alg === 'EdDSA') return { name: 'Ed25519' }
+  if (alg === 'RS256') return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }
+  throw new OidcError(`Snaplink ID Token 使用了不支持的签名算法：${alg || 'missing'}`)
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function hasPendingAuthorizationShape(value: unknown): value is PendingAuthorization {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const pending = value as Partial<PendingAuthorization>
+  return (
+    pending.version === 1 &&
+    isNonEmptyString(pending.state) &&
+    isNonEmptyString(pending.nonce) &&
+    isNonEmptyString(pending.verifier) &&
+    isNonEmptyString(pending.issuer) &&
+    isNonEmptyString(pending.redirectUri) &&
+    typeof pending.returnTo === 'string' &&
+    Number.isFinite(pending.createdAt)
+  )
+}
+
+function pendingMatchesClient(
+  pending: PendingAuthorization,
+  config: PlatformConfig,
+  now: number,
+): boolean {
+  return (
+    normalizeIssuer(pending.issuer) === normalizeIssuer(config.snaplinkIssuer) &&
+    pending.redirectUri === config.redirectUri &&
+    pending.createdAt <= now + clockSkewSeconds * 1000 &&
+    now - pending.createdAt <= pendingLifetimeMs
+  )
+}
+
+function tokenAudiences(value: IDTokenClaims['aud']): string[] {
+  if (typeof value === 'string') return [value]
+  if (!Array.isArray(value) || !value.every((audience) => typeof audience === 'string')) {
+    return []
+  }
+  return value
+}
+
+function validateTokenAudience(claims: IDTokenClaims, clientId: string): void {
+  const audiences = tokenAudiences(claims.aud)
+  if (!audiences.includes(clientId)) {
+    throw new OidcError('Snaplink ID Token audience 校验失败')
+  }
+  if ((audiences.length > 1 || claims.azp !== undefined) && claims.azp !== clientId) {
+    throw new OidcError('Snaplink ID Token authorized party 校验失败')
+  }
+}
+
+function validateTokenTimes(claims: IDTokenClaims, now: number): void {
+  if (!Number.isFinite(claims.exp) || claims.exp! <= now - clockSkewSeconds) {
+    throw new OidcError('Snaplink ID Token 已过期')
+  }
+  if (claims.nbf !== undefined && !Number.isFinite(claims.nbf)) {
+    throw new OidcError('Snaplink ID Token 生效时间无效')
+  }
+  if (Number.isFinite(claims.nbf) && claims.nbf! > now + clockSkewSeconds) {
+    throw new OidcError('Snaplink ID Token 尚未生效')
+  }
+  if (claims.iat !== undefined && !Number.isFinite(claims.iat)) {
+    throw new OidcError('Snaplink ID Token 签发时间无效')
+  }
+  if (Number.isFinite(claims.iat) && claims.iat! > now + clockSkewSeconds) {
+    throw new OidcError('Snaplink ID Token 签发时间无效')
+  }
+}
+
 export class OidcClient {
   private readonly fetcher: typeof fetch
   private readonly storage: Storage
@@ -101,6 +271,7 @@ export class OidcClient {
   private readonly replaceUrl: (url: string) => void
   private readonly now: () => number
   private discovery?: Promise<DiscoveryDocument>
+  private jwks?: Promise<SigningJsonWebKey[]>
   private exchange?: Promise<OidcSession>
 
   constructor(
@@ -195,37 +366,54 @@ export class OidcClient {
       credentials: 'omit',
     })
     if (!response.ok) throw new OidcError('无法读取 Snaplink OIDC 配置')
-    const value = (await response.json()) as Partial<DiscoveryDocument>
+    const value = await readBoundedJSON<Partial<DiscoveryDocument>>(
+      response,
+      maxDiscoveryResponseBytes,
+      'Snaplink discovery',
+    )
     if (
-      normalizeIssuer(value.issuer ?? '') !== normalizeIssuer(this.config.snaplinkIssuer) ||
-      !value.authorization_endpoint ||
-      !value.token_endpoint
+      typeof value.issuer !== 'string' ||
+      normalizeIssuer(value.issuer) !== normalizeIssuer(this.config.snaplinkIssuer) ||
+      typeof value.authorization_endpoint !== 'string' ||
+      typeof value.token_endpoint !== 'string' ||
+      typeof value.jwks_uri !== 'string'
     ) {
       throw new OidcError('Snaplink OIDC 配置与运行配置不匹配')
     }
-    if (!value.code_challenge_methods_supported?.includes('S256')) {
+    if (
+      !Array.isArray(value.code_challenge_methods_supported) ||
+      !value.code_challenge_methods_supported.includes('S256')
+    ) {
       throw new OidcError('Snaplink 未声明支持 PKCE S256')
+    }
+    if (
+      this.config.snaplinkScopes.includes('openid') &&
+      (!Array.isArray(value.id_token_signing_alg_values_supported) ||
+        !value.id_token_signing_alg_values_supported.every(
+          (algorithm) => typeof algorithm === 'string',
+        ))
+    ) {
+      throw new OidcError('Snaplink 未声明 ID Token 签名算法')
     }
     requireSafeEndpoint(value.authorization_endpoint, 'Snaplink authorization endpoint')
     requireSafeEndpoint(value.token_endpoint, 'Snaplink token endpoint')
+    requireSafeEndpoint(value.jwks_uri, 'Snaplink JWKS endpoint')
     return value as DiscoveryDocument
   }
 
   private readPending(): PendingAuthorization {
     const raw = this.storage.getItem(this.pendingKey())
     if (!raw) throw new OidcError('登录状态已失效，请重新登录')
-    let pending: PendingAuthorization
+    let pending: unknown
     try {
-      pending = JSON.parse(raw) as PendingAuthorization
+      pending = JSON.parse(raw) as unknown
     } catch {
       throw new OidcError('登录状态无效，请重新登录')
     }
-    if (
-      pending.version !== 1 ||
-      !pending.state ||
-      !pending.verifier ||
-      this.now() - pending.createdAt > pendingLifetimeMs
-    ) {
+    if (!hasPendingAuthorizationShape(pending)) {
+      throw new OidcError('登录状态无效，请重新登录')
+    }
+    if (!pendingMatchesClient(pending, this.config, this.now())) {
       throw new OidcError('登录状态已过期，请重新登录')
     }
     return pending
@@ -237,7 +425,12 @@ export class OidcClient {
     this.storage.removeItem(this.pendingKey())
     const discovery = await this.getDiscovery()
     const token = await this.exchangeCode(discovery, pending, code)
-    const lifetime = Math.max(30, Number(token.expires_in ?? 300))
+    if (this.config.snaplinkScopes.includes('openid')) {
+      if (!token.id_token) throw new OidcError('Snaplink 未返回 OpenID ID Token')
+      await this.verifyIDToken(discovery, pending, token.id_token)
+    }
+    const tokenLifetime = Number(token.expires_in ?? 300)
+    const lifetime = Number.isFinite(tokenLifetime) && tokenLifetime > 0 ? tokenLifetime : 300
     return {
       accessToken: token.access_token!,
       idToken: token.id_token,
@@ -249,6 +442,10 @@ export class OidcClient {
 
   private validateCallback(callback: URL, pending: PendingAuthorization): string {
     this.replaceUrl(cleanCallbackUrl(callback))
+    const redirect = new URL(pending.redirectUri)
+    if (callback.origin !== redirect.origin || callback.pathname !== redirect.pathname) {
+      return this.rejectCallback('登录回调地址校验失败')
+    }
     const returnedState = callback.searchParams.get('state') ?? ''
     if (returnedState !== pending.state) return this.rejectCallback('登录 state 校验失败')
     const returnedIssuer = callback.searchParams.get('iss')
@@ -294,15 +491,102 @@ export class OidcClient {
     return this.readTokenResponse(response)
   }
 
-  private async readTokenResponse(response: Response): Promise<TokenResponse> {
-    const text = await response.text()
-    if (text.length > maxTokenResponseBytes) throw new OidcError('Snaplink token 响应过大')
-    let token: TokenResponse = {}
+  private async verifyIDToken(
+    discovery: DiscoveryDocument,
+    pending: PendingAuthorization,
+    token: string,
+  ): Promise<void> {
+    const parts = token.split('.')
+    if (parts.length !== 3) throw new OidcError('Snaplink ID Token 格式无效')
+    const header = decodeTokenPart<IDTokenHeader>(parts[0], 'Snaplink ID Token header')
+    const claims = decodeTokenPart<IDTokenClaims>(parts[1], 'Snaplink ID Token claims')
+    const alg = typeof header.alg === 'string' ? header.alg : ''
+    const kid = typeof header.kid === 'string' ? header.kid : ''
+    if (!kid) throw new OidcError('Snaplink ID Token 缺少签名密钥 ID')
+    const supported = discovery.id_token_signing_alg_values_supported ?? []
+    if (!supported.includes(alg))
+      throw new OidcError('Snaplink ID Token 签名算法未被 discovery 声明')
+    const algorithm = verificationAlgorithm(alg)
+    const keys = await this.getJwks(discovery)
+    const jwk = keys.find(
+      (candidate) =>
+        candidate.kid === kid &&
+        (!candidate.alg || candidate.alg === alg) &&
+        (!candidate.use || candidate.use === 'sig'),
+    )
+    if (!jwk) throw new OidcError('Snaplink ID Token 找不到匹配的签名密钥')
+
+    let key: CryptoKey
     try {
-      token = JSON.parse(text) as TokenResponse
+      key = await crypto.subtle.importKey('jwk', jwk, algorithm, false, ['verify'])
     } catch {
-      throw new OidcError('Snaplink token 响应无效')
+      throw new OidcError('Snaplink ID Token 签名密钥无效')
     }
+    const input = new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+    const signature = decodeBase64Url(parts[2], 'Snaplink ID Token signature')
+    let valid = false
+    try {
+      valid = await crypto.subtle.verify(
+        algorithm,
+        key,
+        toArrayBuffer(signature),
+        toArrayBuffer(input),
+      )
+    } catch {
+      valid = false
+    }
+    if (!valid) throw new OidcError('Snaplink ID Token 签名校验失败')
+    this.validateIDTokenClaims(discovery, pending, claims)
+  }
+
+  private validateIDTokenClaims(
+    discovery: DiscoveryDocument,
+    pending: PendingAuthorization,
+    claims: IDTokenClaims,
+  ): void {
+    if (
+      typeof claims.iss !== 'string' ||
+      normalizeIssuer(claims.iss) !== normalizeIssuer(discovery.issuer)
+    ) {
+      throw new OidcError('Snaplink ID Token issuer 校验失败')
+    }
+    validateTokenAudience(claims, this.config.snaplinkClientId)
+    if (typeof claims.sub !== 'string' || !claims.sub.trim()) {
+      throw new OidcError('Snaplink ID Token 缺少 subject')
+    }
+    if (claims.nonce !== pending.nonce) throw new OidcError('Snaplink ID Token nonce 校验失败')
+    validateTokenTimes(claims, this.now() / 1000)
+  }
+
+  private getJwks(discovery: DiscoveryDocument): Promise<SigningJsonWebKey[]> {
+    this.jwks ??= this.fetchJwks(discovery)
+    return this.jwks
+  }
+
+  private async fetchJwks(discovery: DiscoveryDocument): Promise<SigningJsonWebKey[]> {
+    const endpoint = requireSafeEndpoint(discovery.jwks_uri, 'Snaplink JWKS endpoint')
+    const response = await this.fetcher(endpoint, {
+      headers: { Accept: 'application/json' },
+      credentials: 'omit',
+    })
+    if (!response.ok) throw new OidcError('无法读取 Snaplink 签名密钥')
+    const value = await readBoundedJSON<JsonWebKeySet>(
+      response,
+      maxJwksResponseBytes,
+      'Snaplink JWKS',
+    )
+    if (!Array.isArray(value.keys) || value.keys.length === 0) {
+      throw new OidcError('Snaplink JWKS 未包含签名密钥')
+    }
+    return value.keys
+  }
+
+  private async readTokenResponse(response: Response): Promise<TokenResponse> {
+    const token = await readBoundedJSON<TokenResponse>(
+      response,
+      maxTokenResponseBytes,
+      'Snaplink token',
+    )
     if (!response.ok || token.error) {
       throw new OidcError(token.error_description ?? token.error ?? 'Snaplink 拒绝了授权码交换')
     }

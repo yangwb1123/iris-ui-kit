@@ -1,16 +1,15 @@
 import * as React from 'react'
-import { memoizedFormulaValue, toCsv, type FormulaTables } from '@iris-ui-kit/core'
+import {
+  isTableColumnEditable,
+  materializeTableFormulaValues,
+  toCsv,
+  type FormulaTables,
+} from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 import { LOCKED_CELL_STRIPE, READONLY_CELL_DOTS } from './table-css'
 
-/** Batch AO: a formula column is DISPLAY-ONLY even when `editable` — every
- * editing entry point (inline, row mode, batch panel, data-editable attr,
- * cursor) reads this same condition. */
-export function isEditableColumn<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-): boolean {
-  return !!col.editable && !col.formula
-}
+/** Compatibility name for the Core edit-capability predicate. */
+export const isEditableColumn = isTableColumnEditable
 
 /** Batch BE: a cell is locked when the column says so — `true` locks the
  * whole column, a predicate locks per-row (a predicate ignoring its column
@@ -100,22 +99,7 @@ export function withComputedFormulaCells<Row extends Record<string, unknown>>(
   columns: readonly IrisTableColumn<Row>[],
   formulaTables?: FormulaTables,
 ): Row[] {
-  const formulaCols = columns.filter((c) => c.formula)
-  if (formulaCols.length === 0) return rows as Row[]
-  return rows.map((row) => {
-    let shadow: Row | null = null
-    for (const col of formulaCols) {
-      const key = (col.dataIndex ?? col.key) as keyof Row
-      const next: Row = shadow ?? { ...row }
-      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(
-        col.formula!,
-        row,
-        formulaTables,
-      )
-      shadow = next
-    }
-    return shadow as Row
-  })
+  return materializeTableFormulaValues(rows, columns, formulaTables)
 }
 
 /** Batch AL: structural equality for undo snapshots — same length + same row

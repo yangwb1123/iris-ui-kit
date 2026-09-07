@@ -1,5 +1,10 @@
 import { computed, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue'
-import { compareValues, type FormulaTables } from '@iris-ui-kit/core'
+import {
+  createTableMultiSortComparator,
+  createTableSortComparator,
+  sortTableRows,
+  type FormulaTables,
+} from '@iris-ui-kit/core'
 import { getCellValue } from './table-helpers'
 import type { IrisTableColumn, IrisTableSortState } from './types'
 
@@ -39,47 +44,19 @@ export interface UseTableSortResult<Row> {
   multiSortComparator: ComputedRef<((a: Row, b: Row) => number) | null>
 }
 
-/** Per-column comparator: `col.sorter` or a value-based default. Shared by the
- * single and multi sort paths. */
-function buildSorter<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-  formulaTables?: FormulaTables,
-): (a: Row, b: Row) => number {
-  if (col.sorter) return col.sorter
-  return (a: Row, b: Row) =>
-    compareValues(getCellValue(a, col, formulaTables), getCellValue(b, col, formulaTables))
-}
-
 /**
- * Pure multi-column comparator: the per-column comparators chained in click
- * order (most-significant first), first non-zero comparison wins — stable, so
- * ties fall through to the next column, then keep the original order. Returns
- * null when the list is empty or no column resolves.
+ * Legacy pure helper kept for existing Vue table consumers. Comparator
+ * construction lives in Core; this wrapper only supplies Vue's
+ * formula-aware value resolver.
  */
 export function buildMultiSortComparator<Row extends Record<string, unknown>>(
   leafColumns: IrisTableColumn<Row>[],
   state: IrisTableSortState[],
   formulaTables?: FormulaTables,
 ): ((a: Row, b: Row) => number) | null {
-  if (state.length === 0) return null
-  const colMap = new Map(leafColumns.map((c) => [c.key, c]))
-  const chain: Array<{ dir: number; sorter: (a: Row, b: Row) => number }> = []
-  for (const s of state) {
-    const col = colMap.get(s.key)
-    if (!col) continue
-    chain.push({
-      dir: s.direction === 'asc' ? 1 : -1,
-      sorter: buildSorter(col, formulaTables),
-    })
-  }
-  if (chain.length === 0) return null
-  return (a, b) => {
-    for (const step of chain) {
-      const cmp = step.sorter(a, b)
-      if (cmp !== 0) return cmp * step.dir
-    }
-    return 0
-  }
+  return createTableMultiSortComparator(state, leafColumns, (row, column) =>
+    getCellValue(row, column, formulaTables),
+  )
 }
 
 /**
@@ -123,30 +100,25 @@ export function useTableSort<Row extends Record<string, unknown>>(
     options.formulaTables === undefined ? undefined : toValue(options.formulaTables),
   )
 
-  const sortComparator = computed<((a: Row, b: Row) => number) | null>(() => {
-    const s = sortState.value
-    if (!s) return null
-    const col = toValue(options.leafColumns).find((c) => c.key === s.key)
-    if (!col) return null
-    const dir = s.direction === 'asc' ? 1 : -1
-    return (a, b) => buildSorter(col, formulaTables.value)(a, b) * dir
-  })
+  const getValue = (row: Row, column: IrisTableColumn<Row>): unknown =>
+    getCellValue(row, column, formulaTables.value)
 
-  const multiSortComparator = computed<((a: Row, b: Row) => number) | null>(() =>
-    buildMultiSortComparator(
-      toValue(options.leafColumns),
-      multiSortState.value,
-      formulaTables.value,
-    ),
+  const sortComparator = computed<((a: Row, b: Row) => number) | null>(() =>
+    createTableSortComparator(sortState.value, toValue(options.leafColumns), getValue),
   )
 
-  const sortedData = computed<Row[]>(() => {
-    // Multi mode uses the chained multi comparator exclusively (an empty list
-    // means unsorted); single mode keeps its own comparator — byte-compatible.
-    const comparator = multiEnabled.value ? multiSortComparator.value : sortComparator.value
-    if (!comparator) return data.value
-    return [...data.value].sort(comparator)
-  })
+  const multiSortComparator = computed<((a: Row, b: Row) => number) | null>(() =>
+    createTableMultiSortComparator(multiSortState.value, toValue(options.leafColumns), getValue),
+  )
+
+  const sortedData = computed<Row[]>(() =>
+    sortTableRows(data.value, toValue(options.leafColumns), {
+      mode: multiEnabled.value ? 'multiple' : 'single',
+      sort: sortState.value,
+      multiSort: multiSortState.value,
+      getValue,
+    }),
+  )
 
   function setSort(next: IrisTableSortState | null): void {
     if (sortProp.value === undefined) internalSortValue.value = next

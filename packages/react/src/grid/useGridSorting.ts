@@ -1,5 +1,10 @@
 import * as React from 'react'
-import { compareValues, memoizedFormulaValue } from '@iris-ui-kit/core'
+import {
+  createTableMultiSortComparator,
+  createTableSortComparator,
+  resolveTableColumnValue,
+  sortTableRows,
+} from '@iris-ui-kit/core'
 import {
   createGridSortingFeature,
   type GridCore,
@@ -43,38 +48,6 @@ export interface UseGridSortingResult<Row> {
   cycleMultiSort: (column: GridSortColumn<Row>) => void
   setMultiSort: (next: SortState[]) => void
   multiSortComparator: ((a: Row, b: Row) => number) | null
-}
-
-function buildSorter<Row extends Record<string, unknown>>(
-  column: GridSortColumn<Row>,
-  formulaTables?: Record<string, Row[]>,
-): (a: Row, b: Row) => number {
-  if (column.sorter) return column.sorter
-  return (a, b) => {
-    if (column.formula) {
-      let left = memoizedFormulaValue(column.formula, a, formulaTables)
-      let right = memoizedFormulaValue(column.formula, b, formulaTables)
-      if (column.sortType === 'number') {
-        left = Number(left)
-        right = Number(right)
-      } else if (column.sortType === 'string') {
-        left = String(left ?? '')
-        right = String(right ?? '')
-      }
-      return compareValues(left, right)
-    }
-    const key = (column.sortBy ?? column.dataIndex ?? column.key) as keyof Row
-    let left = a[key] as unknown
-    let right = b[key] as unknown
-    if (column.sortType === 'number') {
-      left = Number(left)
-      right = Number(right)
-    } else if (column.sortType === 'string') {
-      left = String(left ?? '')
-      right = String(right ?? '')
-    }
-    return compareValues(left, right)
-  }
 }
 
 /** Installs sorting state in Grid Core and derives React column comparators. */
@@ -145,43 +118,34 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
     [model],
   )
 
-  const sortComparator = React.useMemo<((a: Row, b: Row) => number) | null>(() => {
-    if (!sortState) return null
-    const column = options.leafColumns.find((candidate) => candidate.key === sortState.key)
-    if (!column) return null
-    const direction = sortState.direction === 'asc' ? 1 : -1
-    const sorter = buildSorter(column, options.formulaTables)
-    return (a, b) => sorter(a, b) * direction
-  }, [options.leafColumns, sortState, options.formulaTables])
+  const getValue = React.useCallback(
+    (row: Row, column: GridSortColumn<Row>): unknown => {
+      if (column.sortBy !== undefined) return row[column.sortBy as keyof Row]
+      return resolveTableColumnValue(row, column, options.formulaTables)
+    },
+    [options.formulaTables],
+  )
 
-  const multiSortComparator = React.useMemo<((a: Row, b: Row) => number) | null>(() => {
-    if (multiSortState.length === 0) return null
-    const columns = new Map(options.leafColumns.map((column) => [column.key, column]))
-    const chain = multiSortState.flatMap((sort) => {
-      const column = columns.get(sort.key)
-      return column
-        ? [
-            {
-              direction: sort.direction === 'asc' ? 1 : -1,
-              sorter: buildSorter(column, options.formulaTables),
-            },
-          ]
-        : []
-    })
-    if (chain.length === 0) return null
-    return (a, b) => {
-      for (const step of chain) {
-        const comparison = step.sorter(a, b)
-        if (comparison !== 0) return comparison * step.direction
-      }
-      return 0
-    }
-  }, [options.leafColumns, multiSortState, options.formulaTables])
+  const sortComparator = React.useMemo(
+    () => createTableSortComparator(sortState, options.leafColumns, getValue),
+    [getValue, options.leafColumns, sortState],
+  )
 
-  const sortedData = React.useMemo(() => {
-    const comparator = options.multiSort ? multiSortComparator : sortComparator
-    return comparator ? [...data].sort(comparator) : data
-  }, [data, options.multiSort, multiSortComparator, sortComparator])
+  const multiSortComparator = React.useMemo(
+    () => createTableMultiSortComparator(multiSortState, options.leafColumns, getValue),
+    [getValue, options.leafColumns, multiSortState],
+  )
+
+  const sortedData = React.useMemo(
+    () =>
+      sortTableRows(data, options.leafColumns, {
+        mode: options.multiSort ? 'multiple' : 'single',
+        sort: sortState,
+        multiSort: multiSortState,
+        getValue,
+      }),
+    [data, getValue, multiSortState, options.leafColumns, options.multiSort, sortState],
+  )
 
   return {
     core,

@@ -1,5 +1,10 @@
 import { createCellEdit, type CellEdit, type CellEditState, type CellEditTarget } from './cell-edit'
-import { validateEditRules, validateEditRulesAsync, type EditRules } from './edit-rules'
+import {
+  validateEditRules,
+  validateEditRulesAsync,
+  type EditRules,
+  type EditValidationSource,
+} from './edit-rules'
 import type { GridFeature, GridMethod } from './grid'
 import type { GridRowsCommitOptions, GridRowsModel } from './grid-rows'
 
@@ -21,6 +26,14 @@ export interface GridEditingValidation {
   readonly valid: boolean
   /** True only when the validation was requested by commitCellEdit(). */
   readonly commit: boolean
+  /** Which validation channel produced this outcome, when available. */
+  readonly source?: EditValidationSource
+}
+
+/** Factory callback payload with the additive validation source detail. */
+export interface AdvancedGridEditingValidation extends GridEditingValidation {
+  /** Which validation channel produced this outcome. */
+  readonly source: EditValidationSource
 }
 
 export interface GridEditingFeatureOptions<Row extends Record<string, unknown>> {
@@ -45,7 +58,7 @@ export interface GridEditingFeatureOptions<Row extends Record<string, unknown>> 
   /** Adapter-owned transaction context forwarded to the rows feature. */
   readonly commitOptions?: GridRowsCommitOptions | (() => GridRowsCommitOptions)
   readonly onStateChange?: (state: CellEditState<GridEditingKey>) => void
-  readonly onValidation?: (validation: GridEditingValidation) => void
+  readonly onValidation?: (validation: AdvancedGridEditingValidation) => void
   readonly onCommit?: (commit: GridEditingCommit<Row>) => void
 }
 
@@ -109,6 +122,7 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
   private readonly controller: CellEdit<GridEditingKey>
   private readonly unsubscribe: () => void
   private commitValidationPending = false
+  private destroyed = false
 
   constructor(
     private readonly options: GridEditingFeatureOptions<Row>,
@@ -172,12 +186,15 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
     target: CellEditTarget<GridEditingKey>,
     error: string | null | undefined,
     commit: boolean,
+    source: EditValidationSource,
   ): string | null | undefined {
+    if (this.destroyed) return error
     this.options.onValidation?.({
       rowKey: target.rowKey,
       columnKey: target.columnKey,
       valid: !error,
       commit,
+      source,
     })
     return error
   }
@@ -187,14 +204,33 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
     target: CellEditTarget<GridEditingKey>,
     found: { row: Row },
     commit: boolean,
+    successSource: EditValidationSource,
   ): string | null | undefined | Promise<string | null | undefined> {
-    const result = this.validateCustom(draft, target, found)
-    if (result && typeof (result as Promise<unknown>).then === 'function') {
-      return (result as Promise<string | null | undefined>).then((error) =>
-        this.reportValidation(target, error, commit),
+    let result: string | null | undefined | Promise<string | null | undefined>
+    try {
+      result = this.validateCustom(draft, target, found)
+    } catch (reason) {
+      return this.reportValidation(
+        target,
+        reason instanceof Error && reason.message ? reason.message : 'Value is invalid',
+        commit,
+        'custom',
       )
     }
-    return this.reportValidation(target, result as string | null | undefined, commit)
+    if (result && typeof (result as Promise<unknown>).then === 'function') {
+      return (result as Promise<string | null | undefined>).then(
+        (error) => this.reportValidation(target, error, commit, error ? 'custom' : successSource),
+        (reason: unknown) =>
+          this.reportValidation(
+            target,
+            reason instanceof Error && reason.message ? reason.message : 'Value is invalid',
+            commit,
+            'custom',
+          ),
+      )
+    }
+    const error = result as string | null | undefined
+    return this.reportValidation(target, error, commit, error ? 'custom' : successSource)
   }
 
   private validateDraft(
@@ -209,13 +245,22 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
         target,
         this.options.missingRowMessage ?? 'The edited row no longer exists',
         commit,
+        'none',
       )
     }
     if (this.options.isEditable && !this.options.isEditable(found.row, target.columnKey)) {
-      return this.reportValidation(target, 'This cell is not editable', commit)
+      return this.reportValidation(target, 'This cell is not editable', commit, 'none')
     }
     const rules = this.options.getRules?.(target.columnKey)
-    if (!rules?.length) return this.finishCustomValidation(draft, target, found, commit)
+    if (!rules?.length) {
+      return this.finishCustomValidation(
+        draft,
+        target,
+        found,
+        commit,
+        this.options.validate ? 'custom' : 'none',
+      )
+    }
     // Keep the common built-in rule path synchronous. Apart from avoiding an
     // unnecessary microtask, this preserves the adapter contract that a
     // required/unique/pattern failure is observable immediately after Enter.
@@ -225,22 +270,49 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
       const result = validateEditRules(rules, draft, found.row, false, {
         rows: found.rows,
         columnKey: target.columnKey,
+        getValue: (row) => (this.options.getValue ?? defaultGetValue)(row, target.columnKey),
       })
-      const error = this.reportValidation(target, result.messages[0] ?? null, commit)
+      if (!result.valid) {
+        return this.reportValidation(
+          target,
+          result.messages[0] ?? 'Value is invalid',
+          commit,
+          'editRules',
+        )
+      }
+      if (this.options.validate) {
+        return this.finishCustomValidation(draft, target, found, commit, 'editRules')
+      }
+      this.reportValidation(target, null, commit, 'editRules')
       // Keep successful declarative-rule commits on the async contract used
       // by the historical adapter path; only failures need to be surfaced
       // synchronously so the editor can paint its error in the same turn.
-      return error ? error : Promise.resolve(null)
+      return Promise.resolve(null)
     }
     return validateEditRulesAsync(rules, draft, found.row, false, {
       rows: found.rows,
       columnKey: target.columnKey,
-    }).then((result) => {
-      if (!result.valid) {
-        return this.reportValidation(target, result.messages[0] ?? 'Value is invalid', commit)
-      }
-      return this.finishCustomValidation(draft, target, found, commit)
-    })
+      getValue: (row) => (this.options.getValue ?? defaultGetValue)(row, target.columnKey),
+    }).then(
+      (result) => {
+        if (!result.valid) {
+          return this.reportValidation(
+            target,
+            result.messages[0] ?? 'Value is invalid',
+            commit,
+            'editRules',
+          )
+        }
+        return this.finishCustomValidation(draft, target, found, commit, 'editRules')
+      },
+      (reason: unknown) =>
+        this.reportValidation(
+          target,
+          reason instanceof Error && reason.message ? reason.message : 'Value is invalid',
+          commit,
+          'editRules',
+        ),
+    )
   }
 
   private applyCommit(target: CellEditTarget<GridEditingKey>, value: unknown): void {
@@ -343,6 +415,8 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
   }
 
   destroy(): void {
+    if (this.destroyed) return
+    this.destroyed = true
     this.unsubscribe()
     this.controller.cancelEdit()
   }

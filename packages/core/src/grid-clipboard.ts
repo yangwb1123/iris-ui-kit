@@ -1,5 +1,15 @@
 import type { GridFeature, GridMethod } from './grid'
 import type { GridRowsCommitOptions } from './grid-rows'
+import {
+  clampRange,
+  copiedSize,
+  copyClipboardChange,
+  copyClipboardPasteChange,
+  countOverflowCells,
+  defaultSetValue,
+  isRow,
+  sameRows,
+} from './grid-clipboard-helpers'
 import { insertRowInList } from './table-rows'
 import {
   resolveTableValue,
@@ -108,80 +118,6 @@ export interface GridClipboardMethods {
   pasteGridRange(text: string, range?: TableClipboardRange): boolean
 }
 
-function integer(value: number): number | null {
-  return Number.isFinite(value) ? Math.trunc(value) : null
-}
-
-function clampRange(
-  range: TableClipboardRange | null,
-  rowCount: number,
-  columnCount: number,
-  allowEmptyRows = false,
-): TableClipboardRange | null {
-  if (!range || columnCount <= 0 || (rowCount <= 0 && !allowEmptyRows)) return null
-  const raw = [
-    integer(range.start.row),
-    integer(range.start.col),
-    integer(range.end.row),
-    integer(range.end.col),
-  ]
-  if (raw.some((value) => value === null)) return null
-  const [startRow, startColumn, endRow, endColumn] = raw as [number, number, number, number]
-  // A factory-backed single-cell paste may legitimately start with no source
-  // rows. Keep the range at row zero so every clipboard line is treated as an
-  // overflow line; serialization and the default (factory-less) path still
-  // reject an empty body above.
-  const lastRow = Math.max(0, rowCount - 1)
-  return {
-    start: {
-      row: Math.max(0, Math.min(startRow, endRow, lastRow)),
-      col: Math.max(0, Math.min(startColumn, endColumn, columnCount - 1)),
-    },
-    end: {
-      row: Math.max(0, Math.min(Math.max(startRow, endRow), lastRow)),
-      col: Math.max(0, Math.min(Math.max(startColumn, endColumn), columnCount - 1)),
-    },
-  }
-}
-
-function copiedSize(range: TableClipboardRange): { rowCount: number; columnCount: number } {
-  return {
-    rowCount: range.end.row - range.start.row + 1,
-    columnCount: range.end.col - range.start.col + 1,
-  }
-}
-
-function sameRows<Row extends Record<string, unknown>>(
-  left: readonly Row[],
-  right: readonly Row[],
-): boolean {
-  if (left.length !== right.length) return false
-  return left.every((row, index) => Object.is(row, right[index]))
-}
-
-function defaultSetValue<Row extends Record<string, unknown>>(
-  row: Row,
-  column: TableClipboardColumn<Row>,
-  value: unknown,
-): Row {
-  const key = column.dataIndex ?? column.key
-  return { ...row, [key]: value }
-}
-
-function countOverflowCells<Row extends Record<string, unknown>>(
-  row: Row,
-  range: TableClipboardRange,
-  columns: readonly TableClipboardColumn<Row>[],
-): number {
-  let count = 0
-  for (let columnIndex = range.start.col; columnIndex < columns.length; columnIndex += 1) {
-    const column = columns[columnIndex]!
-    const key = column.dataIndex ?? column.key
-    if (Object.prototype.hasOwnProperty.call(row, key)) count += 1
-  }
-  return count
-}
-
 class GridClipboardEngine<Row extends Record<string, unknown>> implements GridClipboardModel {
   constructor(
     private readonly options: GridClipboardFeatureOptions<Row>,
@@ -227,8 +163,9 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
       range: current.range,
       ...copiedSize(current.range),
     }
+    const eventChange = copyClipboardChange<Row>(change)
     this.options.onCopy?.(change)
-    this.emit?.(change)
+    this.emit?.(eventChange)
     return text
   }
 
@@ -240,7 +177,10 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
     maxColumn: number,
     columns: readonly TableClipboardColumn<Row>[],
   ): { row: Row; changedCells: number } {
-    let nextRow = row
+    // Keep all callback-facing state detached from the source row. The setter
+    // may still intentionally mutate and return this working row, so that
+    // in-place setter contract remains supported below.
+    let nextRow = { ...row }
     let changedCells = 0
     for (let columnOffset = 0; columnOffset < values.length; columnOffset += 1) {
       const columnIndex = startColumn + columnOffset
@@ -248,15 +188,27 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
       const column = columns[columnIndex]!
       if (
         this.options.isCellEditable &&
-        !this.options.isCellEditable(nextRow, column, rowIndex, columnIndex)
+        !this.options.isCellEditable({ ...nextRow }, column, rowIndex, columnIndex)
       ) {
         continue
       }
       const raw = values[columnOffset]!
-      const value = this.options.parseValue ? this.options.parseValue(raw, nextRow, column) : raw
+      const value = this.options.parseValue
+        ? this.options.parseValue(raw, { ...nextRow }, column)
+        : raw
       if (Object.is(resolveTableValue(nextRow, column), value)) continue
+      // Callback row arguments are working copies. A custom editable/parser or
+      // setter must not mutate the source row that is still used as the
+      // transaction's previous snapshot.
       const updated = (this.options.setValue ?? defaultSetValue)(nextRow, column, value)
-      if (Object.is(updated, nextRow)) continue
+      // A malformed setter must not poison the remaining row walk or commit a
+      // non-row value into the rows feature. Treat it as a rejected cell.
+      if (!isRow<Row>(updated)) continue
+      // Returning the input row without applying the requested value is the
+      // established custom-setter no-op signal. An in-place setter that did
+      // write the target remains a valid change.
+      if (Object.is(updated, nextRow) && !Object.is(resolveTableValue(updated, column), value))
+        continue
       nextRow = updated
       changedCells += 1
     }
@@ -269,9 +221,13 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
     changedRows: number,
     changedCells: number,
   ): boolean {
-    const committedRows = [
-      ...(this.options.reconcileRows?.(current.sourceRows, current.rows, nextRows) ?? nextRows),
-    ]
+    const reconciled = this.options.reconcileRows?.(current.sourceRows, current.rows, nextRows)
+    if (
+      this.options.reconcileRows &&
+      (!Array.isArray(reconciled) || !reconciled.every((row) => isRow<Row>(row)))
+    )
+      return false
+    const committedRows = [...(reconciled ?? nextRows)]
     if (sameRows(current.sourceRows, committedRows)) return false
     const configuredOptions =
       typeof this.options.commitOptions === 'function'
@@ -292,8 +248,10 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
       changedRows,
       changedCells,
     }
-    this.options.onPaste?.(change)
-    this.emit?.(change)
+    const callbackChange = copyClipboardPasteChange<Row>(change)
+    const eventChange = copyClipboardPasteChange<Row>(change)
+    this.options.onPaste?.(callbackChange)
+    this.emit?.(eventChange)
     return true
   }
 
@@ -323,12 +281,14 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
       setValue: this.options.setValue ?? defaultSetValue,
       rowKeyField,
     })
-    if (!overflowRows || overflowRows.length === 0) return { rowCount: 0, cellCount: 0 }
+    if (!Array.isArray(overflowRows) || overflowRows.length === 0)
+      return { rowCount: 0, cellCount: 0 }
 
-    let rowsForKeys = current.sourceRows
+    let rowsForKeys = [...current.sourceRows, ...nextRows]
     let rowCount = 0
     let cellCount = 0
     for (const row of overflowRows) {
+      if (!isRow<Row>(row)) continue
       const inserted = insertRowInList(rowsForKeys, rowKeyField, row)
       const insertedRow = inserted[inserted.length - 1]
       if (!insertedRow) continue
@@ -341,6 +301,9 @@ class GridClipboardEngine<Row extends Record<string, unknown>> implements GridCl
   }
 
   paste(text: string, range?: TableClipboardRange): boolean {
+    // Clipboard providers are host-owned at runtime; fail closed when one
+    // resolves to a non-text payload despite the TypeScript contract.
+    if (typeof text !== 'string') return false
     // An opt-in overflow factory is also useful for an initially empty grid:
     // the first single-cell paste has no existing row to anchor to, so treat
     // row zero as the overflow boundary. Without a factory, preserve the

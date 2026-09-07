@@ -138,8 +138,12 @@ export function createCellEdit<Key extends string | number = string>(
     },
 
     setDraft(value) {
-      const target = store.getState().editing
+      const current = store.getState()
+      const target = current.editing
       if (!target) return
+      // A changed draft supersedes any in-flight async commit of the older
+      // value; when that validation promise settles, it must not write back.
+      if (!Object.is(current.draft, value)) sessionGen++
       const err = validateDraft(value, target) as string | null | Promise<string | null | undefined>
       store.setState((prev) => ({
         ...prev,

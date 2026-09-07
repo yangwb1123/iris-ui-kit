@@ -63,10 +63,13 @@ export function createStepNavigation<V extends FormValues>(
   setFieldsTouched: (names: Key<V>[]) => void,
 ): StepNavigation<V> {
   const count = () => Math.max(1, steps.length)
-  const clamp = (i: number) => Math.max(0, Math.min(i, count() - 1))
+  const toInteger = (i: number): number =>
+    typeof i === 'number' && !Number.isNaN(i) ? Math.trunc(i) : 0
+  const clamp = (i: number) => Math.max(0, Math.min(toInteger(i), count() - 1))
 
   const validateStep: FormStore<V>['validateStep'] = async (index) => {
-    const step = steps[index ?? getCurrentStep()]
+    const requested = index === undefined ? getCurrentStep() : index
+    const step = steps[toInteger(requested)]
     if (!step) return true
     const results = await validateFields(step.fields)
     setFieldsTouched(step.fields)
@@ -76,11 +79,13 @@ export function createStepNavigation<V extends FormValues>(
   const goToStep = (index: number) => setCurrentStep(clamp(index))
 
   const nextStep = async () => {
-    const ok = await validateStep()
+    const cur = clamp(getCurrentStep())
+    const ok = await validateStep(cur)
     if (!ok) return false
-    const cur = getCurrentStep()
-    if (cur >= count() - 1) return false
-    setCurrentStep(clamp(cur + 1))
+    // Only advance from the step that was actually validated. This prevents
+    // concurrent/re-entrant nextStep calls from skipping validation.
+    if (clamp(getCurrentStep()) !== cur || cur >= count() - 1) return false
+    setCurrentStep(cur + 1)
     return true
   }
 

@@ -58,6 +58,31 @@ describe('createResourceController', () => {
     expect(c.getState().selectedKeys).toEqual(['1'])
   })
 
+  it('does not expose mutable projection aliases', async () => {
+    const c = createResourceController<Row>({
+      fetcher: fetcherFor(all),
+      pageSize: 2,
+      immediate: false,
+    })
+    await c.load()
+    const projected = c.getState()
+    projected.rows[0]!.name = 'outside'
+    projected.rows.pop()
+    projected.sort = { key: 'name', direction: 'asc' }
+    projected.sort.direction = 'desc'
+    projected.filters.name = 'outside'
+    projected.selectedKeys.push('outside')
+    // Force a new projection without changing the DataSource's controls.
+    c.selection.toggle('2')
+
+    expect(c.getState()).toMatchObject({
+      rows: all.slice(0, 2),
+      sort: null,
+      filters: {},
+      selectedKeys: ['2'],
+    })
+  })
+
   it('does not auto-load when immediate=false', async () => {
     const fetcher = fetcherFor(all)
     createResourceController<Row>({ fetcher, immediate: false })
@@ -125,6 +150,43 @@ describe('createResourceController', () => {
     expect(c.getState().rows.map((r) => r.id)).toEqual([1, 2])
   })
 
+  it('resynchronizes selection when loading after destroy', async () => {
+    const c = createResourceController<Row>({
+      fetcher: fetcherFor(all),
+      pageSize: 2,
+      immediate: false,
+    })
+    await c.load()
+    c.destroy()
+    c.selection.toggle('1')
+    expect(c.getState().selectedKeys).toEqual([])
+
+    await c.load()
+    expect(c.getState().selectedKeys).toEqual(['1'])
+  })
+
+  it('does not lose a reentrant selection change while resubscribing', async () => {
+    const c = createResourceController<Row>({
+      fetcher: fetcherFor(all),
+      pageSize: 2,
+      immediate: false,
+    })
+    await c.load()
+    c.destroy()
+    c.selection.toggle('1')
+    let reentered = false
+    const unsubscribe = c.subscribe((state) => {
+      if (!reentered && state.selectedKeys.join() === '1') {
+        reentered = true
+        c.selection.toggle('2')
+      }
+    })
+
+    await c.load()
+    unsubscribe()
+    expect(c.getState().selectedKeys).toEqual(['1', '2'])
+  })
+
   it('optimistic mutate updates rows immediately and rolls back on failure', async () => {
     const c = createResourceController<Row>({ fetcher: fetcherFor(all), pageSize: 10 })
     await flush()
@@ -178,5 +240,29 @@ describe('createClientFetcher', () => {
     const r = await fetch({ page: 2, pageSize: 2, sort: null, filters: {} })
     expect(r.total).toBe(5)
     expect(r.rows.map((x) => x.id)).toEqual([3, 4])
+  })
+
+  it('normalizes malformed direct pagination inputs', async () => {
+    const fetch = createClientFetcher(all, columns)
+    const first = await fetch({
+      page: Number.NaN,
+      pageSize: Number.POSITIVE_INFINITY,
+      sort: null,
+      filters: {},
+    })
+    expect(first.rows.map((x) => x.id)).toEqual([1, 2, 3, 4, 5])
+
+    const fractional = await fetch({ page: 2.9, pageSize: 1.9, sort: null, filters: {} })
+    expect(fractional.rows.map((x) => x.id)).toEqual([2])
+  })
+
+  it('normalizes malformed totals at the composed resource boundary', async () => {
+    const c = createResourceController<Row>({
+      fetcher: async () => ({ rows: all, total: Number.NaN }),
+      immediate: false,
+    })
+    await c.load()
+    expect(c.getState().total).toBe(0)
+    expect(c.pageCount()).toBe(1)
   })
 })

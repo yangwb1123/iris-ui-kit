@@ -23,6 +23,16 @@ describe('createUndoStack', () => {
     expect(u.canRedo()).toBe(false)
   })
 
+  it('retains an explicitly provided undefined initial snapshot', () => {
+    const u = createUndoStack<number | undefined>({ initial: undefined })
+    u.push(1)
+
+    expect(u.depth).toBe(2)
+    expect(u.undo()).toBeUndefined()
+    expect(u.index).toBe(0)
+    expect(u.canRedo()).toBe(true)
+  })
+
   // ─── Push / undo / redo  ───────────────────────────────────────────────
 
   it('records a push and allows undo to the initial', () => {
@@ -151,6 +161,40 @@ describe('createUndoStack', () => {
     expect(u.undo()?.field).toBe('')
   })
 
+  it('clears redo history when a branched push merges into the current snapshot', () => {
+    const u = createUndoStack<number>({
+      initial: 0,
+      merge: (prev, next) => prev === 1 && next === 1.5,
+    })
+    u.push(1)
+    u.push(2)
+    u.undo()
+
+    u.push(1.5)
+
+    expect(u.depth).toBe(2)
+    expect(u.canRedo()).toBe(false)
+    expect(u.undo()).toBe(0)
+  })
+
+  it('preserves the redo branch when a merge predicate throws', () => {
+    const error = new Error('merge failed')
+    const u = createUndoStack<number>({
+      initial: 0,
+      merge: (_prev, next) => {
+        if (next === 1.5) throw error
+        return false
+      },
+    })
+    u.push(1)
+    u.push(2)
+    u.undo()
+
+    expect(() => u.push(1.5)).toThrow(error)
+    expect(u.canRedo()).toBe(true)
+    expect(u.redo()).toBe(2)
+  })
+
   it('merge is not called when equals returns true (skip takes precedence)', () => {
     const merge = vi.fn(() => true)
     const u = createUndoStack<number>({
@@ -189,6 +233,29 @@ describe('createUndoStack', () => {
     expect(u.undo()).toBeUndefined()
     expect(u.redo()).toBeUndefined()
   })
+
+  it('normalizes fractional maxHistory to a finite integer bound', () => {
+    const u = createUndoStack<number>({ maxHistory: 2.9, initial: 0 })
+    u.push(1)
+    u.push(2)
+
+    expect(u.depth).toBe(2)
+    expect(u.undo()).toBe(1)
+    expect(u.undo()).toBeUndefined()
+  })
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1, 0.5])(
+    'disables history for invalid maxHistory %s',
+    (maxHistory) => {
+      const u = createUndoStack<number>({ maxHistory, initial: 0 })
+      u.push(1)
+
+      expect(u.depth).toBe(0)
+      expect(u.index).toBe(-1)
+      expect(u.canUndo()).toBe(false)
+      expect(u.canRedo()).toBe(false)
+    },
+  )
 
   // ─── Integration: object snapshots ─────────────────────────────────────
 

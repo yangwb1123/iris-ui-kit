@@ -1,4 +1,5 @@
-import { cleanup, render, renderHook } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, renderHook, waitFor } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { describe, expect, it, afterEach, vi } from 'vitest'
 import {
   GRID_COLUMNS_CHANGE_EVENT,
@@ -9,6 +10,7 @@ import {
 import {
   useGridColumns,
   useGridCore,
+  useGridPagination,
   useGridRows,
   useGridSelection,
   useGridVirtual,
@@ -37,6 +39,174 @@ describe('Solid Grid Core bridge', () => {
     expect(result.virtual.state().totalSize).toBe(40)
     result.selection.model.toggle('b')
     expect(result.selection.selection()).toEqual(['a', 'b'])
+  })
+
+  it('hands controlled pagination changes from props into the core model', () => {
+    let setPage!: (page: number) => void
+    const Harness = (props: { page: number; total: number }) => {
+      const core = useGridCore()
+      const pagination = useGridPagination(core, props)
+      return <output data-testid="page">{pagination.pagination().page}</output>
+    }
+    const Parent = () => {
+      const [page, updatePage] = createSignal(1)
+      setPage = updatePage
+      return <Harness page={page()} total={20} />
+    }
+
+    const view = render(() => <Parent />)
+    expect(view.getByTestId('page').textContent).toBe('1')
+    setPage(2)
+    expect(view.getByTestId('page').textContent).toBe('2')
+  })
+
+  it('restores the uncontrolled visibility snapshot across rejected control handoff', async () => {
+    let setVisibility!: (value: Record<string, boolean> | undefined) => void
+    let toggleVisibility!: () => void
+    const Harness = (props: {
+      visibility?: Record<string, boolean>
+      defaultVisibility: Record<string, boolean>
+    }) => {
+      const core = useGridCore()
+      const columns = useGridColumns(core, props)
+      toggleVisibility = () => columns.toggleVisibility('age')
+      return <output data-testid="visibility">{String(columns.state().visibility.age)}</output>
+    }
+    const Parent = () => {
+      const [visibility, updateVisibility] = createSignal<Record<string, boolean> | undefined>({
+        age: false,
+      })
+      setVisibility = updateVisibility
+      return <Harness visibility={visibility()} defaultVisibility={{ age: false }} />
+    }
+
+    const view = render(() => <Parent />)
+    expect(view.getByTestId('visibility').textContent).toBe('false')
+
+    toggleVisibility()
+    await waitFor(() => expect(view.getByTestId('visibility').textContent).toBe('false'))
+
+    setVisibility(undefined)
+    await waitFor(() => expect(view.getByTestId('visibility').textContent).toBe('false'))
+
+    setVisibility({ age: true })
+    await waitFor(() => expect(view.getByTestId('visibility').textContent).toBe('true'))
+    setVisibility(undefined)
+    await waitFor(() => expect(view.getByTestId('visibility').textContent).toBe('false'))
+    view.unmount()
+  })
+
+  it('isolates all column snapshots and restores each uncontrolled channel after handoff', async () => {
+    let columns!: ReturnType<typeof useGridColumns>
+    let setVisibility!: (value: Record<string, boolean> | undefined) => void
+    let setOrder!: (value: string[] | undefined) => void
+    let setWidths!: (value: Record<string, number> | undefined) => void
+    let setPinned!: (value: Record<string, 'left' | 'right' | null> | undefined) => void
+    const Harness = (props: {
+      visibility?: Record<string, boolean>
+      order?: string[]
+      widths?: Record<string, number>
+      pinned?: Record<string, 'left' | 'right' | null>
+      defaultVisibility: Record<string, boolean>
+      defaultOrder: string[]
+      defaultWidths: Record<string, number>
+      defaultPinned: Record<string, 'left' | 'right' | null>
+    }) => {
+      const core = useGridCore()
+      columns = useGridColumns(core, props)
+      return (
+        <>
+          <output data-testid="state">{JSON.stringify(columns.state())}</output>
+          <button
+            type="button"
+            onClick={() => {
+              columns.setVisibility({ age: true })
+              columns.setOrder(['age', 'name'])
+              columns.setWidths({ name: 116 })
+              columns.setPinned('name', null)
+            }}
+          >
+            edit
+          </button>
+        </>
+      )
+    }
+    const Parent = () => {
+      const [visibility, updateVisibility] = createSignal<Record<string, boolean> | undefined>()
+      const [order, updateOrder] = createSignal<string[] | undefined>()
+      const [widths, updateWidths] = createSignal<Record<string, number> | undefined>()
+      const [pinned, updatePinned] = createSignal<
+        Record<string, 'left' | 'right' | null> | undefined
+      >()
+      setVisibility = updateVisibility
+      setOrder = updateOrder
+      setWidths = updateWidths
+      setPinned = updatePinned
+      return (
+        <Harness
+          visibility={visibility()}
+          order={order()}
+          widths={widths()}
+          pinned={pinned()}
+          defaultVisibility={{ age: false }}
+          defaultOrder={['name', 'age']}
+          defaultWidths={{ name: 100 }}
+          defaultPinned={{ name: 'left' }}
+        />
+      )
+    }
+    const view = render(() => <Parent />)
+    fireEvent.click(view.getByRole('button', { name: 'edit' }))
+    expect(columns.model.get()).toMatchObject({
+      visibility: { age: true },
+      order: ['age', 'name'],
+      widths: { name: 116 },
+      pinned: { name: null },
+    })
+
+    const controlled = {
+      visibility: { age: false },
+      order: ['name'],
+      widths: { name: 310 },
+      pinned: { name: 'right' as 'left' | 'right' | null },
+    }
+    setVisibility(controlled.visibility)
+    setOrder(controlled.order)
+    setWidths(controlled.widths)
+    setPinned(controlled.pinned)
+    await waitFor(() => expect(columns.model.get()).toMatchObject(controlled))
+
+    const snapshot = columns.state()
+    snapshot.visibility.age = true
+    snapshot.order.push('mutated')
+    snapshot.widths.name = 999
+    snapshot.pinned.name = 'left'
+    expect(columns.model.get()).toMatchObject(controlled)
+
+    controlled.visibility.age = true
+    controlled.order.push('mutated-input')
+    controlled.widths.name = 998
+    controlled.pinned.name = 'left'
+    expect(columns.model.get()).toMatchObject({
+      visibility: { age: false },
+      order: ['name'],
+      widths: { name: 310 },
+      pinned: { name: 'right' },
+    })
+
+    setVisibility(undefined)
+    setOrder(undefined)
+    setWidths(undefined)
+    setPinned(undefined)
+    await waitFor(() =>
+      expect(columns.model.get()).toMatchObject({
+        visibility: { age: true },
+        order: ['age', 'name'],
+        widths: { name: 116 },
+        pinned: { name: null },
+      }),
+    )
+    view.unmount()
   })
 
   it('routes nested row mutations through tree accessors', () => {

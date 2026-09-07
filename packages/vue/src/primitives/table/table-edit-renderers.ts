@@ -1,16 +1,14 @@
 import { h, type Ref, type VNode } from 'vue'
 import type { IrisTableColumn } from './types'
-
-export interface TableRowEditSession {
-  draft: string
-  error: string | null
-}
+import type { TableRowEditSession } from './table-row-edit'
+export type { TableRowEditSession } from './table-row-edit'
 
 export interface TableEditorRenderContext {
   rowEditorRefs: Map<string, HTMLInputElement | null>
   editorInputRef: Ref<HTMLInputElement | null>
   editingDraft: Readonly<Ref<string>>
   setEditingDraft: (draft: string) => void
+  setRowSessionDraft: (editCellId: string, draft: string) => void
   editError: Readonly<Ref<string | null>>
   commitEdit: (row: Record<string, unknown>, col: IrisTableColumn, index: number) => void
   cancelEdit: () => void
@@ -19,8 +17,17 @@ export interface TableEditorRenderContext {
     col: IrisTableColumn,
     index: number,
     editCellId: string,
+    expected?: TableRowEditSession,
+  ) => boolean
+  moveRowEditOnTab: (
+    key: string | number,
+    col: IrisTableColumn,
+    index: number,
+    editCellId: string,
+    expected: TableRowEditSession,
+    direction: 1 | -1,
   ) => void
-  cancelRowEdit: () => void
+  cancelRowEdit: (expected?: TableRowEditSession) => void
   editPreview: boolean
   previewValue: (row: Record<string, unknown>, col: IrisTableColumn, draft: string) => unknown
 }
@@ -97,18 +104,21 @@ export function renderRowSessionContent(
     'aria-invalid': error ? 'true' : undefined,
     'aria-describedby': error ? `${editCellId}-error` : undefined,
     onInput: (e: Event) => {
-      session.draft = (e.target as HTMLInputElement).value
+      ctx.setRowSessionDraft(editCellId, (e.target as HTMLInputElement).value)
     },
     onKeydown: (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Tab') {
         e.preventDefault()
-        ctx.commitRowSession(key, col, index, editCellId)
+        ctx.moveRowEditOnTab(key, col, index, editCellId, session, e.shiftKey ? -1 : 1)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        ctx.commitRowSession(key, col, index, editCellId, session)
       } else if (e.key === 'Escape') {
         e.preventDefault()
-        ctx.cancelRowEdit()
+        ctx.cancelRowEdit(session)
       }
     },
-    onBlur: () => ctx.commitRowSession(key, col, index, editCellId),
+    onBlur: () => ctx.commitRowSession(key, col, index, editCellId, session),
     onClick: (e: MouseEvent) => e.stopPropagation(),
     onDblclick: (e: MouseEvent) => e.stopPropagation(),
     style: editorInputStyle(error),

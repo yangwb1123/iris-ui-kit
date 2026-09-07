@@ -85,6 +85,7 @@ export function createGridSortingModel(
   })
 
   const commitSort = (sort: SortState | null, notify: boolean): void => {
+    if (sameSort(store.getState().sort, sort)) return
     const next = cloneSort(sort)
     store.setState((state) => ({ ...state, sort: next }))
     if (!notify) return
@@ -93,6 +94,7 @@ export function createGridSortingModel(
   }
 
   const commitMultiSort = (sorts: readonly SortState[], notify: boolean): void => {
+    if (sameSorts(store.getState().multiSort, sorts)) return
     const next = cloneSorts(sorts)
     store.setState((state) => ({ ...state, multiSort: next }))
     if (!notify) return

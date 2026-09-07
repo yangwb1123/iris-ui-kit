@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { matchesRule, mergeFormFilters, type FilterRule } from '@iris-ui-kit/core'
+import { filterTableRows, mergeFormFilters, type FilterRule } from '@iris-ui-kit/core'
 import {
   createGridFilteringFeature,
   type GridCore,
@@ -94,46 +94,12 @@ export function useGridFiltering<
     for (const [key, value] of Object.entries(options.query?.filters ?? {})) {
       if (value !== '') merged[key] = value
     }
-    const active = Object.entries(merged).filter(([, value]) => value != null && value !== '')
-    const checked = Object.entries(filterValues).filter(([, values]) => values.length > 0)
-    const queryValues = Object.entries(options.query?.inValues ?? {}).filter(
-      ([, values]) => values.length > 0,
-    )
-    const rules = options.query?.rules ?? []
-    if (
-      active.length === 0 &&
-      checked.length === 0 &&
-      queryValues.length === 0 &&
-      rules.length === 0
-    ) {
-      return data
-    }
-
-    const columns = new Map(options.columns.map((column) => [column.key, column]))
-    return data.filter((row) => {
-      const textMatches = active.every(([key, value]) => {
-        const column = columns.get(key)
-        if (!column) return true
-        const raw = options.getValue(row, column)
-        return column.filterMethod
-          ? column.filterMethod(raw, row, value)
-          : String(raw ?? '')
-              .toLowerCase()
-              .includes(value.toLowerCase())
-      })
-      const valuesMatch = checked.every(([key, values]) => {
-        const column = columns.get(key)
-        return !column || values.includes(String(options.getValue(row, column) ?? ''))
-      })
-      const queryValuesMatch = queryValues.every(([key, values]) => {
-        const column = columns.get(key)
-        return !column || values.includes(String(options.getValue(row, column) ?? ''))
-      })
-      const rulesMatch = rules.every((rule) => {
-        const column = columns.get(rule.key)
-        return !column || matchesRule(options.getValue(row, column), rule)
-      })
-      return textMatches && valuesMatch && queryValuesMatch && rulesMatch
+    return filterTableRows(data, options.columns, {
+      getValue: options.getValue,
+      filters: merged,
+      filterValues,
+      additionalFilterValues: options.query?.inValues ? [options.query.inValues] : undefined,
+      filterRules: options.query?.rules,
     })
   }, [
     data,

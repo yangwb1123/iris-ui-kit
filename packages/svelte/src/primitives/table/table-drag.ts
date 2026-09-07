@@ -1,4 +1,10 @@
-import { createSortable, type SortableController, type SortableRect } from '@iris-ui-kit/core'
+import {
+  createSortable,
+  reorderColumnsInList,
+  reorderRowsInList,
+  type SortableController,
+  type SortableRect,
+} from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableColumnDrag, IrisTableRowDrag } from './types'
 
 export interface TableDragBridgeOptions {
@@ -87,17 +93,14 @@ export function createTableDragBridge(options: TableDragBridgeOptions): TableDra
         : options.reorderRows
           ? options.reorderRows(activeId, overId)
           : (() => {
-              const next = [...options.getRows()]
-              const from = next.findIndex(
-                (row, index) => String(options.getRowId(row, index)) === activeId,
+              const source = options.getRows()
+              const next = reorderRowsInList(
+                source,
+                (row, index) => String(options.getRowId(row, index)),
+                activeId,
+                overId,
               )
-              const to = next.findIndex(
-                (row, index) => String(options.getRowId(row, index)) === overId,
-              )
-              if (from < 0 || to < 0 || from === to) return null
-              const [moved] = next.splice(from, 1)
-              next.splice(to, 0, moved!)
-              return next
+              return next === source ? null : next
             })()
       if (rows) {
         if (!directCommit) options.commitRows?.(rows)
@@ -143,12 +146,9 @@ export function createTableDragBridge(options: TableDragBridgeOptions): TableDra
     }
     const { activeId, overId } = columnController.end()
     if (activeId !== null && overId !== null && activeId !== overId) {
-      const columns = [...options.getColumns()]
-      const from = columns.findIndex((column) => column.key === activeId)
-      const to = columns.findIndex((column) => column.key === overId)
-      if (from >= 0 && to >= 0 && from !== to) {
-        const [moved] = columns.splice(from, 1)
-        columns.splice(to, 0, moved!)
+      const source = options.getColumns()
+      const columns = reorderColumnsInList(source, activeId, overId)
+      if (columns !== source) {
         config.onReorder(columns)
         options.commitColumnOrder?.(columns.map((column) => column.key))
       }

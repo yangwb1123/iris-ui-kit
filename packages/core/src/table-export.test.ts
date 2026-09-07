@@ -135,6 +135,15 @@ describe('toSpreadsheetXml', () => {
     expect(xml).toContain('<Column ss:Width="52.5"/>')
   })
 
+  it('does not emit invalid widths for finite extremes', () => {
+    const xml = toSpreadsheetXml(rows, columns, {
+      columnWidths: [Number.MAX_VALUE, Number.MIN_VALUE],
+    })
+    expect(xml).not.toContain('Infinity')
+    expect(xml).not.toContain('ss:Width="0"')
+    expect(xml).not.toContain('NaN')
+  })
+
   it('combines headerStyle with columnWidths', () => {
     const xml = toSpreadsheetXml(rows, columns, { headerStyle: true, columnWidths: [8] })
     expect(xml).toContain('<Styles><Style ss:ID="Header"><Font ss:Bold="1"/></Style></Styles>')
@@ -179,8 +188,9 @@ describe('toCsv', () => {
       expect(toCsv([{ v: '@SUM(A1)' }], cols)).toBe("V\n'@SUM(A1)")
     })
 
-    it('neutralizes tab-led cells that would shift the lead char', () => {
+    it('neutralizes tab/newline-led cells that would shift the lead char', () => {
       expect(toCsv([{ v: '\t=1+1' }], cols)).toBe("V\n'\t=1+1")
+      expect(toCsv([{ v: '\n=1+1' }], cols)).toBe('V\n"\'\n=1+1"')
     })
 
     it('does NOT mangle real numbers (including negatives)', () => {
@@ -198,6 +208,11 @@ describe('toCsv', () => {
       expect(xml).toContain(`<Data ss:Type="String">&apos;=1+1</Data>`)
       const num = toSpreadsheetXml([{ v: -5 }], cols)
       expect(num).toContain('<Data ss:Type="Number">-5</Data>')
+    })
+
+    it('removes XML 1.0-invalid control characters', () => {
+      const xml = toSpreadsheetXml([{ v: 'a\u0000b\u000Bc' }], cols)
+      expect(xml).toContain('<Data ss:Type="String">abc</Data>')
     })
   })
 })
@@ -217,6 +232,14 @@ describe('toJson', () => {
   it('honors pretty: false (compact)', () => {
     expect(toJson(rows, columns, { pretty: false })).not.toContain('\n')
   })
+
+  it('preserves an own __proto__ column as JSON data', () => {
+    const row = Object.create(null) as Record<string, unknown>
+    row.__proto__ = 'literal'
+    expect(toJson([row], [{ key: '__proto__', title: 'Prototype' }], { pretty: false })).toBe(
+      '[{"__proto__":"literal"}]',
+    )
+  })
 })
 
 describe('toHtml', () => {
@@ -230,6 +253,28 @@ describe('toHtml', () => {
 
   it('adds a caption when given', () => {
     expect(toHtml(rows, columns, { caption: 'People' })).toContain('<caption>People</caption>')
+  })
+
+  it('fails closed for malformed runtime rows, columns, and options', () => {
+    expect(toHtml(null as never, null as never, null as never)).toBe(
+      '<table><thead><tr></tr></thead><tbody></tbody></table>',
+    )
+    expect(toCsv(null as never, null as never)).toBe('')
+    expect(toJson(null as never, null as never, null as never)).toBe('[]')
+    expect(toSpreadsheetXml(null as never, null as never, null as never)).toContain(
+      '<Worksheet ss:Name="Sheet1">',
+    )
+  })
+
+  it('does not read inherited row, column, or option fields', () => {
+    const row = Object.create({ value: 'inherited' })
+    const inheritedColumn = Object.create({ key: 'value', title: 'Value' })
+    const inheritedOptions = Object.create({ caption: 'Inherited', headerStyle: true })
+    expect(toCsv([row], [inheritedColumn])).toBe('')
+    expect(toHtml([row], [{ key: 'value', title: 'Value' }], inheritedOptions)).toContain(
+      '<table><thead>',
+    )
+    expect(toSpreadsheetXml([], columns, inheritedOptions)).not.toContain('<Styles>')
   })
 })
 
@@ -245,19 +290,24 @@ describe('parseCsv (import parity)', () => {
     expect(parseCsv('"x,y","say ""hi"""')).toEqual([['x,y', 'say "hi"']])
   })
 
-  it('round-trips toCsv output', () => {
+  it('round-trips toCsv output, including embedded CR and a download BOM', () => {
     const csv = toCsv(
-      [
-        { a: 1, b: 'x,y' },
-        { a: 2, b: 'z' },
-      ],
+      [{ a: 1, b: 'x\r\ny' }],
       [
         { key: 'a', title: 'a' },
         { key: 'b', title: 'b' },
       ],
     )
-    const parsed = parseCsv(csv)
-    expect(parsed[0]).toEqual(['a', 'b'])
-    expect(parsed[1]).toEqual(['1', 'x,y'])
+    expect(parseCsv(csv)).toEqual([
+      ['a', 'b'],
+      ['1', 'x\r\ny'],
+    ])
+    expect(parseCsv('\uFEFF' + csv)).toEqual(parseCsv(csv))
+  })
+
+  it('fails closed on malformed quoting instead of silently dropping quotes', () => {
+    expect(parseCsv('a,"unterminated')).toEqual([])
+    expect(parseCsv('a,"ok"tail')).toEqual([])
+    expect(parseCsv('a"bad,b')).toEqual([])
   })
 })

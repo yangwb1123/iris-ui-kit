@@ -304,9 +304,9 @@ describe('IrisTable parity-AB: filter panel (filterValues)', () => {
     await waitFor(() => {
       expect(container.querySelector('[data-iris-table-cell="name"]')).toBeTruthy()
     })
-    expect(query).toHaveBeenCalledWith(
-      expect.objectContaining({ filters: { status: 'active,paused' } }),
-    )
+    expect((query.mock.calls[0] as unknown[] | undefined)?.[0]).toMatchObject({
+      filters: { status: 'active,paused' },
+    })
   })
 })
 
@@ -340,7 +340,7 @@ describe('IrisTable parity-AB: tableRef handle', () => {
     // commitProxy: merges params and re-requests.
     ref.current!.commitProxy({ page: 2 })
     await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })),
+      expect((query.mock.lastCall as unknown[] | undefined)?.[0]).toMatchObject({ page: 2 }),
     )
     expect(ref.current!.getProxyInfo()).toEqual({ page: 2, pageSize: 10, total: 3 })
   })
@@ -414,9 +414,7 @@ describe('IrisTable parity-AB: tableRef handle', () => {
     // …but the NEXT page fetch replaces the override wholesale: the pager now
     // shows page 2, so the table must render page-2 rows, not the stale list.
     ref.current!.commitProxy({ page: 2 })
-    await waitFor(() =>
-      expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })),
-    )
+    await waitFor(() => expect(query.mock.lastCall?.[0]).toMatchObject({ page: 2 }))
     await waitFor(() => expect(nameCells(container)).toEqual(['Bob']))
   })
 })

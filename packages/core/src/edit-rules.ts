@@ -47,6 +47,9 @@ export interface EditRule<Row = unknown> {
 
 export type EditRules<Row = unknown> = EditRule<Row>[]
 
+/** The validation channel that produced a commit outcome. */
+export type EditValidationSource = 'editRules' | 'custom' | 'none'
+
 /**
  * Data context for row-scoped rules such as `unique`. Passed to
  * `validateEditRules` / `validateEditRulesAsync` as the optional 5th
@@ -56,8 +59,10 @@ export type EditRules<Row = unknown> = EditRule<Row>[]
 export interface EditRuleContext<Row = unknown> {
   /** The full row list to scan — typically the table's current rows. */
   rows: Row[]
-  /** The column being validated; rows are indexed by this key. */
+  /** The column being validated; adapters may use a display/key alias. */
   columnKey: string
+  /** Resolve the value for `columnKey` when it is backed by a dataIndex/path. */
+  getValue?: (row: Row) => unknown
 }
 
 export interface EditRuleResult {
@@ -95,7 +100,9 @@ function validateUniqueRule<Row>(
   const current = String(value)
   for (const other of context.rows) {
     if (other === row) continue
-    const otherValue = (other as Record<string, unknown>)[context.columnKey]
+    const otherValue = context.getValue
+      ? context.getValue(other)
+      : (other as Record<string, unknown>)[context.columnKey]
     if (isEmpty(otherValue)) continue
     if (String(otherValue) === current) return rule.message ?? DEFAULT_MESSAGES.unique
   }

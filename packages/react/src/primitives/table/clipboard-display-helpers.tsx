@@ -216,6 +216,7 @@ export function fnrCellStyle(
   fnrMatched: boolean,
   rangeSelected: boolean,
   stripedRow: boolean,
+  fallbackBackground = 'transparent',
 ): React.CSSProperties {
   return {
     backgroundColor: fnrActive
@@ -224,7 +225,7 @@ export function fnrCellStyle(
         ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
         : stripedRow
           ? 'var(--iris-surface)'
-          : 'transparent',
+          : fallbackBackground,
     ...(fnrActive ? { color: 'var(--iris-primary-foreground, #fff)' } : null),
   }
 }

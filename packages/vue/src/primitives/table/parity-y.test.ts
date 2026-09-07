@@ -409,7 +409,12 @@ describe('IrisTable batch Y — columnVisibility / filters / seq / spanMethod / 
     // commitProxy: merges params and re-requests.
     exposed(wrapper).commitProxy({ page: 2 })
     await settle()
-    expect(query).toHaveBeenLastCalledWith({ page: 2, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 2,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     // getProxyInfo: page/pageSize/total snapshot; null without a proxy.
     expect(exposed(wrapper).getProxyInfo()).toEqual({ page: 2, pageSize: 10, total: 25 })
     const local = mount(IrisTable, {

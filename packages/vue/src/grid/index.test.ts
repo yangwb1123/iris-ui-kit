@@ -1,4 +1,4 @@
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, type PropType } from 'vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import type { GridColumnsModel, GridCore } from '@iris-ui-kit/core/grid'
@@ -37,6 +37,125 @@ describe('Vue Grid Core bridge', () => {
 
     wrapper.unmount()
     expect(core!.status).toBe('destroyed')
+  })
+
+  it('restores the uncontrolled visibility snapshot across rejected control handoff', async () => {
+    const Harness = defineComponent({
+      props: {
+        visibility: Object as PropType<Record<string, boolean>>,
+        defaultVisibility: Object as PropType<Record<string, boolean>>,
+      },
+      setup(props) {
+        const core = useGridCore()
+        const columns = useGridColumns(core, props)
+        return () =>
+          h(
+            'button',
+            { onClick: () => columns.toggleVisibility('age') },
+            String(columns.state.value.visibility.age),
+          )
+      },
+    })
+
+    const wrapper = mount(Harness, {
+      props: { visibility: { age: false }, defaultVisibility: { age: false } },
+    })
+    expect(wrapper.text()).toBe('false')
+
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.text()).toBe('false')
+
+    await wrapper.setProps({ visibility: undefined })
+    await nextTick()
+    expect(wrapper.text()).toBe('false')
+
+    await wrapper.setProps({ visibility: { age: true } })
+    await nextTick()
+    expect(wrapper.text()).toBe('true')
+    await wrapper.setProps({ visibility: undefined })
+    await nextTick()
+    expect(wrapper.text()).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('isolates all column snapshots and restores each uncontrolled channel after handoff', async () => {
+    let columns: ReturnType<typeof useGridColumns> | undefined
+    const Harness = defineComponent({
+      props: {
+        visibility: Object as PropType<Record<string, boolean>>,
+        order: Array as PropType<string[]>,
+        widths: Object as PropType<Record<string, number>>,
+        pinned: Object as PropType<Record<string, 'left' | 'right' | null>>,
+        defaultVisibility: Object as PropType<Record<string, boolean>>,
+        defaultOrder: Array as PropType<string[]>,
+        defaultWidths: Object as PropType<Record<string, number>>,
+        defaultPinned: Object as PropType<Record<string, 'left' | 'right' | null>>,
+      },
+      setup(props) {
+        const core = useGridCore()
+        columns = useGridColumns(core, props)
+        return () => h('output', JSON.stringify(columns!.state.value))
+      },
+    })
+    const controlled = {
+      visibility: { age: false },
+      order: ['name'],
+      widths: { name: 310 },
+      pinned: { name: 'right' as const },
+    }
+    const wrapper = mount(Harness, {
+      props: {
+        defaultVisibility: { age: false },
+        defaultOrder: ['name', 'age'],
+        defaultWidths: { name: 100 },
+        defaultPinned: { name: 'left' },
+      },
+    })
+
+    columns!.setVisibility({ age: true })
+    columns!.setOrder(['age', 'name'])
+    columns!.setWidths({ name: 116 })
+    columns!.setPinned('name', null)
+    expect(columns!.model.get()).toMatchObject({
+      visibility: { age: true },
+      order: ['age', 'name'],
+      widths: { name: 116 },
+      pinned: { name: null },
+    })
+
+    await wrapper.setProps(controlled)
+    expect(columns!.model.get()).toMatchObject(controlled)
+    columns!.state.value.visibility.age = true
+    columns!.state.value.order.push('mutated')
+    columns!.state.value.widths.name = 999
+    columns!.state.value.pinned.name = 'left'
+    expect(columns!.model.get()).toMatchObject(controlled)
+
+    controlled.visibility.age = true
+    controlled.order.push('mutated-input')
+    controlled.widths.name = 998
+    controlled.pinned.name = 'left'
+    expect(columns!.model.get()).toMatchObject({
+      visibility: { age: false },
+      order: ['name'],
+      widths: { name: 310 },
+      pinned: { name: 'right' },
+    })
+
+    await wrapper.setProps({
+      visibility: undefined,
+      order: undefined,
+      widths: undefined,
+      pinned: undefined,
+    })
+    await nextTick()
+    expect(columns!.model.get()).toMatchObject({
+      visibility: { age: true },
+      order: ['age', 'name'],
+      widths: { name: 116 },
+      pinned: { name: null },
+    })
+    wrapper.unmount()
   })
 
   it('uses one core instance for rows + selection and destroys it with the component', async () => {

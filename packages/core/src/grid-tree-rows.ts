@@ -1,4 +1,5 @@
 import type { GridRowKey } from './grid-rows'
+import { hasMalformedTree, wasSeen } from './grid-tree-validation'
 import { reorderRowsInList } from './table-rows'
 export { setTreeChildren } from './grid-tree-children'
 
@@ -309,20 +310,6 @@ function replaceChildren<Row extends Record<string, unknown>>(
   return { ...row, [childKey]: children } as Row
 }
 
-function wasSeen<Row extends Record<string, unknown>>(
-  row: Row,
-  rowKey: GridRowKey | undefined,
-  seenKeys: Set<GridRowKey>,
-  seenRows: Set<Row>,
-): boolean {
-  if (seenRows.has(row)) return true
-  seenRows.add(row)
-  if (rowKey === undefined) return false
-  if (seenKeys.has(rowKey)) return true
-  seenKeys.add(rowKey)
-  return false
-}
-
 function updateNodes<Row extends Record<string, unknown>>(
   nodes: readonly Row[],
   key: GridRowKey,
@@ -458,6 +445,26 @@ export function updateTreeRows<Row extends Record<string, unknown>>(
   patch: Partial<Row>,
   options: GridTreeRowsOptions<Row>,
 ): GridTreeMutationResult<Row> {
+  if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) {
+    return {
+      rows: nodes as Row[],
+      matched: false,
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
+  // Match reorder's fail-closed write contract: a target must never be
+  // changed while another reachable branch makes the source tree ambiguous.
+  if (hasMalformedTree(nodes, options)) {
+    return {
+      rows: nodes as Row[],
+      matched: findTreeRow(nodes, key, options) !== undefined,
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
   return updateNodes(nodes, key, patch, options, new Set(), new Set())
 }
 
@@ -467,5 +474,14 @@ export function removeTreeRows<Row extends Record<string, unknown>>(
   keys: ReadonlySet<GridRowKey>,
   options: GridTreeRowsOptions<Row>,
 ): GridTreeMutationResult<Row> {
+  if (hasMalformedTree(nodes, options)) {
+    return {
+      rows: nodes as Row[],
+      matched: [...keys].some((key) => findTreeRow(nodes, key, options) !== undefined),
+      changed: false,
+      blocked: true,
+      removed: new Set(),
+    }
+  }
   return removeNodes(nodes, keys, options, new Set(), new Set())
 }

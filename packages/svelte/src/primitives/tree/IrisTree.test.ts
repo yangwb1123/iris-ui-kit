@@ -1,6 +1,7 @@
 import { render, fireEvent } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { waitFor } from '@testing-library/svelte'
 import IrisTree from './IrisTree.svelte'
 
 const nodes = [
@@ -30,6 +31,28 @@ describe('IrisTree', () => {
     flushSync()
     const items = container.querySelectorAll('[data-iris-tree-item]')
     expect(items.length).toBe(4) // 2 roots + 2 children
+  })
+
+  it('clears lazy loading on rejection and remains retryable', async () => {
+    const loadChildren = vi
+      .fn<() => Promise<{ id: string; label: string }>>()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce([{ id: 'child', label: 'Child' }])
+    const lazyNodes = [{ id: 'lazy', label: 'Lazy', loadChildren }]
+    const { container } = render(IrisTree, { props: { nodes: lazyNodes } })
+    const toggle = () => container.querySelector('[data-iris-tree-item] button') as HTMLElement
+
+    await fireEvent.click(toggle())
+    await waitFor(() => {
+      const item = container.querySelector('[data-iris-tree-item]')!
+      expect(item.getAttribute('data-loading')).toBeNull()
+      expect(item.getAttribute('data-error')).toBe('')
+      expect(item.getAttribute('aria-expanded')).toBe('false')
+    })
+
+    await fireEvent.click(toggle())
+    await waitFor(() => expect(container.textContent).toContain('Child'))
+    expect(loadChildren).toHaveBeenCalledTimes(2)
   })
 
   it('shows empty state', () => {
@@ -125,6 +148,23 @@ describe('IrisTree', () => {
       expect(calls.at(-1)!).toContain('a1')
     })
 
+    it('does not reseed uncontrolled checks from a fresh defaultChecked prop', async () => {
+      const view = render(IrisTree, {
+        props: {
+          nodes: checkNodes,
+          checkable: true,
+          expanded: ['root', 'a'],
+          defaultChecked: [],
+        },
+      })
+      await fireEvent.click(checkboxFor(view.container, 'A')!)
+      flushSync()
+      await view.rerender({ defaultChecked: [] })
+      flushSync()
+      expect(checkboxFor(view.container, 'A')!.checked).toBe(true)
+      expect(checkboxFor(view.container, 'A1')!.checked).toBe(true)
+    })
+
     it('a partially-checked parent is indeterminate (aria mixed)', () => {
       const { container } = render(IrisTree, {
         props: {
@@ -145,6 +185,31 @@ describe('IrisTree', () => {
         props: { nodes: checkNodes, expanded: ['root'] },
       })
       expect(checkboxFor(container, 'Root')).toBeNull()
+    })
+
+    it('cascades to lazy children when eager children is an empty placeholder', async () => {
+      const lazy = [
+        {
+          id: 'root',
+          label: 'Root',
+          children: [],
+          loadChildren: async () => [{ id: 'child', label: 'Child' }],
+        },
+      ]
+      const { container } = render(IrisTree, { props: { nodes: lazy, checkable: true } })
+      await fireEvent.click(container.querySelector('[data-iris-tree-item] button')!)
+      await waitFor(() => expect(container.textContent).toContain('Child'))
+      await fireEvent.click(
+        container.querySelector('[data-iris-tree-checkbox][aria-label="Root"]')!,
+      )
+      flushSync()
+      expect(
+        (
+          container.querySelector(
+            '[data-iris-tree-checkbox][aria-label="Child"]',
+          ) as HTMLInputElement
+        ).checked,
+      ).toBe(true)
     })
   })
 })

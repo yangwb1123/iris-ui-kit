@@ -34,18 +34,10 @@ export function useGridRange<Row extends Record<string, unknown> = Record<string
   const model = core.invoke<GridRangeModel>('getRangeModel')
   const state = useStore(model)
   const range = createMemo(() => {
-    const { anchor, active } = state()
-    if (!anchor || !active) return null
-    return {
-      start: {
-        row: Math.min(anchor.row, active.row),
-        col: Math.min(anchor.col, active.col),
-      },
-      end: {
-        row: Math.max(anchor.row, active.row),
-        col: Math.max(anchor.col, active.col),
-      },
-    }
+    // Subscribe through the bridge, while Core remains the single range
+    // normalization owner for inverted anchor/active coordinates.
+    void state()
+    return model.getRange()
   })
   return { model, state, range }
 }

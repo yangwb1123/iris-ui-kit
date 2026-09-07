@@ -47,15 +47,15 @@ export interface GridPaginationMethods {
 }
 
 function positiveInteger(value: number | undefined, fallback: number): number {
-  return value !== undefined && Number.isFinite(value) && value > 0
-    ? Math.max(1, Math.trunc(value))
-    : fallback
+  if (value === undefined || !Number.isFinite(value) || value <= 0) return fallback
+  const truncated = Math.trunc(value)
+  return Number.isSafeInteger(truncated) ? Math.max(1, truncated) : fallback
 }
 
 function nonNegativeInteger(value: number | undefined, fallback: number): number {
-  return value !== undefined && Number.isFinite(value) && value >= 0
-    ? Math.max(0, Math.trunc(value))
-    : fallback
+  if (value === undefined || !Number.isFinite(value) || value < 0) return fallback
+  const truncated = Math.trunc(value)
+  return Number.isSafeInteger(truncated) ? Math.max(0, truncated) : fallback
 }
 
 function snapshot(state: GridPaginationState): GridPaginationState {
@@ -67,19 +67,24 @@ export function createGridPaginationModel(
   options: GridPaginationFeatureOptions = {},
   emit?: (change: GridPaginationChange) => void,
 ): GridPaginationModel {
+  const pageSize = positiveInteger(options.defaultPageSize, 10)
+  const total = nonNegativeInteger(options.defaultTotal, 0)
   const store = createStore<GridPaginationState>({
     page: positiveInteger(options.defaultPage, 1),
-    pageSize: positiveInteger(options.defaultPageSize, 10),
-    total: nonNegativeInteger(options.defaultTotal, 0),
+    pageSize,
+    total,
   })
 
-  const commit = (page: number, pageSize: number, reason: GridPaginationChangeReason): void => {
+  const commit = (page: number, nextPageSize: number, reason: GridPaginationChangeReason): void => {
     const current = store.getState()
+    const pageSize = positiveInteger(nextPageSize, current.pageSize)
     const next = {
       page: positiveInteger(page, current.page),
-      pageSize: positiveInteger(pageSize, current.pageSize),
+      pageSize,
       total: current.total,
     }
+    if (next.page === current.page && next.pageSize === current.pageSize) return
+
     store.setState(next)
     const change: GridPaginationChange = {
       page: next.page,
@@ -94,14 +99,20 @@ export function createGridPaginationModel(
     store,
     get: () => snapshot(store.getState()),
     setPage: (page) => commit(page, store.getState().pageSize, 'page'),
-    setPageSize: (pageSize) => commit(1, pageSize, 'pageSize'),
+    setPageSize: (nextPageSize) => {
+      const current = store.getState()
+      const normalized = positiveInteger(nextPageSize, current.pageSize)
+      commit(normalized === current.pageSize ? current.page : 1, normalized, 'pageSize')
+    },
     set: (page, pageSize) => commit(page, pageSize, 'pagination'),
     sync(next) {
       const current = store.getState()
+      const pageSize = positiveInteger(next.pageSize, current.pageSize)
+      const total = nonNegativeInteger(next.total, current.total)
       const normalized = {
         page: positiveInteger(next.page, current.page),
-        pageSize: positiveInteger(next.pageSize, current.pageSize),
-        total: nonNegativeInteger(next.total, current.total),
+        pageSize,
+        total,
       }
       if (
         normalized.page !== current.page ||
@@ -122,8 +133,17 @@ export function createGridPaginationFeature<
   return {
     name: 'pagination',
     setup(context) {
-      const model = createGridPaginationModel(options, (change) =>
-        context.emit(GRID_PAGINATION_CHANGE_EVENT, change),
+      let active = true
+      const model = createGridPaginationModel(
+        {
+          ...options,
+          onChange: (change) => {
+            if (active) options.onChange?.(change)
+          },
+        },
+        (change) => {
+          if (active) context.emit(GRID_PAGINATION_CHANGE_EVENT, change)
+        },
       )
       const methods: GridPaginationMethods = {
         getPaginationModel: () => model,
@@ -134,7 +154,12 @@ export function createGridPaginationFeature<
         syncPagination: (state) => model.sync(state),
         getPageCount: () => model.pageCount(),
       }
-      return { methods: methods as unknown as Readonly<Record<string, GridMethod>> }
+      return {
+        methods: methods as unknown as Readonly<Record<string, GridMethod>>,
+        dispose: () => {
+          active = false
+        },
+      }
     },
   }
 }

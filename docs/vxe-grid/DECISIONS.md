@@ -3354,3 +3354,8 @@ generated output, and `git diff --check` passed.
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md [ok]: 报告: **Verdict**: `batch-en-review.md` = **PASS**（3 LOW / 2 INFO，无阻塞项）— 全仓库门禁执行通过并已提交。; 门禁结果: | Check | Result |; 最终测试计数（逐包直跑实测）: - **vue** 167 files / **1599**（+11 批 EN audit-log.test.ts）+ SSR ✅
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md
+
+## 2026-08-22 16:17:04 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md [ok]: Verdict: `batch-en-review.md` = **PASS**（3 LOW / 2 INFO，无阻塞项）; 门禁结果: | Check | Result |; Commit: ```; 最终测试计数（逐包直跑实测）: - **vue** 167 files / **1599**（+11 批 EN audit-log.test.ts）+ SSR ✅; 文档更新: - `comparison.md`：新增 **批 EN** 行（`✅ vue`，gate 实测全仓库块）+ 构建状态段落条目 + 汇总行 vue 1588→**1599**；review 3 LOW / 2 INFO 全数收入（select
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md

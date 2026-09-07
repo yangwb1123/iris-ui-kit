@@ -15,7 +15,13 @@ export function compareValues(a: unknown, b: unknown): number {
   if (a == null && b == null) return 0
   if (a == null) return -1
   if (b == null) return 1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
+  if (typeof a === 'number' && typeof b === 'number') {
+    const aNaN = Number.isNaN(a)
+    const bNaN = Number.isNaN(b)
+    if (aNaN || bNaN) return aNaN ? (bNaN ? 0 : 1) : -1
+    if (a === b) return 0
+    return a - b
+  }
   return String(a).localeCompare(String(b))
 }
 
@@ -85,18 +91,51 @@ export function matchesRule(value: unknown, rule: FilterRule): boolean {
  * `sort` (single column) or, when that is null, `multiSort` (most-significant
  * first); each column uses its `sorter` or {@link compareValues}.
  */
+function isSortState(value: unknown): value is SortState {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as { key?: unknown; direction?: unknown }
+  return (
+    typeof candidate.key === 'string' &&
+    (candidate.direction === 'asc' || candidate.direction === 'desc')
+  )
+}
+
+function isFilterRule(value: unknown): value is FilterRule {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { key?: unknown }).key === 'string'
+  )
+}
+
+function normalizeComparison(value: unknown): number {
+  return typeof value === 'number' && !Number.isNaN(value) ? value : 0
+}
+
 export function filterSort<Row>(
   rows: readonly Row[],
   columns: readonly DataViewColumn<Row>[],
   query: DataViewQuery,
 ): Row[] {
   const colMap = new Map<string, DataViewColumn<Row>>()
-  for (const c of columns) colMap.set(c.key, c)
+  if (Array.isArray(columns)) {
+    for (const column of columns) {
+      if (
+        typeof column === 'object' &&
+        column !== null &&
+        typeof (column as { key?: unknown }).key === 'string'
+      ) {
+        colMap.set(column.key, column)
+      }
+    }
+  }
   const colOf = (key: string): DataViewColumn<Row> | undefined => colMap.get(key)
   let working: readonly Row[] = rows
 
-  const activeFilters = Object.entries(query.filters).filter(([, v]) => v !== '')
-  const rules = query.filterRules ?? []
+  const activeFilters = Object.entries(query.filters ?? {}).filter(
+    ([, value]) => typeof value === 'string' && value !== '',
+  )
+  const rules = (Array.isArray(query.filterRules) ? query.filterRules : []).filter(isFilterRule)
   if (activeFilters.length > 0 || rules.length > 0) {
     working = working.filter(
       (row) =>
@@ -115,13 +154,21 @@ export function filterSort<Row>(
     )
   }
 
-  const sortCols: SortState[] = query.sort ? [query.sort] : (query.multiSort ?? [])
+  const sortCols: SortState[] =
+    query.sort != null
+      ? isSortState(query.sort)
+        ? [query.sort]
+        : []
+      : (Array.isArray(query.multiSort) ? query.multiSort : []).filter(isSortState)
   if (sortCols.length > 0) {
     working = [...working].sort((a, b) => {
       for (const s of sortCols) {
         const col = colOf(s.key)
         if (!col) continue
-        const cmp = col.sorter ? col.sorter(a, b) : compareValues(col.getValue(a), col.getValue(b))
+        const cmp =
+          typeof col.sorter === 'function'
+            ? normalizeComparison(col.sorter(a, b))
+            : normalizeComparison(compareValues(col.getValue(a), col.getValue(b)))
         if (cmp !== 0) return s.direction === 'asc' ? cmp : -cmp
       }
       return 0

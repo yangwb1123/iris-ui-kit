@@ -85,20 +85,14 @@ export function createTableKeyboard(options: {
     const col = target.dataset.irisCellCol
     if (row === undefined || col === undefined) return
     event.preventDefault()
-    const current = options.range.getState().active ?? { row: Number(row), col: Number(col) }
-    const nextRow =
-      event.key === 'ArrowUp'
-        ? Math.max(0, current.row - 1)
-        : event.key === 'ArrowDown'
-          ? Math.min(options.rows().length - 1, current.row + 1)
-          : current.row
-    const nextCol =
-      event.key === 'ArrowLeft'
-        ? Math.max(0, current.col - 1)
-        : event.key === 'ArrowRight'
-          ? Math.min(options.columns().length - 1, current.col + 1)
-          : current.col
-    options.range.extendRange(nextRow, nextCol)
+    const state = options.range.getState()
+    const fallback = { row: Number(row), col: Number(col) }
+    const current = state.anchor ? (state.active ?? fallback) : fallback
+    const next = nextGridCell(current, event.key as GridNavKey, {
+      rowCount: options.rows().length,
+      colCount: options.columns().length,
+    })
+    options.range.extendRange(next.row, next.col)
   }
   const activeCellRange = (): TableRange | null => options.getRange()
   const copyActiveRange = (): void => {

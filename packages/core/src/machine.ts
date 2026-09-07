@@ -111,51 +111,114 @@ export interface Machine<TState extends string, TContext, TEvent extends Machine
   stop(): void
 }
 
+type ActiveMachineState<TState extends string> = {
+  parent: TState
+  child?: TState
+}
+
+type PendingTimer<TState extends string> = {
+  handle: unknown
+  scope: 'parent' | 'child'
+  parent: TState
+  child?: TState
+}
+
 interface MachineRuntimeDeps<TState extends string, TContext, TEvent extends MachineEvent> {
   config: MachineConfig<TState, TContext, TEvent>
   scheduler: Scheduler
   store: Store<MachineState<TState, TContext>>
-  pendingTimers: { value: unknown[] }
+  active: { value: ActiveMachineState<TState> }
+  pendingTimers: { value: PendingTimer<TState>[] }
   stopped: { value: boolean }
   nodeOf(value: TState): StateNode<TState, TContext, TEvent> | undefined
-  childNodeOf(value: TState): StateNode<TState, TContext, TEvent> | undefined
-  cancelPending(): void
+  isChildTarget(value: TState): boolean
+  childNodeOf(): StateNode<TState, TContext, TEvent> | undefined
+  cancelPending(scope?: 'parent' | 'child'): void
   runActions(actions: Action<TContext, TEvent>[] | undefined, event: TEvent | InitEvent): void
 }
 
 interface MachineLifecycle<TState extends string, TContext, TEvent extends MachineEvent> {
   scheduleAfter(
     value: TState,
-    fireDelayed: (fromValue: TState, delayed: DelayedTransition<TState, TContext>) => void,
+    fireDelayed: (
+      fromValue: TState,
+      delayed: DelayedTransition<TState, TContext>,
+      scope: 'parent' | 'child',
+      child?: TState,
+    ) => void,
+    onlyScope?: 'parent' | 'child',
   ): void
   enterState(
     next: TState,
     event: TEvent | InitEvent,
     isInitial: boolean,
-    fireDelayed: (fromValue: TState, delayed: DelayedTransition<TState, TContext>) => void,
+    fireDelayed: (
+      fromValue: TState,
+      delayed: DelayedTransition<TState, TContext>,
+      scope: 'parent' | 'child',
+      child?: TState,
+    ) => void,
+    targetScope: 'parent' | 'child',
   ): void
 }
 
 function createMachineLifecycle<TState extends string, TContext, TEvent extends MachineEvent>(
   deps: MachineRuntimeDeps<TState, TContext, TEvent>,
 ): MachineLifecycle<TState, TContext, TEvent> {
+  const isActive = (parent: TState, child?: TState): boolean => {
+    const active = deps.active.value
+    return active.parent === parent && (child === undefined || active.child === child)
+  }
+
   const scheduleAfter = (
-    value: TState,
-    fireDelayed: (fromValue: TState, delayed: DelayedTransition<TState, TContext>) => void,
+    _value: TState,
+    fireDelayed: (
+      fromValue: TState,
+      delayed: DelayedTransition<TState, TContext>,
+      scope: 'parent' | 'child',
+      child?: TState,
+    ) => void,
+    onlyScope?: 'parent' | 'child',
   ): void => {
-    const parent = deps.nodeOf(value)
-    const child = deps.childNodeOf(value)
-    const afterMap: Record<number, DelayedTransition<TState, TContext>> = {
-      ...(parent?.after ?? {}),
-      ...(child?.after ?? {}),
+    if (deps.stopped.value) return
+    const active = deps.active.value
+    const parent = deps.nodeOf(active.parent)
+    const child = deps.childNodeOf()
+    const childAfterKeys = new Set(Object.keys(child?.after ?? {}))
+    const entries: Array<[string, DelayedTransition<TState, TContext>, 'parent' | 'child']> = []
+
+    if (onlyScope !== 'child') {
+      for (const [key, delayed] of Object.entries(parent?.after ?? {})) {
+        if (childAfterKeys.has(key)) continue
+        entries.push([key, delayed, 'parent'])
+      }
     }
-    for (const key of Object.keys(afterMap)) {
-      const delayed = afterMap[Number(key)]
-      const handle = deps.scheduler.setTimeout(() => {
-        if (deps.stopped.value || deps.store.getState().value !== value) return
-        fireDelayed(value, delayed)
-      }, Number(key))
-      deps.pendingTimers.value.push(handle)
+    if (onlyScope !== 'parent') {
+      for (const [key, delayed] of Object.entries(child?.after ?? {})) {
+        entries.push([key, delayed, 'child'])
+      }
+    }
+
+    for (const [key, delayed, scope] of entries) {
+      const ms = Number(key)
+      if (!Number.isFinite(ms) || ms < 0 || !delayed || typeof delayed !== 'object') continue
+      const timer: PendingTimer<TState> = {
+        handle: undefined,
+        scope,
+        parent: active.parent,
+        ...(scope === 'child' ? { child: active.child } : {}),
+      }
+      timer.handle = deps.scheduler.setTimeout(() => {
+        deps.pendingTimers.value = deps.pendingTimers.value.filter((item) => item !== timer)
+        if (deps.stopped.value) return
+        if (
+          timer.scope === 'parent' ? !isActive(timer.parent) : !isActive(timer.parent, timer.child)
+        ) {
+          return
+        }
+        fireDelayed(timer.parent, delayed, timer.scope, timer.child)
+      }, ms)
+      deps.pendingTimers.value.push(timer)
     }
   }
 
@@ -163,19 +226,50 @@ function createMachineLifecycle<TState extends string, TContext, TEvent extends 
     next: TState,
     event: TEvent | InitEvent,
     isInitial: boolean,
-    fireDelayed: (fromValue: TState, delayed: DelayedTransition<TState, TContext>) => void,
+    fireDelayed: (
+      fromValue: TState,
+      delayed: DelayedTransition<TState, TContext>,
+      scope: 'parent' | 'child',
+      child?: TState,
+    ) => void,
+    targetScope: 'parent' | 'child',
   ): void => {
-    const current = deps.store.getState()
+    const current = deps.active.value
+
+    if (!isInitial && targetScope === 'child' && current.child !== undefined) {
+      deps.runActions(deps.childNodeOf()?.exit, event)
+      if (deps.stopped.value) return
+      deps.cancelPending('child')
+      deps.active.value = { parent: current.parent, child: next }
+      if (deps.store.getState().value !== next) {
+        deps.store.setState((state) => ({ ...state, value: next }))
+      }
+      deps.runActions(deps.childNodeOf()?.entry, event)
+      if (deps.stopped.value || !isActive(current.parent, next)) return
+      scheduleAfter(current.parent, fireDelayed, 'child')
+      return
+    }
+
     if (!isInitial) {
-      deps.runActions(deps.childNodeOf(current.value)?.exit, event)
-      deps.runActions(deps.nodeOf(current.value)?.exit, event)
+      deps.runActions(deps.childNodeOf()?.exit, event)
+      if (deps.stopped.value) return
+      deps.runActions(deps.nodeOf(current.parent)?.exit, event)
+      if (deps.stopped.value) return
       deps.cancelPending()
+    }
+
+    const parent = deps.nodeOf(next)
+    deps.active.value = {
+      parent: next,
+      ...(parent?.initial !== undefined && parent.states ? { child: parent.initial } : {}),
     }
     if (deps.store.getState().value !== next) {
       deps.store.setState((state) => ({ ...state, value: next }))
     }
     deps.runActions(deps.nodeOf(next)?.entry, event)
-    deps.runActions(deps.childNodeOf(next)?.entry, event)
+    if (deps.stopped.value || !isActive(next)) return
+    deps.runActions(deps.childNodeOf()?.entry, event)
+    if (deps.stopped.value || !isActive(next)) return
     scheduleAfter(next, fireDelayed)
   }
 
@@ -186,8 +280,14 @@ interface MachineTransitionHandlers<TState extends string, TContext, TEvent exte
   applyTransition(
     transition: Transition<TState, TContext, TEvent> | DelayedTransition<TState, TContext>,
     event: TEvent | InitEvent,
+    targetScope: 'parent' | 'child',
   ): void
-  fireDelayed(fromValue: TState, delayed: DelayedTransition<TState, TContext>): void
+  fireDelayed(
+    fromValue: TState,
+    delayed: DelayedTransition<TState, TContext>,
+    targetScope: 'parent' | 'child',
+    child?: TState,
+  ): void
 }
 
 function createMachineTransitionHandlers<
@@ -201,6 +301,7 @@ function createMachineTransitionHandlers<
   const applyTransition = (
     transition: Transition<TState, TContext, TEvent> | DelayedTransition<TState, TContext>,
     event: TEvent | InitEvent,
+    targetScope: 'parent' | 'child',
   ): void => {
     const current = deps.store.getState()
     const update =
@@ -215,15 +316,25 @@ function createMachineTransitionHandlers<
         deps.store.setState((state) => ({ ...state, context: { ...state.context, ...update } }))
       }
       if (transition.target !== undefined) {
-        lifecycle.enterState(transition.target, event, false, fireDelayed)
+        lifecycle.enterState(transition.target, event, false, fireDelayed, targetScope)
       }
     })
   }
-  const fireDelayed = (fromValue: TState, delayed: DelayedTransition<TState, TContext>): void => {
+  const fireDelayed = (
+    fromValue: TState,
+    delayed: DelayedTransition<TState, TContext>,
+    targetScope: 'parent' | 'child',
+    child?: TState,
+  ): void => {
     const context = deps.store.getState().context
     if (delayed.guard && !delayed.guard(context, INIT_EVENT)) return
-    if (deps.store.getState().value !== fromValue) return
-    applyTransition(delayed, INIT_EVENT)
+    const active = deps.active.value
+    if (active.parent !== fromValue || (targetScope === 'child' && active.child !== child)) return
+    const transitionScope =
+      targetScope === 'child' && delayed.target !== undefined && !deps.isChildTarget(delayed.target)
+        ? 'parent'
+        : targetScope
+    applyTransition(delayed, INIT_EVENT, transitionScope)
   }
   return { applyTransition, fireDelayed }
 }
@@ -235,13 +346,19 @@ function createMachineSender<TState extends string, TContext, TEvent extends Mac
   return (event) => {
     if (deps.stopped.value) return
     const current = deps.store.getState()
-    const child = deps.childNodeOf(current.value)
-    const parent = deps.nodeOf(current.value)
-    const transition = (child?.on?.[event.type as TEvent['type']] ??
-      parent?.on?.[event.type as TEvent['type']]) as
+    const child = deps.childNodeOf()
+    const parent = deps.nodeOf(deps.active.value.parent)
+    const childTransition = child?.on?.[event.type as TEvent['type']]
+    const transition = (childTransition ?? parent?.on?.[event.type as TEvent['type']]) as
       Transition<TState, TContext, TEvent> | undefined
     if (!transition || (transition.guard && !transition.guard(current.context, event))) return
-    applyTransition(transition, event)
+    const targetScope =
+      childTransition && transition.target !== undefined && !deps.isChildTarget(transition.target)
+        ? 'parent'
+        : childTransition
+          ? 'child'
+          : 'parent'
+    applyTransition(transition, event, targetScope)
   }
 }
 
@@ -250,19 +367,31 @@ function createMachineDeps<TState extends string, TContext, TEvent extends Machi
   scheduler: Scheduler,
   store: Store<MachineState<TState, TContext>>,
 ): MachineRuntimeDeps<TState, TContext, TEvent> {
-  const pendingTimers: { value: unknown[] } = { value: [] }
+  const active: { value: ActiveMachineState<TState> } = { value: { parent: config.initial } }
+  const pendingTimers: { value: PendingTimer<TState>[] } = { value: [] }
   const stopped: { value: boolean } = { value: false }
   const nodeOf = (value: TState): StateNode<TState, TContext, TEvent> | undefined =>
     config.states[value]
-  const childNodeOf = (value: TState): StateNode<TState, TContext, TEvent> | undefined => {
-    const parent = nodeOf(value)
-    if (!parent?.initial || !parent.states) return undefined
-    return parent.states[parent.initial]
+  const isChildTarget = (value: TState): boolean => {
+    const states = nodeOf(active.value.parent)?.states
+    return states !== undefined && Object.prototype.hasOwnProperty.call(states, value)
   }
-  const cancelPending = (): void => {
+  const childNodeOf = (): StateNode<TState, TContext, TEvent> | undefined => {
+    const parent = nodeOf(active.value.parent)
+    if (active.value.child === undefined || !parent?.states) return undefined
+    return parent.states[active.value.child]
+  }
+  const cancelPending = (scope?: 'parent' | 'child'): void => {
     if (pendingTimers.value.length === 0) return
-    for (const handle of pendingTimers.value) scheduler.clearTimeout(handle)
-    pendingTimers.value = []
+    const retained: PendingTimer<TState>[] = []
+    for (const timer of pendingTimers.value) {
+      if (scope !== undefined && timer.scope !== scope) {
+        retained.push(timer)
+      } else {
+        scheduler.clearTimeout(timer.handle)
+      }
+    }
+    pendingTimers.value = retained
   }
   const runActions = (
     actions: Action<TContext, TEvent>[] | undefined,
@@ -276,9 +405,11 @@ function createMachineDeps<TState extends string, TContext, TEvent extends Machi
     config,
     scheduler,
     store,
+    active,
     pendingTimers,
     stopped,
     nodeOf,
+    isChildTarget,
     childNodeOf,
     cancelPending,
     runActions,
@@ -320,16 +451,42 @@ export function createMachine<TState extends string, TContext, TEvent extends Ma
   const deps = createMachineDeps(config, scheduler, store)
   const lifecycle = createMachineLifecycle(deps)
   const transitions = createMachineTransitionHandlers(deps, lifecycle)
-  const send = createMachineSender(deps, transitions.applyTransition)
+  const dispatch = createMachineSender(deps, transitions.applyTransition)
+  const queue: Array<() => void> = []
+  let processing = false
+  const enqueue = (work: () => void): void => {
+    if (deps.stopped.value) return
+    queue.push(work)
+    if (processing) return
+    processing = true
+    try {
+      while (queue.length > 0 && !deps.stopped.value) queue.shift()?.()
+    } finally {
+      queue.length = 0
+      processing = false
+    }
+  }
+  const send = (event: TEvent): void => {
+    enqueue(() => dispatch(event))
+  }
+  const fireDelayed = (
+    fromValue: TState,
+    delayed: DelayedTransition<TState, TContext>,
+    targetScope: 'parent' | 'child',
+    child?: TState,
+  ): void => {
+    enqueue(() => transitions.fireDelayed(fromValue, delayed, targetScope, child))
+  }
   const stop = (): void => {
     deps.stopped.value = true
+    queue.length = 0
     deps.cancelPending()
   }
 
   // Initial entry: run the initial state's (and its child's) entry actions and
   // schedule its `after` timers. Back-compat: a flat machine with no entry/after
   // does nothing observable here (no setState, no timers) — store stays identical.
-  lifecycle.enterState(config.initial, INIT_EVENT, true, transitions.fireDelayed)
+  enqueue(() => lifecycle.enterState(config.initial, INIT_EVENT, true, fireDelayed, 'parent'))
 
   return { store, send, stop }
 }

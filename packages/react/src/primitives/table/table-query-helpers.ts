@@ -1,3 +1,4 @@
+import { mergeFilterValues } from '@iris-ui-kit/core'
 import type { GridCell, ParsedTableQuery } from '@iris-ui-kit/core'
 
 /**
@@ -5,16 +6,7 @@ import type { GridCell, ParsedTableQuery } from '@iris-ui-kit/core'
  * comma-joined strings (vxe filter-multiple remote serialization parity).
  * Keys with an empty checked set are left untouched.
  */
-export function mergeFilterValues(
-  filters: Record<string, string>,
-  filterValues: Record<string, string[]>,
-): Record<string, string> {
-  const next: Record<string, string> = { ...filters }
-  for (const [key, values] of Object.entries(filterValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
-}
+export { mergeFilterValues }
 
 /**
  * Batch AI: fold a parsed query's substring (`=`/`contains`) and `in` channels
@@ -30,10 +22,7 @@ export function mergeQueryIntoFilters(
   for (const [key, value] of Object.entries(parsed.filters)) {
     if (value !== '') next[key] = value
   }
-  for (const [key, values] of Object.entries(parsed.inValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
+  return mergeFilterValues(next, parsed.inValues)
 }
 
 /**

@@ -1,10 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisTable } from './Table'
 import type { IrisTableColumn } from './types'
 import type { IrisTableHandle } from './types'
 
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  Reflect.deleteProperty(navigator, 'clipboard')
+})
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -216,6 +219,39 @@ describe('@iris-ui-kit/react IrisTable cross-table formulas (batch BC, iris 独�
     const all = Array.from(document.querySelectorAll('[data-iris-table-cell="taxed"]'))
     // First table (2×10, 2×4, 2×100) then the second (10×10).
     expect(all.map((c) => c.textContent)).toEqual(['20', '8', '200', '100'])
+  })
+
+  it('post-render context actions keep the owning table formula snapshot', async () => {
+    const clipboardWrite = vi.fn<(text: string) => Promise<void>>()
+    clipboardWrite.mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboardWrite },
+    })
+    render(
+      <div>
+        <IrisTable
+          columns={columns}
+          data={rows.slice(0, 1)}
+          formulaTables={{ rates: [{ rate: 2 }] as Row[] }}
+          contextMenu={{ items: () => [], onSelect: () => undefined }}
+        />
+        <IrisTable
+          columns={columns}
+          data={rows.slice(0, 1)}
+          formulaTables={{ rates: [{ rate: 10 }] as Row[] }}
+        />
+      </div>,
+    )
+    const firstFormulaCell = document.querySelectorAll('[data-iris-table-cell="taxed"]')[0]!
+    fireEvent.contextMenu(firstFormulaCell, { clientX: 10, clientY: 10 })
+    fireEvent.click(
+      document.querySelector('[data-iris-table-context-menu-item="__iris-copy-value"]')!,
+    )
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(clipboardWrite).toHaveBeenCalledWith('20')
   })
 
   it('grouped headers / dataIndex columns resolve cross-table formulas through the same choke point', () => {

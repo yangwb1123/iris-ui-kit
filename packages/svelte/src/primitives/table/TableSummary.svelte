@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { aggregate } from '@iris-ui-kit/core'
+  import { projectTableSummary } from '@iris-ui-kit/core'
   import TableDragSpacer from './TableDragSpacer.svelte'
   import type { IrisTableColumn } from './types'
   import { summaryCellStyle } from './tableUtils'
@@ -14,6 +14,8 @@
     hasDetail,
     showSelection,
     visibleColSet,
+    pinOf,
+    pinnedStyle,
     gridTemplate,
     colTrack,
     getCellValue,
@@ -26,15 +28,17 @@
     hasDetail: boolean
     showSelection: boolean
     visibleColSet: Set<number> | null
+    pinOf: (column: IrisTableColumn) => 'left' | 'right' | null
+    pinnedStyle: (key: string) => string
     gridTemplate: () => string
     colTrack: (index: number) => number
     getCellValue: (row: Record<string, unknown>, column: IrisTableColumn) => unknown
   } = $props()
 
-  const hasSummary = $derived(leafColumns.some((column) => column.summary))
+  const summary = $derived(projectTableSummary(bodyData, leafColumns, getCellValue))
 </script>
 
-{#if bodyData.length > 0 && hasSummary}
+{#if summary.shouldRender}
   <div
     role="row"
     data-iris-table-row="summary"
@@ -69,17 +73,22 @@
     {/if}
     {#each leafColumns as col, ci}
       {#if !visibleColSet || visibleColSet.has(ci)}
-        {@const op = col.summary}
-        {@const value = op ? aggregate(bodyData, (row) => getCellValue(row, col), op) : null}
+        {@const summaryCell = summary.cells[ci]}
+        {@const op = summaryCell?.operation}
+        {@const value = summaryCell?.value}
         {@const fadeStyle = columnFade.columnFadeStyle(col)}
+        {@const pin = pinOf(col)}
         <div
           role="cell"
           data-iris-table-cell={col.key}
+          data-iris-table-pinned={pin}
           data-iris-table-summary-cell={op ? '' : undefined}
           {...columnFade.columnFadeAttrs(col)}
           style="{summaryCellStyle(col)}{visibleColSet
             ? `; grid-column-start: ${colTrack(ci)}`
-            : ''}{fadeStyle ? '; opacity: 0' : ''}"
+            : ''}{fadeStyle ? '; opacity: 0' : ''}{pin
+            ? `; ${pinnedStyle(col.key)}; background: var(--iris-surface)`
+            : ''}"
         >
           {#if op != null && value != null}{col.renderSummary
               ? col.renderSummary(value, bodyData)

@@ -17,16 +17,54 @@ export interface TableExportColumn {
 
 /**
  * OWASP CSV-injection mitigation. A cell whose text a spreadsheet could parse
- * as a formula — one leading with `=`, `+`, `-`, `@`, or a tab/CR that shifts
+ * as a formula — one leading with `=`, `+`, `-`, `@`, or a tab/line break that shifts
  * the first significant character — is prefixed with a single quote so the
  * spreadsheet imports it as literal text instead of executing it (DDE,
  * `HYPERLINK`, `=cmd|…`). Applied to string-ish values only; real numbers
  * (typed `Number` on export) cannot carry a formula payload and must not be
  * mangled (a numeric `-5` stays `-5`, not `'-5`).
  */
-const FORMULA_LEAD = /^[=+\-@\t\r]/
+const FORMULA_LEAD = /^[=+\-@\t\r\n]/
 function neutralizeFormula(text: string): string {
   return FORMULA_LEAD.test(text) ? `'${text}` : text
+}
+
+const hasOwn = (value: object, key: PropertyKey): boolean =>
+  Object.prototype.hasOwnProperty.call(value, key)
+
+function ownValue(value: unknown, key: string): unknown {
+  if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
+    return undefined
+  }
+  return hasOwn(value, key) ? (value as Record<string, unknown>)[key] : undefined
+}
+
+interface NormalizedTableExportColumn {
+  key: string
+  title: string
+  dataIndex: string
+}
+
+/** Ignore malformed runtime columns rather than reading inherited properties. */
+function normalizeColumns(columns: unknown): NormalizedTableExportColumn[] {
+  if (!Array.isArray(columns)) return []
+  const normalized: NormalizedTableExportColumn[] = []
+  for (const column of columns) {
+    const key = ownValue(column, 'key')
+    const title = ownValue(column, 'title')
+    if (typeof key !== 'string' || typeof title !== 'string') continue
+    const dataIndex = ownValue(column, 'dataIndex')
+    normalized.push({
+      key,
+      title,
+      dataIndex: typeof dataIndex === 'string' ? dataIndex : key,
+    })
+  }
+  return normalized
+}
+
+function readCell(row: unknown, key: string): unknown {
+  return ownValue(row, key)
 }
 
 /** Quote a CSV field if it contains a comma, quote, CR, or LF (RFC 4180). */
@@ -46,9 +84,11 @@ export function toCsv(
   rows: readonly Record<string, unknown>[],
   columns: readonly TableExportColumn[],
 ): string {
-  const header = columns.map((c) => csvField(c.title)).join(',')
-  const body = rows
-    .map((row) => columns.map((c) => csvField(row[c.dataIndex ?? c.key])).join(','))
+  const normalizedColumns = normalizeColumns(columns)
+  const safeRows = Array.isArray(rows) ? rows : []
+  const header = normalizedColumns.map((c) => csvField(c.title)).join(',')
+  const body = safeRows
+    .map((row) => normalizedColumns.map((c) => csvField(readCell(row, c.dataIndex))).join(','))
     .join('\n')
   return body ? `${header}\n${body}` : header
 }
@@ -56,8 +96,12 @@ export function toCsv(
 /** Serialize a bare referenced row set by its own enumerable schema. The
  * first row's key order becomes the header; an empty set has no segment body. */
 export function toCsvRows(rows: readonly Record<string, unknown>[]): string {
-  if (rows.length === 0) return ''
-  const keys = Object.keys(rows[0])
+  if (!Array.isArray(rows) || rows.length === 0) return ''
+  const firstRow = rows[0]
+  if (firstRow === null || (typeof firstRow !== 'object' && typeof firstRow !== 'function')) {
+    return ''
+  }
+  const keys = Object.keys(firstRow)
   return toCsv(
     rows,
     keys.map((key) => ({ key, title: key })),
@@ -74,12 +118,16 @@ export function toJson(
   columns: readonly TableExportColumn[],
   options: { pretty?: boolean } = {},
 ): string {
-  const out = rows.map((row) => {
-    const obj: Record<string, unknown> = {}
-    for (const c of columns) obj[c.key] = row[c.dataIndex ?? c.key]
+  const normalizedColumns = normalizeColumns(columns)
+  const safeRows = Array.isArray(rows) ? rows : []
+  const out = safeRows.map((row) => {
+    // A null-prototype object keeps a column literally named "__proto__" as
+    // data instead of invoking Object.prototype's legacy setter.
+    const obj: Record<string, unknown> = Object.create(null) as Record<string, unknown>
+    for (const c of normalizedColumns) obj[c.key] = readCell(row, c.dataIndex)
     return obj
   })
-  return JSON.stringify(out, null, options.pretty === false ? undefined : 2)
+  return JSON.stringify(out, null, options && options.pretty === false ? undefined : 2)
 }
 
 export interface TableHtmlOptions {
@@ -100,13 +148,15 @@ export function toHtml(
   columns: readonly TableExportColumn[],
   options: TableHtmlOptions = {},
 ): string {
-  const alignNumbers = options.alignNumbers !== false
-  const th = columns.map((c) => `<th>${escapeXml(c.title)}</th>`).join('')
-  const trs = rows
+  const normalizedColumns = normalizeColumns(columns)
+  const safeRows = Array.isArray(rows) ? rows : []
+  const alignNumbers = ownValue(options, 'alignNumbers') !== false
+  const th = normalizedColumns.map((c) => `<th>${escapeXml(c.title)}</th>`).join('')
+  const trs = safeRows
     .map((row) => {
-      const tds = columns
+      const tds = normalizedColumns
         .map((c) => {
-          const v = row[c.dataIndex ?? c.key]
+          const v = readCell(row, c.dataIndex)
           const numeric = alignNumbers && typeof v === 'number' && Number.isFinite(v)
           const style = numeric ? ' style="text-align:right"' : ''
           return `<td${style}>${v == null ? '' : escapeXml(String(v))}</td>`
@@ -115,7 +165,8 @@ export function toHtml(
       return `<tr>${tds}</tr>`
     })
     .join('')
-  const caption = options.caption ? `<caption>${escapeXml(options.caption)}</caption>` : ''
+  const captionValue = ownValue(options, 'caption')
+  const caption = captionValue ? `<caption>${escapeXml(String(captionValue))}</caption>` : ''
   return `<table>${caption}<thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`
 }
 
@@ -135,8 +186,28 @@ export interface SpreadsheetXmlOptions {
   columnWidths?: number[]
 }
 
+function stripXmlInvalidControls(value: string): string {
+  let clean = ''
+  for (const character of value) {
+    const code = character.charCodeAt(0)
+    if (
+      code <= 0x08 ||
+      code === 0x0b ||
+      code === 0x0c ||
+      (code >= 0x0e && code <= 0x1f) ||
+      code === 0xfffe ||
+      code === 0xffff
+    ) {
+      continue
+    }
+    clean += character
+  }
+  return clean
+}
+
 function escapeXml(value: string): string {
-  return value
+  // XML 1.0 rejects these control characters even when entity-escaped.
+  return stripXmlInvalidControls(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -164,8 +235,11 @@ function columnWidthsXml(widths: number[] | undefined, columnCount: number): str
   for (let i = 0; i < Math.min(widths.length, columnCount); i += 1) {
     const chars = widths[i]
     if (typeof chars === 'number' && Number.isFinite(chars) && chars > 0) {
-      const points = Math.round(chars * 5.25 * 100) / 100
-      cols.push(`<Column ss:Width="${points}"/>`)
+      const points = chars * 5.25
+      const rounded = Math.round(points * 100) / 100
+      if (Number.isFinite(rounded) && rounded > 0) {
+        cols.push(`<Column ss:Width="${rounded}"/>`)
+      }
     }
   }
   return cols.join('')
@@ -183,16 +257,27 @@ export function toSpreadsheetXml(
   columns: readonly TableExportColumn[],
   options: SpreadsheetXmlOptions = {},
 ): string {
-  const sheetName = escapeXml(options.sheetName ?? 'Sheet1')
-  const headerCell = (title: string) => cell(title, options.headerStyle ? 'Header' : undefined)
-  const headerRow = `<Row>${columns.map((c) => headerCell(c.title)).join('')}</Row>`
-  const bodyRows = rows
-    .map((row) => `<Row>${columns.map((c) => cell(row[c.dataIndex ?? c.key])).join('')}</Row>`)
+  const normalizedColumns = normalizeColumns(columns)
+  const safeRows = Array.isArray(rows) ? rows : []
+  const sheetNameOption = ownValue(options, 'sheetName')
+  const sheetName = escapeXml(typeof sheetNameOption === 'string' ? sheetNameOption : 'Sheet1')
+  const headerStyle = ownValue(options, 'headerStyle') === true
+  const headerCell = (title: string) => cell(title, headerStyle ? 'Header' : undefined)
+  const headerRow = `<Row>${normalizedColumns.map((c) => headerCell(c.title)).join('')}</Row>`
+  const bodyRows = safeRows
+    .map(
+      (row) =>
+        `<Row>${normalizedColumns.map((c) => cell(readCell(row, c.dataIndex))).join('')}</Row>`,
+    )
     .join('')
-  const styles = options.headerStyle
+  const styles = headerStyle
     ? '<Styles><Style ss:ID="Header"><Font ss:Bold="1"/></Style></Styles>'
     : ''
-  const cols = columnWidthsXml(options.columnWidths, columns.length)
+  const columnWidths = ownValue(options, 'columnWidths')
+  const cols = columnWidthsXml(
+    Array.isArray(columnWidths) ? columnWidths : undefined,
+    normalizedColumns.length,
+  )
   return (
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<?mso-application progid="Excel.Sheet"?>\n' +
@@ -206,14 +291,18 @@ export function toSpreadsheetXml(
 
 /**
  * Parse CSV text into rows (inverse of `toCsv`). Handles quoted fields with
- * embedded commas/quotes/newlines, per RFC 4180.
+ * embedded commas/quotes/newlines, per RFC 4180. Malformed input fails closed
+ * as an empty result instead of silently dropping quote characters.
  */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = []
   let row: string[] = []
   let field = ''
   let inQuotes = false
-  const src = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  let afterClosingQuote = false
+  // downloadCsv prepends a BOM. Strip only a leading BOM so it cannot become
+  // part of the first header, while preserving all other cell characters.
+  const src = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
   for (let i = 0; i < src.length; i += 1) {
     const ch = src[i]
     if (inQuotes) {
@@ -223,16 +312,36 @@ export function parseCsv(text: string): string[][] {
           i += 1
         } else {
           inQuotes = false
+          afterClosingQuote = true
         }
       } else {
+        // Preserve CR/LF inside quoted fields for an exact serializer round trip.
         field += ch
       }
+    } else if (afterClosingQuote) {
+      if (ch === ',') {
+        row.push(field)
+        field = ''
+        afterClosingQuote = false
+      } else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && src[i + 1] === '\n') i += 1
+        row.push(field)
+        rows.push(row)
+        row = []
+        field = ''
+        afterClosingQuote = false
+      } else {
+        return []
+      }
     } else if (ch === '"') {
+      // A quote is only valid at the beginning of a field in RFC 4180.
+      if (field !== '') return []
       inQuotes = true
     } else if (ch === ',') {
       row.push(field)
       field = ''
-    } else if (ch === '\n') {
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && src[i + 1] === '\n') i += 1
       row.push(field)
       rows.push(row)
       row = []
@@ -241,7 +350,8 @@ export function parseCsv(text: string): string[][] {
       field += ch
     }
   }
-  if (field !== '' || row.length > 0) {
+  if (inQuotes) return []
+  if (field !== '' || row.length > 0 || afterClosingQuote) {
     row.push(field)
     rows.push(row)
   }

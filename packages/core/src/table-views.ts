@@ -9,9 +9,24 @@ export interface TableViewSort {
   direction: 'asc' | 'desc'
 }
 
-/** Portable snapshot. Adapters may add fields without changing the wire shape. */
+/** Portable snapshot. Adapters may add fields without changing the wire shape.
+ *  Every field is optional: absent fields are left untouched on replay, so
+ *  legacy sort-only snapshots stay valid. `sort: null` clears the sort; the
+ *  other channels have no null-clear semantics — omit them instead. */
 export interface TableViewSnapshot {
   sort?: TableViewSort | null
+  /** Full multi-column sort list (multi-sort mode). */
+  multiSort?: TableViewSort[]
+  /** Active per-field text filter map. */
+  filters?: Record<string, string>
+  /** Per-column facet filter values (OR within a column). */
+  filterValues?: Record<string, string[]>
+  /** Column key → width overrides. */
+  columnWidths?: Record<string, number>
+  /** Remote page size (proxy mode). */
+  pageSize?: number
+  /** Expanded detail-panel/tree row keys. */
+  expandedRowKeys?: Array<string | number>
 }
 
 export interface TableViewConfig {
@@ -48,9 +63,12 @@ function defaultStorage(): TableViewStorage | null {
   }
 }
 
-function storageFor(config: TableViewConfig, fallback = defaultStorage()): TableViewStorage | null {
+function storageFor(
+  config: TableViewConfig,
+  fallback?: TableViewStorage | null,
+): TableViewStorage | null {
   if (config.storage === false) return null
-  return config.storage ?? fallback
+  return config.storage ?? (fallback === undefined ? defaultStorage() : fallback)
 }
 
 /** Read and sanitize named views. Any storage/JSON failure returns an empty list. */
@@ -59,7 +77,7 @@ export function readTableViews<Snapshot extends TableViewSnapshot = TableViewSna
   fallback?: TableViewStorage | null,
 ): Array<TableNamedView<Snapshot>> {
   if (!config) return []
-  const storage = storageFor(config, fallback ?? defaultStorage())
+  const storage = storageFor(config, fallback)
   if (!storage) return []
   let raw: string | null
   try {
@@ -95,7 +113,7 @@ export function writeTableViews(
   fallback?: TableViewStorage | null,
 ): void {
   if (!config) return
-  const storage = storageFor(config, fallback ?? defaultStorage())
+  const storage = storageFor(config, fallback)
   if (!storage) return
   try {
     storage.setItem(config.key ?? TABLE_VIEWS_DEFAULT_KEY, JSON.stringify(views))

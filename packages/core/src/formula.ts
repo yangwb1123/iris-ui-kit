@@ -315,7 +315,7 @@ export function evaluateFormula(
   row: Record<string, unknown>,
   formulaTables?: FormulaTables,
 ): unknown {
-  if (typeof formula !== 'string') return null
+  if (typeof formula !== 'string' || row === null || typeof row !== 'object') return null
   let src = formula.trim()
   if (src.startsWith('=')) src = src.slice(1).trim()
   if (src.length === 0 || src.length > FORMULA_MAX_LENGTH) return null

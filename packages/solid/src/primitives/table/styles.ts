@@ -1,8 +1,13 @@
 import type { JSX } from 'solid-js'
+import {
+  COLUMN_RESIZE_STEP,
+  DEFAULT_COLUMN_MIN_WIDTH,
+  DEFAULT_COLUMN_WIDTH,
+} from '@iris-ui-kit/core'
 
-export const DEFAULT_COL_WIDTH = 140
-export const DEFAULT_MIN_WIDTH = 60
-export const RESIZE_STEP = 16
+export const DEFAULT_COL_WIDTH = DEFAULT_COLUMN_WIDTH
+export const DEFAULT_MIN_WIDTH = DEFAULT_COLUMN_MIN_WIDTH
+export const RESIZE_STEP = COLUMN_RESIZE_STEP
 
 /** Shared style for full-width empty / loading / error state rows. */
 export const STATE_ROW_STYLE: JSX.CSSProperties = {

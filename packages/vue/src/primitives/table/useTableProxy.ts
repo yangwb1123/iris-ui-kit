@@ -12,22 +12,14 @@ import {
 } from 'vue'
 import {
   createRemoteTableSource,
+  mergeFilterValues,
   type RemoteTableParams,
   type RemoteTableSource,
   type RemoteTableSourceState,
 } from '@iris-ui-kit/core'
 import type { IrisTableFilterValues, IrisTableProxyConfig, IrisTableSortState } from './types'
 
-export function mergeFilterValues(
-  filters: Record<string, string>,
-  filterValues: Record<string, string[]>,
-): Record<string, string> {
-  const next: Record<string, string> = { ...filters }
-  for (const [key, values] of Object.entries(filterValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
-}
+export { mergeFilterValues }
 
 export interface UseTableProxyOptions<Row extends Record<string, unknown>> {
   proxyConfig: MaybeRefOrGetter<IrisTableProxyConfig<Row> | undefined>
@@ -110,8 +102,9 @@ export function useTableProxy<Row extends Record<string, unknown>>(
       const remoteFilter = toValue(options.remoteFilter) === true
       const multiSort = toValue(options.multiSort) === true
       const ctrl = createRemoteTableSource<Row>({
-        query: (params) => queryRef.value!(params),
+        query: (params, signal) => queryRef.value!(params, signal),
         autoLoad: false,
+        resilient: config.resilient,
         initialParams: {
           page: config.defaultPage ?? 1,
           pageSize: config.pageSize ?? 10,

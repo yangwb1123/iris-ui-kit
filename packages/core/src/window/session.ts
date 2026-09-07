@@ -12,9 +12,9 @@ export function serializeSession<Meta = unknown>(
     .map((w) => ({
       appId: w.appId,
       title: w.title,
-      rect: w.rect,
+      rect: { ...w.rect },
       state: w.state,
-      minSize: w.minSize,
+      minSize: { ...w.minSize },
       meta: w.meta,
       workspace: w.workspace,
       focused: w.focused,
@@ -31,6 +31,13 @@ export function restoreSession<Meta = unknown>(
 ): string[] {
   const ids: string[] = []
   let focusId: string | undefined
+  // WindowSession does not have a separate active-workspace field. The focused
+  // window is the unambiguous source of it, so restore that desktop first;
+  // otherwise opening a window from another desktop would focus a hidden one.
+  const focusedEntry = [...session]
+    .reverse()
+    .find((entry) => entry.focused && entry.state !== 'minimized')
+  if (focusedEntry) wm.setWorkspace(focusedEntry.workspace)
   for (const entry of session) {
     const id = wm.open({
       appId: entry.appId,

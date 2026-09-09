@@ -6,7 +6,7 @@ import {
   type GridRowsModel,
   type GridRowsTransaction,
 } from '@iris-ui-kit/core/grid'
-import { useStore } from '../useStore'
+import { useStoreSelector } from '../useStore'
 import { useGridFeature } from './useGridFeature'
 
 export interface UseGridRowsOptions<Row extends Record<string, unknown>, Meta = unknown> {
@@ -50,6 +50,6 @@ export function useGridRows<
       onRowsChange: (transaction) => latest.current.onRowsChange?.(transaction),
     }),
   )
-  const rows = useStore(model.store)
+  const rows = useStoreSelector(model.store, (current) => [...current])
   return { model, rows }
 }

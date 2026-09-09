@@ -20,7 +20,7 @@ export interface CellRangeState {
 }
 
 export interface CellRangeController {
-  /** Read the raw store state (`anchor` + `active`). */
+  /** Read an owned state snapshot (`anchor` + `active`). */
   getState(): CellRangeState
   subscribe(cb: (s: CellRangeState) => void): () => void
   /** Begin a new selection at (row, col) — sets both anchor and active. */
@@ -39,6 +39,43 @@ export interface CellRangeController {
    * no selection is active.
    */
   getRange(): CellRange | null
+}
+
+function cloneAddress(address: CellAddress | null): CellAddress | null {
+  return address ? { row: address.row, col: address.col } : null
+}
+
+function cloneState(state: CellRangeState): CellRangeState {
+  return { anchor: cloneAddress(state.anchor), active: cloneAddress(state.active) }
+}
+
+function hasExactKeys(value: object, keys: readonly string[]): boolean {
+  const ownKeys = Reflect.ownKeys(value)
+  return (
+    ownKeys.length === keys.length &&
+    keys.every((key) => Object.prototype.hasOwnProperty.call(value, key))
+  )
+}
+
+function isAddressSnapshot(value: unknown, canonical: CellAddress | null): boolean {
+  if (canonical === null) return value === null
+  if (value === null || typeof value !== 'object') return false
+  const address = value as Partial<CellAddress>
+  return (
+    hasExactKeys(address, ['row', 'col']) &&
+    Object.is(address.row, canonical.row) &&
+    Object.is(address.col, canonical.col)
+  )
+}
+
+function isStateSnapshot(value: unknown, canonical: CellRangeState): boolean {
+  if (value === null || typeof value !== 'object') return false
+  const state = value as Partial<CellRangeState>
+  return (
+    hasExactKeys(state, ['anchor', 'active']) &&
+    isAddressSnapshot(state.anchor, canonical.anchor) &&
+    isAddressSnapshot(state.active, canonical.active)
+  )
 }
 
 function normalizeRange(anchor: CellAddress | null, active: CellAddress | null): CellRange | null {
@@ -76,14 +113,32 @@ export function createCellRange(): CellRangeController {
     active: null,
   })
 
+  // Keep a stable public snapshot for external-store consumers, but never let
+  // a consumer-owned object become the canonical store state. The integrity
+  // check also repairs a published snapshot that a consumer mutated between
+  // reads without requiring a range operation.
+  let snapshot: CellRangeState | undefined
+  let snapshotSource: CellRangeState | undefined
+  const getState = (): CellRangeState => {
+    const canonical = store.getState()
+    if (snapshotSource !== canonical || !isStateSnapshot(snapshot, canonical)) {
+      snapshotSource = canonical
+      snapshot = cloneState(canonical)
+    }
+    return snapshot!
+  }
+
   const getRange = (): CellRange | null => {
     const { anchor, active } = store.getState()
     return normalizeRange(anchor, active)
   }
 
   return {
-    getState: () => store.getState(),
-    subscribe: (cb) => store.subscribe(cb),
+    getState,
+    // Each subscriber gets a separate delivery. In particular, mutating one
+    // callback's snapshot cannot affect another callback or the canonical
+    // state held by the private store.
+    subscribe: (cb) => store.subscribe((state) => cb(cloneState(state))),
 
     startRange(row, col) {
       store.setState({ anchor: { row, col }, active: { row, col } })

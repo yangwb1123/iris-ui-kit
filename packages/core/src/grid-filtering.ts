@@ -178,8 +178,20 @@ export function createGridFilteringFeature<
   return {
     name: 'filtering',
     setup(context) {
-      const model = createGridFilteringModel(options, (change) =>
-        context.emit(GRID_FILTERING_CHANGE_EVENT, change),
+      let active = true
+      const model = createGridFilteringModel(
+        {
+          ...options,
+          onFiltersChange: (filters) => {
+            if (active) options.onFiltersChange?.(filters)
+          },
+          onFilterValuesChange: (filterValues) => {
+            if (active) options.onFilterValuesChange?.(filterValues)
+          },
+        },
+        (change) => {
+          if (active) context.emit(GRID_FILTERING_CHANGE_EVENT, change)
+        },
       )
       const methods: GridFilteringMethods = {
         getFilteringModel: () => model,
@@ -195,7 +207,14 @@ export function createGridFilteringFeature<
         clearColumnFilterValues: (key) => model.clearColumnFilterValues(key),
         clearAllFilters: () => model.clear(),
       }
-      return { methods: methods as unknown as Readonly<Record<string, GridMethod>> }
+      return {
+        methods: methods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained model may outlive the grid component. Stop feature-owned
+        // callbacks and events after teardown while keeping the model usable.
+        dispose: () => {
+          active = false
+        },
+      }
     },
   }
 }

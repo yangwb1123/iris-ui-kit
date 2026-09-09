@@ -42,6 +42,8 @@ import { toStore, toStoreSnapshot } from '../useStore'
 import type { Readable } from 'svelte/store'
 import { syncGridColumnsVisibility } from './syncGridColumns.svelte'
 import { syncGridPagination } from './syncGridPagination.svelte'
+import { syncGridFiltering, syncGridSelection, syncGridSorting } from './syncGridSelection.svelte'
+import { syncGridVirtual } from './syncGridVirtual.svelte'
 
 function cloneGridColumnsState(
   state: ReturnType<GridColumnsModel['get']>,
@@ -85,29 +87,33 @@ export interface UseGridSelectionOptions<K extends SelectionKey = string> {
   onChange?: (keys: K[]) => void
   getKeys?: () => readonly K[]
 }
-export function useGridSelection<
-  Row extends Record<string, unknown> = Record<string, unknown>,
-  K extends SelectionKey = string,
->(
-  core: GridCore<Row>,
-  options: UseGridSelectionOptions<K> = {},
-): {
+export interface UseGridSelectionResult<K extends SelectionKey = string> {
   model: SelectionModel<K>
   selection: Readable<K[]>
   controlled: boolean
-} {
+  rebase(): void
+}
+export function useGridSelection<
+  Row extends Record<string, unknown> = Record<string, unknown>,
+  K extends SelectionKey = string,
+>(core: GridCore<Row>, options: UseGridSelectionOptions<K> = {}): UseGridSelectionResult<K> {
   const model = useGridFeature<Row, SelectionModel<K>>(core, 'selection', 'getSelectionModel', () =>
     createGridSelectionFeature<Row, K>({
       mode: options.mode,
-      defaultSelected: options.value ?? options.defaultValue,
-      getKeys: options.getKeys,
-      onChange: options.onChange,
+      defaultSelected: options.value !== undefined ? options.value : options.defaultValue,
+      getKeys: () => options.getKeys?.() ?? [],
+      onChange: (keys) => options.onChange?.(keys),
     }),
   )
+  const rebase = (): void => {
+    const value = options.value
+    if (value !== undefined) model.sync(value)
+  }
   return {
     model,
-    selection: toStoreSnapshot(model.store, (keys) => [...keys]),
+    selection: syncGridSelection(model, () => options),
     controlled: options.value !== undefined,
+    rebase,
   }
 }
 
@@ -170,7 +176,7 @@ export function useGridRows<
       onRowsChange: options.onRowsChange,
     }),
   )
-  return { model, rows: toStore(model.store) }
+  return { model, rows: toStoreSnapshot(model.store, (rows) => [...rows]) }
 }
 
 export interface UseGridEditingOptions<Row extends Record<string, unknown>> extends Omit<
@@ -219,7 +225,7 @@ export function useGridEditing<Row extends Record<string, unknown>>(
   return {
     core,
     model,
-    state: toStore(model.store),
+    state: toStoreSnapshot(model.store, () => model.getState()),
     startCellEdit: (rowKey, columnKey, initialDraft) =>
       model.start(rowKey, columnKey, initialDraft),
     setCellDraft: (value) => model.setDraft(value),
@@ -295,12 +301,12 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     state,
     setVisibility: (v) => apply(() => model.setVisibility(v)),
     toggleVisibility: (k) => apply(() => model.toggleVisibility(k)),
-    setOrder: (v) => model.setOrder(v),
-    clearOrder: () => model.setOrder(undefined),
-    setWidths: (v) => model.setWidths(v),
-    setWidth: (k, v) => model.setWidth(k, v),
-    resetWidths: () => model.setWidths({}),
-    setPinned: (k, v) => model.setPinned(k, v),
+    setOrder: (v) => apply(() => model.setOrder(v)),
+    clearOrder: () => apply(() => model.setOrder(undefined)),
+    setWidths: (v) => apply(() => model.setWidths(v)),
+    setWidth: (k, v) => apply(() => model.setWidth(k, v)),
+    resetWidths: () => apply(() => model.setWidths({})),
+    setPinned: (k, v) => apply(() => model.setPinned(k, v)),
   }
 }
 
@@ -333,17 +339,26 @@ export function useGridPagination<Row extends Record<string, unknown> = Record<s
         onChange: (change) => options.onChange?.(change),
       }),
   )
-  syncGridPagination(model, () => ({
+  const paginationSync = syncGridPagination(model, () => ({
     ...(options.page !== undefined ? { page: options.page } : {}),
     ...(options.pageSize !== undefined ? { pageSize: options.pageSize } : {}),
     ...(options.total !== undefined ? { total: options.total } : {}),
   }))
   return {
     model,
-    pagination: toStore(model.store),
-    setPage: (v) => model.setPage(v),
-    setPageSize: (v) => model.setPageSize(v),
-    setPagination: (page, size) => model.set(page, size),
+    pagination: paginationSync,
+    setPage: (v) => {
+      paginationSync.rebase()
+      model.setPage(v)
+    },
+    setPageSize: (v) => {
+      paginationSync.rebase()
+      model.setPageSize(v)
+    },
+    setPagination: (page, size) => {
+      paginationSync.rebase()
+      model.set(page, size)
+    },
   }
 }
 
@@ -372,28 +387,29 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
   const model = useGridFeature<Row, GridSortingModel>(core, 'sorting', 'getSortingModel', () =>
     createGridSortingFeature<Row>({
       mode: options.mode,
-      defaultSort: options.sort ?? options.defaultSort,
-      defaultMultiSort: options.multiSortState ?? options.defaultMultiSort,
-      onSortChange: options.onSortChange,
-      onMultiSortChange: options.onMultiSortChange,
+      defaultSort: options.sort !== undefined ? options.sort : options.defaultSort,
+      defaultMultiSort:
+        options.multiSortState !== undefined ? options.multiSortState : options.defaultMultiSort,
+      onSortChange: (sort) => options.onSortChange?.(sort),
+      onMultiSortChange: (sorts) => options.onMultiSortChange?.(sorts),
     }),
   )
-  const state = toStore(model.store)
+  const { sort, multiSort } = syncGridSorting(model, () => options)
   return {
     model,
-    sort: {
-      subscribe: (run) =>
-        state.subscribe((v) => run(options.sort !== undefined ? options.sort : v.sort)),
+    sort,
+    multiSort,
+    cycleSort: (key) => {
+      const sort = options.sort
+      if (sort !== undefined) model.syncSort(sort)
+      model.cycleSort(key)
     },
-    multiSort: {
-      subscribe: (run) =>
-        state.subscribe((v) =>
-          run(options.multiSortState !== undefined ? options.multiSortState : v.multiSort),
-        ),
-    },
-    cycleSort: (key) => model.cycleSort(key),
     setSort: (v) => model.setSort(v),
-    cycleMultiSort: (key) => model.cycleMultiSort(key),
+    cycleMultiSort: (key) => {
+      const multiSortState = options.multiSortState
+      if (multiSortState !== undefined) model.syncMultiSort(multiSortState)
+      model.cycleMultiSort(key)
+    },
     setMultiSort: (v) => model.setMultiSort(v),
   }
 }
@@ -420,19 +436,18 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
     'getFilteringModel',
     () =>
       createGridFilteringFeature<Row>({
-        defaultFilters: options.filters ?? options.defaultFilters,
-        defaultFilterValues: options.filterValues ?? options.defaultFilterValues,
-        onFiltersChange: options.onFiltersChange,
-        onFilterValuesChange: options.onFilterValuesChange,
+        defaultFilters: options.filters !== undefined ? options.filters : options.defaultFilters,
+        defaultFilterValues:
+          options.filterValues !== undefined ? options.filterValues : options.defaultFilterValues,
+        onFiltersChange: (filters) => options.onFiltersChange?.(filters),
+        onFilterValuesChange: (values) => options.onFilterValuesChange?.(values),
       }),
   )
-  const state = toStore(model.store)
+  const { filters: filtersStore, filterValues } = syncGridFiltering(model, () => options)
   return {
     model,
-    filters: { subscribe: (run) => state.subscribe((v) => run(options.filters ?? v.filters)) },
-    filterValues: {
-      subscribe: (run) => state.subscribe((v) => run(options.filterValues ?? v.filterValues)),
-    },
+    filters: filtersStore,
+    filterValues,
   }
 }
 
@@ -470,7 +485,8 @@ export function useGridVirtual<
       onRangeChange: options.onRangeChange,
     }),
   )
-  return { model, state: toStore(model.store) }
+  syncGridVirtual(model, () => options)
+  return { model, state: toStore(model) }
 }
 
 export type { GridColumnPin, GridCore, GridFeature }

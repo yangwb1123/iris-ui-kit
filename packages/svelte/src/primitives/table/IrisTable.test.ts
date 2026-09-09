@@ -559,6 +559,65 @@ describe('IrisTable controlled selection', () => {
     expect(rowCheckbox(container, 1).checked).toBe(true)
   })
 
+  it('restores the first controlled selection snapshot after a silent handoff detour', async () => {
+    const onUpdateSelection = vi.fn()
+    const { container, rerender } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        rowKey: 'id',
+        selectable: 'multi',
+        selection: [1],
+        onUpdateSelection,
+      },
+    })
+    expect(bodyRows(container)[0].getAttribute('data-state')).toBe('selected')
+    expect(bodyRows(container)[1].getAttribute('data-state')).toBeNull()
+
+    await rerender({
+      columns,
+      data,
+      rowKey: 'id',
+      selectable: 'multi',
+      selection: undefined,
+      onUpdateSelection,
+    })
+    flushSync()
+    expect(bodyRows(container)[0].getAttribute('data-state')).toBe('selected')
+    expect(bodyRows(container)[1].getAttribute('data-state')).toBeNull()
+    expect(onUpdateSelection).not.toHaveBeenCalled()
+
+    await rerender({
+      columns,
+      data,
+      rowKey: 'id',
+      selectable: 'multi',
+      selection: [2],
+      onUpdateSelection,
+    })
+    flushSync()
+    expect(bodyRows(container)[0].getAttribute('data-state')).toBeNull()
+    expect(bodyRows(container)[1].getAttribute('data-state')).toBe('selected')
+    expect(onUpdateSelection).not.toHaveBeenCalled()
+
+    await rerender({
+      columns,
+      data,
+      rowKey: 'id',
+      selectable: 'multi',
+      selection: undefined,
+      onUpdateSelection,
+    })
+    flushSync()
+    expect(bodyRows(container)[0].getAttribute('data-state')).toBe('selected')
+    expect(bodyRows(container)[1].getAttribute('data-state')).toBeNull()
+    expect(onUpdateSelection).not.toHaveBeenCalled()
+
+    await fireEvent.click(rowCheckbox(container, 1))
+    flushSync()
+    expect(onUpdateSelection).toHaveBeenLastCalledWith([1, 2])
+  })
+
   // The emitted next value is computed against the prop, not a prior optimistic
   // value: a rejected toggle followed by another toggle still bases off the prop.
   it('re-bases the emitted value on the prop before each toggle', async () => {

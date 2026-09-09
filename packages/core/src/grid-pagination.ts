@@ -35,6 +35,143 @@ export interface GridPaginationModel {
   pageCount(): number
 }
 
+export interface GridPaginationProjection {
+  /** Project model state while hiding proposals for currently controlled channels. */
+  project(state: GridPaginationState, controlled: Partial<GridPaginationState>): GridPaginationState
+  /** Apply accepted props and restore the relevant snapshot on handoff. */
+  sync(controlled: Partial<GridPaginationState>): void
+  /** Detach the model observer; a later sync may attach it again. */
+  dispose(): void
+}
+
+/**
+ * Keeps controlled pagination proposals out of framework-facing state.
+ *
+ * The model remains the source of imperative changes and event emission. This
+ * projection only owns the adapter boundary: one snapshot per channel, plus
+ * the silent model rebase required when a channel changes control mode.
+ */
+export function createGridPaginationProjection(
+  model: GridPaginationModel,
+  initial: Partial<GridPaginationState> = {},
+): GridPaginationProjection {
+  const initialState = model.get()
+  const channels: {
+    [K in keyof GridPaginationState]: {
+      controlled: boolean
+      hasUncontrolled: boolean
+      uncontrolled: number
+      lastControlled: number
+    }
+  } = {
+    page: {
+      controlled: initial.page !== undefined,
+      hasUncontrolled: initial.page === undefined,
+      uncontrolled: initialState.page,
+      lastControlled: initial.page ?? initialState.page,
+    },
+    pageSize: {
+      controlled: initial.pageSize !== undefined,
+      hasUncontrolled: initial.pageSize === undefined,
+      uncontrolled: initialState.pageSize,
+      lastControlled: initial.pageSize ?? initialState.pageSize,
+    },
+    total: {
+      controlled: initial.total !== undefined,
+      hasUncontrolled: initial.total === undefined,
+      uncontrolled: initialState.total,
+      lastControlled: initial.total ?? initialState.total,
+    },
+  }
+  let unsubscribe: (() => void) | undefined
+
+  const observe = (state: GridPaginationState): void => {
+    for (const key of ['page', 'pageSize', 'total'] as const) {
+      const channel = channels[key]
+      if (!channel.controlled) {
+        channel.uncontrolled = state[key]
+        channel.hasUncontrolled = true
+      }
+    }
+  }
+  const attach = (): void => {
+    if (unsubscribe) return
+    unsubscribe = model.store.subscribe(observe)
+    // A bridge may be detached briefly while its framework effect is replayed.
+    // Capture the current uncontrolled state before accepting any new props.
+    observe(model.get())
+  }
+
+  return {
+    project(state, controlled) {
+      return {
+        page:
+          controlled.page !== undefined
+            ? controlled.page
+            : channels.page.controlled
+              ? channels.page.hasUncontrolled
+                ? channels.page.uncontrolled
+                : channels.page.lastControlled
+              : state.page,
+        pageSize:
+          controlled.pageSize !== undefined
+            ? controlled.pageSize
+            : channels.pageSize.controlled
+              ? channels.pageSize.hasUncontrolled
+                ? channels.pageSize.uncontrolled
+                : channels.pageSize.lastControlled
+              : state.pageSize,
+        total:
+          controlled.total !== undefined
+            ? controlled.total
+            : channels.total.controlled
+              ? channels.total.hasUncontrolled
+                ? channels.total.uncontrolled
+                : channels.total.lastControlled
+              : state.total,
+      }
+    },
+    sync(controlled) {
+      attach()
+      const restore: { page?: number; pageSize?: number; total?: number } = {}
+      const leaving: Array<{
+        key: keyof GridPaginationState
+        value: number
+      }> = []
+
+      for (const key of ['page', 'pageSize', 'total'] as const) {
+        const value = controlled[key]
+        const channel = channels[key]
+        if (value !== undefined) {
+          channel.lastControlled = value
+          // Mark a newly controlled channel before the silent sync so a model
+          // notification cannot mistake the accepted value for uncontrolled.
+          channel.controlled = true
+          restore[key] = value
+        } else if (channel.controlled) {
+          const value = channel.hasUncontrolled ? channel.uncontrolled : channel.lastControlled
+          leaving.push({ key, value })
+          restore[key] = value
+        }
+      }
+
+      // Keep leaving channels controlled until after model.sync: a synchronous
+      // store notification must not record the rejected proposal as a snapshot.
+      model.sync(restore)
+      for (const { key, value } of leaving) {
+        channels[key].controlled = false
+        channels[key].uncontrolled = value
+        channels[key].hasUncontrolled = true
+      }
+      observe(model.get())
+    },
+    dispose() {
+      unsubscribe?.()
+      unsubscribe = undefined
+    },
+  }
+}
+
 export interface GridPaginationMethods {
   /** Adapter bridge: the feature-owned framework-agnostic controller. */
   getPaginationModel(): GridPaginationModel

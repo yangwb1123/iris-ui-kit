@@ -145,8 +145,20 @@ export function createGridSortingFeature<
   return {
     name: 'sorting',
     setup(context) {
-      const model = createGridSortingModel(options, (change) =>
-        context.emit(GRID_SORTING_CHANGE_EVENT, change),
+      let active = true
+      const model = createGridSortingModel(
+        {
+          ...options,
+          onSortChange: (sort) => {
+            if (active) options.onSortChange?.(sort)
+          },
+          onMultiSortChange: (sorts) => {
+            if (active) options.onMultiSortChange?.(sorts)
+          },
+        },
+        (change) => {
+          if (active) context.emit(GRID_SORTING_CHANGE_EVENT, change)
+        },
       )
       const featureMethods: GridSortingMethods = {
         getSortingModel: () => model,
@@ -162,6 +174,11 @@ export function createGridSortingFeature<
       }
       return {
         methods: featureMethods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained model may outlive the grid component. Stop feature-owned
+        // callbacks and events after teardown while keeping the model usable.
+        dispose: () => {
+          active = false
+        },
       }
     },
   }

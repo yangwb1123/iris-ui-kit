@@ -3,10 +3,17 @@ import {
   createGridCore,
   createGridFilteringFeature,
   createGridPaginationFeature,
+  createGridRowsFeature,
+  createGridSortingFeature,
   GRID_FILTERING_CHANGE_EVENT,
   GRID_PAGINATION_CHANGE_EVENT,
+  GRID_ROWS_CHANGE_EVENT,
+  GRID_SORTING_CHANGE_EVENT,
   type GridFilteringChange,
+  type GridFilteringModel,
   type GridPaginationChange,
+  type GridRowsModel,
+  type GridSortingModel,
 } from './grid'
 
 describe('createGridFilteringFeature', () => {
@@ -97,6 +104,104 @@ describe('createGridFilteringFeature', () => {
     expect(stateChange).toHaveBeenCalledOnce()
     expect(core.invoke('getFilters')).toEqual({})
     expect(core.invoke('getFilterValues')).toEqual({})
+  })
+})
+
+describe('retained Grid feature models', () => {
+  it('keeps a retained rows model usable after destroy without callbacks or events', () => {
+    type Row = { id: number }
+    const onBeforeRowsChange = vi.fn()
+    const onRowsChange = vi.fn()
+    const event = vi.fn()
+    const core = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({
+          defaultRows: [{ id: 1 }],
+          onBeforeRowsChange,
+          onRowsChange,
+        }),
+      ],
+    })
+    core.on(GRID_ROWS_CHANGE_EVENT, event)
+    const model = core.invoke<GridRowsModel<Row>>('getRowsModel')
+
+    expect(model.commit([{ id: 2 }], { reason: 'load' })).toBe(true)
+    expect(onBeforeRowsChange).toHaveBeenCalledOnce()
+    expect(onRowsChange).toHaveBeenCalledOnce()
+    expect(event).toHaveBeenCalledOnce()
+
+    core.destroy()
+    core.destroy()
+    expect(model.commit([{ id: 3 }])).toBe(true)
+
+    expect(model.get()).toEqual([{ id: 3 }])
+    expect(model.getData()).toEqual([{ id: 3 }])
+    expect(onBeforeRowsChange).toHaveBeenCalledOnce()
+    expect(onRowsChange).toHaveBeenCalledOnce()
+    expect(event).toHaveBeenCalledOnce()
+  })
+
+  it('keeps retained sorting mutations state-usable without callbacks or events', () => {
+    const onSortChange = vi.fn()
+    const onMultiSortChange = vi.fn()
+    const event = vi.fn()
+    const core = createGridCore({
+      features: [
+        createGridSortingFeature({
+          mode: 'multiple',
+          onSortChange,
+          onMultiSortChange,
+        }),
+      ],
+    })
+    core.on(GRID_SORTING_CHANGE_EVENT, event)
+    const model = core.invoke<GridSortingModel>('getSortingModel')
+
+    model.setSort({ key: 'name', direction: 'asc' })
+    model.setMultiSort([{ key: 'age', direction: 'asc' }])
+    expect(onSortChange).toHaveBeenCalledOnce()
+    expect(onMultiSortChange).toHaveBeenCalledOnce()
+    expect(event).toHaveBeenCalledTimes(2)
+
+    core.destroy()
+    model.setSort({ key: 'name', direction: 'desc' })
+    model.setMultiSort([{ key: 'age', direction: 'desc' }])
+    model.clear()
+
+    expect(model.get()).toEqual({
+      sort: { key: 'name', direction: 'desc' },
+      multiSort: [],
+    })
+    expect(onSortChange).toHaveBeenCalledOnce()
+    expect(onMultiSortChange).toHaveBeenCalledOnce()
+    expect(event).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps retained filtering mutations state-usable without callbacks or events', () => {
+    const onFiltersChange = vi.fn()
+    const onFilterValuesChange = vi.fn()
+    const event = vi.fn()
+    const core = createGridCore({
+      features: [createGridFilteringFeature({ onFiltersChange, onFilterValuesChange })],
+    })
+    core.on(GRID_FILTERING_CHANGE_EVENT, event)
+    const model = core.invoke<GridFilteringModel>('getFilteringModel')
+
+    model.setFilter('name', 'a')
+    model.setColumnFilterValues('status', ['active'])
+    expect(onFiltersChange).toHaveBeenCalledOnce()
+    expect(onFilterValuesChange).toHaveBeenCalledOnce()
+    expect(event).toHaveBeenCalledTimes(2)
+
+    core.destroy()
+    model.setFilter('name', 'b')
+    model.setColumnFilterValues('status', ['paused'])
+    model.clear()
+
+    expect(model.get()).toEqual({ filters: {}, filterValues: {} })
+    expect(onFiltersChange).toHaveBeenCalledOnce()
+    expect(onFilterValuesChange).toHaveBeenCalledOnce()
+    expect(event).toHaveBeenCalledTimes(2)
   })
 })
 

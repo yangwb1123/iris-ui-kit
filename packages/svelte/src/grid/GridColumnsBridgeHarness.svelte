@@ -14,7 +14,9 @@
     onCore?: (core: GridCore<{ id: string }>) => void
     onColumns?: (columns: ReturnType<typeof useGridColumns>) => void
     onVisibilityChange?: (value: Record<string, boolean>) => void
+    onOrderChange?: (value: string[] | undefined) => void
     onWidthsChange?: (value: Record<string, number>) => void
+    onPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
   }
 
   // Keep the $props proxy intact so the rune bridge can track replacements.

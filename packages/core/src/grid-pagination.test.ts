@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createGridCore,
   createGridPaginationFeature,
+  createGridPaginationProjection,
   GRID_PAGINATION_CHANGE_EVENT,
   type GridPaginationChange,
 } from './grid'
@@ -41,6 +42,67 @@ describe('createGridPaginationFeature', () => {
 
     expect(onChange).toHaveBeenCalledWith({ page: 3, pageSize: 20, reason: 'page' })
     expect(core.invoke('getPagination')).toEqual({ page: 3, pageSize: 20, total: 0 })
+  })
+
+  it('projects rejected controlled proposals and restores channel snapshots silently', () => {
+    const onChange = vi.fn()
+    const event = vi.fn()
+    const core = createGridCore({
+      features: [
+        createGridPaginationFeature({
+          defaultPage: 7,
+          defaultPageSize: 20,
+          defaultTotal: 100,
+          onChange,
+        }),
+      ],
+    })
+    core.on(GRID_PAGINATION_CHANGE_EVENT, event)
+    const model = core.invoke('getPaginationModel')
+    const projection = createGridPaginationProjection(model, { page: 1 })
+
+    projection.sync({ page: 1 })
+    model.setPage(2)
+    model.setPageSize(30)
+
+    expect(projection.project(model.get(), { page: 1 })).toEqual({
+      page: 1,
+      pageSize: 30,
+      total: 100,
+    })
+    expect(onChange).toHaveBeenCalledTimes(2)
+    expect(event).toHaveBeenCalledTimes(2)
+
+    projection.sync({})
+    expect(model.get()).toEqual({ page: 1, pageSize: 30, total: 100 })
+    expect(projection.project(model.get(), {})).toEqual(model.get())
+    expect(onChange).toHaveBeenCalledTimes(2)
+    expect(event).toHaveBeenCalledTimes(2)
+
+    model.setPage(4)
+    projection.sync({ page: 2 })
+    model.setPage(3)
+    expect(projection.project(model.get(), { page: 2 }).page).toBe(2)
+
+    projection.sync({})
+    expect(model.get().page).toBe(4)
+    expect(projection.project(model.get(), {})).toEqual({
+      page: 4,
+      pageSize: 30,
+      total: 100,
+    })
+    expect(onChange).toHaveBeenCalledTimes(4)
+    expect(event).toHaveBeenCalledTimes(4)
+
+    projection.dispose()
+    model.setPage(6)
+    projection.sync({ page: 5 })
+    model.setPage(7)
+    projection.sync({})
+    expect(model.get().page).toBe(6)
+    expect(onChange).toHaveBeenCalledTimes(6)
+    expect(event).toHaveBeenCalledTimes(6)
+    projection.dispose()
   })
 
   it('normalizes unsafe values and keeps invalid or equivalent size changes no-op', () => {

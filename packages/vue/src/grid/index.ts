@@ -14,6 +14,7 @@ import {
   createGridExpansionFeature,
   createGridFilteringFeature,
   createGridPaginationFeature,
+  createGridPaginationProjection,
   createGridRowsFeature,
   createGridSelectionFeature,
   createGridSortingFeature,
@@ -80,6 +81,7 @@ export interface UseGridSelectionResult<K extends SelectionKey = string> {
   model: SelectionModel<K>
   selection: ComputedRef<K[]>
   controlled: ComputedRef<boolean>
+  rebase(): void
 }
 export function useGridSelection<
   Row extends Record<string, unknown> = Record<string, unknown>,
@@ -108,11 +110,14 @@ export function useGridSelection<
         lastControlledSnapshot.value = [...value]
         model.sync(value)
       } else if (wasControlled) {
-        model.sync(
-          (hasUncontrolledSnapshot
-            ? uncontrolledSnapshot.value
-            : lastControlledSnapshot.value) as K[],
-        )
+        const restore = (
+          hasUncontrolledSnapshot ? uncontrolledSnapshot.value : lastControlledSnapshot.value
+        ) as K[]
+        if (!hasUncontrolledSnapshot) {
+          uncontrolledSnapshot.value = [...restore]
+          hasUncontrolledSnapshot = true
+        }
+        model.sync(restore)
       }
       wasControlled = nextControlled
     },
@@ -124,10 +129,15 @@ export function useGridSelection<
       hasUncontrolledSnapshot = true
     }
   })
+  const rebase = (): void => {
+    const value = options.value
+    if (value !== undefined) model.sync(value)
+  }
   return {
     model,
     controlled,
     selection: computed(() => (controlled.value ? [...(options.value ?? [])] : [...state.value])),
+    rebase,
   }
 }
 
@@ -195,7 +205,10 @@ export function useGridRows<
       onRowsChange: (tx) => latest.value.onRowsChange?.(tx),
     }),
   )
-  return { model, rows: useStore(model.store) as ShallowRef<Row[]> }
+  return {
+    model,
+    rows: useStoreSelector(model.store, (current) => [...current]) as ShallowRef<Row[]>,
+  }
 }
 
 function cloneGridColumnsState(state: GridColumnsState): GridColumnsState {
@@ -262,6 +275,14 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
   const orderPropControlled = ref(options.orderControlled ?? options.order !== undefined)
   const widthsPropControlled = ref(options.widths !== undefined)
   const pinnedPropControlled = ref(options.pinned !== undefined)
+  const rebaseControlled = (): void => {
+    const current = latest.value
+    if (visibilityPropControlled.value && current.visibility !== undefined)
+      model.syncVisibility(current.visibility)
+    if (orderPropControlled.value) model.syncOrder(current.order ?? [])
+    if (widthsPropControlled.value && current.widths !== undefined) model.syncWidths(current.widths)
+    if (pinnedPropControlled.value && current.pinned !== undefined) model.syncPinned(current.pinned)
+  }
 
   watch(
     state,
@@ -271,13 +292,7 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
       if (!widthsPropControlled.value) uncontrolledWidths.value = { ...current.widths }
       if (!pinnedPropControlled.value) uncontrolledPinned.value = { ...current.pinned }
 
-      if (visibilityPropControlled.value && options.visibility !== undefined)
-        model.syncVisibility(options.visibility)
-      if (orderPropControlled.value) model.syncOrder(options.order ?? [])
-      if (widthsPropControlled.value && options.widths !== undefined)
-        model.syncWidths(options.widths)
-      if (pinnedPropControlled.value && options.pinned !== undefined)
-        model.syncPinned(options.pinned)
+      rebaseControlled()
     },
     { flush: 'sync' },
   )
@@ -325,17 +340,22 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     },
     { deep: true, immediate: true, flush: 'sync' },
   )
+  const apply = (write: () => void): void => {
+    rebaseControlled()
+    write()
+    rebaseControlled()
+  }
   return {
     model,
     state,
-    setVisibility: (v) => model.setVisibility(v),
-    toggleVisibility: (k) => model.toggleVisibility(k),
-    setOrder: (v) => model.setOrder(v),
-    clearOrder: () => model.setOrder(undefined),
-    setWidth: (k, v) => model.setWidth(k, v),
-    setWidths: (v) => model.setWidths(v),
-    resetWidths: () => model.setWidths({}),
-    setPinned: (k, v) => model.setPinned(k, v),
+    setVisibility: (v) => apply(() => model.setVisibility(v)),
+    toggleVisibility: (k) => apply(() => model.toggleVisibility(k)),
+    setOrder: (v) => apply(() => model.setOrder(v)),
+    clearOrder: () => apply(() => model.setOrder(undefined)),
+    setWidth: (k, v) => apply(() => model.setWidth(k, v)),
+    setWidths: (v) => apply(() => model.setWidths(v)),
+    resetWidths: () => apply(() => model.setWidths({})),
+    setPinned: (k, v) => apply(() => model.setPinned(k, v)),
   }
 }
 
@@ -372,18 +392,35 @@ export function useGridPagination<Row extends Record<string, unknown> = Record<s
         onChange: (change) => latest.value.onChange?.(change),
       }),
   )
-  const pagination = useStore(model.store)
+  const state = useStore(model.store)
+  const controlledState = (): Partial<GridPaginationState> => ({
+    ...(options.page !== undefined ? { page: options.page } : {}),
+    ...(options.pageSize !== undefined ? { pageSize: options.pageSize } : {}),
+    ...(options.total !== undefined ? { total: options.total } : {}),
+  })
+  const projection = createGridPaginationProjection(model, controlledState())
   watch(
     () => [options.page, options.pageSize, options.total] as const,
-    ([page, pageSize, total]) => model.sync({ page, pageSize, total }),
-    { immediate: true },
+    () => projection.sync(controlledState()),
+    { immediate: true, flush: 'sync' },
   )
+  onBeforeUnmount(() => projection.dispose())
+  const pagination = computed(() => projection.project(state.value, controlledState()))
   return {
     model,
     pagination,
-    setPage: (v) => model.setPage(v),
-    setPageSize: (v) => model.setPageSize(v),
-    setPagination: (page, size) => model.set(page, size),
+    setPage: (v) => {
+      projection.sync(controlledState())
+      model.setPage(v)
+    },
+    setPageSize: (v) => {
+      projection.sync(controlledState())
+      model.setPageSize(v)
+    },
+    setPagination: (page, size) => {
+      projection.sync(controlledState())
+      model.set(page, size)
+    },
   }
 }
 
@@ -405,6 +442,15 @@ export interface UseGridSortingResult {
   cycleMultiSort(key: string): void
   setMultiSort(sorts: SortState[]): void
 }
+
+function cloneSort(sort: SortState | null): SortState | null {
+  return sort ? { ...sort } : null
+}
+
+function cloneSorts(sorts: readonly SortState[]): SortState[] {
+  return sorts.map((sort) => ({ ...sort }))
+}
+
 export function useGridSorting<Row extends Record<string, unknown> = Record<string, unknown>>(
   core: GridCore<Row>,
   options: UseGridSortingOptions = {},
@@ -413,30 +459,125 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
   const model = useGridFeature<Row, GridSortingModel>(core, 'sorting', 'getSortingModel', () =>
     createGridSortingFeature<Row>({
       mode: options.mode,
-      defaultSort: options.sort ?? options.defaultSort,
-      defaultMultiSort: options.multiSortState ?? options.defaultMultiSort,
+      defaultSort: options.sort !== undefined ? options.sort : options.defaultSort,
+      defaultMultiSort:
+        options.multiSortState !== undefined ? options.multiSortState : options.defaultMultiSort,
       onSortChange: (v) => latest.value.onSortChange?.(v),
       onMultiSortChange: (v) => latest.value.onMultiSortChange?.(v),
     }),
   )
   const state = useStore(model.store)
+  let wasSortControlled = options.sort !== undefined
+  let hasUncontrolledSort = !wasSortControlled
+  const uncontrolledSort = shallowRef<SortState | null>(
+    wasSortControlled ? null : cloneSort(state.value.sort),
+  )
+  const lastControlledSort = shallowRef<SortState | null>(cloneSort(options.sort ?? null))
+  let wasMultiSortControlled = options.multiSortState !== undefined
+  let hasUncontrolledMultiSort = !wasMultiSortControlled
+  const uncontrolledMultiSort = shallowRef<SortState[]>(
+    wasMultiSortControlled ? [] : cloneSorts(state.value.multiSort),
+  )
+  const lastControlledMultiSort = shallowRef<SortState[]>(cloneSorts(options.multiSortState ?? []))
+
+  watch(
+    state,
+    (current) => {
+      if (!wasSortControlled) {
+        uncontrolledSort.value = cloneSort(current.sort)
+        hasUncontrolledSort = true
+      }
+      if (!wasMultiSortControlled) {
+        uncontrolledMultiSort.value = cloneSorts(current.multiSort)
+        hasUncontrolledMultiSort = true
+      }
+    },
+    { flush: 'sync' },
+  )
   watch(
     () => options.sort,
-    (v) => v !== undefined && model.syncSort(v),
+    (value) => {
+      const controlled = value !== undefined
+      const wasControlled = wasSortControlled
+      wasSortControlled = controlled
+      if (controlled) {
+        lastControlledSort.value = cloneSort(value ?? null)
+        model.syncSort(value ?? null)
+      } else if (wasControlled) {
+        const restore = hasUncontrolledSort ? uncontrolledSort.value : lastControlledSort.value
+        if (!hasUncontrolledSort) {
+          uncontrolledSort.value = cloneSort(restore)
+          hasUncontrolledSort = true
+        }
+        model.syncSort(restore)
+      }
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   watch(
     () => options.multiSortState,
-    (v) => v !== undefined && model.syncMultiSort(v),
+    (value) => {
+      const controlled = value !== undefined
+      const wasControlled = wasMultiSortControlled
+      wasMultiSortControlled = controlled
+      if (controlled) {
+        // Preserve model updates batched with the transition into control.
+        if (!wasControlled) {
+          uncontrolledMultiSort.value = cloneSorts(state.value.multiSort)
+          hasUncontrolledMultiSort = true
+        }
+        lastControlledMultiSort.value = cloneSorts(value ?? [])
+        model.syncMultiSort(value ?? [])
+      } else if (wasControlled) {
+        const restore = hasUncontrolledMultiSort
+          ? uncontrolledMultiSort.value
+          : lastControlledMultiSort.value
+        // A no-op Core sync still establishes the handoff as the next
+        // uncontrolled baseline for a later controlled detour.
+        uncontrolledMultiSort.value = cloneSorts(restore)
+        hasUncontrolledMultiSort = true
+        model.syncMultiSort(restore)
+      }
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   return {
     model,
-    sort: computed(() => (options.sort !== undefined ? options.sort : state.value.sort)),
-    multiSort: computed(() =>
-      options.multiSortState !== undefined ? options.multiSortState : state.value.multiSort,
-    ),
-    cycleSort: (key) => model.cycleSort(key),
+    sort: computed(() => {
+      const value = options.sort
+      const current = state.value
+      if (value !== undefined) return cloneSort(value)
+      return cloneSort(
+        wasSortControlled
+          ? hasUncontrolledSort
+            ? uncontrolledSort.value
+            : lastControlledSort.value
+          : current.sort,
+      )
+    }),
+    multiSort: computed(() => {
+      const value = options.multiSortState
+      const current = state.value
+      if (value !== undefined) return cloneSorts(value ?? [])
+      return cloneSorts(
+        wasMultiSortControlled
+          ? hasUncontrolledMultiSort
+            ? uncontrolledMultiSort.value
+            : lastControlledMultiSort.value
+          : current.multiSort,
+      )
+    }),
+    cycleSort: (key) => {
+      const value = options.sort
+      if (value !== undefined) model.syncSort(value)
+      model.cycleSort(key)
+    },
     setSort: (v) => model.setSort(v),
-    cycleMultiSort: (key) => model.cycleMultiSort(key),
+    cycleMultiSort: (key) => {
+      const value = options.multiSortState
+      if (value !== undefined) model.syncMultiSort(value)
+      model.cycleMultiSort(key)
+    },
     setMultiSort: (v) => model.setMultiSort(v),
   }
 }
@@ -448,6 +589,20 @@ export interface UseGridFilteringOptions {
   filterValues?: GridFilterValues
   defaultFilterValues?: GridFilterValues
   onFilterValuesChange?: (values: GridFilterValues) => void
+}
+
+function cloneFilters(
+  filters: Readonly<Record<string, string>> | null | undefined,
+): Record<string, string> {
+  return { ...(filters ?? {}) }
+}
+
+function cloneFilterValues(
+  filterValues: Readonly<GridFilterValues> | null | undefined,
+): GridFilterValues {
+  return Object.fromEntries(
+    Object.entries(filterValues ?? {}).map(([key, values]) => [key, [...values]]),
+  )
 }
 export interface UseGridFilteringResult {
   model: GridFilteringModel
@@ -465,25 +620,126 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
     'getFilteringModel',
     () =>
       createGridFilteringFeature<Row>({
-        defaultFilters: options.filters ?? options.defaultFilters,
-        defaultFilterValues: options.filterValues ?? options.defaultFilterValues,
+        defaultFilters:
+          options.filters !== undefined ? (options.filters ?? {}) : options.defaultFilters,
+        defaultFilterValues:
+          options.filterValues !== undefined
+            ? (options.filterValues ?? {})
+            : options.defaultFilterValues,
         onFiltersChange: (v) => latest.value.onFiltersChange?.(v),
         onFilterValuesChange: (v) => latest.value.onFilterValuesChange?.(v),
       }),
   )
   const state = useStore(model.store)
+  let wasFiltersControlled = options.filters !== undefined
+  let hasUncontrolledFilters = !wasFiltersControlled
+  const uncontrolledFilters = shallowRef<Record<string, string>>(
+    wasFiltersControlled ? {} : cloneFilters(state.value.filters),
+  )
+  const lastControlledFilters = shallowRef<Record<string, string>>(cloneFilters(options.filters))
+  let wasFilterValuesControlled = options.filterValues !== undefined
+  let hasUncontrolledFilterValues = !wasFilterValuesControlled
+  const uncontrolledFilterValues = shallowRef<GridFilterValues>(
+    wasFilterValuesControlled ? {} : cloneFilterValues(state.value.filterValues),
+  )
+  const lastControlledFilterValues = shallowRef<GridFilterValues>(
+    cloneFilterValues(options.filterValues),
+  )
+
+  watch(
+    state,
+    (current) => {
+      if (!wasFiltersControlled) {
+        uncontrolledFilters.value = cloneFilters(current.filters)
+        hasUncontrolledFilters = true
+      }
+      if (!wasFilterValuesControlled) {
+        uncontrolledFilterValues.value = cloneFilterValues(current.filterValues)
+        hasUncontrolledFilterValues = true
+      }
+    },
+    { flush: 'sync' },
+  )
   watch(
     () => options.filters,
-    (v) => v !== undefined && model.syncFilters(v),
+    (value) => {
+      const controlled = value !== undefined
+      const wasControlled = wasFiltersControlled
+      wasFiltersControlled = controlled
+      if (controlled) {
+        // Preserve model updates batched with the transition into control.
+        if (!wasControlled) {
+          uncontrolledFilters.value = cloneFilters(state.value.filters)
+          hasUncontrolledFilters = true
+        }
+        lastControlledFilters.value = cloneFilters(value)
+        model.syncFilters(value ?? {})
+      } else if (wasControlled) {
+        const restore = hasUncontrolledFilters
+          ? uncontrolledFilters.value
+          : lastControlledFilters.value
+        // A no-op Core sync still establishes the handoff as the next
+        // uncontrolled baseline for a later controlled detour.
+        uncontrolledFilters.value = cloneFilters(restore)
+        hasUncontrolledFilters = true
+        model.syncFilters(restore)
+      }
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   watch(
     () => options.filterValues,
-    (v) => v !== undefined && model.syncFilterValues(v),
+    (value) => {
+      const controlled = value !== undefined
+      const wasControlled = wasFilterValuesControlled
+      wasFilterValuesControlled = controlled
+      if (controlled) {
+        // Preserve model updates batched with the transition into control.
+        if (!wasControlled) {
+          uncontrolledFilterValues.value = cloneFilterValues(state.value.filterValues)
+          hasUncontrolledFilterValues = true
+        }
+        lastControlledFilterValues.value = cloneFilterValues(value)
+        model.syncFilterValues(value ?? {})
+      } else if (wasControlled) {
+        const restore = hasUncontrolledFilterValues
+          ? uncontrolledFilterValues.value
+          : lastControlledFilterValues.value
+        // A no-op Core sync still establishes the handoff as the next
+        // uncontrolled baseline for a later controlled detour.
+        uncontrolledFilterValues.value = cloneFilterValues(restore)
+        hasUncontrolledFilterValues = true
+        model.syncFilterValues(restore)
+      }
+    },
+    { deep: true, immediate: true, flush: 'sync' },
   )
   return {
     model,
-    filters: computed(() => options.filters ?? state.value.filters),
-    filterValues: computed(() => options.filterValues ?? state.value.filterValues),
+    filters: computed(() => {
+      const value = options.filters
+      const current = state.value
+      if (value !== undefined) return cloneFilters(value)
+      return cloneFilters(
+        wasFiltersControlled
+          ? hasUncontrolledFilters
+            ? uncontrolledFilters.value
+            : lastControlledFilters.value
+          : current.filters,
+      )
+    }),
+    filterValues: computed(() => {
+      const value = options.filterValues
+      const current = state.value
+      if (value !== undefined) return cloneFilterValues(value)
+      return cloneFilterValues(
+        wasFilterValuesControlled
+          ? hasUncontrolledFilterValues
+            ? uncontrolledFilterValues.value
+            : lastControlledFilterValues.value
+          : current.filterValues,
+      )
+    }),
   }
 }
 
@@ -545,7 +801,7 @@ export function useGridVirtual<
     () => options.scrollOffset,
     (offset) => offset !== undefined && model.setScroll(offset),
   )
-  return { model, state: useStore(model.store) }
+  return { model, state: useStore(model) }
 }
 
 export type { GridColumnPin, GridCore, GridFeature, GridRowsCommitOptions }

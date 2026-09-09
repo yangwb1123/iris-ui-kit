@@ -82,6 +82,10 @@ export function useGridSelection<
       const next = hasUncontrolledSnapshot.current
         ? uncontrolledSnapshot.current
         : lastControlledSnapshot.current
+      if (!hasUncontrolledSnapshot.current) {
+        uncontrolledSnapshot.current = [...next]
+        hasUncontrolledSnapshot.current = true
+      }
       if (!sameKeys(model.get(), next)) model.sync(next)
     }
     wasControlled.current = controlled

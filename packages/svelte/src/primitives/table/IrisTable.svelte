@@ -43,7 +43,10 @@
     useGridRange,
     useGridRows,
     useGridSelection,
+    type UseGridFilteringOptions,
+    type UseGridSelectionOptions,
     useGridSorting,
+    type UseGridSortingOptions,
   } from '../../grid'
   import { useDrag } from '../drag/useDrag.svelte'
   import type { IrisTableProps } from './props'
@@ -327,15 +330,24 @@
   const grouped = $derived(displayColumns.some((c) => c.children && c.children.length > 0))
   const leafColumns = $derived(grouped ? flattenLeafColumns(displayColumns) : displayColumns)
   const headerMatrix = $derived(grouped ? buildHeaderMatrix(displayColumns) : null)
-  // svelte-ignore state_referenced_locally — sorting options seed the stable Core feature;
-  const {
-    model: sortingModel,
-    sort: sortingSort,
-    multiSort: sortingMultiSort,
-  } = useGridSorting<Record<string, unknown>>(gridCore, {
-    mode: multiSort ? 'multiple' : 'single',
-    defaultSort,
-    defaultMultiSort,
+  // Keep sorting props getter-backed so the bridge can track controlled updates
+  // without replacing the stable Core model.
+  const sortingBridgeOptions: UseGridSortingOptions = {
+    get mode() {
+      return multiSort ? 'multiple' : 'single'
+    },
+    get sort() {
+      return sort
+    },
+    get defaultSort() {
+      return defaultSort
+    },
+    get multiSortState() {
+      return multiSortState
+    },
+    get defaultMultiSort() {
+      return defaultMultiSort
+    },
     onSortChange: (next) => {
       onUpdateSort?.(next)
       if (remoteSort) proxyRef?.setParams({ sort: next })
@@ -344,7 +356,13 @@
       onUpdateMultiSort?.(next)
       if (remoteSort) proxyRef?.setParams({ sorts: next })
     },
-  })
+  }
+  // svelte-ignore state_referenced_locally — pass the reactive options getters to the bridge.
+  const {
+    model: sortingModel,
+    sort: sortingSort,
+    multiSort: sortingMultiSort,
+  } = useGridSorting<Record<string, unknown>>(gridCore, sortingBridgeOptions)
   const effectiveSort = $derived<IrisTableSortState | null>(
     sort !== undefined ? (sort ?? null) : $sortingSort,
   )
@@ -422,17 +440,29 @@
     )
   })
 
-  // svelte-ignore state_referenced_locally — filtering options seed the stable Core feature;
+  // Keep filtering props getter-backed for the same stable-model bridge.
+  const filteringBridgeOptions: UseGridFilteringOptions = {
+    get filters() {
+      return filters
+    },
+    get defaultFilters() {
+      return filters
+    },
+    get filterValues() {
+      return filterValues
+    },
+    get defaultFilterValues() {
+      return filterValues
+    },
+    onFiltersChange: (next) => onFiltersChange?.(next),
+    onFilterValuesChange: (next) => onFilterValuesChange?.(next),
+  }
+  // svelte-ignore state_referenced_locally — pass the reactive options getters to the bridge.
   const {
     model: filteringModel,
     filters: filteringFilters,
     filterValues: filteringFilterValues,
-  } = useGridFiltering<Record<string, unknown>>(gridCore, {
-    defaultFilters: filters,
-    defaultFilterValues: filterValues,
-    onFiltersChange: (next) => onFiltersChange?.(next),
-    onFilterValuesChange: (next) => onFilterValuesChange?.(next),
-  })
+  } = useGridFiltering<Record<string, unknown>>(gridCore, filteringBridgeOptions)
   const effectiveFilters = $derived(filters !== undefined ? filters : $filteringFilters)
   const effectiveFilterValues = $derived(
     filterValues !== undefined ? filterValues : $filteringFilterValues,
@@ -710,16 +740,25 @@
   })
 
   const selControlled = $derived(selection !== undefined)
-  // svelte-ignore state_referenced_locally — feature options seed the stable core instance.
+  // Keep the options object getter-backed: the selection bridge owns a stable
+  // model, while its controlled prop must remain reactive to table $props.
+  const selectionBridgeOptions: UseGridSelectionOptions<string | number> = {
+    get mode() {
+      return selectable === 'single' ? 'single' : 'multiple'
+    },
+    get value() {
+      return selection
+    },
+    get defaultValue() {
+      return defaultSelection
+    },
+    onChange: (keys) => onUpdateSelection?.(keys),
+  }
+  // svelte-ignore state_referenced_locally — pass the reactive options getters to the bridge.
   const { model: selectionModel, selection: selectedKeys } = useGridSelection<
     Record<string, unknown>,
     string | number
-  >(gridCore, {
-    mode: selectable === 'single' ? 'single' : 'multiple',
-    value: selection,
-    defaultValue: defaultSelection,
-    onChange: (keys) => onUpdateSelection?.(keys),
-  })
+  >(gridCore, selectionBridgeOptions)
   // Preserve the last real uncontrolled snapshot across a rejected controlled
   // proposal; an initially controlled bridge falls back to its accepted prop.
   // svelte-ignore state_referenced_locally — handoff flags seed the bridge once.
@@ -740,9 +779,14 @@
       lastControlledSelection = [...selection!]
       selectionModel.sync(selection!)
     } else if (selectionWasControlled) {
-      selectionModel.sync(
-        hasUncontrolledSelection ? uncontrolledSelectionSnapshot : lastControlledSelection,
-      )
+      const restore = hasUncontrolledSelection
+        ? uncontrolledSelectionSnapshot
+        : lastControlledSelection
+      if (!hasUncontrolledSelection) {
+        uncontrolledSelectionSnapshot = [...restore]
+        hasUncontrolledSelection = true
+      }
+      selectionModel.sync(restore)
     } else {
       uncontrolledSelectionSnapshot = [...current]
       hasUncontrolledSelection = true

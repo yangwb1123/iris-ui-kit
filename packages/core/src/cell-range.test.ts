@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createCellRange } from './cell-range'
+import { createCellRange, type CellRangeState } from './cell-range'
 
 describe('createCellRange', () => {
   it('starts with no selection', () => {
@@ -14,6 +14,77 @@ describe('createCellRange', () => {
     cr.startRange(2, 3)
     expect(cr.getState()).toEqual({ anchor: { row: 2, col: 3 }, active: { row: 2, col: 3 } })
     expect(cr.getRange()).toEqual({ start: { row: 2, col: 3 }, end: { row: 2, col: 3 } })
+  })
+
+  it('returns stable owned snapshots and repairs a mutated snapshot on read', () => {
+    const cr = createCellRange()
+    expect(cr.getState()).toBe(cr.getState())
+
+    cr.startRange(3, 2)
+    cr.extendRange(1, 0)
+    const exposed = cr.getState()
+    expect(cr.getState()).toBe(exposed)
+
+    exposed.anchor!.row = 99
+    exposed.active!.col = 99
+
+    const repaired = cr.getState()
+    expect(repaired).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 1, col: 0 },
+    })
+    expect(repaired).not.toBe(exposed)
+    expect(cr.getState()).toBe(repaired)
+    expect(cr.getRange()).toEqual({ start: { row: 1, col: 0 }, end: { row: 3, col: 2 } })
+  })
+
+  it('keeps future range operations independent from a mutated state snapshot', () => {
+    const cr = createCellRange()
+    cr.startRange(3, 2)
+    cr.extendRange(1, 0)
+
+    const exposed = cr.getState()
+    exposed.anchor!.row = 99
+    exposed.active!.col = 99
+    expect(cr.getRange()).toEqual({ start: { row: 1, col: 0 }, end: { row: 3, col: 2 } })
+
+    cr.extendRange(4, 4)
+    expect(cr.getState()).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 4, col: 4 },
+    })
+    expect(cr.getRange()).toEqual({ start: { row: 3, col: 2 }, end: { row: 4, col: 4 } })
+  })
+
+  it('gives each subscriber an independent snapshot delivery', () => {
+    const cr = createCellRange()
+    const mutatingSubscriber = vi.fn((state: CellRangeState) => {
+      if (state.anchor) state.anchor.row = 99
+      if (state.active) state.active.col = 99
+    })
+    const observingSubscriber = vi.fn()
+    const unsubscribeFirst = cr.subscribe(mutatingSubscriber)
+    const unsubscribeSecond = cr.subscribe(observingSubscriber)
+
+    cr.startRange(3, 2)
+    cr.extendRange(1, 0)
+
+    expect(observingSubscriber.mock.calls[0]?.[0]).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 3, col: 2 },
+    })
+    expect(observingSubscriber.mock.calls[1]?.[0]).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 1, col: 0 },
+    })
+    expect(observingSubscriber.mock.calls[0]?.[0]).not.toBe(observingSubscriber.mock.calls[1]?.[0])
+    expect(cr.getState()).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 1, col: 0 },
+    })
+
+    unsubscribeFirst()
+    unsubscribeSecond()
   })
 
   it('isInRange returns true for the single anchor cell', () => {

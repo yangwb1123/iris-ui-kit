@@ -409,8 +409,20 @@ export function createGridRowsFeature<
   return {
     name: 'rows',
     setup(context) {
-      const model = createGridRowsModel(options, (transaction) =>
-        context.emit(GRID_ROWS_CHANGE_EVENT, transaction),
+      let active = true
+      const model = createGridRowsModel<Row, Meta>(
+        {
+          ...options,
+          onBeforeRowsChange: (transaction) => {
+            if (active) options.onBeforeRowsChange?.(transaction)
+          },
+          onRowsChange: (transaction) => {
+            if (active) options.onRowsChange?.(transaction)
+          },
+        },
+        (transaction) => {
+          if (active) context.emit(GRID_ROWS_CHANGE_EVENT, transaction)
+        },
       )
       const methods: GridRowsMethods<Row, Meta> = {
         getRowsModel: () => model,
@@ -437,7 +449,14 @@ export function createGridRowsFeature<
         syncRows: (rows) => model.sync(rows),
         clearRows: (commitOptions) => model.clear(commitOptions),
       }
-      return { methods: methods as unknown as Readonly<Record<string, GridMethod>> }
+      return {
+        methods: methods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained model may outlive the grid component. Stop feature-owned
+        // callbacks and events after teardown while keeping the model usable.
+        dispose: () => {
+          active = false
+        },
+      }
     },
   }
 }

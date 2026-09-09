@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import type { GridCore, GridRangeChange, GridRangeModel } from '@iris-ui-kit/core/grid'
   import { useGridCore } from './useGrid'
-  import { useGridRange } from './useGridRange'
+  import { useGridRange, type UseGridRangeResult } from './useGridRange'
 
   type Row = { id: number }
 
@@ -10,7 +10,7 @@
     capture,
     onChange,
   }: {
-    capture?: (core: GridCore<Row>, model: GridRangeModel) => void
+    capture?: (core: GridCore<Row>, model: GridRangeModel, selection: UseGridRangeResult) => void
     onChange?: (change: GridRangeChange) => void
   } = $props()
 
@@ -18,7 +18,7 @@
   const selection = useGridRange(core, { onChange: (change) => onChange?.(change) })
   const selectedRange = selection.range
 
-  onMount(() => capture?.(core, selection.model))
+  onMount(() => capture?.(core, selection.model, selection))
 </script>
 
 <button

@@ -79,7 +79,14 @@ export function rangeStats<Row>(
       const raw = column.getValue(row)
       if (raw == null) continue // null/undefined are not data points
       count += 1
-      const v = Number(raw)
+      let v: number
+      try {
+        v = Number(raw)
+      } catch {
+        // Some malformed values (for example Symbol) cannot be coerced;
+        // they remain counted as non-null but contribute no numeric stats.
+        continue
+      }
       if (Number.isFinite(v)) {
         numericCount += 1
         sum += v

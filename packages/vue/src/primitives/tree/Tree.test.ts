@@ -173,6 +173,29 @@ describe('IrisTree', () => {
   })
 })
 
+describe('IrisTree lazy checkbox cascade', () => {
+  it('uses cached children when the eager children placeholder is empty', async () => {
+    const lazy: IrisTreeNode[] = [
+      {
+        id: 'root',
+        label: 'Root',
+        children: [],
+        loadChildren: async () => [{ id: 'child', label: 'Child' }],
+      },
+    ]
+    const wrapper = mount(IrisTree, { props: { nodes: lazy, checkable: true } })
+    await wrapper.find('[data-iris-tree-chevron]').trigger('click')
+    await nextTick()
+    const rootCheckbox = wrapper.find('[role="treeitem"][data-id="root"] [data-iris-tree-checkbox]')
+    const childCheckbox = wrapper.find(
+      '[role="treeitem"][data-id="child"] [data-iris-tree-checkbox]',
+    )
+    expect(childCheckbox.exists()).toBe(true)
+    await rootCheckbox.setValue(true)
+    expect((childCheckbox.element as HTMLInputElement).checked).toBe(true)
+  })
+})
+
 describe('IrisTree RTL', () => {
   it('indents with logical inline-start padding (RTL-safe)', () => {
     const wrapper = mount(IrisTree, { props: { nodes: sampleNodes } })
@@ -238,6 +261,21 @@ describe('IrisTree checkable', () => {
     ).toBe(true)
     expect(checked.value).not.toBeNull()
     expect(checked.value).toContain('a1')
+  })
+
+  it('does not reseed uncontrolled checks from a fresh defaultChecked prop', async () => {
+    const wrapper = mount(IrisTree, {
+      props: {
+        nodes: checkNodes,
+        checkable: true,
+        expanded: ['root', 'a'],
+        defaultChecked: [],
+      },
+    })
+    await checkboxFor(wrapper, 'a').setValue(true)
+    await wrapper.setProps({ defaultChecked: [] })
+    expect((checkboxFor(wrapper, 'a').element as HTMLInputElement).checked).toBe(true)
+    expect((checkboxFor(wrapper, 'a1').element as HTMLInputElement).checked).toBe(true)
   })
 
   it('a partially-checked parent is indeterminate (aria mixed)', () => {

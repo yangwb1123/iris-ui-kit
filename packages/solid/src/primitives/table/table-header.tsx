@@ -1,5 +1,10 @@
 import { For, Show, type Accessor, type JSX } from 'solid-js'
-import type { HeaderCell } from '@iris-ui-kit/core'
+import {
+  countLeadingGridTracks,
+  leadingGridTrack,
+  type GridLeadingTrack,
+  type HeaderCell,
+} from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 import type { TableColumnFadeController } from './table-column-fade'
 import { PinnedDragHandle } from './table-pinned-drag-handle'
@@ -44,6 +49,19 @@ export interface GroupedHeaderProps<Row extends TableRow> {
 export function TableGroupedHeader<Row extends TableRow>(
   props: GroupedHeaderProps<Row>,
 ): JSX.Element {
+  const leadingTracks = (): {
+    rowDrag: boolean
+    sequence: boolean
+    detail: boolean
+    selection: boolean
+  } => ({
+    rowDrag: props.rowDrag !== undefined,
+    sequence: props.seq === true,
+    detail: props.hasDetail(),
+    selection: props.selectable !== 'none',
+  })
+  const utilityTrack = (track: GridLeadingTrack): string =>
+    String(leadingGridTrack(track, leadingTracks()) ?? 0)
   return (
     <Show when={props.grouped() && props.matrix()}>
       <div
@@ -60,7 +78,7 @@ export function TableGroupedHeader<Row extends TableRow>(
           <div
             role="columnheader"
             data-iris-table-header="__drag"
-            style={{ 'grid-column': '1', 'grid-row': '1 / -1' }}
+            style={{ 'grid-column': utilityTrack('rowDrag'), 'grid-row': '1 / -1' }}
           />
         </Show>
         <Show when={props.seq}>
@@ -68,7 +86,7 @@ export function TableGroupedHeader<Row extends TableRow>(
             role="columnheader"
             data-iris-table-header="__seq"
             style={{
-              'grid-column': String((props.rowDrag ? 1 : 0) + 1),
+              'grid-column': utilityTrack('sequence'),
               'grid-row': '1 / -1',
               display: 'flex',
               'align-items': 'center',
@@ -83,7 +101,7 @@ export function TableGroupedHeader<Row extends TableRow>(
           <div
             role="columnheader"
             style={{
-              'grid-column': String((props.rowDrag ? 1 : 0) + (props.seq ? 2 : 1)),
+              'grid-column': utilityTrack('detail'),
               'grid-row': '1 / -1',
             }}
           />
@@ -92,9 +110,7 @@ export function TableGroupedHeader<Row extends TableRow>(
           <div
             role="columnheader"
             style={{
-              'grid-column': String(
-                (props.rowDrag ? 1 : 0) + (props.seq ? 1 : 0) + (props.hasDetail() ? 2 : 1),
-              ),
+              'grid-column': String(utilityTrack('selection')),
               'grid-row': '1 / -1',
               display: 'flex',
               'align-items': 'center',
@@ -135,11 +151,7 @@ export function TableGroupedHeader<Row extends TableRow>(
             const col = cell.column
             const isLeaf = (): boolean => !col.children || col.children.length === 0
             const sortable = (): boolean => isLeaf() && !!col.sortable
-            const lead =
-              (props.rowDrag ? 1 : 0) +
-              (props.seq ? 1 : 0) +
-              (props.hasDetail() ? 1 : 0) +
-              (props.selectable !== 'none' ? 1 : 0)
+            const lead = countLeadingGridTracks(leadingTracks())
             return (
               <div
                 role="columnheader"

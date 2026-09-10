@@ -5,6 +5,7 @@ import {
   mergeProps,
   splitProps,
   For,
+  onCleanup,
   type JSX,
 } from 'solid-js'
 import {
@@ -12,7 +13,6 @@ import {
   flattenTreeSelectionNodes,
   type TreeSelectionNode,
 } from '@iris-ui-kit/core'
-import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { TreeNodeItem } from './TreeNode'
 
@@ -149,29 +149,59 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
   // not-yet-rendered children) into `{ key, parentKey, disabled }` so the
   // cascade is correct even for collapsed branches, and drive it with the core
   // `createTreeSelection`. Also includes lazy-cached children.
-  const checkNodes = (): TreeSelectionNode[] => {
-    return flattenTreeSelectionNodes(local.nodes, {
+  const checkNodes = createMemo<TreeSelectionNode[]>(() =>
+    flattenTreeSelectionNodes(local.nodes, {
       getKey: (node) => node.id,
-      getChildren: (node) => node.children ?? lazyCache().get(node.id),
+      getChildren: (node) => {
+        if (node.children && node.children.length > 0) return node.children
+        if (lazyCache().has(node.id)) return lazyCache().get(node.id)
+        return node.children
+      },
       isDisabled: (node) => node.disabled === true,
-    })
-  }
+    }),
+  )
 
-  const checkModel = createTreeSelection({
+  // `defaultChecked` is an uncontrolled seed. Keep the model alive across
+  // equivalent prop replacements, and rebuild only for a real tree-shape or
+  // disabled-state change while carrying over checked leaves.
+  const checkShape = createMemo(() => JSON.stringify(checkNodes()))
+  const initialCheckModel = createTreeSelection({
     nodes: checkNodes(),
     defaultChecked: local.defaultChecked,
     onChange: (keys) => local.onCheckedChange?.(keys),
   })
-  // Bridge the model's store into Solid reactivity so checkbox rows re-render on
-  // every check change — the same store-binding the rest of the package uses.
-  const checkState = useStore(checkModel.selection.store)
+  const [checkModel, setCheckModel] = createSignal(initialCheckModel)
+  let appliedCheckShape = checkShape()
+  createEffect(() => {
+    const shape = checkShape()
+    if (shape === appliedCheckShape) return
+    const checkedLeaves = checkModel().getCheckedLeaves()
+    setCheckModel(
+      createTreeSelection({
+        nodes: checkNodes(),
+        defaultChecked: checkedLeaves,
+        onChange: (keys) => local.onCheckedChange?.(keys),
+      }),
+    )
+    appliedCheckShape = shape
+  })
+
+  // Subscribe to whichever model is current so checkbox rows stay reactive
+  // after a lazy child changes the tree shape.
+  const [checkSnapshot, setCheckSnapshot] = createSignal(initialCheckModel.selection.get())
+  createEffect(() => {
+    const model = checkModel()
+    setCheckSnapshot(model.selection.get())
+    const unsubscribe = model.selection.store.subscribe((next) => setCheckSnapshot(() => next))
+    onCleanup(unsubscribe)
+  })
   const isChecked = (id: string): boolean => {
-    checkState() // track the store so derived check state stays reactive
-    return checkModel.isChecked(id)
+    checkSnapshot() // track the store so derived check state stays reactive
+    return checkModel().isChecked(id)
   }
   const isIndeterminate = (id: string): boolean => {
-    checkState()
-    return checkModel.isIndeterminate(id)
+    checkSnapshot()
+    return checkModel().isIndeterminate(id)
   }
 
   const setExpanded = (next: string[]) => {
@@ -345,7 +375,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
           onToggleExpand={() => toggleExpand(node)}
           onSelect={() => selectNode(node.id)}
           onActivate={() => setActiveId(node.id)}
-          onCheck={() => checkModel.toggle(node.id)}
+          onCheck={() => checkModel().toggle(node.id)}
         >
           {renderChildren(node, depth)}
         </TreeNodeItem>

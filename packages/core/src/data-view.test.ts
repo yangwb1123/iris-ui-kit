@@ -64,6 +64,13 @@ describe('compareValues', () => {
     expect(compareValues({}, 'a')).not.toBeNaN()
     expect(compareValues([], null)).not.toBeNaN()
   })
+
+  it('provides a total order for NaN and equal infinities', () => {
+    expect(compareValues(Number.NaN, 1)).toBeGreaterThan(0)
+    expect(compareValues(1, Number.NaN)).toBeLessThan(0)
+    expect(compareValues(Number.NaN, Number.NaN)).toBe(0)
+    expect(compareValues(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY)).toBe(0)
+  })
 })
 
 describe('cycleSort', () => {
@@ -173,5 +180,20 @@ describe('filterSort', () => {
       multiSort: [{ key: 'name', direction: 'asc' }],
     })
     expect(out.map((r) => r.age)).toEqual([25, 30, 35])
+  })
+
+  it('ignores malformed runtime columns and query channels', () => {
+    const malformedColumns = [null, ...cols] as unknown as DataViewColumn<Row>[]
+    const out = filterSort(rows, malformedColumns, {
+      filters: { age: 42 } as unknown as Record<string, string>,
+      sort: { key: 'age', direction: 'invalid' } as unknown as {
+        key: string
+        direction: 'asc'
+      },
+      filterRules: [null] as unknown as never[],
+      multiSort: [null] as unknown as never[],
+    })
+    expect(out).toEqual(rows)
+    expect(out).not.toBe(rows)
   })
 })

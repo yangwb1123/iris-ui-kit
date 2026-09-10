@@ -78,7 +78,12 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     d.resolve({ rows: [rows[0]], total: 1 })
     await settle()
     expect(nameCells(wrapper)).toEqual(['Charlie'])
-    expect(query).toHaveBeenCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.calls[0]?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     // The pager renders below the body (proxy mode).
     expect(wrapper.find('[data-iris-table-pager]').exists()).toBe(true)
   })
@@ -110,7 +115,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     expect(query).toHaveBeenCalledTimes(1)
     await wrapper.find('[data-iris-table-header="name"]').trigger('click')
     await settle()
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: { key: 'name', direction: 'asc' },
@@ -119,9 +124,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     // Remote sort cycles asc → desc on further clicks.
     await wrapper.find('[data-iris-table-header="name"]').trigger('click')
     await settle()
-    expect(query).toHaveBeenLastCalledWith(
-      expect.objectContaining({ sort: { key: 'name', direction: 'desc' } }),
-    )
+    expect(query.mock.lastCall?.[0]).toMatchObject({ sort: { key: 'name', direction: 'desc' } })
   })
 
   it('page change re-queries with page=2 and fires onPageChange', async () => {
@@ -135,7 +138,12 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     expect(query).toHaveBeenCalledTimes(1)
     await wrapper.find('[data-iris-pagination-item="next"]').trigger('click')
     await settle()
-    expect(query).toHaveBeenLastCalledWith({ page: 2, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 2,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     expect(onPageChange).toHaveBeenCalledWith(2, 10)
   })
 
@@ -156,7 +164,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     await wrapper.find('[data-iris-table-header="name"]').trigger('click')
     await settle()
     expect(query).toHaveBeenCalledTimes(1)
-    expect(query).toHaveBeenCalledWith({
+    expect(query.mock.calls[0]?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: { key: 'name', direction: 'asc' },
@@ -226,12 +234,13 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     expect(query).toHaveBeenCalledTimes(1)
     await wrapper.find('[data-iris-pagination-item="next"]').trigger('click')
     await settle()
-    expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }))
+    expect(query.mock.lastCall?.[0]).toMatchObject({ page: 2 })
     await wrapper.setProps({ sort: { key: 'name', direction: 'desc' } })
     await settle()
-    expect(query).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 1, sort: { key: 'name', direction: 'desc' } }),
-    )
+    expect(query.mock.lastCall?.[0]).toMatchObject({
+      page: 1,
+      sort: { key: 'name', direction: 'desc' },
+    })
   })
 
   it('same-value controlled sort with fresh identity does not re-query or reset the page', async () => {
@@ -357,7 +366,7 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch X)', () => {
     await form(wrapper).trigger('submit')
     expect(onSearch).toHaveBeenCalledWith({ name: 'Cha' })
     await settle()
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -416,7 +425,12 @@ describe('IrisTable formConfig (vxe-grid formConfig parity, batch X)', () => {
     // filters value change ({name:'Cha'} → {}) re-queries; the parent is told
     // the reset values (defaults re-applied) and the draft is cleared.
     expect(query.mock.calls.length).toBe(3)
-    expect(query).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     expect(onReset).toHaveBeenCalledWith({})
     expect((nameInput(wrapper).element as HTMLInputElement).value).toBe('')
   })

@@ -12,17 +12,32 @@ function dataset(total: number) {
   }
 }
 
-function probe(mode?: 'paged' | 'infinite') {
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+  return { promise, resolve }
+}
+
+function probe(
+  mode?: 'paged' | 'infinite',
+  fetcher: (query: PageQuery, signal?: AbortSignal) => Promise<PageResult<number>> = dataset(25),
+  immediate = true,
+) {
   return defineComponent({
     setup() {
-      const p = usePaginatedResource(dataset(25), { pageSize: 10, mode, immediate: true })
+      const p = usePaginatedResource(fetcher, { pageSize: 10, mode, immediate })
       return () =>
         h('div', null, [
           h('span', { class: 'count' }, String(p.items.value.length)),
           h('span', { class: 'page' }, String(p.page.value)),
+          h('span', { class: 'first' }, String(p.items.value[0] ?? '—')),
+          h('span', { class: 'status' }, p.status.value),
           h('span', { class: 'hasMore' }, String(p.hasMore.value)),
           h('button', { class: 'more', onClick: () => void p.loadMore() }, 'more'),
           h('button', { class: 'page2', onClick: () => void p.goToPage(2) }, 'page2'),
+          h('button', { class: 'cancel', onClick: () => p.cancel() }, 'cancel'),
         ])
     },
   })
@@ -59,6 +74,54 @@ describe('@iris-ui-kit/vue usePaginatedResource', () => {
     expect(wrapper.find('.count').text()).toBe('10')
   })
 
+  it('paged mode makes loadMore replace the visible page', async () => {
+    const wrapper = mount(probe('paged'))
+    await flushPromises()
+    expect(wrapper.find('.first').text()).toBe('0')
+    await wrapper.find('.more').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.page').text()).toBe('2')
+    expect(wrapper.find('.count').text()).toBe('10')
+    expect(wrapper.find('.first').text()).toBe('10')
+  })
+
+  it('forwards the signal and cancels the request on unmount', async () => {
+    const d = deferred<PageResult<number>>()
+    let signal: AbortSignal | undefined
+    const fetcher = vi.fn((_query: PageQuery, nextSignal?: AbortSignal) => {
+      signal = nextSignal
+      return d.promise
+    })
+    const wrapper = mount(probe(undefined, fetcher))
+    await flushPromises()
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(signal).toBeInstanceOf(AbortSignal)
+    wrapper.unmount()
+    expect(signal?.aborted).toBe(true)
+    d.resolve({ items: [1] })
+    await flushPromises()
+  })
+
+  it('exposes a retryable cancel state', async () => {
+    const first = deferred<PageResult<number>>()
+    const second = deferred<PageResult<number>>()
+    let call = 0
+    const fetcher = vi.fn((_query: PageQuery, _signal?: AbortSignal) =>
+      ++call === 1 ? first.promise : second.promise,
+    )
+    const wrapper = mount(probe(undefined, fetcher, false))
+    await wrapper.find('.more').trigger('click')
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    await wrapper.find('.cancel').trigger('click')
+    expect(wrapper.find('.status').text()).toBe('idle')
+    await wrapper.find('.more').trigger('click')
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    second.resolve({ items: [2], total: 2 })
+    await flushPromises()
+    expect(wrapper.find('.status').text()).toBe('success')
+    first.resolve({ items: [1], total: 2 })
+  })
+
   it('uses the latest fetcher from a ref for page loads', async () => {
     // AC2: reactive ref(fetcher) — every page load (goToPage AND refresh)
     // must use the fresh closure, still receiving the PageQuery; stale
@@ -85,7 +148,7 @@ describe('@iris-ui-kit/vue usePaginatedResource', () => {
     await flushPromises()
     expect(wrapper.find('.items').text()).toBe('1')
     expect(first).toHaveBeenCalledTimes(1)
-    expect(first).toHaveBeenLastCalledWith({ page: 1, pageSize: 10 })
+    expect(first.mock.lastCall?.[0]).toEqual({ page: 1, pageSize: 10 })
 
     // (2) ref swap → goToPage uses the fresh closure.
     fetcherRef.value = second
@@ -93,7 +156,7 @@ describe('@iris-ui-kit/vue usePaginatedResource', () => {
     await flushPromises()
     expect(wrapper.find('.items').text()).toBe('2')
     expect(second).toHaveBeenCalledTimes(1)
-    expect(second).toHaveBeenLastCalledWith({ page: 1, pageSize: 10 })
+    expect(second.mock.lastCall?.[0]).toEqual({ page: 1, pageSize: 10 })
 
     // (3) ref swap → refresh() replays through the fresh closure too.
     fetcherRef.value = third

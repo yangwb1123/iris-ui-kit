@@ -57,8 +57,25 @@ export interface NotificationCenter {
 /** Default auto-dismiss for a toast (ms). */
 export const DEFAULT_NOTIFICATION_TIMEOUT = 4500
 
+const NOTIFICATION_TONES: readonly NotificationTone[] = ['info', 'success', 'warning', 'danger']
+
+function normalizeTone(tone: unknown): NotificationTone {
+  return NOTIFICATION_TONES.includes(tone as NotificationTone) ? (tone as NotificationTone) : 'info'
+}
+
+function normalizeTimeout(timeout: unknown): number {
+  return typeof timeout === 'number' && Number.isFinite(timeout) && timeout >= 0
+    ? timeout
+    : DEFAULT_NOTIFICATION_TIMEOUT
+}
+
+function createState(notifications: readonly DesktopNotification[]): NotificationCenterState {
+  const snapshot = notifications.map((notification) => Object.freeze({ ...notification }))
+  return Object.freeze({ notifications: Object.freeze(snapshot) }) as NotificationCenterState
+}
+
 export function createNotificationCenter(): NotificationCenter {
-  const store = createStore<NotificationCenterState>({ notifications: [] })
+  const store = createStore<NotificationCenterState>(createState([]))
   return {
     store,
     getState: store.getState,
@@ -71,18 +88,20 @@ export function createNotificationCenter(): NotificationCenter {
         body: input.body,
         icon: input.icon,
         appId: input.appId,
-        tone: input.tone ?? 'info',
-        timeout: input.timeout ?? DEFAULT_NOTIFICATION_TIMEOUT,
+        tone: normalizeTone(input.tone),
+        timeout: normalizeTimeout(input.timeout),
       }
-      store.setState((s) => ({ notifications: [notification, ...s.notifications] }))
+      store.setState((s) => createState([notification, ...s.notifications]))
       return id
     },
     dismiss(id) {
-      store.setState((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) }))
+      if (!store.getState().notifications.some((n) => n.id === id)) return
+      store.setState((s) => createState(s.notifications.filter((n) => n.id !== id)))
     },
     dismissAll() {
-      store.setState(() => ({ notifications: [] }))
+      if (store.getState().notifications.length === 0) return
+      store.setState(() => createState([]))
     },
-    list: () => store.getState().notifications,
+    list: () => store.getState().notifications.map((notification) => ({ ...notification })),
   }
 }

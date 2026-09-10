@@ -55,8 +55,6 @@ export interface ParsedTableQuery {
   error: string | null
 }
 
-const EMPTY: ParsedTableQuery = { filters: {}, inValues: {}, rules: [], sort: null, error: null }
-
 type QueryOp = '=' | 'contains' | 'in' | '!=' | '>' | '>=' | '<' | '<='
 
 const RELATIONAL_OPS: Record<string, FilterOperator> = {
@@ -73,6 +71,11 @@ interface ClauseToken {
   sep: 'and' | 'or' | null
 }
 
+interface SplitClausesResult {
+  clauses: ClauseToken[]
+  error: string | null
+}
+
 interface ParsedFilter {
   field: string
   op: QueryOp
@@ -86,6 +89,23 @@ interface ClauseResult {
   filter?: ParsedFilter
   sort?: SortState
   error?: string
+}
+
+function createEmptyResult(error: string | null = null): ParsedTableQuery {
+  return { filters: {}, inValues: {}, rules: [], sort: null, error }
+}
+
+function hasOwn<T>(record: Record<string, T>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key)
+}
+
+function setOwn<T>(record: Record<string, T>, key: string, value: T): void {
+  Object.defineProperty(record, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  })
 }
 
 function isQueryKeywordAt(input: string, index: number, keyword: 'and' | 'or'): boolean {
@@ -120,7 +140,7 @@ function queryStructuralChar(
 /** Split a query into top-level clauses on `and`/`or` keywords, respecting
  * quotes and `in (…)` parentheses. `sort by` is left inside its clause and
  * extracted per-clause (it is not a separator). */
-function splitClauses(input: string): ClauseToken[] {
+function splitClauses(input: string): SplitClausesResult {
   const out: ClauseToken[] = []
   let current = ''
   let sep: 'and' | 'or' | null = null
@@ -130,6 +150,9 @@ function splitClauses(input: string): ClauseToken[] {
   const n = input.length
   while (i < n) {
     const ch = input[i]!
+    if (!quote && ch === ')' && paren === 0) {
+      return { clauses: [], error: 'Unmatched closing parenthesis' }
+    }
     const structural = queryStructuralChar(ch, quote, paren)
     if (structural) {
       current += ch
@@ -158,7 +181,9 @@ function splitClauses(input: string): ClauseToken[] {
     i += 1
   }
   pushQueryClause(out, current, sep, false)
-  return out
+  if (quote !== null) return { clauses: [], error: 'Unterminated quote' }
+  if (paren !== 0) return { clauses: [], error: 'Unterminated parenthesis' }
+  return { clauses: out, error: null }
 }
 
 /** Find a trailing top-level `sort by <spec>` segment (quote/paren-aware) so a
@@ -258,6 +283,7 @@ function parseQuerySort(
   const dir = dirRaw === undefined ? 'asc' : dirRaw
   if (dir !== 'asc' && dir !== 'desc') return { error: `Invalid sort direction "${dirRaw}"` }
   const fieldName = parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0]!
+  if (fieldName === '') return { error: 'sort by requires a field' }
   const field = canonical(fieldName)
   if (field === null) return { error: `Unknown field "${fieldName}"` }
   return { sort: { key: field, direction: dir } }
@@ -328,19 +354,22 @@ function parseClause(text: string, canonical: (name: string) => string | null): 
 
 /** Fold a scalar/in-list into the inValues channel (used by same-field ORs). */
 function foldIntoInValues(out: ParsedTableQuery, field: string, ...values: string[]): void {
-  const existing = out.inValues[field] ?? []
-  if (out.filters[field] !== undefined) {
-    existing.push(out.filters[field])
+  const existing = hasOwn(out.inValues, field) ? out.inValues[field]! : []
+  if (hasOwn(out.filters, field)) {
+    existing.push(out.filters[field]!)
     delete out.filters[field]
   }
-  out.inValues[field] = [...existing, ...values]
+  setOwn(out.inValues, field, [...existing, ...values])
 }
 
-/** Relational rule value: numeric-looking unquoted → number, else string. */
+/** Relational rule value: numeric-looking unquoted → finite number, else string. */
 function coerceValue(raw: string, quoted: boolean): unknown {
   if (quoted) return raw
   const trimmed = raw.trim()
-  if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) return Number(trimmed)
+  if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
+    const number = Number(trimmed)
+    if (Number.isFinite(number)) return number
+  }
   return trimmed
 }
 
@@ -354,11 +383,17 @@ function createCanonicalFieldResolver(
   }
 }
 
-function applyParsedFilter(out: ParsedTableQuery, filter: ParsedFilter): void {
+function applyParsedFilter(out: ParsedTableQuery, filter: ParsedFilter): string | undefined {
   if (filter.op === '=' || filter.op === 'contains') {
-    out.filters[filter.field] = filter.value
+    if (hasOwn(out.filters, filter.field)) {
+      return `Cannot AND multiple text filters on the same field "${filter.field}"`
+    }
+    setOwn(out.filters, filter.field, filter.value)
   } else if (filter.op === 'in') {
-    out.inValues[filter.field] = filter.values
+    if (hasOwn(out.inValues, filter.field)) {
+      return `Cannot AND multiple in-lists on the same field "${filter.field}"`
+    }
+    setOwn(out.inValues, filter.field, filter.values)
   } else {
     out.rules.push({
       key: filter.field,
@@ -366,6 +401,7 @@ function applyParsedFilter(out: ParsedTableQuery, filter: ParsedFilter): void {
       value: coerceValue(filter.value, filter.quoted),
     })
   }
+  return undefined
 }
 
 function applyFilterWithOr(
@@ -375,10 +411,7 @@ function applyFilterWithOr(
   previous: { field: string; op: QueryOp } | null,
 ): string | undefined {
   const sameFieldOr = clause.sep === 'or' && previous?.field === filter.field
-  if (!sameFieldOr) {
-    applyParsedFilter(out, filter)
-    return undefined
-  }
+  if (!sameFieldOr) return applyParsedFilter(out, filter)
   const foldable =
     (filter.op === '=' || filter.op === 'in') && (previous!.op === '=' || previous!.op === 'in')
   if (!foldable) return `Cannot OR "${filter.op}" on the same field "${filter.field}"`
@@ -416,18 +449,34 @@ function applyParsedClause(
  * string while keeping the parse partial-free (all-or-nothing).
  */
 export function parseTableQuery(query: string, options?: ParseTableQueryOptions): ParsedTableQuery {
-  const canonical = createCanonicalFieldResolver(options?.fields)
-  const clauses = splitClauses(query)
-  if (clauses.length === 0) return EMPTY
+  try {
+    if (typeof query !== 'string') return createEmptyResult('Invalid query')
+    if (options === null || (options !== undefined && typeof options !== 'object')) {
+      return createEmptyResult('Invalid query options')
+    }
+    const fields = options?.fields
+    if (
+      fields !== undefined &&
+      (!Array.isArray(fields) || fields.some((field) => typeof field !== 'string'))
+    ) {
+      return createEmptyResult('Invalid query fields')
+    }
+    const canonical = createCanonicalFieldResolver(fields)
+    const split = splitClauses(query)
+    if (split.error !== null) return createEmptyResult(split.error)
+    if (split.clauses.length === 0) return createEmptyResult()
 
-  const out: ParsedTableQuery = { filters: {}, inValues: {}, rules: [], sort: null, error: null }
-  let prevFilter: { field: string; op: QueryOp } | null = null
-  for (let i = 0; i < clauses.length; i += 1) {
-    const clause = clauses[i]!
-    const parsed = parseClause(clause.text, canonical)
-    const applied = applyParsedClause(out, parsed, clause, i, clauses.length, prevFilter)
-    if (applied.error) return { ...EMPTY, error: applied.error }
-    prevFilter = applied.previous
+    const out: ParsedTableQuery = createEmptyResult()
+    let prevFilter: { field: string; op: QueryOp } | null = null
+    for (let i = 0; i < split.clauses.length; i += 1) {
+      const clause = split.clauses[i]!
+      const parsed = parseClause(clause.text, canonical)
+      const applied = applyParsedClause(out, parsed, clause, i, split.clauses.length, prevFilter)
+      if (applied.error) return createEmptyResult(applied.error)
+      prevFilter = applied.previous
+    }
+    return out
+  } catch {
+    return createEmptyResult('Invalid query')
   }
-  return out
 }

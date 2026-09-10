@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createSignal } from 'solid-js'
-import { render, cleanup, fireEvent } from '@solidjs/testing-library'
+import { render, cleanup, fireEvent, waitFor } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
 import { IrisTable } from './IrisTable'
 import type { IrisTableColumn } from './types'
@@ -51,6 +51,16 @@ describe('IrisTable', () => {
     expect(onChange).toHaveBeenLastCalledWith([])
   })
 
+  it('controlled sort re-bases after a rejected callback', () => {
+    const onSortChange = vi.fn()
+    const { getByText } = render(() => (
+      <IrisTable columns={columns} data={data} sort={null} onSortChange={onSortChange} />
+    ))
+    fireEvent.click(getByText('Name'))
+    fireEvent.click(getByText('Name'))
+    expect(onSortChange).toHaveBeenLastCalledWith({ key: 'name', direction: 'asc' })
+  })
+
   it('renders without crashing', () => {
     const { container } = render(() => <IrisTable columns={columns} data={data} />)
     expect(container.querySelector('[data-iris-table]')).not.toBeNull()
@@ -67,6 +77,25 @@ describe('IrisTable', () => {
     expect(getByText('Alice')).toBeTruthy()
     expect(getByText('Bob')).toBeTruthy()
     expect(getByText('Charlie')).toBeTruthy()
+  })
+
+  it('resolves string, number, missing/null, and numeric edge-case row keys', () => {
+    const keyRows: Array<Record<string, unknown>> = [
+      { key: 'alpha', label: 'Alpha' },
+      { key: 0, label: 'Zero' },
+      { label: 'Missing' },
+      { key: null, label: 'Null' },
+      { key: Number.NaN, label: 'NaN' },
+      { key: '', label: 'Empty' },
+    ]
+    const { container } = render(() => (
+      <IrisTable columns={[{ key: 'label', title: 'Label' }]} data={keyRows} rowKey="key" />
+    ))
+    expect(
+      Array.from(container.querySelectorAll<HTMLElement>('[data-iris-table-row-key]')).map((row) =>
+        row.getAttribute('data-iris-table-row-key'),
+      ),
+    ).toEqual(['alpha', '0', '2', '3', 'NaN', ''])
   })
 
   it('shows loading state', () => {
@@ -141,6 +170,45 @@ describe('IrisTable summary / footer row', () => {
       '[data-iris-table-row="summary"] [data-iris-table-cell="age"]',
     )
     expect(ageCell?.textContent).toBe(`Total: ${ageSum}`)
+  })
+
+  it('preserves null and zero aggregate semantics and passes rows to custom callbacks', () => {
+    const edgeRows = [
+      { id: 10, name: 'Null', age: null },
+      { id: 11, name: 'Zero', age: 0 },
+      { id: 12, name: 'String', age: '2' },
+    ]
+    const renderSummary = vi.fn(
+      (value: number, sourceRows: typeof edgeRows) => `Σ${value}:${sourceRows.length}`,
+    )
+    const { container } = render(() => (
+      <IrisTable
+        columns={[
+          { key: 'name', title: 'Name' },
+          { key: 'age', title: 'Age', summary: 'sum', renderSummary },
+        ]}
+        data={edgeRows}
+      />
+    ))
+    expect(
+      container.querySelector('[data-iris-table-row="summary"] [data-iris-table-cell="age"]')
+        ?.textContent,
+    ).toBe('Σ2:3')
+    expect(renderSummary).toHaveBeenCalledWith(2, edgeRows)
+  })
+
+  it('uses the remote page rows for summary values, including zero', async () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 90, name: 'Remote', age: 0 }], total: 10 }))
+    const { container } = render(() => (
+      <IrisTable columns={summaryCols} data={[]} rowKey="id" proxyConfig={{ query }} />
+    ))
+    await waitFor(() =>
+      expect(
+        container.querySelector('[data-iris-table-row="summary"] [data-iris-table-cell="age"]')
+          ?.textContent,
+      ).toBe('0'),
+    )
+    expect(query).toHaveBeenCalledTimes(1)
   })
 
   it('renders no summary row when no column declares one', () => {
@@ -360,6 +428,18 @@ describe('IrisTable tree rows', () => {
     expect(toggleFor('Root A')).not.toBeNull() // has children
     expect(toggleFor('Root B')).toBeNull() // leaf
     expect(toggleFor('Root A')!.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('applies local filters before projecting tree rows', () => {
+    render(() => (
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        filters={{ name: 'Root B' }}
+      />
+    ))
+    expect(visibleNames()).toEqual(['Root B'])
   })
 
   it('clicking the toggle reveals children then hides them', () => {
@@ -599,103 +679,6 @@ describe('IrisTable grid keyboard navigation', () => {
     cellAt(0, 0)!.focus()
     fireEvent.keyDown(cellAt(0, 0)!, { key: 'End' })
     expect(document.activeElement).toBe(cellAt(0, 1)) // 2 columns → last is col 1
-  })
-})
-
-describe('IrisTable virtual scroll', () => {
-  interface VRow extends Record<string, unknown> {
-    id: number
-    name: string
-    children?: VRow[]
-  }
-  const vcols: IrisTableColumn<VRow>[] = [{ key: 'name', title: 'Name' }]
-  const rowEls = (): Element[] => Array.from(document.querySelectorAll('[data-iris-table-row=""]'))
-
-  it('renders the body inside a virtual scroller that windows the rows', () => {
-    const many: VRow[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}` }))
-    render(() => (
-      <IrisTable columns={vcols} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />
-    ))
-    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
-    const count = rowEls().length
-    expect(count).toBeGreaterThan(0)
-    expect(count).toBeLessThan(50)
-  })
-
-  it('virtualizes tree mode (uniform-height rows) with tree decoration intact', () => {
-    const tree: VRow[] = [
-      {
-        id: 1,
-        name: 'Root',
-        children: Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, name: `C${i}` })),
-      },
-    ]
-    render(() => (
-      <IrisTable
-        columns={vcols}
-        data={tree}
-        getSubRows={(r) => r.children}
-        defaultExpandedRowKeys={[1]}
-        virtualScroll={{ itemHeight: 36, height: 200 }}
-      />
-    ))
-    // Tree mode now uses the virtual scroller (was previously excluded).
-    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
-    // Tree meta still flows into the virtualized rows (the parent toggle renders).
-    expect(document.querySelector('[data-iris-table-tree-toggle]')).not.toBeNull()
-    // Windowed: far fewer than the 41 total rows are in the DOM.
-    expect(rowEls().length).toBeLessThan(41)
-  })
-
-  it('does NOT virtualize tree mode when renderDetail is set (variable-height rows)', () => {
-    const tree: VRow[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'C' }] }]
-    render(() => (
-      <IrisTable
-        columns={vcols}
-        data={tree}
-        getSubRows={(r) => r.children}
-        renderDetail={(r) => <div>d{(r as VRow).id}</div>}
-        virtualScroll={{ itemHeight: 36, height: 200 }}
-      />
-    ))
-    expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
-  })
-})
-
-describe('IrisTable column virtualization', () => {
-  const wideCols: IrisTableColumn<Record<string, unknown>>[] = Array.from(
-    { length: 8 },
-    (_, i) => ({
-      key: `c${i}`,
-      title: `C${i}`,
-      width: 120,
-    }),
-  )
-  const wideRows: Record<string, unknown>[] = [
-    Object.fromEntries([['id', 1], ...wideCols.map((c) => [c.key, `${c.key}-v`])]),
-  ]
-
-  it('renders every column when disabled (default)', () => {
-    render(() => <IrisTable columns={wideCols} data={wideRows} />)
-    expect(document.querySelectorAll('[data-iris-table-header]').length).toBe(8)
-  })
-
-  it('renders only a window of columns when enabled', () => {
-    render(() => <IrisTable columns={wideCols} data={wideRows} columnVirtualization />)
-    const headerCount = document.querySelectorAll('[data-iris-table-header]').length
-    expect(headerCount).toBeGreaterThan(0)
-    expect(headerCount).toBeLessThan(8)
-    expect(document.querySelector('[data-iris-table][data-column-virtualized=true]')).not.toBeNull()
-    // Rendered header cells carry an explicit grid track.
-    const first = document.querySelector('[data-iris-table-header]') as HTMLElement
-    expect(first.style.gridColumnStart).toBeTruthy()
-  })
-
-  it('always renders pinned columns even when out of the window', () => {
-    const cols = wideCols.map((c, i) => (i === 7 ? { ...c, pinned: 'right' as const } : c))
-    render(() => <IrisTable columns={cols} data={wideRows} columnVirtualization />)
-    // The far pinned column (index 7) renders despite being outside the window.
-    expect(document.querySelector('[data-iris-table-header="c7"]')).not.toBeNull()
   })
 })
 

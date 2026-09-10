@@ -1,5 +1,10 @@
 import * as React from 'react'
-import { compareValues, memoizedFormulaValue } from '@iris-ui-kit/core'
+import {
+  createTableMultiSortComparator,
+  createTableSortComparator,
+  resolveTableColumnValue,
+  sortTableRows,
+} from '@iris-ui-kit/core'
 import {
   createGridSortingFeature,
   type GridCore,
@@ -45,36 +50,12 @@ export interface UseGridSortingResult<Row> {
   multiSortComparator: ((a: Row, b: Row) => number) | null
 }
 
-function buildSorter<Row extends Record<string, unknown>>(
-  column: GridSortColumn<Row>,
-  formulaTables?: Record<string, Row[]>,
-): (a: Row, b: Row) => number {
-  if (column.sorter) return column.sorter
-  return (a, b) => {
-    if (column.formula) {
-      let left = memoizedFormulaValue(column.formula, a, formulaTables)
-      let right = memoizedFormulaValue(column.formula, b, formulaTables)
-      if (column.sortType === 'number') {
-        left = Number(left)
-        right = Number(right)
-      } else if (column.sortType === 'string') {
-        left = String(left ?? '')
-        right = String(right ?? '')
-      }
-      return compareValues(left, right)
-    }
-    const key = (column.sortBy ?? column.dataIndex ?? column.key) as keyof Row
-    let left = a[key] as unknown
-    let right = b[key] as unknown
-    if (column.sortType === 'number') {
-      left = Number(left)
-      right = Number(right)
-    } else if (column.sortType === 'string') {
-      left = String(left ?? '')
-      right = String(right ?? '')
-    }
-    return compareValues(left, right)
-  }
+function cloneSort(sort: SortState | null): SortState | null {
+  return sort ? { ...sort } : null
+}
+
+function cloneSorts(sorts: readonly SortState[]): SortState[] {
+  return sorts.map((sort) => ({ ...sort }))
 }
 
 /** Installs sorting state in Grid Core and derives React column comparators. */
@@ -99,16 +80,98 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
   const internalState = useStore(model.store)
   const sortControlled = options.sort !== undefined
   const multiControlled = options.multiSortState !== undefined
-  const sortState = sortControlled ? (options.sort ?? null) : internalState.sort
-  const multiSortState = multiControlled ? (options.multiSortState ?? []) : internalState.multiSort
+  // React dependency checks cannot observe mutations made through a stable prop
+  // reference. Recompute these signatures on every render so controlled sync
+  // remains content-sensitive without changing the Core model contract.
+  const sortSignature = JSON.stringify(options.sort)
+  const multiSortSignature = JSON.stringify(options.multiSortState)
+  const wasSortControlled = React.useRef(sortControlled)
+  const uncontrolledSort = React.useRef<SortState | null>(null)
+  const hasUncontrolledSort = React.useRef(!sortControlled)
+  const lastControlledSort = React.useRef<SortState | null>(cloneSort(options.sort ?? null))
+  const wasMultiSortControlled = React.useRef(multiControlled)
+  const uncontrolledMultiSort = React.useRef<SortState[]>([])
+  const hasUncontrolledMultiSort = React.useRef(!multiControlled)
+  const lastControlledMultiSort = React.useRef<SortState[]>(
+    cloneSorts(options.multiSortState ?? []),
+  )
+  const leavingSortControlled = wasSortControlled.current && !sortControlled
+  const leavingMultiSortControlled = wasMultiSortControlled.current && !multiControlled
+
+  // Capture only genuine uncontrolled state. A rejected controlled proposal may
+  // be ahead of the prop in the model, so it must not become the handoff value.
+  if (!sortControlled && !leavingSortControlled) {
+    uncontrolledSort.current = cloneSort(internalState.sort)
+    hasUncontrolledSort.current = true
+  }
+  if (!multiControlled && !leavingMultiSortControlled) {
+    uncontrolledMultiSort.current = cloneSorts(internalState.multiSort)
+    hasUncontrolledMultiSort.current = true
+  }
+  // Capture a model update that was batched with the transition into control.
+  if (multiControlled && !wasMultiSortControlled.current) {
+    uncontrolledMultiSort.current = cloneSorts(internalState.multiSort)
+    hasUncontrolledMultiSort.current = true
+  }
+  if (sortControlled) lastControlledSort.current = cloneSort(options.sort ?? null)
+  if (multiControlled) {
+    lastControlledMultiSort.current = cloneSorts(options.multiSortState ?? [])
+  }
+
+  const sortState = sortControlled
+    ? cloneSort(options.sort ?? null)
+    : cloneSort(
+        leavingSortControlled
+          ? hasUncontrolledSort.current
+            ? uncontrolledSort.current
+            : lastControlledSort.current
+          : internalState.sort,
+      )
+  const multiSortState = multiControlled
+    ? cloneSorts(options.multiSortState ?? [])
+    : cloneSorts(
+        leavingMultiSortControlled
+          ? hasUncontrolledMultiSort.current
+            ? uncontrolledMultiSort.current
+            : lastControlledMultiSort.current
+          : internalState.multiSort,
+      )
 
   React.useEffect(() => {
-    if (sortControlled) model.syncSort(options.sort ?? null)
-  }, [model, options.sort, sortControlled])
+    if (sortControlled) {
+      const next = options.sort ?? null
+      lastControlledSort.current = cloneSort(next)
+      model.syncSort(next)
+    } else if (wasSortControlled.current) {
+      const restore = hasUncontrolledSort.current
+        ? uncontrolledSort.current
+        : lastControlledSort.current
+      if (!hasUncontrolledSort.current) {
+        uncontrolledSort.current = cloneSort(restore)
+        hasUncontrolledSort.current = true
+      }
+      model.syncSort(restore)
+    }
+    wasSortControlled.current = sortControlled
+  }, [model, options.sort, sortControlled, sortSignature])
 
   React.useEffect(() => {
-    if (multiControlled) model.syncMultiSort(options.multiSortState ?? [])
-  }, [model, multiControlled, options.multiSortState])
+    if (multiControlled) {
+      const next = cloneSorts(options.multiSortState ?? [])
+      lastControlledMultiSort.current = cloneSorts(next)
+      model.syncMultiSort(next)
+    } else if (wasMultiSortControlled.current) {
+      const restore = hasUncontrolledMultiSort.current
+        ? uncontrolledMultiSort.current
+        : lastControlledMultiSort.current
+      // Preserve the handoff value as the next uncontrolled baseline even if
+      // Core was already equal and therefore emitted no store notification.
+      uncontrolledMultiSort.current = cloneSorts(restore)
+      hasUncontrolledMultiSort.current = true
+      model.syncMultiSort(restore)
+    }
+    wasMultiSortControlled.current = multiControlled
+  }, [model, multiControlled, options.multiSortState, multiSortSignature])
 
   const setSort = React.useCallback(
     (next: SortState | null) => {
@@ -145,43 +208,34 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
     [model],
   )
 
-  const sortComparator = React.useMemo<((a: Row, b: Row) => number) | null>(() => {
-    if (!sortState) return null
-    const column = options.leafColumns.find((candidate) => candidate.key === sortState.key)
-    if (!column) return null
-    const direction = sortState.direction === 'asc' ? 1 : -1
-    const sorter = buildSorter(column, options.formulaTables)
-    return (a, b) => sorter(a, b) * direction
-  }, [options.leafColumns, sortState, options.formulaTables])
+  const getValue = React.useCallback(
+    (row: Row, column: GridSortColumn<Row>): unknown => {
+      if (column.sortBy !== undefined) return row[column.sortBy as keyof Row]
+      return resolveTableColumnValue(row, column, options.formulaTables)
+    },
+    [options.formulaTables],
+  )
 
-  const multiSortComparator = React.useMemo<((a: Row, b: Row) => number) | null>(() => {
-    if (multiSortState.length === 0) return null
-    const columns = new Map(options.leafColumns.map((column) => [column.key, column]))
-    const chain = multiSortState.flatMap((sort) => {
-      const column = columns.get(sort.key)
-      return column
-        ? [
-            {
-              direction: sort.direction === 'asc' ? 1 : -1,
-              sorter: buildSorter(column, options.formulaTables),
-            },
-          ]
-        : []
-    })
-    if (chain.length === 0) return null
-    return (a, b) => {
-      for (const step of chain) {
-        const comparison = step.sorter(a, b)
-        if (comparison !== 0) return comparison * step.direction
-      }
-      return 0
-    }
-  }, [options.leafColumns, multiSortState, options.formulaTables])
+  const sortComparator = React.useMemo(
+    () => createTableSortComparator(sortState, options.leafColumns, getValue),
+    [getValue, options.leafColumns, sortState],
+  )
 
-  const sortedData = React.useMemo(() => {
-    const comparator = options.multiSort ? multiSortComparator : sortComparator
-    return comparator ? [...data].sort(comparator) : data
-  }, [data, options.multiSort, multiSortComparator, sortComparator])
+  const multiSortComparator = React.useMemo(
+    () => createTableMultiSortComparator(multiSortState, options.leafColumns, getValue),
+    [getValue, options.leafColumns, multiSortState],
+  )
+
+  const sortedData = React.useMemo(
+    () =>
+      sortTableRows(data, options.leafColumns, {
+        mode: options.multiSort ? 'multiple' : 'single',
+        sort: sortState,
+        multiSort: multiSortState,
+        getValue,
+      }),
+    [data, getValue, multiSortState, options.leafColumns, options.multiSort, sortState],
+  )
 
   return {
     core,

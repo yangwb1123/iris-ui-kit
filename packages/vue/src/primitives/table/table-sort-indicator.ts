@@ -1,5 +1,6 @@
 import { h, type VNode } from 'vue'
-import type { IrisTableColumn, IrisTableSortDirection, IrisTableSortState } from './types'
+import { resolveTableSortInfo } from '@iris-ui-kit/core'
+import type { IrisTableColumn, IrisTableSortState } from './types'
 
 export function renderTableSortIndicator(
   column: IrisTableColumn,
@@ -10,11 +11,8 @@ export function renderTableSortIndicator(
   },
 ): VNode | null {
   if (!column.sortable) return null
-  const state = options.multiSort
-    ? (options.multiSortState.find((item) => item.key === column.key) ?? null)
-    : options.sort
-  const isActive = state?.key === column.key
-  const direction: IrisTableSortDirection | null = isActive ? state!.direction : null
+  const info = resolveTableSortInfo(column.key, options)
+  const { isActive, direction } = info
   const color = isActive ? 'var(--iris-primary)' : 'var(--iris-muted)'
   return h(
     'span',

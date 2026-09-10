@@ -100,6 +100,15 @@ describe('@iris-ui-kit/core rangeStats (batch AJ, iris 独有)', () => {
     })
   })
 
+  it('treats uncoercible values as non-numeric without throwing', () => {
+    const stats = rangeStats(
+      [{ value: Symbol('bad') }, { value: 3 }],
+      [{ key: 'value', getValue: (row: { value: unknown }) => row.value }],
+      range({ row: 0, col: 0 }, { row: 1, col: 0 }),
+    )
+    expect(stats.value).toEqual({ count: 2, sum: 3, avg: 3, min: 3, max: 3 })
+  })
+
   it('treats Infinity as a non-numeric value', () => {
     const stats = rangeStats(
       [{ value: Infinity }, { value: -Infinity }, { value: 3 }],

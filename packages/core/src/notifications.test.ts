@@ -70,4 +70,47 @@ describe('createNotificationCenter', () => {
     nc.post({ title: 'B' })
     expect(nc.list().map((n) => n.title)).toEqual(['B', 'A'])
   })
+
+  it('does not notify for dismiss no-ops or clearing an empty center', () => {
+    const nc = createNotificationCenter()
+    const listener = vi.fn()
+    nc.subscribe(listener)
+    const id = nc.post({ title: 'A' })
+    listener.mockClear()
+
+    nc.dismiss('missing')
+    expect(listener).not.toHaveBeenCalled()
+
+    nc.dismiss(id)
+    listener.mockClear()
+    nc.dismissAll()
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('does not let list or state snapshots mutate the center', () => {
+    const nc = createNotificationCenter()
+    nc.post({ title: 'A', body: 'body' })
+
+    const listed = nc.list()
+    listed[0]!.title = 'changed'
+    listed.pop()
+
+    expect(nc.list()[0]).toMatchObject({ title: 'A', body: 'body' })
+    expect(Object.isFrozen(nc.getState())).toBe(true)
+    expect(Object.isFrozen(nc.getState().notifications)).toBe(true)
+    expect(Object.isFrozen(nc.getState().notifications[0])).toBe(true)
+  })
+
+  it('normalizes malformed tone and timeout values at the runtime boundary', () => {
+    const nc = createNotificationCenter()
+    nc.post({ title: 'NaN', tone: 'invalid' as never, timeout: Number.NaN })
+    nc.post({ title: 'Infinity', timeout: Number.POSITIVE_INFINITY })
+    nc.post({ title: 'negative', timeout: -1 })
+
+    expect(nc.list().map((n) => ({ tone: n.tone, timeout: n.timeout }))).toEqual([
+      { tone: 'info', timeout: DEFAULT_NOTIFICATION_TIMEOUT },
+      { tone: 'info', timeout: DEFAULT_NOTIFICATION_TIMEOUT },
+      { tone: 'info', timeout: DEFAULT_NOTIFICATION_TIMEOUT },
+    ])
+  })
 })

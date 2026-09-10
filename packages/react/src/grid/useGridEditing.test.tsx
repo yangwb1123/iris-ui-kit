@@ -1,6 +1,7 @@
 import * as React from 'react'
-import { fireEvent, render } from '@testing-library/react'
+import { act, fireEvent, render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { GRID_EDITING_CHANGE_EVENT } from '@iris-ui-kit/core/grid'
 import { useGridCore } from './useGridCore'
 import { useGridEditing } from './useGridEditing'
 import { useGridRows } from './useGridRows'
@@ -49,6 +50,70 @@ describe('useGridEditing', () => {
       expect.objectContaining({ rowKey: 1, columnKey: 'name', value: 'Grace' }),
     )
     expect(view.getByTestId('state').textContent).toContain('"editing":null')
+    view.unmount()
+  })
+
+  it('isolates mutable bridge snapshots from Core editing state', () => {
+    const onStateChange = vi.fn()
+    const storeObserver = vi.fn()
+    const eventObserver = vi.fn()
+    let editing!: ReturnType<typeof useGridEditing<Row>>
+
+    function Harness() {
+      const core = useGridCore<Row>()
+      useGridRows(core, [{ id: 1, name: 'Ada' }])
+      editing = useGridEditing(core, {
+        getRowKey: (row) => row.id,
+        onStateChange,
+      })
+      return null
+    }
+
+    const view = render(<Harness />)
+    const unsubscribeStore = editing.model.store.subscribe(storeObserver)
+    const unsubscribeEvent = editing.core.on(GRID_EDITING_CHANGE_EVENT, eventObserver)
+    expect(editing.state.editing).toBeNull()
+
+    act(() => {
+      expect(editing.startCellEdit(1, 'name')).toBe(true)
+    })
+    const snapshot = editing.state
+    const coreState = editing.model.store.getState()
+    expect(snapshot).not.toBe(coreState)
+    expect(snapshot.editing).not.toBe(coreState.editing)
+
+    const counts = {
+      store: storeObserver.mock.calls.length,
+      state: onStateChange.mock.calls.length,
+      event: eventObserver.mock.calls.length,
+    }
+    snapshot.error = 'locally mutated'
+    snapshot.editing!.rowKey = 'locally mutated'
+
+    expect(editing.model.getState()).toMatchObject({
+      editing: { rowKey: 1, columnKey: 'name' },
+      error: null,
+    })
+    expect(editing.model.store.getState()).toMatchObject({
+      editing: { rowKey: 1, columnKey: 'name' },
+      error: null,
+    })
+    expect(editing.isCellEditing(1, 'name')).toBe(true)
+    expect(storeObserver).toHaveBeenCalledTimes(counts.store)
+    expect(onStateChange).toHaveBeenCalledTimes(counts.state)
+    expect(eventObserver).toHaveBeenCalledTimes(counts.event)
+
+    act(() => editing.setCellDraft('Grace'))
+    const fresh = editing.state
+    expect(fresh).not.toBe(snapshot)
+    expect(fresh).toMatchObject({
+      editing: { rowKey: 1, columnKey: 'name' },
+      draft: 'Grace',
+      error: null,
+    })
+
+    unsubscribeStore()
+    unsubscribeEvent()
     view.unmount()
   })
 

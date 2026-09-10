@@ -1,6 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createVirtualizer } from './virtualizer'
 
+function expectFiniteVirtualizerState(v: ReturnType<typeof createVirtualizer>): void {
+  const state = v.getState()
+  expect(Number.isFinite(state.offsetBefore)).toBe(true)
+  expect(Number.isFinite(state.totalSize)).toBe(true)
+  expect(Number.isFinite(state.startIndex)).toBe(true)
+  expect(Number.isFinite(state.endIndex)).toBe(true)
+  for (const item of state.items) {
+    expect(Number.isFinite(item.index)).toBe(true)
+    expect(Number.isFinite(item.start)).toBe(true)
+    expect(Number.isFinite(item.size)).toBe(true)
+  }
+}
+
 describe('createVirtualizer — fixed estimate', () => {
   it('renders only the visible window (+buffer) of a huge list', () => {
     const v = createVirtualizer({ count: 100_000, estimateSize: 20, viewportSize: 100, buffer: 1 })
@@ -230,6 +243,19 @@ describe('createVirtualizer — growth + viewport', () => {
     v.setFixedSize(null)
     expect(v.getState()).toMatchObject({ startIndex: 0, endIndex: 4 })
   })
+
+  it('fixedSize includes rows intersecting the viewport after a partial scroll', () => {
+    const v = createVirtualizer({
+      count: 10,
+      estimateSize: 20,
+      fixedSize: 20,
+      viewportSize: 20,
+    })
+
+    v.setScroll(10)
+
+    expect(v.getState().items.map((item) => item.index)).toEqual([0, 1])
+  })
 })
 
 describe('createVirtualizer — replaceData', () => {
@@ -343,6 +369,27 @@ describe('createVirtualizer — edge cases', () => {
     expect(v.totalSize()).toBe(before)
   })
 
+  it('normalizes positive fractional indices without accepting negative fractions as zero', () => {
+    const v = createVirtualizer({ count: 3, estimateSize: 20, viewportSize: 1000 })
+    v.measure(1.9, 40)
+    expect(v.getState().items[1]).toMatchObject({ index: 1, size: 40 })
+
+    const before = v.totalSize()
+    v.measure(-0.5, 100)
+    expect(v.totalSize()).toBe(before)
+    expect(v.getState().items[0]).toMatchObject({ index: 0, size: 20 })
+  })
+
+  it('bounds a huge finite count before allocating the size tree', () => {
+    const v = createVirtualizer({
+      count: Number.MAX_SAFE_INTEGER,
+      estimateSize: 20,
+      viewportSize: 100,
+    })
+    expectFiniteVirtualizerState(v)
+    expect(v.getState().items.length).toBeLessThan(10)
+  })
+
   it('handles zero estimate size — Fenwick tree lowerBound returns last item', () => {
     const v = createVirtualizer({ count: 10, estimateSize: 0, viewportSize: 100 })
     expect(v.totalSize()).toBe(0)
@@ -368,5 +415,77 @@ describe('createVirtualizer — edge cases', () => {
     v.setCount(3)
     const s = v.getState()
     expect(s.items[0]).toMatchObject({ key: 'c', size: 100 }) // c's size traveled
+  })
+
+  it('fails closed for non-finite and invalid configuration values', () => {
+    for (const count of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -3]) {
+      const v = createVirtualizer({
+        count,
+        estimateSize: Number.NaN,
+        viewportSize: Number.POSITIVE_INFINITY,
+        scrollOffset: Number.NEGATIVE_INFINITY,
+        buffer: Number.NaN,
+        fixedSize: Number.POSITIVE_INFINITY,
+      })
+      expect(v.getState().items).toEqual([])
+      expectFiniteVirtualizerState(v)
+    }
+
+    const v = createVirtualizer({
+      count: 2.9,
+      estimateSize: (index) => [Number.POSITIVE_INFINITY, -10, Number.NaN][index] ?? 0,
+    })
+    expect(v.totalSize()).toBe(0)
+    expectFiniteVirtualizerState(v)
+  })
+
+  it('ignores non-finite measurements and normalizes negative measurements and controls', () => {
+    const v = createVirtualizer({ count: 3, estimateSize: 20, viewportSize: 40 })
+    v.measure(0, 40)
+    const beforeInvalidMeasurements = v.totalSize()
+
+    v.measure(Number.NaN, 100)
+    v.measure(1, Number.NaN)
+    v.measure(1, Number.POSITIVE_INFINITY)
+    v.measure(1, Number.NEGATIVE_INFINITY)
+    expect(v.totalSize()).toBe(beforeInvalidMeasurements)
+
+    v.measure(1, -10)
+    v.setScroll(Number.NaN)
+    v.setScroll(Number.POSITIVE_INFINITY)
+    v.setScroll(-10)
+    v.setViewportSize(Number.POSITIVE_INFINITY)
+    v.setViewportSize(-10)
+    v.setBuffer(Number.POSITIVE_INFINITY)
+    v.setBuffer(-10)
+    v.setFixedSize(Number.NaN)
+    v.setFixedSize(-10)
+    expectFiniteVirtualizerState(v)
+
+    expect(v.scrollToOffset(Number.NaN)).toBe(0)
+    expect(v.scrollToIndex(Number.NaN)).toBe(0)
+
+    v.setCount(Number.NaN)
+    expect(v.getState().items).toEqual([])
+    expectFiniteVirtualizerState(v)
+    v.replaceData(Number.POSITIVE_INFINITY)
+    expect(v.getState().items).toEqual([])
+    expectFiniteVirtualizerState(v)
+  })
+
+  it('keeps totals and offsets finite when finite sizes would overflow an aggregate', () => {
+    const v = createVirtualizer({
+      count: 3,
+      estimateSize: Number.MAX_VALUE,
+      viewportSize: Number.MAX_VALUE,
+    })
+    expectFiniteVirtualizerState(v)
+    expect(v.totalSize()).toBeLessThanOrEqual(Number.MAX_VALUE)
+
+    v.measure(0, Number.MAX_VALUE)
+    v.setCount(5)
+    v.measure(4, Number.MAX_VALUE)
+    expectFiniteVirtualizerState(v)
+    expect(v.totalSize()).toBeLessThanOrEqual(Number.MAX_VALUE)
   })
 })

@@ -35,6 +35,39 @@ export function flattenTree<Row>(
   return out
 }
 
+/** A visible table row paired with its framework-free tree metadata. */
+export interface TableBodyRowView<Row> {
+  /** The original source row object; projection never clones it. */
+  readonly row: Row
+  /** Zero-based index in the returned visible body projection. */
+  readonly rowIndex: number
+  /** Tree metadata for this row, or null for the explicit flat path. */
+  readonly treeMeta: TreeRow<Row> | null
+}
+
+/**
+ * Project a table body into fresh row-view entries.
+ *
+ * The adapters still decide which already-filtered/sorted input to pass and
+ * still own expansion state. Core only combines that input with the shared
+ * pre-order tree flattening result. Omitting the options argument is an
+ * explicit flat-table path: row objects and their source order are retained without adding tree
+ * metadata or treating a `children` field as hierarchical data.
+ */
+export function projectTableBodyRows<Row>(
+  rows: readonly Row[],
+  options?: FlattenTreeOptions<Row>,
+): Array<TableBodyRowView<Row>> {
+  if (!options) {
+    return rows.map((row, rowIndex) => ({ row, rowIndex, treeMeta: null }))
+  }
+  return flattenTree(rows, options).map((treeMeta, rowIndex) => ({
+    row: treeMeta.row,
+    rowIndex,
+    treeMeta,
+  }))
+}
+
 /**
  * Wrap a `getChildren` accessor so children are returned sorted.
  * Combine with sorting root rows to sort a whole tree hierarchically.

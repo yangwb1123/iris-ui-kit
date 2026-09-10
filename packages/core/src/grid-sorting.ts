@@ -85,6 +85,7 @@ export function createGridSortingModel(
   })
 
   const commitSort = (sort: SortState | null, notify: boolean): void => {
+    if (sameSort(store.getState().sort, sort)) return
     const next = cloneSort(sort)
     store.setState((state) => ({ ...state, sort: next }))
     if (!notify) return
@@ -93,6 +94,7 @@ export function createGridSortingModel(
   }
 
   const commitMultiSort = (sorts: readonly SortState[], notify: boolean): void => {
+    if (sameSorts(store.getState().multiSort, sorts)) return
     const next = cloneSorts(sorts)
     store.setState((state) => ({ ...state, multiSort: next }))
     if (!notify) return
@@ -143,8 +145,20 @@ export function createGridSortingFeature<
   return {
     name: 'sorting',
     setup(context) {
-      const model = createGridSortingModel(options, (change) =>
-        context.emit(GRID_SORTING_CHANGE_EVENT, change),
+      let active = true
+      const model = createGridSortingModel(
+        {
+          ...options,
+          onSortChange: (sort) => {
+            if (active) options.onSortChange?.(sort)
+          },
+          onMultiSortChange: (sorts) => {
+            if (active) options.onMultiSortChange?.(sorts)
+          },
+        },
+        (change) => {
+          if (active) context.emit(GRID_SORTING_CHANGE_EVENT, change)
+        },
       )
       const featureMethods: GridSortingMethods = {
         getSortingModel: () => model,
@@ -160,6 +174,11 @@ export function createGridSortingFeature<
       }
       return {
         methods: featureMethods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained model may outlive the grid component. Stop feature-owned
+        // callbacks and events after teardown while keeping the model usable.
+        dispose: () => {
+          active = false
+        },
       }
     },
   }

@@ -94,11 +94,8 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
   // number the window uses the closed-form fixed formula below.
   const variable = (): boolean => userFn() !== null || auto()
 
-  // Auto mode: measured row heights cached by index. `measureVersion` bumps to
-  // recompute offsets when a measurement changes (the virtualizer's keyed cache
-  // is fed from this).
-  const measured = new Map<number, number>()
-  const [measureVersion, setMeasureVersion] = createSignal(0)
+  // In auto mode the core virtualizer owns measured heights. Its cache is keyed
+  // by `getItemKey`, so estimates must never retain measurements by index.
 
   // Live inputs read by the controller THROUGH plain (non-reactive) refs so the
   // controller memo's identity is never busted by a new closure / item array —
@@ -108,7 +105,7 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
   let keyOfRef = merged.keyOf
   let estimateRef = (index: number): number => {
     if (userFn()) return userFn()!(index)
-    if (auto()) return measured.get(index) ?? merged.estimatedItemHeight
+    if (auto()) return merged.estimatedItemHeight
     return fixedHeight()
   }
   createEffect(() => {
@@ -120,10 +117,9 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
     // it consistent with the current sizing mode (so a remeasure rebuilds right).
     void merged.itemHeight
     void merged.estimatedItemHeight
-    void measureVersion()
     estimateRef = (index: number): number => {
       if (userFn()) return userFn()!(index)
-      if (auto()) return measured.get(index) ?? merged.estimatedItemHeight
+      if (auto()) return merged.estimatedItemHeight
       return fixedHeight()
     }
   })
@@ -137,6 +133,7 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
     const count = merged.items.length
     const buffer = merged.buffer
     void variable()
+    const fixedSize = untrack(() => (variable() ? null : fixedHeight()))
     return untrack(() =>
       createVirtualizer({
         count,
@@ -147,20 +144,29 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
           return fn && it !== undefined ? fn(it, index) : index
         },
         buffer,
+        fixedSize,
         viewportSize: typeof merged.height === 'number' ? (merged.height as number) : 0,
       }),
     )
   })
 
-  // Push sizing changes (new user fn, a fresh measurement, or estimate change)
-  // into the controller without recreating it: drop the cache + rebuild the tree
-  // from the current `estimateSize`. Cheap; runs only when sizing changes.
+  // Re-seat keyed measurements when the data array changes, including a
+  // same-length reorder. The core controller owns the measurement cache.
+  createEffect(() => {
+    const v = virtualizer()
+    const nextItems = merged.items
+    v.setCount(nextItems.length)
+  })
+
+  // Push sizing configuration changes (new user fn or estimate change)
+  // into the controller without recreating it: update the fixed/variable path,
+  // then rebuild the tree from the current `estimateSize`.
   createEffect(() => {
     void merged.itemHeight
-    void measureVersion()
     void merged.estimatedItemHeight
     const v = virtualizer()
-    if (variable()) v.remeasure()
+    v.setFixedSize(variable() ? null : fixedHeight())
+    v.remeasure()
   })
 
   // Drive the controller's scroll + viewport from local signals so its window,
@@ -194,21 +200,12 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
   const heightOf = (i: number): number =>
     variable() ? (itemInState(i)?.size ?? estimateRef(i)) : fixedHeight()
 
-  // Render window. Fixed: closed-form (preserves the exact uniform-height
-  // window). Variable/auto: the controller's measured window (offset-tree walk).
+  // Render the controller-owned window for both fixed and variable sizing.
+  // This keeps partial-scroll intersection and overscan semantics identical to
+  // the framework-free virtualizer.
   const range = createMemo(() => {
-    if (variable()) {
-      const s = vstate()
-      return { start: s.startIndex, end: s.endIndex + 1 }
-    }
-    const fh = fixedHeight()
-    const st = scrollTop()
-    const vh = viewportHeight()
-    const startRaw = Math.floor(st / Math.max(1, fh))
-    const visibleCount = fh <= 0 ? 0 : Math.ceil(vh / fh)
-    const start = Math.max(0, startRaw - merged.buffer)
-    const end = Math.min(merged.items.length, startRaw + visibleCount + merged.buffer)
-    return { start, end }
+    const s = vstate()
+    return { start: s.startIndex, end: s.endIndex + 1 }
   })
 
   createEffect(() => {
@@ -235,8 +232,8 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
     setViewportHeight(el.clientHeight)
   }
 
-  // Auto-measurement: one ResizeObserver watches the rendered rows; each row's
-  // measured height is cached by index and feeds the offset table.
+  // Auto-measurement: one ResizeObserver watches the rendered rows and reports
+  // real sizes to the core keyed cache.
   let rowObserver: ResizeObserver | null = null
   const indexByEl = new WeakMap<Element, number>()
   const elByIndex = new Map<number, HTMLElement>()
@@ -266,17 +263,13 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
     }
     if (auto() && typeof ResizeObserver !== 'undefined') {
       rowObserver = new ResizeObserver((entries) => {
-        let changed = false
         for (const entry of entries) {
           const idx = indexByEl.get(entry.target)
           if (idx === undefined) continue
           const h = (entry.target as HTMLElement).offsetHeight
-          if (h > 0 && measured.get(idx) !== h) {
-            measured.set(idx, h)
-            changed = true
-          }
+          if (h <= 0) continue
+          virtualizer().measure(idx, h)
         }
-        if (changed) setMeasureVersion((v) => v + 1)
       })
       // Row refs run during mount, before this hook — observe the first window.
       for (const node of elByIndex.values()) rowObserver.observe(node)

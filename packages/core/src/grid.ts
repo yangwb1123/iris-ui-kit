@@ -68,6 +68,7 @@ interface InstalledFeature {
   contribution: GridFeatureContribution
   methodNames: string[]
   subscriptions: Array<() => void>
+  readyDelivered: boolean
 }
 
 function orderFeatures<Row extends Record<string, unknown>>(
@@ -121,6 +122,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
   let destroying = false
   const bus: GridEventBus = createEventBus<Record<string, unknown>>()
   const installed = new Map<string, InstalledFeature>()
+  const installing = new Set<string>()
   const methods = new Map<string, GridMethod>()
 
   const getMethod = <Method extends GridMethod = GridMethod>(name: string): Method | undefined =>
@@ -154,6 +156,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
   const rollback = (records: readonly InstalledFeature[]): void => {
     for (let index = records.length - 1; index >= 0; index -= 1) {
       const record = records[index]!
+      if (installed.get(record.name) !== record) continue
       cleanup(record)
       for (const name of record.methodNames) methods.delete(name)
       installed.delete(record.name)
@@ -161,6 +164,13 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
   }
 
   const install = (feature: GridFeature<Row>): InstalledFeature => {
+    if (installing.has(feature.name)) {
+      throw new Error(
+        `Grid feature "${feature.name}" is already being installed (reentrant installation).`,
+      )
+    }
+    installing.add(feature.name)
+
     const subscriptions: Array<() => void> = []
     const track = (unsubscribe: () => void): (() => void) => {
       subscriptions.push(unsubscribe)
@@ -180,6 +190,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
     let methodEntries: Array<[string, GridMethod]> = []
     try {
       contribution = feature.setup(context) ?? {}
+      if (destroying || status === 'destroyed') throw new Error('Grid Core is destroyed.')
       methodEntries = Object.entries(contribution.methods ?? {}) as Array<[string, GridMethod]>
       for (const [name, method] of methodEntries) {
         if (!name)
@@ -192,8 +203,16 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
         if (methods.has(name)) throw new Error(`Grid method "${name}" is already registered.`)
       }
     } catch (error) {
-      cleanup({ name: feature.name, contribution, methodNames: [], subscriptions })
+      cleanup({
+        name: feature.name,
+        contribution,
+        methodNames: [],
+        subscriptions,
+        readyDelivered: false,
+      })
       throw error
+    } finally {
+      installing.delete(feature.name)
     }
 
     for (const [name, method] of methodEntries) methods.set(name, method)
@@ -202,9 +221,16 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
       contribution,
       methodNames: methodEntries.map(([name]) => name),
       subscriptions,
+      readyDelivered: false,
     }
     installed.set(feature.name, record)
     return record
+  }
+
+  const deliverReady = (record: InstalledFeature): void => {
+    if (record.readyDelivered) return
+    record.readyDelivered = true
+    record.contribution.onReady?.()
   }
 
   const core: GridCore<Row> = {
@@ -219,16 +245,18 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
     },
     use(...next) {
       assertAlive()
-      const ordered = orderFeatures(next, new Set(installed.keys()))
-      const batch: InstalledFeature[] = []
+      const initialStatus = status
+      const installedBefore = new Set(installed.keys())
+      const ordered = orderFeatures(next, installedBefore)
       try {
         for (const feature of ordered) {
+          if (installed.has(feature.name)) continue
           const record = install(feature)
-          batch.push(record)
-          if (status === 'ready') record.contribution.onReady?.()
+          if (status === 'ready') deliverReady(record)
         }
       } catch (error) {
-        rollback(batch)
+        rollback([...installed.values()].filter((record) => !installedBefore.has(record.name)))
+        if (status !== 'destroyed') status = initialStatus
         throw error
       }
       return this
@@ -241,7 +269,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
       let hasError = false
       for (const record of installed.values()) {
         try {
-          record.contribution.onReady?.()
+          deliverReady(record)
         } catch (error) {
           if (!hasError) firstError = error
           hasError = true
@@ -253,7 +281,7 @@ export function createGridCore<Row extends Record<string, unknown> = Record<stri
         } catch (error) {
           warnGridCleanup(error)
         } finally {
-          status = 'created'
+          if (status === 'ready') status = 'created'
         }
         throw firstError
       }
@@ -362,6 +390,7 @@ export {
   GRID_EDITING_CHANGE_EVENT,
   GRID_EDITING_COMMIT_EVENT,
   type GridEditingBindings,
+  type AdvancedGridEditingValidation,
   type GridEditingCommit,
   type GridEditingFeatureOptions,
   type GridEditingKey,
@@ -373,12 +402,14 @@ export {
 export {
   createGridPaginationFeature,
   createGridPaginationModel,
+  createGridPaginationProjection,
   GRID_PAGINATION_CHANGE_EVENT,
   type GridPaginationChange,
   type GridPaginationChangeReason,
   type GridPaginationFeatureOptions,
   type GridPaginationMethods,
   type GridPaginationModel,
+  type GridPaginationProjection,
   type GridPaginationState,
 } from './grid-pagination'
 

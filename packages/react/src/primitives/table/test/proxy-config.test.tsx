@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { IrisTable } from '../Table'
-import type { IrisTableColumn } from '../types'
+import type { IrisTableHandle } from '../props'
+import type { IrisTableColumn, IrisTableProxyQueryParams } from '../types'
 
 afterEach(() => cleanup())
 
@@ -51,7 +52,12 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     await waitFor(() => {
       expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('Charlie')
     })
-    expect(query).toHaveBeenCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.calls[0]?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     // The pager renders below the body (proxy mode).
     expect(container.querySelector('[data-iris-table-pager]')).toBeTruthy()
   })
@@ -88,7 +94,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
     fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: { key: 'name', direction: 'asc' },
@@ -97,9 +103,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     // Remote sort cycles asc → desc → none on further clicks.
     fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(3))
-    expect(query).toHaveBeenLastCalledWith(
-      expect.objectContaining({ sort: { key: 'name', direction: 'desc' } }),
-    )
+    expect(query.mock.lastCall?.[0]).toMatchObject({ sort: { key: 'name', direction: 'desc' } })
   })
 
   it('page change re-queries with page=2 and fires onPageChange', async () => {
@@ -116,7 +120,12 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
     fireEvent.click(container.querySelector('[data-iris-pagination-item="next"]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith({ page: 2, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 2,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     expect(onPageChange).toHaveBeenCalledWith(2, 10)
   })
 
@@ -134,7 +143,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     // A remote sort is the first setParams — it fires the first request.
     fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
-    expect(query).toHaveBeenCalledWith({
+    expect(query.mock.calls[0]?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: { key: 'name', direction: 'asc' },
@@ -208,7 +217,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
       />,
     )
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -249,7 +258,7 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
       />,
     )
     await waitFor(() => expect(query).toHaveBeenCalledTimes(3))
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -284,9 +293,10 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
     fireEvent.click(container.querySelector('[data-iris-pagination-item="next"]')!)
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
-    expect(query).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 2, sort: { key: 'name', direction: 'asc' } }),
-    )
+    expect(query.mock.lastCall?.[0]).toMatchObject({
+      page: 2,
+      sort: { key: 'name', direction: 'asc' },
+    })
     rerender(
       <IrisTable
         columns={sortableColumns}
@@ -312,5 +322,112 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
     await waitFor(() => {
       expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('Charlie')
     })
+  })
+
+  it('forwards proxy AbortSignal without changing params and keeps one-argument callbacks compatible', async () => {
+    const query = vi.fn(
+      async (
+        params: IrisTableProxyQueryParams,
+        signal?: AbortSignal,
+      ): Promise<{ rows: Row[]; total: number }> => {
+        expect(Object.keys(params)).toEqual(['page', 'pageSize', 'sort', 'filters'])
+        expect(signal).toBeInstanceOf(AbortSignal)
+        return { rows: [rows[0]], total: 1 }
+      },
+    )
+    const { container } = render(
+      <IrisTable columns={baseColumns} data={[]} rowKey="id" proxyConfig={{ query }} />,
+    )
+    await waitFor(() => {
+      expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('Charlie')
+    })
+    expect(query.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
+
+    const oneArgumentQuery = vi.fn(async (_params: IrisTableProxyQueryParams) => ({
+      rows: [rows[1]],
+      total: 1,
+    }))
+    const second = render(
+      <IrisTable
+        columns={baseColumns}
+        data={[]}
+        rowKey="id"
+        proxyConfig={{ query: oneArgumentQuery }}
+      />,
+    )
+    await waitFor(() => {
+      expect(second.container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe(
+        'Alice',
+      )
+    })
+  })
+
+  it('forwards Core resilient options without changing proxy params or the initial request count', async () => {
+    const query = vi.fn(async (_params: IrisTableProxyQueryParams) => ({
+      rows: [rows[0]],
+      total: 1,
+    }))
+    const tableRef: { current: IrisTableHandle<Row> | null } = { current: null }
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={[]}
+        rowKey="id"
+        proxyConfig={{ query, resilient: { ttlMs: 60_000 } }}
+        tableRef={tableRef}
+      />,
+    )
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
+    expect(query.mock.calls[0]?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
+    await waitFor(() => expect(tableRef.current).not.toBeNull())
+    await act(async () => {
+      tableRef.current!.reloadData()
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    })
+    expect(query).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts stale proxy requests and never publishes their late rows', async () => {
+    const first = deferred<{ rows: Row[]; total: number }>()
+    const second = deferred<{ rows: Row[]; total: number }>()
+    const signals: Array<AbortSignal | undefined> = []
+    const query = vi.fn((_params: IrisTableProxyQueryParams, signal?: AbortSignal) => {
+      signals.push(signal)
+      return signals.length === 1 ? first.promise : second.promise
+    })
+    const tableRef: { current: IrisTableHandle<Row> | null } = { current: null }
+    const { container } = render(
+      <IrisTable
+        columns={baseColumns}
+        data={[]}
+        rowKey="id"
+        proxyConfig={{ query }}
+        tableRef={tableRef}
+      />,
+    )
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(tableRef.current).not.toBeNull())
+    act(() => tableRef.current!.reloadData())
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
+    expect(signals[0]?.aborted).toBe(true)
+    expect(signals[1]).toBeInstanceOf(AbortSignal)
+
+    await act(async () => {
+      second.resolve({ rows: [rows[1]], total: 1 })
+      await Promise.resolve()
+    })
+    await waitFor(() => {
+      expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('Alice')
+    })
+    await act(async () => {
+      first.resolve({ rows: [rows[0]], total: 1 })
+      await Promise.resolve()
+    })
+    expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('Alice')
   })
 })

@@ -1,9 +1,11 @@
 import * as React from 'react'
 import {
   createGridPaginationFeature,
+  createGridPaginationProjection,
   type GridCore,
   type GridPaginationChange,
   type GridPaginationModel,
+  type GridPaginationProjection,
   type GridPaginationState,
 } from '@iris-ui-kit/core/grid'
 import { useStore } from '../useStore'
@@ -57,22 +59,24 @@ export function useGridPagination<Row extends Record<string, unknown> = Record<s
       }),
   )
   const internal = useStore(model.store)
+  const projectionRef = React.useRef<GridPaginationProjection | null>(null)
+  if (projectionRef.current === null) {
+    projectionRef.current = createGridPaginationProjection(model, controlledState(options))
+  }
+  const projection = projectionRef.current
   const controlled =
     options.page !== undefined || options.pageSize !== undefined || options.total !== undefined
-  const pagination: GridPaginationState = {
-    page: options.page ?? internal.page,
-    pageSize: options.pageSize ?? internal.pageSize,
-    total: options.total ?? internal.total,
-  }
+  const controlledProps = controlledState(options)
+  const pagination: GridPaginationState = projection.project(internal, controlledProps)
 
   React.useEffect(() => {
-    if (controlled) model.sync(controlledState(options))
-  }, [controlled, model, options.page, options.pageSize, options.total])
+    projection.sync(controlledState(options))
+    return () => projection.dispose()
+  }, [options.page, options.pageSize, options.total, projection])
 
   const rebase = React.useCallback(() => {
-    const next = controlledState(latest.current)
-    if (Object.keys(next).length > 0) model.sync(next)
-  }, [model])
+    projection.sync(controlledState(latest.current))
+  }, [projection])
   const setPage = React.useCallback(
     (page: number) => {
       rebase()

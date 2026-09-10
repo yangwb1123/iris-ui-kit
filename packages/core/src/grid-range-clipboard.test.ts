@@ -14,6 +14,7 @@ import {
   type GridRowsTransaction,
   type TableClipboardColumn,
 } from './grid'
+import { serializeTableRange } from './table-clipboard'
 
 type Row = { id: number; name: string; age: number }
 
@@ -186,6 +187,26 @@ describe('createGridClipboardFeature', () => {
     )
   })
 
+  it('rejects multi-cell overflow paste into an empty grid without invoking the factory', () => {
+    const overflowRows = vi.fn()
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: [] }),
+        createGridRangeFeature<Row>(),
+        createGridClipboardFeature<Row>({ getColumns: () => columns, overflowRows }),
+      ],
+    })
+
+    expect(
+      grid.invoke<boolean>('pasteGridRange', 'Ada\t30', {
+        start: { row: 0, col: 0 },
+        end: { row: 1, col: 1 },
+      }),
+    ).toBe(false)
+    expect(overflowRows).not.toHaveBeenCalled()
+    expect(grid.invoke<Row[]>('getRows')).toEqual([])
+  })
+
   it('allows an overflow factory to seed an initially empty grid', () => {
     const overflowRows = vi.fn(({ lines, columns: contextColumns, parseValue, setValue }) =>
       lines.map((cells) => {
@@ -308,6 +329,32 @@ describe('createGridClipboardFeature', () => {
     expect(committedRows[0]?.name).toBe('Grace')
   })
 
+  it('isolates paste callback row snapshots from a custom rows binding', () => {
+    let committed: Row[] = [{ id: 1, name: 'Ada', age: 30 }]
+    const model = createGridClipboardModel<Row>(
+      {
+        getColumns: () => columns,
+        onPaste: (change) => {
+          if (change.type !== 'paste') return
+          ;(change.previousRows as Row[]).pop()
+          change.rows[0]!.name = 'observer-mutated'
+          ;(change.rows as Row[]).pop()
+        },
+      },
+      {
+        getRows: () => committed,
+        setRows: (rows) => {
+          committed = rows
+          return true
+        },
+        getRange: () => null,
+      },
+    )
+
+    expect(model.paste('Grace', { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } })).toBe(true)
+    expect(committed).toEqual([{ id: 1, name: 'Grace', age: 30 }])
+  })
+
   it('fails closed when a retained clipboard model outlives its Grid Core', () => {
     const grid = createClipboardGrid()
     const model = grid.invoke<import('./grid').GridClipboardModel>('getClipboardModel')
@@ -318,6 +365,77 @@ describe('createGridClipboardFeature', () => {
 
     expect(model.serialize()).toBeNull()
     expect(model.paste('Grace', { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } })).toBe(false)
+  })
+
+  it('fails closed on malformed setter and overflow row outputs', () => {
+    const row = { ...rows[0]! }
+    let committed = [row]
+    const model = createGridClipboardModel(
+      {
+        getColumns: () => columns,
+        setValue: () => undefined as unknown as Row,
+        overflowRows: () => [null as unknown as Row],
+      },
+      {
+        getRows: () => committed,
+        setRows: (next) => {
+          committed = next
+          return true
+        },
+        getRange: () => null,
+      },
+    )
+
+    expect(model.paste('Grace', { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } })).toBe(false)
+    expect(
+      model.paste('Grace\nLinus', { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } }),
+    ).toBe(false)
+    expect(committed).toEqual([row])
+
+    const malformedReconcile = createGridClipboardModel(
+      { getColumns: () => columns, reconcileRows: () => null as never },
+      {
+        getRows: () => committed,
+        setRows: (next) => {
+          committed = next
+          return true
+        },
+        getRange: () => null,
+      },
+    )
+    expect(
+      malformedReconcile.paste('Grace', {
+        start: { row: 0, col: 0 },
+        end: { row: 0, col: 0 },
+      }),
+    ).toBe(false)
+    expect(committed).toEqual([row])
+  })
+
+  it('normalizes direct table clipboard ranges and keeps HTML formula-safe', () => {
+    expect(
+      serializeTableRange(rows, columns, {
+        start: { row: -1.8, col: -1.2 },
+        end: { row: 99.9, col: 99.9 },
+      }),
+    ).toBe("Ada\t30\n'=SUM(A1)\t40")
+    expect(
+      serializeTableRange(rows, columns, {
+        start: { row: Number.POSITIVE_INFINITY, col: 0 },
+        end: { row: 0, col: 0 },
+      }),
+    ).toBe('')
+    expect(
+      serializeTableRange(
+        rows,
+        columns,
+        {
+          start: { row: 1, col: 0 },
+          end: { row: 1, col: 0 },
+        },
+        'html',
+      ),
+    ).toContain('&apos;=SUM(A1)')
   })
 
   it('clamps out-of-bounds ranges and keeps no-range/no-change operations inert', () => {

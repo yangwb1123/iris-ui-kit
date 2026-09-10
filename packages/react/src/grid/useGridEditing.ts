@@ -9,7 +9,7 @@ import {
   type GridEditingValidation,
 } from '@iris-ui-kit/core/grid'
 import type { CellEditState } from '@iris-ui-kit/core'
-import { useStore } from '../useStore'
+import { useStoreSelector } from '../useStore'
 import { useGridFeature } from './useGridFeature'
 
 export interface UseGridEditingOptions<Row extends Record<string, unknown>> extends Omit<
@@ -61,7 +61,7 @@ export function useGridEditing<Row extends Record<string, unknown>>(
       onCommit: (commit) => latest.current.onCommit?.(commit),
     }),
   )
-  const state = useStore(model.store)
+  const state = useStoreSelector(model.store, () => model.getState())
 
   return {
     core,

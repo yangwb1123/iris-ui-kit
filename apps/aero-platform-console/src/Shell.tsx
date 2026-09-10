@@ -13,20 +13,30 @@ import { useAuth } from './auth/AuthProvider'
 import type { PlatformConfig } from './config'
 import { useHashRoute } from './router'
 import { ActivityPage } from './pages/ActivityPage'
+import { AuditPage } from './pages/AuditPage'
 import { ConnectionsPage } from './pages/ConnectionsPage'
+import { DataPage } from './pages/DataPage'
 import { JobsPage } from './pages/JobsPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { OperationsPage } from './pages/OperationsPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { SecurityPage } from './pages/SecurityPage'
 import { ServiceLinksPage } from './pages/ServiceLinksPage'
+import { StoragePage } from './pages/StoragePage'
 
 const menus: NavNode[] = [
   { key: 'overview', title: '账户概览', icon: 'home' },
   { key: 'profile', title: '个人资料', icon: 'user' },
+  { key: 'security', title: '身份与安全', icon: 'shield' },
   { key: 'connections', title: '来源与成员关系', icon: 'link' },
+  { key: 'data', title: '数据投影', icon: 'file' },
   { key: 'activity', title: '近期活动', icon: 'clock' },
+  { key: 'notifications', title: '消息通知', icon: 'message' },
+  { key: 'storage', title: '文件与存储', icon: 'file' },
   { key: 'jobs', title: '同步与导出', icon: 'download' },
   { key: 'operations', title: '跨系统操作', icon: 'settings' },
+  { key: 'audit', title: '审计查询', icon: 'shield' },
   { key: 'services', title: '平台服务', icon: 'grid' },
 ]
 
@@ -44,14 +54,24 @@ function PageHost({
   switch (route) {
     case 'profile':
       return <ProfilePage client={client} />
+    case 'security':
+      return <SecurityPage client={client} config={config} />
     case 'connections':
       return <ConnectionsPage client={client} />
+    case 'data':
+      return <DataPage client={client} />
     case 'activity':
       return <ActivityPage client={client} />
+    case 'notifications':
+      return <NotificationsPage client={client} config={config} />
+    case 'storage':
+      return <StoragePage client={client} config={config} />
     case 'jobs':
       return <JobsPage client={client} />
     case 'operations':
       return <OperationsPage client={client} />
+    case 'audit':
+      return <AuditPage client={client} />
     case 'services':
       return <ServiceLinksPage config={config} />
     default:

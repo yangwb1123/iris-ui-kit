@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { IrisTable } from '../index'
 import type { IrisTableColumn } from '../types'
@@ -158,6 +158,31 @@ describe('IrisTable validationSummary (batch BR, iris 独有)', () => {
     expect(summary()).toBeNull()
   })
 
+  it('custom validate failures do not count even when editRules are present', async () => {
+    let rejectCustom = true
+    const customCols: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        editable: true,
+        editRules: [{ required: true }],
+        validate: () => (rejectCustom ? 'custom failure' : null),
+      },
+    ]
+    const { rerender } = render(
+      <IrisTable columns={customCols} data={rows} rowKey="id" validationSummary />,
+    )
+    commitCell('name', 'Alice')
+    await waitFor(() => expect(editorError()?.textContent).toContain('custom failure'))
+    expect(summary()).toBeNull()
+
+    fireEvent.keyDown(editor(), { key: 'Escape' })
+    rejectCustom = false
+    rerender(<IrisTable columns={customCols} data={rows} rowKey="id" validationSummary />)
+    commitCell('name', 'Alice')
+    await waitFor(() => expect(summaryText()).toBe('Passed 1 · Failed 0'))
+  })
+
   it('columns without editRules never count — a landed commit is not an ok', () => {
     const plainCols: IrisTableColumn<Row>[] = [{ key: 'name', title: 'Name', editable: true }]
     render(<IrisTable columns={plainCols} data={rows} rowKey="id" validationSummary />)
@@ -192,6 +217,123 @@ describe('IrisTable validationSummary (batch BR, iris 独有)', () => {
     fireEvent.change(rowEditor('name')!, { target: { value: 'Bob' } })
     fireEvent.keyDown(rowEditor('name')!, { key: 'Enter' })
     await waitFor(() => expect(summaryText()).toBe('Passed 1 · Failed 2'))
+  })
+
+  it('detached async editRules failures count exactly once without a landed write', async () => {
+    const resolvers: Array<(message: string | null) => void> = []
+    const onCellEdit = vi.fn()
+    const onAutosave = vi.fn()
+    const asyncCols: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        editable: true,
+        editRules: [
+          {
+            validator: () =>
+              new Promise<string | null>((resolve) => {
+                resolvers.push(resolve)
+              }),
+          },
+        ],
+      },
+    ]
+    const sourceRows: Row[] = [
+      { id: 1, name: 'Alice', note: '' },
+      { id: 2, name: 'Bob', note: '' },
+    ]
+    render(
+      <IrisTable
+        columns={asyncCols}
+        data={sourceRows}
+        rowKey="id"
+        validationSummary
+        editAutosave
+        onAutosave={onAutosave}
+        onCellEdit={onCellEdit}
+        editConfig={{ mode: 'row' }}
+      />,
+    )
+    fireEvent.click(
+      document.querySelector('[data-iris-table-row="1"] [data-iris-table-cell="name"]')!,
+    )
+    const firstEditor = document.querySelector(
+      '[data-iris-table-row="1"] [data-iris-table-cell="name"] [data-iris-table-editor]',
+    ) as HTMLInputElement
+    fireEvent.change(firstEditor, { target: { value: 'Alicia' } })
+    fireEvent.keyDown(firstEditor, { key: 'Enter' })
+    fireEvent.click(
+      document.querySelector('[data-iris-table-row="2"] [data-iris-table-cell="name"]')!,
+    )
+    resolvers[0]!('detached failure')
+
+    await waitFor(() => expect(summaryText()).toBe('Passed 0 · Failed 1'))
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(onAutosave).not.toHaveBeenCalled()
+  })
+
+  it('a removed keyed row does not publish row-mode dirty callbacks after async validation', async () => {
+    const resolvers: Array<(message: string | null) => void> = []
+    const onCellEdit = vi.fn()
+    const onAutosave = vi.fn()
+    const asyncCols: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        editable: true,
+        editRules: [
+          {
+            validator: () =>
+              new Promise<string | null>((resolve) => {
+                resolvers.push(resolve)
+              }),
+          },
+        ],
+      },
+    ]
+    const sourceRows: Row[] = [
+      { id: 1, name: 'Alice', note: '' },
+      { id: 2, name: 'Bob', note: '' },
+    ]
+    const { rerender } = render(
+      <IrisTable
+        columns={asyncCols}
+        data={sourceRows}
+        rowKey="id"
+        editAutosave
+        onAutosave={onAutosave}
+        onCellEdit={onCellEdit}
+        editConfig={{ mode: 'row' }}
+      />,
+    )
+    fireEvent.click(
+      document.querySelector('[data-iris-table-row="1"] [data-iris-table-cell="name"]')!,
+    )
+    const firstEditor = document.querySelector(
+      '[data-iris-table-row="1"] [data-iris-table-cell="name"] [data-iris-table-editor]',
+    ) as HTMLInputElement
+    fireEvent.change(firstEditor, { target: { value: 'Alicia' } })
+    fireEvent.keyDown(firstEditor, { key: 'Enter' })
+    expect(resolvers).toHaveLength(1)
+    rerender(
+      <IrisTable
+        columns={asyncCols}
+        data={sourceRows.filter((row) => row.id !== 1)}
+        rowKey="id"
+        editAutosave
+        onAutosave={onAutosave}
+        onCellEdit={onCellEdit}
+        editConfig={{ mode: 'row' }}
+      />,
+    )
+    await waitFor(() => expect(document.querySelector('[data-iris-table-row="1"]')).toBeNull())
+    await act(async () => {
+      resolvers[0]!(null)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(onAutosave).not.toHaveBeenCalled()
   })
 
   it('async validator counts exactly once per commit — typing never double-counts', async () => {

@@ -1,6 +1,12 @@
 import { createStore } from '../store'
 import { generateId } from '../utils'
-import { clampRect, cascadeRect, snapRect } from './geometry'
+import {
+  clampRect,
+  cascadeRect,
+  normalizeWindowArea,
+  normalizeWindowSize,
+  snapRect,
+} from './geometry'
 import type {
   DesktopWindow,
   OpenWindowOptions,
@@ -19,12 +25,25 @@ const DEFAULT_MIN: WindowSize = { width: 200, height: 120 }
 export function createWindowManager<Meta = unknown>(
   config: WindowManagerConfig = {},
 ): WindowManager<Meta> {
-  const cascadeStep = config.cascadeStep ?? 28
-  const defaultSize = config.defaultSize ?? DEFAULT_SIZE
-  const workspaces = Math.max(1, config.workspaces ?? 1)
+  const cascadeStep =
+    typeof config.cascadeStep === 'number' && Number.isFinite(config.cascadeStep)
+      ? Math.max(0, config.cascadeStep)
+      : 28
+  const defaultSize = normalizeWindowSize(config.defaultSize ?? DEFAULT_SIZE, DEFAULT_SIZE)
+  const configuredWorkspaces = config.workspaces
+  const workspaces =
+    typeof configuredWorkspaces === 'number' &&
+    Number.isSafeInteger(configuredWorkspaces) &&
+    configuredWorkspaces > 0
+      ? configuredWorkspaces
+      : 1
   const Z_REBALANCE_THRESHOLD = 100_000
 
-  const clampWs = (n: number): number => Math.max(0, Math.min(Math.trunc(n), workspaces - 1))
+  const clampWs = (n: number, fallback = 0): number => {
+    const safeFallback = Number.isFinite(fallback) ? Math.trunc(fallback) : 0
+    const value = Number.isFinite(n) ? Math.trunc(n) : safeFallback
+    return Math.max(0, Math.min(value, workspaces - 1))
+  }
 
   let zCounter = 0
   let openCount = 0
@@ -32,7 +51,7 @@ export function createWindowManager<Meta = unknown>(
   const store = createStore<WindowManagerState<Meta>>({
     windows: [],
     focusedId: null,
-    workArea: config.workArea ?? DEFAULT_AREA,
+    workArea: normalizeWindowArea(config.workArea ?? DEFAULT_AREA, DEFAULT_AREA),
     workspaces,
     currentWorkspace: 0,
   })
@@ -66,7 +85,9 @@ export function createWindowManager<Meta = unknown>(
     zCounter += 1
     if (zCounter > Z_REBALANCE_THRESHOLD) {
       rebalanceZ()
-      return zCounter
+      // rebalanceZ leaves the counter at the current maximum; this raise is
+      // the next operation and must receive a fresh value above it.
+      zCounter += 1
     }
     return zCounter
   }
@@ -83,6 +104,9 @@ export function createWindowManager<Meta = unknown>(
 
   const raise = (id: string): void => {
     const z = raiseZ()
+    // A synchronous subscriber can remove the target during rebalanceZ.
+    // Never publish a focusedId for a window that no longer exists.
+    if (!find(id)) return
     store.setState((s) => ({
       ...s,
       focusedId: id,
@@ -100,7 +124,12 @@ export function createWindowManager<Meta = unknown>(
       .sort((a, b) => b.z - a.z)
     const next = candidates[0]
     if (next) raise(next.id)
-    else store.setState((st) => ({ ...st, focusedId: null }))
+    else
+      store.setState((st) => ({
+        ...st,
+        focusedId: null,
+        windows: st.windows.map((w) => (w.focused ? { ...w, focused: false } : w)),
+      }))
   }
 
   return {
@@ -116,11 +145,14 @@ export function createWindowManager<Meta = unknown>(
       }
       const id = options.id ?? generateId('win')
       const area = store.getState().workArea
-      const minSize = { ...DEFAULT_MIN, ...options.minSize }
-      const size = {
-        width: options.rect?.width ?? defaultSize.width,
-        height: options.rect?.height ?? defaultSize.height,
-      }
+      const minSize = normalizeWindowSize({ ...DEFAULT_MIN, ...options.minSize }, DEFAULT_MIN)
+      const size = normalizeWindowSize(
+        {
+          width: options.rect?.width ?? defaultSize.width,
+          height: options.rect?.height ?? defaultSize.height,
+        },
+        defaultSize,
+      )
       const base = cascadeRect(openCount, area, size, cascadeStep)
       const rect = clampRect(
         { x: options.rect?.x ?? base.x, y: options.rect?.y ?? base.y, ...size },
@@ -129,11 +161,14 @@ export function createWindowManager<Meta = unknown>(
       )
       openCount += 1
       const z = raiseZ()
+      const currentWorkspace = store.getState().currentWorkspace
+      const workspace = clampWs(options.workspace ?? currentWorkspace, currentWorkspace)
+      const shouldFocus = workspace === currentWorkspace
       store.setState((s) => ({
         ...s,
-        focusedId: id,
+        focusedId: shouldFocus ? id : s.focusedId,
         windows: [
-          ...s.windows.map((w) => (w.focused ? { ...w, focused: false } : w)),
+          ...s.windows.map((w) => (shouldFocus && w.focused ? { ...w, focused: false } : w)),
           {
             id,
             appId: options.appId,
@@ -141,10 +176,10 @@ export function createWindowManager<Meta = unknown>(
             rect,
             z,
             state: 'normal',
-            focused: true,
+            focused: shouldFocus,
             minSize,
             meta: (options.meta ?? undefined) as Meta,
-            workspace: clampWs(options.workspace ?? store.getState().currentWorkspace),
+            workspace,
             prevState: 'normal',
           },
         ],
@@ -160,8 +195,12 @@ export function createWindowManager<Meta = unknown>(
 
     focus(id: string) {
       const w = find(id)
-      if (!w) return
+      if (!w || w.workspace !== store.getState().currentWorkspace) return
       if (w.state === 'minimized') patch(id, (win) => ({ ...win, state: win.prevState }))
+      // A subscriber may close or move the window while the minimized state is
+      // being restored. Re-check before raising it.
+      const restored = find(id)
+      if (!restored || restored.workspace !== store.getState().currentWorkspace) return
       raise(id)
     },
 
@@ -231,16 +270,18 @@ export function createWindowManager<Meta = unknown>(
     },
 
     setWorkArea(rect: WindowRect) {
+      const safeRect = normalizeWindowArea(rect, store.getState().workArea)
       store.setState((s) => ({
         ...s,
-        workArea: rect,
-        windows: s.windows.map((w) => ({ ...w, rect: clampRect(w.rect, rect, w.minSize) })),
+        workArea: safeRect,
+        windows: s.windows.map((w) => ({ ...w, rect: clampRect(w.rect, safeRect, w.minSize) })),
       }))
     },
 
     setWorkspace(index: number) {
-      const next = clampWs(index)
-      if (next === store.getState().currentWorkspace) return
+      const currentWorkspace = store.getState().currentWorkspace
+      const next = clampWs(index, currentWorkspace)
+      if (next === currentWorkspace) return
       store.setState((s) => ({ ...s, currentWorkspace: next }))
       focusTop()
     },
@@ -248,7 +289,7 @@ export function createWindowManager<Meta = unknown>(
     moveWindowToWorkspace(id: string, index: number) {
       const w = find(id)
       if (!w) return
-      const ws = clampWs(index)
+      const ws = clampWs(index, store.getState().currentWorkspace)
       patch(id, (win) => ({ ...win, workspace: ws }))
       const s = store.getState()
       if (s.focusedId === id && ws !== s.currentWorkspace) focusTop()

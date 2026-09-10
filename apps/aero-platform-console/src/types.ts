@@ -3,6 +3,10 @@ export type JsonRecord = Record<string, unknown>
 export interface PageData<T> {
   items: T[]
   nextCursor?: string
+  partial?: boolean
+  generatedAt?: string
+  sourceErrors?: Record<string, string>
+  staleDatasets?: string[]
 }
 
 export interface Profile {
@@ -29,6 +33,7 @@ export interface AggregateView {
   partial?: boolean
   source_errors?: Record<string, string>
   stale_datasets?: string[]
+  generated_at?: string
 }
 
 export interface Dataset {
@@ -36,3 +41,11 @@ export interface Dataset {
   source: string
   pii: boolean
 }
+
+export interface SourceHealth {
+  source: string
+  status: 'ok' | 'degraded'
+  error?: string
+}
+
+export type ConsistencyMode = 'eventual' | 'bounded' | 'strong'

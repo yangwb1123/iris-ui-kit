@@ -1,5 +1,16 @@
 import { createStore, type Store } from './store'
 import { debounce } from './data-view'
+import {
+  cloneRecord,
+  cloneValue,
+  hasOwn,
+  isArray,
+  isRecord,
+  normalizeApp,
+  normalizeInstalled,
+  normalizeProfile as normalizeProfileData,
+  readProperty,
+} from './profile-helpers'
 
 /**
  * `@iris-ui-kit/core/profile` — a framework-agnostic USER PROFILE: the portable,
@@ -79,20 +90,18 @@ export interface UserProfile {
   flush(): Promise<void>
 }
 
-const emptyData = (defaults?: Partial<ProfileData>): ProfileData => ({
-  version: PROFILE_VERSION,
-  installed: [],
-  prefs: {},
-  ...defaults,
-})
+const normalizeProfile = (value: unknown): ProfileData =>
+  normalizeProfileData(value, PROFILE_VERSION)
+
+const emptyData = (defaults?: Partial<ProfileData>): ProfileData => normalizeProfile(defaults)
 
 /** In-memory storage — the default; ideal for tests / ephemeral sessions. */
 export function memoryProfileStorage(seed?: ProfileData | null): ProfileStorage {
-  let data: ProfileData | null = seed ?? null
+  let data: ProfileData | null = seed == null ? null : normalizeProfile(seed)
   return {
-    load: () => data,
+    load: () => (data ? normalizeProfile(data) : null),
     save: (d) => {
-      data = d
+      data = normalizeProfile(d)
     },
   }
 }
@@ -101,18 +110,23 @@ interface WebStorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
 }
-const webStorage = (): WebStorageLike | undefined =>
-  (globalThis as { localStorage?: WebStorageLike }).localStorage
+const webStorage = (): WebStorageLike | undefined => {
+  try {
+    return (globalThis as { localStorage?: WebStorageLike }).localStorage
+  } catch {
+    return undefined
+  }
+}
 
 /** Browser localStorage backend (SSR-safe: no-ops when localStorage is absent). */
 export function localStorageProfileStorage(key = 'iris-profile'): ProfileStorage {
   return {
     load: () => {
-      const ls = webStorage()
-      if (!ls) return null
-      const raw = ls.getItem(key)
-      if (!raw) return null
       try {
+        const ls = webStorage()
+        if (!ls) return null
+        const raw = ls.getItem(key)
+        if (!raw) return null
         return JSON.parse(raw) as ProfileData
       } catch {
         return null
@@ -152,20 +166,24 @@ export interface HttpProfileStorageConfig {
  */
 export function httpProfileStorage(config: HttpProfileStorageConfig): ProfileStorage {
   const doFetch: FetchLike | undefined = config.fetch ?? (globalThis as { fetch?: FetchLike }).fetch
+  const headers = config.headers ? { ...config.headers } : undefined
   return {
     async load() {
       if (!doFetch) return null
-      const res = await doFetch(config.url, { headers: config.headers })
+      const res = await doFetch(config.url, {
+        headers: headers ? { ...headers } : undefined,
+      })
       if (!res.ok) return null
       return (await res.json()) as ProfileData
     },
     async save(data) {
       if (!doFetch) return
-      await doFetch(config.url, {
+      const res = await doFetch(config.url, {
         method: 'PUT',
-        headers: { 'content-type': 'application/json', ...config.headers },
+        headers: { 'content-type': 'application/json', ...headers },
         body: JSON.stringify(data),
       })
+      if (!res.ok) throw new Error('Profile save failed')
     },
   }
 }
@@ -178,16 +196,18 @@ export function httpProfileStorage(config: HttpProfileStorageConfig): ProfileSto
  * ProfileStorage — same seam. Pure.
  */
 export function mergeProfiles(a: ProfileData, b: ProfileData): ProfileData {
+  const left = normalizeProfile(a)
+  const right = normalizeProfile(b)
   const byId = new Map<string, InstalledApp>()
-  for (const app of a.installed) byId.set(app.appId, app)
-  for (const app of b.installed) {
+  for (const app of left.installed) byId.set(app.appId, app)
+  for (const app of right.installed) {
     const prev = byId.get(app.appId)
     if (!prev || app.installedAt >= prev.installedAt) byId.set(app.appId, app)
   }
   return {
-    version: Math.max(a.version, b.version),
-    installed: [...byId.values()],
-    prefs: { ...a.prefs, ...b.prefs },
+    version: Math.max(left.version, right.version),
+    installed: [...byId.values()].map((app) => normalizeApp(app)!),
+    prefs: { ...left.prefs, ...right.prefs },
   }
 }
 
@@ -206,11 +226,17 @@ export function syncedProfileStorage(opts: {
   return {
     async load() {
       const [local, remote] = await Promise.all([opts.local.load(), opts.remote.load()])
-      if (local && remote) return merge(local, remote)
-      return remote ?? local
+      if (local && remote)
+        return normalizeProfile(merge(normalizeProfile(local), normalizeProfile(remote)))
+      return remote ? normalizeProfile(remote) : local ? normalizeProfile(local) : null
     },
     async save(data) {
-      await Promise.all([opts.local.save(data), opts.remote.save(data)])
+      // A backend is allowed to retain or mutate its argument; give each one
+      // an independent snapshot and never leak the caller's state.
+      await Promise.all([
+        opts.local.save(normalizeProfile(data)),
+        opts.remote.save(normalizeProfile(data)),
+      ])
     },
   }
 }
@@ -219,45 +245,76 @@ export function createUserProfile(config: UserProfileConfig = {}): UserProfile {
   const storage = config.storage ?? memoryProfileStorage()
   const now = config.now ?? Date.now
   const store = createStore<ProfileData>(emptyData(config.defaults))
-
-  const doSave = (): void | Promise<void> => storage.save(store.getState())
+  // Writes are serialized so an older async save cannot settle after a newer
+  // flush and leave a remote backend with stale state.
+  let saveTail = Promise.resolve()
+  const doSave = (): Promise<void> => {
+    const snapshot = normalizeProfile(store.getState())
+    const write = saveTail.then(() => storage.save(snapshot)).then(() => undefined)
+    saveTail = write.catch(() => undefined)
+    return write
+  }
   const scheduledSave = debounce(() => {
-    void doSave()
+    void doSave().catch(() => {
+      // Background persistence has no caller to reject; an explicit flush still
+      // observes the failure from its own write.
+    })
   }, config.saveDebounceMs ?? 300)
   /** Apply a mutation then schedule a persist. */
   const mutate = (next: (s: ProfileData) => ProfileData): void => {
-    store.setState(next)
+    store.setState((state) => next(normalizeProfile(state)))
     scheduledSave()
   }
+  const validAppId = (appId: unknown): appId is string =>
+    typeof appId === 'string' && appId.length > 0
   const findApp = (appId: string): InstalledApp | undefined =>
-    store.getState().installed.find((a) => a.appId === appId)
+    validAppId(appId)
+      ? normalizeProfile(store.getState()).installed.find((a) => a.appId === appId)
+      : undefined
 
   return {
     store,
-    getState: store.getState,
-    subscribe: store.subscribe,
+    // UserProfile's object-returning methods are snapshots. The underlying
+    // store remains the reactive source used by framework adapters.
+    getState: () => normalizeProfile(store.getState()),
+    subscribe: (listener) => store.subscribe((state) => listener(normalizeProfile(state))),
 
     async hydrate() {
       const loaded = await storage.load()
-      if (!loaded) return
+      if (!isRecord(loaded)) return
+      const loadedInstalled = readProperty(loaded, 'installed')
+      const loadedPrefs = readProperty(loaded, 'prefs')
       // Loaded data wins; defaults already seeded. (Version migrations go here.)
-      store.setState((s) => ({
-        version: PROFILE_VERSION,
-        installed: loaded.installed ?? s.installed,
-        prefs: { ...s.prefs, ...(loaded.prefs ?? {}) },
-      }))
+      store.setState((s) => {
+        const installed =
+          loadedInstalled.ok && isArray(loadedInstalled.value)
+            ? normalizeInstalled(loadedInstalled.value)
+            : s.installed
+        const prefs =
+          loadedPrefs.ok && isRecord(loadedPrefs.value)
+            ? { ...s.prefs, ...cloneRecord(loadedPrefs.value) }
+            : s.prefs
+        return { version: PROFILE_VERSION, installed, prefs }
+      })
     },
 
     isInstalled: (appId) => findApp(appId) !== undefined,
 
     install(appId, opts) {
-      if (findApp(appId)) return
+      if (!validAppId(appId) || findApp(appId)) return
+      let installedAt = now()
+      if (typeof installedAt !== 'number' || !Number.isFinite(installedAt)) installedAt = Date.now()
+      let pinned = false
+      let config: AppConfig = {}
+      if (opts !== null && (typeof opts === 'object' || typeof opts === 'function')) {
+        const pinnedValue = readProperty(opts, 'pinned')
+        const configValue = readProperty(opts, 'config')
+        pinned = pinnedValue.ok && pinnedValue.value === true
+        config = configValue.ok && isRecord(configValue.value) ? cloneRecord(configValue.value) : {}
+      }
       mutate((s) => ({
         ...s,
-        installed: [
-          ...s.installed,
-          { appId, installedAt: now(), pinned: opts?.pinned ?? false, config: opts?.config ?? {} },
-        ],
+        installed: [...s.installed, { appId, installedAt, pinned, config }],
       }))
     },
 
@@ -267,6 +324,8 @@ export function createUserProfile(config: UserProfileConfig = {}): UserProfile {
     },
 
     setPinned(appId, pinned) {
+      const app = findApp(appId)
+      if (!app || typeof pinned !== 'boolean' || app.pinned === pinned) return
       mutate((s) => ({
         ...s,
         installed: s.installed.map((a) => (a.appId === appId ? { ...a, pinned } : a)),
@@ -274,22 +333,42 @@ export function createUserProfile(config: UserProfileConfig = {}): UserProfile {
     },
 
     setAppConfig(appId, cfg) {
+      const app = findApp(appId)
+      if (!app || !isRecord(cfg)) return
+      const patch = cloneRecord(cfg)
+      if (
+        Object.keys(patch).every(
+          (key) => hasOwn(app.config, key) && Object.is(app.config[key], patch[key]),
+        )
+      ) {
+        return
+      }
       mutate((s) => ({
         ...s,
         installed: s.installed.map((a) =>
-          a.appId === appId ? { ...a, config: { ...a.config, ...cfg } } : a,
+          a.appId === appId ? { ...a, config: { ...a.config, ...patch } } : a,
         ),
       }))
     },
 
-    getAppConfig: (appId) => findApp(appId)?.config ?? {},
-
-    setPref(key, value) {
-      mutate((s) => ({ ...s, prefs: { ...s.prefs, [key]: value } }))
+    getAppConfig: (appId) => {
+      const app = findApp(appId)
+      return app ? cloneRecord(app.config) : {}
     },
 
-    getPref: <T = unknown>(key: string): T | undefined =>
-      store.getState().prefs[key] as T | undefined,
+    setPref(key, value) {
+      if (typeof key !== 'string') return
+      const nextValue = cloneValue(value)
+      const current = normalizeProfile(store.getState()).prefs
+      if (hasOwn(current, key) && Object.is(current[key], nextValue)) return
+      mutate((s) => ({ ...s, prefs: { ...s.prefs, [key]: nextValue } }))
+    },
+
+    getPref: <T = unknown>(key: string): T | undefined => {
+      if (typeof key !== 'string') return undefined
+      const prefs = normalizeProfile(store.getState()).prefs
+      return hasOwn(prefs, key) ? (cloneValue(prefs[key]) as T) : undefined
+    },
 
     async flush() {
       scheduledSave.cancel()

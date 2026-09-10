@@ -1,39 +1,34 @@
-import { computeVirtualRange, memoizedFormulaValue, type FormulaTables } from '@iris-ui-kit/core'
-import type {
-  IrisTableColumn,
-  IrisTableColumnWidths,
-  IrisTableSpan,
-  IrisTableSpanMethodParams,
-} from './types'
+import {
+  computeVisibleColumnIndices,
+  DEFAULT_COLUMN_MIN_WIDTH,
+  DEFAULT_COLUMN_WIDTH,
+  COLUMN_RESIZE_STEP,
+  isTableColumnEditable,
+  materializeTableFormulaValues,
+  resolveTableColumnValue,
+  resolveColumnWidth,
+  type FormulaTables,
+} from '@iris-ui-kit/core'
+export { resolveInitialWidth } from '@iris-ui-kit/core'
+import type { IrisTableColumn, IrisTableColumnWidths } from './types'
 
 export const SELECTION_COL_WIDTH = 40
 export const EXPAND_COL_WIDTH = 40
 export const SEQ_COL_WIDTH = 40
 export const DRAG_COL_WIDTH = 40
-export const DEFAULT_COL_WIDTH = 140
-export const DEFAULT_MIN_WIDTH = 60
-export const RESIZE_STEP = 16
+export const DEFAULT_COL_WIDTH = DEFAULT_COLUMN_WIDTH
+export const DEFAULT_MIN_WIDTH = DEFAULT_COLUMN_MIN_WIDTH
+export const RESIZE_STEP = COLUMN_RESIZE_STEP
 
-/** Batch EK: a formula column is DISPLAY-ONLY even when `editable` — every
- * editing entry point (inline, row mode, click trigger, data-editable attr,
- * cursor) reads this same condition. */
-export function isEditableColumn<Row extends Record<string, unknown>>(
-  column: IrisTableColumn<Row>,
-): boolean {
-  return !!column.editable && !column.formula
-}
+/** Compatibility name for the Core edit-capability predicate. */
+export const isEditableColumn = isTableColumnEditable
 
 export function getCellValue<Row extends Record<string, unknown>>(
   row: Row,
   column: IrisTableColumn<Row>,
   formulaTables?: FormulaTables,
 ): unknown {
-  // Batch EK/GB: a formula column reads the COMPUTED value. The optional
-  // tables slot keeps cross-table references additive/default-off while making
-  // every adapter-side value consumer use the same computed value.
-  if (column.formula) return memoizedFormulaValue(column.formula, row, formulaTables)
-  const key = (column.dataIndex ?? column.key) as keyof Row
-  return row[key]
+  return resolveTableColumnValue(row, column, formulaTables)
 }
 
 /** CSV/range-copy shadow rows (batch EK): core `toCsv`/`serializeTableRange`
@@ -46,55 +41,7 @@ export function withComputedFormulaCells<Row extends Record<string, unknown>>(
   columns: readonly IrisTableColumn<Row>[],
   formulaTables?: FormulaTables,
 ): Row[] {
-  const formulaCols = columns.filter((c) => c.formula)
-  if (formulaCols.length === 0) return rows as Row[]
-  return rows.map((row) => {
-    let shadow: Row | null = null
-    for (const col of formulaCols) {
-      const key = (col.dataIndex ?? col.key) as keyof Row
-      const next: Row = shadow ?? { ...row }
-      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(
-        col.formula!,
-        row,
-        formulaTables,
-      )
-      shadow = next
-    }
-    return shadow as Row
-  })
-}
-
-/** Resolve one span and update the pass-local occupied-cell set. */
-export function resolveSpan(
-  occupied: Set<string>,
-  rowIndex: number,
-  columnIndex: number,
-  method: ((params: IrisTableSpanMethodParams) => IrisTableSpan | null) | undefined,
-): { rowspan: number; colspan: number } | null {
-  if (!method) return { rowspan: 1, colspan: 1 }
-  const key = `${rowIndex}:${columnIndex}`
-  if (occupied.has(key)) return null
-  const span = method({ rowIndex, columnIndex })
-  const rowspan = span?.rowspan ?? 1
-  const colspan = span?.colspan ?? 1
-  if (rowspan > 1) {
-    for (let row = 1; row < rowspan; row += 1) occupied.add(`${rowIndex + row}:${columnIndex}`)
-  }
-  if (colspan > 1) {
-    for (let column = 1; column < colspan; column += 1) {
-      occupied.add(`${rowIndex}:${columnIndex + column}`)
-    }
-  }
-  return { rowspan, colspan }
-}
-
-export function resolveInitialWidth(col: IrisTableColumn): number {
-  if (typeof col.width === 'number') return col.width
-  if (typeof col.width === 'string') {
-    const match = col.width.match(/^(\d+(?:\.\d+)?)px$/)
-    if (match) return Number(match[1])
-  }
-  return DEFAULT_COL_WIDTH
+  return materializeTableFormulaValues(rows, columns, formulaTables)
 }
 
 export function computeVisibleColSet(
@@ -105,20 +52,13 @@ export function computeVisibleColSet(
   widths: IrisTableColumnWidths,
   pinOf: (column: IrisTableColumn) => 'left' | 'right' | null,
 ): Set<number> | null {
-  if (!enabled) return null
-  const range = computeVirtualRange({
-    itemCount: columns.length,
-    scrollTop: scrollLeft,
+  return computeVisibleColumnIndices(enabled, {
+    columns,
+    scrollOffset: scrollLeft,
     viewportSize: viewportWidth,
-    itemSize: (index) => widths[columns[index].key] ?? resolveInitialWidth(columns[index]),
-    buffer: 2,
+    itemSize: (column) => resolveColumnWidth(column, widths),
+    isAlwaysVisible: (column) => pinOf(column) !== null,
   })
-  const visible = new Set<number>()
-  for (let index = range.startIndex; index <= range.endIndex; index += 1) visible.add(index)
-  columns.forEach((column, index) => {
-    if (pinOf(column) !== null) visible.add(index)
-  })
-  return visible
 }
 
 export function cellId(rowIdent: string | number, columnKey: string): string {

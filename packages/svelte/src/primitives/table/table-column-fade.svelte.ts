@@ -1,10 +1,18 @@
-import { flattenLeafColumns } from '@iris-ui-kit/core'
+import {
+  advanceColumnFade,
+  applyColumnVisibility,
+  commitColumnFade,
+  expandColumnFadeToLeaves,
+  isColumnFadeCollapsed,
+  mergeColumnFadeVisibility,
+  startColumnFade,
+  type ColumnFadeEntry,
+  type ColumnFadeOverlay,
+} from '@iris-ui-kit/core'
 import { onDestroy, tick } from 'svelte'
 import type { IrisTableColumn } from './types'
 
 export type ColumnVisibility = Record<string, boolean> | undefined
-type ColumnFadeEntry = { dir: 'in' | 'out'; phase: 'pending' | 'run' }
-type ColumnFadeOverlay = Record<string, ColumnFadeEntry>
 type TableRow = Record<string, unknown>
 type FadeColumn = { key: string; children?: FadeColumn[] }
 type FocusCell = { row: string; column: string }
@@ -28,13 +36,6 @@ export interface TableColumnFadeController {
 
 const FADE_DURATION_MS = 200
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
-
-function isCollapsedEntry(entry: ColumnFadeEntry): boolean {
-  return (
-    (entry.dir === 'out' && entry.phase === 'run') ||
-    (entry.dir === 'in' && entry.phase === 'pending')
-  )
-}
 
 /**
  * Presentation-only column visibility state. The Grid Core columns model stays
@@ -91,31 +92,6 @@ export function createTableColumnFade<Row extends TableRow>(options: {
     removeMotionListener = null
     mediaQuery = null
     reducedMotion = false
-  }
-
-  function flip(current: ColumnFadeOverlay): ColumnFadeOverlay {
-    let changed = false
-    const next: ColumnFadeOverlay = {}
-    for (const [key, entry] of Object.entries(current)) {
-      if (entry.phase === 'pending') {
-        next[key] = { dir: entry.dir, phase: 'run' }
-        changed = true
-      } else next[key] = entry
-    }
-    return changed ? next : current
-  }
-
-  function commit(current: ColumnFadeOverlay): ColumnFadeOverlay {
-    const visibility = options.visibility() ?? {}
-    let changed = false
-    const next: ColumnFadeOverlay = {}
-    for (const [key, entry] of Object.entries(current)) {
-      const visible = visibility[key] !== false
-      const done = entry.dir === 'out' ? !visible : visible
-      if (done) changed = true
-      else next[key] = entry
-    }
-    return changed ? next : current
   }
 
   function cancelSchedule(): void {
@@ -270,7 +246,7 @@ export function createTableColumnFade<Row extends TableRow>(options: {
           const candidate = focusCandidate
           const rememberedTable = focusTable
           const rememberedCell = focusGridCell
-          setOverlay(flip(overlayValue))
+          setOverlay(advanceColumnFade(overlayValue) ?? overlayValue)
           queueMicrotask(() => {
             if (disposed || generation !== scheduleGeneration) return
             recoverFocus(candidate, rememberedTable, rememberedCell)
@@ -286,24 +262,15 @@ export function createTableColumnFade<Row extends TableRow>(options: {
     commitTimer = setTimeout(() => {
       if (disposed || generation !== scheduleGeneration) return
       commitTimer = null
-      setOverlay(commit(overlayValue))
+      setOverlay(commitColumnFade(overlayValue, options.visibility() ?? {}) ?? overlayValue)
     }, FADE_DURATION_MS)
   }
 
   function startFade(before: ColumnVisibility, next: ColumnVisibility): void {
-    const nextOverlay = { ...overlayValue }
-    let changed = false
-    for (const key of new Set([...Object.keys(before ?? {}), ...Object.keys(next ?? {})])) {
-      const wasVisible = before?.[key] !== false
-      const isVisible = next?.[key] !== false
-      if (wasVisible === isVisible) continue
-      // Visibility semantics stop at top-level columns in IrisTable. A leaf
-      // key inside a grouped column therefore cannot invent an animation.
-      if (!options.columns().some((column) => column.key === key)) continue
-      nextOverlay[key] = { dir: isVisible ? 'in' : 'out', phase: 'pending' }
-      changed = true
-    }
-    if (!changed) return
+    const nextOverlay = startColumnFade(before ?? {}, next ?? {}, overlayValue, (key) =>
+      options.columns().some((column) => column.key === key),
+    )
+    if (!nextOverlay) return
     captureFocus()
     setOverlay(nextOverlay)
     scheduleFade()
@@ -342,35 +309,21 @@ export function createTableColumnFade<Row extends TableRow>(options: {
     removeMotionSubscription()
   })
 
-  const effectiveVisibility = $derived.by<ColumnVisibility>(() => {
-    if (Object.keys(overlay).length === 0) return options.visibility()
-    const next = { ...(options.visibility() ?? {}) }
-    for (const key of Object.keys(overlay)) next[key] = true
-    return next
-  })
+  const effectiveVisibility = $derived.by<ColumnVisibility>(() =>
+    mergeColumnFadeVisibility(options.visibility(), overlay),
+  )
   const displayColumns = $derived.by<IrisTableColumn[]>(() => {
     const visibility = effectiveVisibility
-    if (visibility === undefined) return options.columns() as unknown as IrisTableColumn[]
-    return options
-      .columns()
-      .filter((column) => visibility[column.key] !== false) as unknown as IrisTableColumn[]
+    return applyColumnVisibility(options.columns() as unknown as IrisTableColumn[], visibility)
   })
-  const fadeByLeaf = $derived.by<ColumnFadeOverlay>(() => {
-    if (Object.keys(overlay).length === 0) return {}
-    const next: ColumnFadeOverlay = {}
-    for (const [key, entry] of Object.entries(overlay)) {
-      const top = options.columns().find((column) => column.key === key)
-      if (!top) continue
-      const leaves = top.children?.length ? flattenLeafColumns([top]) : [top]
-      for (const leaf of leaves) next[leaf.key] = entry
-    }
-    return next
-  })
+  const fadeByLeaf = $derived.by<ColumnFadeOverlay>(() =>
+    expandColumnFadeToLeaves(overlay, options.columns()),
+  )
   const entryOf = (column: FadeColumn): ColumnFadeEntry | undefined =>
     overlay[column.key] ?? fadeByLeaf[column.key]
   const columnFadeStyle = (column: FadeColumn): Record<string, string> | null => {
     const entry = entryOf(column)
-    return entry && isCollapsedEntry(entry) ? { opacity: '0' } : null
+    return entry && isColumnFadeCollapsed(entry) ? { opacity: '0' } : null
   }
   const columnFadeAttrs = (column: FadeColumn): ColumnFadeAttrs => {
     const hidden = columnFadeStyle(column) !== null
@@ -400,7 +353,7 @@ export function createTableColumnFade<Row extends TableRow>(options: {
     columnFadeAttrs,
     isCollapsed: (key) => {
       const entry = fadeByLeaf[key]
-      return entry !== undefined && isCollapsedEntry(entry)
+      return entry !== undefined && isColumnFadeCollapsed(entry)
     },
   }
 }

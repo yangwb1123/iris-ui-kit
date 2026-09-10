@@ -1,5 +1,6 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
+import { tick } from 'svelte'
 import IrisVirtualScroll from './IrisVirtualScroll.svelte'
 
 afterEach(cleanup)
@@ -32,6 +33,104 @@ describe('IrisVirtualScroll', () => {
     })
     const renderedItems = container.querySelectorAll('[data-iris-virtual-item]')
     expect(renderedItems.length).toBeLessThan(items.length)
+  })
+
+  it('keeps both fixed rows mounted when scrolling through a row boundary', async () => {
+    const { container } = render(IrisVirtualScroll, {
+      props: { items: [0, 1, 2], itemHeight: 20, height: 20, buffer: 0 },
+    })
+    const viewport = container.querySelector('[data-iris-virtual-scroll]') as HTMLDivElement
+    viewport.scrollTop = 10
+    viewport.dispatchEvent(new Event('scroll'))
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    await tick()
+    expect(
+      Array.from(container.querySelectorAll('[data-iris-virtual-index]')).map((node) =>
+        Number(node.getAttribute('data-iris-virtual-index')),
+      ),
+    ).toEqual([0, 1])
+  })
+
+  it('does not reuse an auto measurement by index after a keyed reorder', async () => {
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60)
+    const rows = [
+      { id: 'a', height: 20 },
+      { id: 'b', height: 100 },
+      { id: 'c', height: 20 },
+    ]
+    const ros: Array<{ els: Element[]; flush: (els?: Element[]) => void }> = []
+    const RealRO = globalThis.ResizeObserver
+    class MockRO {
+      els: Element[] = []
+      constructor(public cb: ResizeObserverCallback) {
+        ros.push({ els: this.els, flush: (els = this.els) => this.flush(els) })
+      }
+      observe(el: Element) {
+        this.els.push(el)
+      }
+      unobserve(el: Element) {
+        this.els = this.els.filter((e) => e !== el)
+      }
+      disconnect() {
+        this.els = []
+      }
+      flush(els = this.els) {
+        this.cb(
+          els.map((target) => ({ target }) as ResizeObserverEntry),
+          this as never,
+        )
+      }
+    }
+    globalThis.ResizeObserver = MockRO as unknown as typeof ResizeObserver
+    const heightSpy = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        const index = Number((this as HTMLElement).dataset.irisVirtualIndex)
+        return rows[index]?.height ?? 20
+      },
+    })
+
+    try {
+      const { container, rerender } = render(IrisVirtualScroll, {
+        props: {
+          items: rows,
+          itemHeight: 'auto',
+          estimatedItemHeight: 20,
+          height: 60,
+          buffer: 0,
+          keyOf: (row: unknown) => (row as { id: string }).id,
+        },
+      })
+      await tick()
+      const rowRo = ros.find((r) =>
+        r.els.some((e) => (e as HTMLElement).hasAttribute('data-iris-virtual-item')),
+      )
+      const b = container.querySelector('[data-iris-virtual-index="1"]') as HTMLElement
+      expect(rowRo).toBeTruthy()
+      expect(b.offsetHeight).toBe(100)
+      rowRo!.flush([b])
+      await tick()
+      expect(
+        container.querySelector('[data-iris-virtual-spacer]')?.getAttribute('style'),
+      ).toContain('height: 140px')
+
+      await rerender({
+        items: [rows[0]!, rows[2]!, { id: 'd', height: 20 }],
+        itemHeight: 'auto',
+        estimatedItemHeight: 20,
+        height: 60,
+        buffer: 0,
+        keyOf: (row: unknown) => (row as { id: string }).id,
+      })
+      expect(
+        container.querySelector('[data-iris-virtual-spacer]')?.getAttribute('style'),
+      ).toContain('height: 60px')
+    } finally {
+      if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      clientHeight.mockRestore()
+      globalThis.ResizeObserver = RealRO
+    }
   })
 
   // ADDITIVE: the createVirtualizer-backed imperative handle (exported fns via

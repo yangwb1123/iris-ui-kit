@@ -31,6 +31,8 @@ export interface QueryCacheOptions {
   ttlMs?: number
   /** Injectable clock (ms). Defaults to `Date.now`. */
   now?: () => number
+  /** Maximum entries retained. Non-finite values are unbounded; finite values are floored and clamped at zero. */
+  maxEntries?: number
 }
 
 export interface QueryFetchOptions {
@@ -97,14 +99,54 @@ function snapshot<T>(e: InternalEntry<T>): QueryEntry<T> {
 export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache<T> {
   const ttlMs = options.ttlMs ?? 0
   const now = options.now ?? (() => Date.now())
+  // Undefined and non-finite capacities retain the historical unbounded
+  // behavior. Finite values are deterministic integer capacities; zero is a
+  // useful explicit way to disable retention.
+  const maxEntries =
+    options.maxEntries === undefined
+      ? Infinity
+      : Math.max(0, Math.floor(Number.isFinite(options.maxEntries) ? options.maxEntries : Infinity))
   const entries = new Map<string, InternalEntry<T>>()
   const listeners = new Map<string, Set<(entry: QueryEntry<T>) => void>>()
 
-  const ensure = (key: string): InternalEntry<T> => {
+  // Map insertion order is the LRU order: the first entry is least recently
+  // used and the last entry is most recently used.
+  const touch = (key: string, e: InternalEntry<T>): void => {
+    if (entries.get(key) !== e) return
+    entries.delete(key)
+    entries.set(key, e)
+  }
+
+  // A cache mutation supersedes any request already attached to this entry.
+  // Clearing the promise is important for the next fetch to start a new
+  // request; bumping the epoch makes the old request's settlement inert.
+  const orphanInflight = (e: InternalEntry<T>): void => {
+    e.epoch += 1
+    e.inflight = undefined
+    e.isFetching = false
+  }
+
+  const evictIfNeeded = (protectedKey?: string): void => {
+    while (entries.size > maxEntries) {
+      const oldest = entries.entries().next().value as [string, InternalEntry<T>] | undefined
+      if (!oldest) return
+      const [key, e] = oldest
+      // Even a zero-capacity cache needs a live entry while a same-key request
+      // is in flight so concurrent callers can still de-duplicate onto it.
+      if (key === protectedKey) return
+      entries.delete(key)
+      orphanInflight(e)
+    }
+  }
+
+  const ensure = (key: string, protectNewEntry = false): InternalEntry<T> => {
     let e = entries.get(key)
     if (!e) {
       e = idleEntry<T>()
       entries.set(key, e)
+      evictIfNeeded(protectNewEntry ? key : undefined)
+    } else {
+      touch(key, e)
     }
     return e
   }
@@ -126,54 +168,75 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
   ): Promise<T> => {
     if (e.inflight) return e.inflight // de-dup: share the pending request
     const startEpoch = e.epoch
+    // Install the shared promise BEFORE notifying subscribers or calling the
+    // fetcher. Both callbacks are synchronous extension points: a re-entrant
+    // fetch must deduplicate, while set/invalidate must supersede this
+    // generation instead of leaving an unresolved orphan attached to the entry.
+    let resolveRaw!: (data: T) => void
+    let rejectRaw!: (error: unknown) => void
+    const p = new Promise<T>((resolve, reject) => {
+      resolveRaw = resolve
+      rejectRaw = reject
+    })
+    e.inflight = p
     e.isFetching = true
     if (e.status === 'idle') e.status = 'loading'
     emit(key, e)
-    // Call the fetcher EAGERLY (synchronously) so de-dup counting and the shared
-    // promise are observable at once; a synchronous throw becomes a rejection.
     let raw: Promise<T>
     try {
       raw = Promise.resolve(fetcher(key))
     } catch (err) {
       raw = Promise.reject(err)
     }
-    const p = raw.then(
-      (data) => {
-        const cur = entries.get(key)
-        // Ignore a settle for a key that was removed/cleared mid-flight.
-        if (!cur || cur.epoch !== startEpoch) return data
-        cur.data = data
-        cur.error = undefined
-        cur.status = 'success'
-        cur.updatedAt = now()
-        cur.isFetching = false
-        cur.stale = false
-        cur.inflight = undefined
-        emit(key, cur)
-        return data
-      },
-      (err) => {
-        const cur = entries.get(key)
-        if (!cur || cur.epoch !== startEpoch) throw err
-        cur.error = err
-        cur.status = 'error'
-        cur.isFetching = false
-        cur.inflight = undefined
-        emit(key, cur)
-        throw err
-      },
-    )
-    e.inflight = p
+    void raw.then(resolveRaw, rejectRaw)
+    void p
+      .then(
+        (data) => {
+          const cur = entries.get(key)
+          // Ignore a settle for a key that was removed/cleared mid-flight. The
+          // key may already have been recreated, so epoch alone is not enough.
+          if (cur !== e || cur.epoch !== startEpoch) return data
+          cur.data = data
+          cur.error = undefined
+          cur.status = 'success'
+          cur.updatedAt = now()
+          cur.isFetching = false
+          cur.stale = false
+          cur.inflight = undefined
+          touch(key, cur)
+          emit(key, cur)
+          evictIfNeeded()
+          return data
+        },
+        (err) => {
+          const cur = entries.get(key)
+          // As above, do not let a removed entry settle into its replacement.
+          if (cur !== e || cur.epoch !== startEpoch) throw err
+          cur.error = err
+          cur.status = 'error'
+          cur.isFetching = false
+          cur.inflight = undefined
+          emit(key, cur)
+          evictIfNeeded()
+          throw err
+        },
+      )
+      .catch(() => {
+        // The original promise remains the caller-facing rejection; this
+        // observer must not create a second unhandled rejection.
+      })
     return p
   }
 
   return {
     get(key) {
       const e = entries.get(key)
-      return e ? snapshot(e) : undefined
+      if (!e) return undefined
+      touch(key, e)
+      return snapshot(e)
     },
     fetch(key, fetcher, opts = {}) {
-      const e = ensure(key)
+      const e = ensure(key, true)
       if (!opts.force && isFresh(e)) return Promise.resolve(e.data as T)
       const hasData = e.status === 'success'
       if (opts.staleWhileRevalidate && hasData && !opts.force) {
@@ -187,6 +250,7 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
     },
     set(key, data) {
       const e = ensure(key)
+      orphanInflight(e)
       e.data = data
       e.error = undefined
       e.status = 'success'
@@ -194,27 +258,39 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
       e.isFetching = false
       e.stale = false
       emit(key, e)
+      // A zero-capacity cache may keep an entry transiently while a request is
+      // in flight. Once set() turns it into settled data, release that entry
+      // instead of retaining a value beyond the configured capacity.
+      evictIfNeeded()
     },
     invalidate(key) {
       const e = entries.get(key)
       if (!e) return
+      touch(key, e)
+      orphanInflight(e)
       // Force staleness without dropping data (SWR can still serve it).
       e.stale = true
       emit(key, e)
+      evictIfNeeded()
     },
     invalidateAll() {
-      for (const [key, e] of entries) {
+      // Snapshot first because listeners may re-enter and mutate the cache.
+      for (const [key, e] of [...entries]) {
+        if (entries.get(key) !== e) continue
+        touch(key, e)
+        orphanInflight(e)
         e.stale = true
         emit(key, e)
+        evictIfNeeded()
       }
     },
     remove(key) {
       const e = entries.get(key)
-      if (e) e.epoch += 1 // orphan any in-flight settle
+      if (e) orphanInflight(e)
       entries.delete(key)
     },
     clear() {
-      for (const e of entries.values()) e.epoch += 1
+      for (const e of entries.values()) orphanInflight(e)
       entries.clear()
     },
     subscribe(key, listener) {

@@ -1,5 +1,6 @@
 import type { GridFeature, GridMethod } from './grid'
 import { createStore, type Store } from './store'
+import { isValidColumnWidth } from './column-width'
 
 export type GridColumnPin = 'left' | 'right' | null
 export type GridColumnVisibility = Record<string, boolean>
@@ -72,12 +73,75 @@ export interface GridColumnsMethods {
   syncColumnState(state: Partial<GridColumnsState>): void
 }
 
+function hasOwn(value: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function sameValueZero(left: unknown, right: unknown): boolean {
+  return left === right || (left !== left && right !== right)
+}
+
+function copyRecord<T>(record: Readonly<Record<string, T>> | undefined): Record<string, T> {
+  const next: Record<string, T> = {}
+  if (!record) return next
+  for (const key of Object.keys(record)) {
+    Object.defineProperty(next, key, {
+      configurable: true,
+      enumerable: true,
+      value: record[key],
+      writable: true,
+    })
+  }
+  return next
+}
+
+function copyWidths(widths: Readonly<GridColumnWidths> | undefined): GridColumnWidths {
+  const next: GridColumnWidths = {}
+  if (!widths) return next
+  for (const key of Object.keys(widths)) {
+    const width = widths[key]
+    if (!isValidColumnWidth(width)) continue
+    Object.defineProperty(next, key, {
+      configurable: true,
+      enumerable: true,
+      value: width,
+      writable: true,
+    })
+  }
+  return next
+}
+
+function isValidColumnPin(value: unknown): value is GridColumnPin {
+  return value === null || value === 'left' || value === 'right'
+}
+
+function copyPinned(pinned: Readonly<GridColumnPinned> | undefined): GridColumnPinned {
+  const next: GridColumnPinned = {}
+  if (!pinned) return next
+  for (const key of Object.keys(pinned)) {
+    const side = pinned[key]
+    if (!isValidColumnPin(side)) continue
+    Object.defineProperty(next, key, {
+      configurable: true,
+      enumerable: true,
+      value: side,
+      writable: true,
+    })
+  }
+  return next
+}
+
+function normalizeOrder(order: readonly string[] | undefined): string[] {
+  if (!order) return []
+  return [...new Set(order)]
+}
+
 function cloneState(state: GridColumnsState): GridColumnsState {
   return {
-    visibility: { ...state.visibility },
+    visibility: copyRecord(state.visibility),
     order: [...state.order],
-    widths: { ...state.widths },
-    pinned: { ...state.pinned },
+    widths: copyWidths(state.widths),
+    pinned: copyPinned(state.pinned),
   }
 }
 
@@ -87,21 +151,21 @@ export function createGridColumnsModel(
   emit?: (change: GridColumnsChange) => void,
 ): GridColumnsModel {
   const store = createStore<GridColumnsState>({
-    visibility: { ...options.defaultVisibility },
-    order: [...(options.defaultOrder ?? [])],
-    widths: { ...options.defaultWidths },
-    pinned: { ...options.defaultPinned },
+    visibility: copyRecord(options.defaultVisibility),
+    order: normalizeOrder(options.defaultOrder),
+    widths: copyWidths(options.defaultWidths),
+    pinned: copyPinned(options.defaultPinned),
   })
 
   const commitVisibility = (visibility: Readonly<GridColumnVisibility>, notify: boolean): void => {
-    const next = { ...visibility }
+    const next = copyRecord(visibility)
     store.setState((state) => ({ ...state, visibility: next }))
     if (!notify) return
     options.onVisibilityChange?.({ ...next })
     emit?.({ channel: 'visibility', visibility: { ...next } })
   }
   const commitOrder = (order: readonly string[] | undefined, notify: boolean): void => {
-    const next = [...(order ?? [])]
+    const next = normalizeOrder(order)
     store.setState((state) => ({ ...state, order: next }))
     if (!notify) return
     const callbackOrder = order === undefined ? undefined : [...next]
@@ -110,7 +174,7 @@ export function createGridColumnsModel(
     emit?.({ channel: 'order', order: eventOrder })
   }
   const commitWidths = (widths: Readonly<GridColumnWidths>, notify: boolean): void => {
-    const next = { ...widths }
+    const next = copyWidths(widths)
     store.setState((state) => ({ ...state, widths: next }))
     if (!notify) return
     options.onWidthsChange?.({ ...next })
@@ -122,7 +186,13 @@ export function createGridColumnsModel(
     pinned: Readonly<GridColumnPinned>,
     notify: boolean,
   ): void => {
-    const next = { ...pinned, [key]: side }
+    const next = copyPinned(pinned)
+    Object.defineProperty(next, key, {
+      configurable: true,
+      enumerable: true,
+      value: side,
+      writable: true,
+    })
     store.setState((state) => ({ ...state, pinned: next }))
     if (!notify) return
     options.onPinnedChange?.(key, side)
@@ -135,7 +205,10 @@ export function createGridColumnsModel(
     setVisibility: (visibility) => commitVisibility(visibility, true),
     toggleVisibility(key) {
       const visibility = store.getState().visibility
-      commitVisibility({ ...visibility, [key]: visibility[key] === false }, true)
+      commitVisibility(
+        { ...visibility, [key]: hasOwn(visibility, key) && visibility[key] === false },
+        true,
+      )
     },
     syncVisibility: (visibility) => {
       const current = store.getState().visibility
@@ -143,7 +216,9 @@ export function createGridColumnsModel(
       const nextKeys = Object.keys(visibility)
       if (
         keys.length !== nextKeys.length ||
-        keys.some((key) => !Object.is(current[key], visibility[key]))
+        keys.some(
+          (key) => !hasOwn(visibility, key) || !sameValueZero(current[key], visibility[key]),
+        )
       ) {
         commitVisibility(visibility, false)
       }
@@ -151,44 +226,52 @@ export function createGridColumnsModel(
     setOrder: (order) => commitOrder(order, true),
     syncOrder: (order) => {
       const current = store.getState().order
-      if (current.length !== order.length || current.some((key, index) => key !== order[index])) {
+      const next = normalizeOrder(order)
+      if (current.length !== next.length || current.some((key, index) => key !== next[index])) {
         commitOrder(order, false)
       }
     },
     setWidths: (widths) => commitWidths(widths, true),
     setWidth(key, width) {
+      if (!isValidColumnWidth(width)) return
       commitWidths({ ...store.getState().widths, [key]: width }, true)
     },
     syncWidths: (widths) => {
       const current = store.getState().widths
+      const next = copyWidths(widths)
       const keys = Object.keys(current)
-      const nextKeys = Object.keys(widths)
+      const nextKeys = Object.keys(next)
       if (
         keys.length !== nextKeys.length ||
-        keys.some((key) => !Object.is(current[key], widths[key]))
+        keys.some((key) => !hasOwn(next, key) || !sameValueZero(current[key], next[key]))
       ) {
-        commitWidths(widths, false)
+        commitWidths(next, false)
       }
     },
-    setPinned: (key, side) => commitPinned(key, side, store.getState().pinned, true),
+    setPinned: (key, side) => {
+      if (!isValidColumnPin(side)) return
+      commitPinned(key, side, store.getState().pinned, true)
+    },
     syncPinned(pinned) {
       const current = store.getState().pinned
+      const next = copyPinned(pinned)
       const keys = Object.keys(current)
-      const nextKeys = Object.keys(pinned)
+      const nextKeys = Object.keys(next)
       if (
         keys.length !== nextKeys.length ||
-        keys.some((key) => !Object.is(current[key], pinned[key]))
+        keys.some((key) => !hasOwn(next, key) || !sameValueZero(current[key], next[key]))
       ) {
-        store.setState((state) => ({ ...state, pinned: { ...pinned } }))
+        store.setState((state) => ({ ...state, pinned: next }))
       }
     },
     sync(next) {
       const current = store.getState()
       const nextState: GridColumnsState = {
-        visibility: next.visibility === undefined ? current.visibility : { ...next.visibility },
-        order: next.order === undefined ? current.order : [...next.order],
-        widths: next.widths === undefined ? current.widths : { ...next.widths },
-        pinned: next.pinned === undefined ? current.pinned : { ...next.pinned },
+        visibility:
+          next.visibility === undefined ? current.visibility : copyRecord(next.visibility),
+        order: next.order === undefined ? current.order : normalizeOrder(next.order),
+        widths: next.widths === undefined ? current.widths : copyWidths(next.widths),
+        pinned: next.pinned === undefined ? current.pinned : copyPinned(next.pinned),
       }
       const sameMap = (
         left: Readonly<Record<string, unknown>>,
@@ -197,7 +280,8 @@ export function createGridColumnsModel(
         const keys = Object.keys(left)
         const rightKeys = Object.keys(right)
         return (
-          keys.length === rightKeys.length && keys.every((key) => Object.is(left[key], right[key]))
+          keys.length === rightKeys.length &&
+          keys.every((key) => hasOwn(right, key) && sameValueZero(left[key], right[key]))
         )
       }
       if (
@@ -220,8 +304,26 @@ export function createGridColumnsFeature<
   return {
     name: 'columns',
     setup(context) {
-      const model = createGridColumnsModel(options, (change) =>
-        context.emit(GRID_COLUMNS_CHANGE_EVENT, change),
+      let active = true
+      const model = createGridColumnsModel(
+        {
+          ...options,
+          onVisibilityChange: (visibility) => {
+            if (active) options.onVisibilityChange?.(visibility)
+          },
+          onOrderChange: (order) => {
+            if (active) options.onOrderChange?.(order)
+          },
+          onWidthsChange: (widths) => {
+            if (active) options.onWidthsChange?.(widths)
+          },
+          onPinnedChange: (key, side) => {
+            if (active) options.onPinnedChange?.(key, side)
+          },
+        },
+        (change) => {
+          if (active) context.emit(GRID_COLUMNS_CHANGE_EVENT, change)
+        },
       )
       const methods: GridColumnsMethods = {
         getColumnsModel: () => model,
@@ -240,7 +342,14 @@ export function createGridColumnsFeature<
         setColumnPinned: (key, side) => model.setPinned(key, side),
         syncColumnState: (state) => model.sync(state),
       }
-      return { methods: methods as unknown as Readonly<Record<string, GridMethod>> }
+      return {
+        methods: methods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained model may outlive the grid component. Stop feature-owned
+        // callbacks and events after teardown while keeping the model usable.
+        dispose: () => {
+          active = false
+        },
+      }
     },
   }
 }

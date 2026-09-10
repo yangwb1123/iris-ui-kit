@@ -112,6 +112,8 @@ export interface IrisTableProps {
   onActiveViewChange?: (key: string | null) => void
   /** Optional tab strip; tab clicks apply listed view names in order. */
   tableTabs?: IrisTableTab[]
+  /** Controlled effective pin side by column key; absent keys use declarations. */
+  pinnedColumns?: Record<string, 'left' | 'right' | null>
   /** Show a draggable boundary for the leading left-pinned columns. */
   pinnedDrag?: boolean
   /** Called for each column whose pin side changes. */
@@ -163,8 +165,16 @@ export interface IrisTableProps {
   rowExpandable?: (row: Record<string, unknown>, rowIndex: number) => boolean
   defaultExpandedRowKeys?: Array<string | number>
   onExpandedRowsChange?: (keys: Array<string | number>) => void
-  /** Read a row's children to enable tree mode. */
+  /**
+   * Read a row's children to enable tree mode. Tree usage with `getSubRows` or
+   * `lazyLoad` requires a stable `rowKey`; keyless tree siblings are unsupported.
+   */
   getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
+  /** Lazy tree loading: the first expand calls this loader; `load` supplies and caches children. */
+  lazyLoad?: (
+    row: Record<string, unknown>,
+    load: (children: Array<Record<string, unknown>>) => void,
+  ) => void
   /** Persist view state (sort/filters/column widths/page size) across remounts. */
   persistState?: import('./types').IrisTablePersistConfig
   keyboardNavigation?: boolean

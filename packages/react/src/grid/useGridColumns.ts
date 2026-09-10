@@ -14,6 +14,23 @@ import { useGridFeature } from './useGridFeature'
 
 const EMPTY_VISIBILITY: GridColumnVisibility = {}
 const EMPTY_ORDER: string[] = []
+const EMPTY_WIDTHS: GridColumnWidths = {}
+const EMPTY_PINNED: GridColumnPinned = {}
+
+function visibilitySignature(visibility: GridColumnVisibility | undefined): string {
+  return visibility
+    ? JSON.stringify(Object.keys(visibility).map((key) => [key, visibility[key]]))
+    : ''
+}
+
+function cloneColumnsState(state: GridColumnsState): GridColumnsState {
+  return {
+    visibility: { ...state.visibility },
+    order: [...state.order],
+    widths: { ...state.widths },
+    pinned: { ...state.pinned },
+  }
+}
 
 export interface UseGridColumnsOptions {
   visibility?: GridColumnVisibility
@@ -77,31 +94,91 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
   const orderControlled = options.orderControlled ?? options.order !== undefined
   const widthsControlled = options.widths !== undefined
   const pinnedControlled = options.pinned !== undefined
-  const state: GridColumnsState = {
-    visibility: visibilityControlled
-      ? (options.visibility ?? EMPTY_VISIBILITY)
-      : internal.visibility,
-    order: orderControlled ? (options.order ?? EMPTY_ORDER) : internal.order,
-    widths: widthsControlled ? options.widths! : internal.widths,
-    pinned: pinnedControlled ? options.pinned! : internal.pinned,
+  const visibilityVersion = visibilitySignature(
+    visibilityControlled ? options.visibility : undefined,
+  )
+  const lastUncontrolledVisibility = React.useRef<GridColumnVisibility>({
+    ...(options.defaultVisibility ?? EMPTY_VISIBILITY),
+  })
+  const lastUncontrolledOrder = React.useRef<string[]>([...(options.defaultOrder ?? EMPTY_ORDER)])
+  const lastUncontrolledWidths = React.useRef<GridColumnWidths>({
+    ...(options.defaultWidths ?? EMPTY_WIDTHS),
+  })
+  const lastUncontrolledPinned = React.useRef<GridColumnPinned>({
+    ...(options.defaultPinned ?? EMPTY_PINNED),
+  })
+  const wasVisibilityControlled = React.useRef(visibilityControlled)
+  const wasOrderControlled = React.useRef(orderControlled)
+  const wasWidthsControlled = React.useRef(widthsControlled)
+  const wasPinnedControlled = React.useRef(pinnedControlled)
+  if (!visibilityControlled && !wasVisibilityControlled.current) {
+    lastUncontrolledVisibility.current = { ...internal.visibility }
   }
+  if (!orderControlled && !wasOrderControlled.current) {
+    lastUncontrolledOrder.current = [...internal.order]
+  }
+  if (!widthsControlled && !wasWidthsControlled.current) {
+    lastUncontrolledWidths.current = { ...internal.widths }
+  }
+  if (!pinnedControlled && !wasPinnedControlled.current) {
+    lastUncontrolledPinned.current = { ...internal.pinned }
+  }
+  const state: GridColumnsState = cloneColumnsState({
+    visibility: visibilityControlled
+      ? { ...(options.visibility ?? EMPTY_VISIBILITY) }
+      : wasVisibilityControlled.current
+        ? lastUncontrolledVisibility.current
+        : internal.visibility,
+    order: orderControlled
+      ? [...(options.order ?? EMPTY_ORDER)]
+      : wasOrderControlled.current
+        ? lastUncontrolledOrder.current
+        : internal.order,
+    // Removing a controlled order must restore the last uncontrolled/default
+    // snapshot rather than exposing a rejected controlled proposal. Widths
+    // use the same handoff policy below.
+    // Removing a controlled width map must restore the last uncontrolled or
+    // default snapshot immediately; otherwise one render leaks the rejected
+    // controlled widths before the silent model rebase runs.
+    widths: widthsControlled
+      ? { ...options.widths! }
+      : wasWidthsControlled.current
+        ? lastUncontrolledWidths.current
+        : internal.widths,
+    pinned: pinnedControlled
+      ? { ...options.pinned! }
+      : wasPinnedControlled.current
+        ? lastUncontrolledPinned.current
+        : internal.pinned,
+  })
 
   React.useEffect(() => {
     if (visibilityControlled) model.syncVisibility(options.visibility ?? {})
-  }, [model, options.visibility, visibilityControlled])
+    else if (wasVisibilityControlled.current)
+      model.syncVisibility(lastUncontrolledVisibility.current)
+    wasVisibilityControlled.current = visibilityControlled
+  }, [model, options.visibility, visibilityControlled, visibilityVersion])
   React.useEffect(() => {
     if (orderControlled) model.syncOrder(options.order ?? [])
+    else if (wasOrderControlled.current) model.syncOrder(lastUncontrolledOrder.current)
+    wasOrderControlled.current = orderControlled
   }, [model, options.order, orderControlled])
   React.useEffect(() => {
     if (widthsControlled) model.syncWidths(options.widths ?? {})
+    else if (wasWidthsControlled.current) model.syncWidths(lastUncontrolledWidths.current)
+    wasWidthsControlled.current = widthsControlled
   }, [model, options.widths, widthsControlled])
   React.useEffect(() => {
     if (pinnedControlled) model.syncPinned(options.pinned ?? {})
+    else if (wasPinnedControlled.current) model.syncPinned(lastUncontrolledPinned.current)
+    wasPinnedControlled.current = pinnedControlled
   }, [model, options.pinned, pinnedControlled])
 
   const rebaseVisibility = React.useCallback((): void => {
     if (latest.current.visibilityControlled ?? latest.current.visibility !== undefined) {
       model.syncVisibility(latest.current.visibility ?? {})
+    } else if (wasVisibilityControlled.current) {
+      model.syncVisibility(lastUncontrolledVisibility.current)
     }
   }, [model])
   const rebaseOrder = React.useCallback((): void => {
@@ -111,9 +188,11 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
   }, [model])
   const rebaseWidths = React.useCallback((): void => {
     if (latest.current.widths !== undefined) model.syncWidths(latest.current.widths)
+    else if (wasWidthsControlled.current) model.syncWidths(lastUncontrolledWidths.current)
   }, [model])
   const rebasePinned = React.useCallback((): void => {
     if (latest.current.pinned !== undefined) model.syncPinned(latest.current.pinned)
+    else if (wasPinnedControlled.current) model.syncPinned(lastUncontrolledPinned.current)
   }, [model])
   const setVisibility = React.useCallback(
     (visibility: GridColumnVisibility): void => {

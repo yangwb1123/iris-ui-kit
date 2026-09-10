@@ -1,10 +1,16 @@
 <script lang="ts">
-  import type { HeaderCell, I18n } from '@iris-ui-kit/core'
+  import {
+    leadingGridTrack,
+    resolveColumnWidth,
+    type GridLeadingTrack,
+    type HeaderCell,
+    type I18n,
+  } from '@iris-ui-kit/core'
   import type { Snippet } from 'svelte'
   import TableDragSpacer from './TableDragSpacer.svelte'
   import PinnedDragHandle from './PinnedDragHandle.svelte'
   import { tableColumnDrag } from './table-drag-actions'
-  import { resolveInitialWidth, TABLE_CONST } from './tableUtils'
+  import { TABLE_CONST } from './tableUtils'
   import type { IrisTableColumn, IrisTableColumnWidths, IrisTableFilterValues } from './types'
   import type { TableColumnFadeController } from './table-column-fade.svelte'
 
@@ -45,6 +51,8 @@
     showAsterisk,
     pinnedDrag,
     pinnedBoundaryKey,
+    pinOf,
+    pinnedStyle,
     resolvePinnedCount,
     commitPinnedCount,
     t,
@@ -82,10 +90,20 @@
     showAsterisk: boolean
     pinnedDrag: boolean
     pinnedBoundaryKey: string | null
+    pinOf: (column: IrisTableColumn) => 'left' | 'right' | null
+    pinnedStyle: (key: string) => string
     resolvePinnedCount: (dx: number) => number
     commitPinnedCount: (count: number) => void
     t: Translate
   } = $props()
+
+  const utilityTrack = (track: GridLeadingTrack): number =>
+    leadingGridTrack(track, {
+      rowDrag: rowDrag !== undefined,
+      sequence: seq,
+      detail: hasDetail,
+      selection: showSelection,
+    }) ?? 0
 </script>
 
 {#snippet filterTrigger(col: IrisTableColumn)}
@@ -126,34 +144,34 @@
       <TableDragSpacer
         role="columnheader"
         header
-        style="grid-column: 1; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        style="grid-column: {utilityTrack(
+          'rowDrag',
+        )}; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
       />
     {/if}
     {#if seq}
       <div
         role="columnheader"
         data-iris-table-header="__seq"
-        style="grid-column: {(rowDrag ? 1 : 0) +
-          1}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        style="grid-column: {utilityTrack(
+          'sequence',
+        )}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
       ></div>
     {/if}
     {#if hasDetail}
       <div
         role="columnheader"
-        style="grid-column: {seq
-          ? (rowDrag ? 1 : 0) + 2
-          : (rowDrag ? 1 : 0) +
-            1}; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        style="grid-column: {utilityTrack(
+          'detail',
+        )}; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
       ></div>
     {/if}
     {#if showSelection}
       <div
         role="columnheader"
-        style="grid-column: {(rowDrag ? 1 : 0) +
-          (seq ? 1 : 0) +
-          (hasDetail
-            ? 2
-            : 1)}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        style="grid-column: {utilityTrack(
+          'selection',
+        )}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
       >
         {#if selectable === 'multi'}
           <input
@@ -179,12 +197,14 @@
         {@const col = cell.column}
         <!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
         {@const isGroup = !!(col.children && col.children.length > 0)}
+        {@const pin = isGroup ? null : pinOf(col)}
         {@const sortable = !isGroup && col.sortable}
         {@const fadeStyle = columnFade.columnFadeStyle(col)}
         <div
           role="columnheader"
           data-iris-table-header={col.key}
           data-iris-table-header-group={isGroup ? '' : undefined}
+          data-iris-table-pinned={pin}
           {...columnFade.columnFadeAttrs(col)}
           use:tableColumnDrag={{
             key: col.key,
@@ -214,7 +234,7 @@
             ? 'none'
             : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis{fadeStyle
             ? '; opacity: 0'
-            : ''}"
+            : ''}{pin ? `; ${pinnedStyle(col.key)}; background: var(--iris-surface)` : ''}"
         >
           {@render headerTitle(col)}
           {@render sortIndicator(col)}
@@ -285,11 +305,12 @@
     {#each columns as col, ci}
       {#if !visibleColSet || visibleColSet.has(ci)}
         {@const fadeStyle = columnFade.columnFadeStyle(col)}
+        {@const pin = pinOf(col)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
           role="columnheader"
           data-iris-table-header={col.key}
-          data-iris-table-pinned={col.pinned}
+          data-iris-table-pinned={pin}
           {...columnFade.columnFadeAttrs(col)}
           use:tableColumnDrag={{
             key: col.key,
@@ -317,7 +338,7 @@
             ? 'none'
             : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis{fadeStyle
             ? '; opacity: 0'
-            : ''}"
+            : ''}{pin ? `; ${pinnedStyle(col.key)}; background: var(--iris-surface)` : ''}"
         >
           {@render headerTitle(col)}
           {@render sortIndicator(col)}
@@ -328,7 +349,7 @@
               role="slider"
               aria-orientation="horizontal"
               aria-label={t('table.resizeColumn', { column: col.title })}
-              aria-valuenow={effectiveWidths[col.key] ?? resolveInitialWidth(col)}
+              aria-valuenow={resolveColumnWidth(col, effectiveWidths)}
               aria-valuemin={col.minWidth ?? TABLE_CONST.DEFAULT_MIN_WIDTH}
               aria-valuemax={col.maxWidth ?? 10_000}
               tabindex="0"

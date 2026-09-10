@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { h } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { h, nextTick } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisTable } from '../Table'
 import type { IrisTableColumn } from '../types'
@@ -103,6 +103,51 @@ describe('IrisTable summary / footer row', () => {
       .find('[data-iris-table-cell="age"]')
     expect(ageCell.find('.fmt').exists()).toBe(true)
     expect(ageCell.text()).toBe(`Σ ${SUM_AGE}`)
+  })
+
+  it('preserves null and zero aggregate semantics and passes rows to custom callbacks', () => {
+    const edgeRows = [
+      { id: 10, name: 'Null', age: null },
+      { id: 11, name: 'Zero', age: 0 },
+      { id: 12, name: 'String', age: '2' },
+    ] as unknown as Row[]
+    const renderSummary = vi.fn((value: number, sourceRows: Row[]) =>
+      h('span', { class: 'edge-summary' }, `Σ${value}:${sourceRows.length}`),
+    )
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name' },
+          { key: 'age', title: 'Age', summary: 'sum', renderSummary },
+        ] as IrisTableColumn<Record<string, unknown>>[],
+        data: edgeRows,
+        rowKey: 'id',
+      },
+      attachTo: host,
+    })
+    expect(
+      wrapper.find('[data-iris-table-row="summary"] [data-iris-table-cell="age"]').text(),
+    ).toBe('Σ2:3')
+    expect(renderSummary).toHaveBeenCalledWith(2, edgeRows)
+  })
+
+  it('uses the remote page rows for summary values, including zero', async () => {
+    const query = vi.fn(async () => ({ rows: [{ id: 90, name: 'Remote', age: 0 }], total: 10 }))
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: summaryCols as IrisTableColumn<Record<string, unknown>>[],
+        data: [],
+        rowKey: 'id',
+        proxyConfig: { query },
+      },
+      attachTo: host,
+    })
+    await nextTick()
+    await nextTick()
+    expect(
+      wrapper.find('[data-iris-table-row="summary"] [data-iris-table-cell="age"]').text(),
+    ).toBe('0')
+    expect(query).toHaveBeenCalledTimes(1)
   })
 
   it('renders no summary row when no column declares one', () => {

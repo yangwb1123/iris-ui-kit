@@ -19,6 +19,7 @@ export {
   type EditRule,
   type EditRuleContext,
   type EditRules,
+  type EditValidationSource,
 } from './edit-rules'
 export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'
 export {

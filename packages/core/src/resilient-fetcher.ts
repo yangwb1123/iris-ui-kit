@@ -29,6 +29,10 @@ export class RateLimitExceededError extends Error {
 export interface ResilientFetcherOptions {
   /** Cache freshness window (ms). Default `0`. */
   ttlMs?: number
+  /** Maximum cache entries retained. Non-finite values keep the historical unbounded default. */
+  maxEntries?: number
+  /** Serve stale cached data while refreshing in the background. Default `false`. */
+  staleWhileRevalidate?: boolean
   /** Enable a token-bucket rate limit on actual fetches. */
   rateLimit?: { capacity: number; refillTokens: number; intervalMs: number }
   /** Circuit-breaker tuning. Enabled by default; pass `false` to disable. */
@@ -52,7 +56,7 @@ export function createResilientFetcher<T>(
   options: ResilientFetcherOptions = {},
 ): ResilientFetcher<T> {
   const now = options.now
-  const cache = createQueryCache<T>({ ttlMs: options.ttlMs, now })
+  const cache = createQueryCache<T>({ ttlMs: options.ttlMs, maxEntries: options.maxEntries, now })
   const breaker =
     options.breaker === false
       ? undefined
@@ -80,7 +84,12 @@ export function createResilientFetcher<T>(
           const run = () => fetcher(k)
           return breaker ? breaker.run(run) : run()
         },
-        fetchOptions,
+        {
+          ...fetchOptions,
+          // A per-fetch option remains authoritative over the factory default.
+          staleWhileRevalidate:
+            fetchOptions?.staleWhileRevalidate ?? options.staleWhileRevalidate ?? false,
+        },
       )
     },
   }

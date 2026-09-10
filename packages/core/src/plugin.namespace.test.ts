@@ -435,4 +435,26 @@ describe('runPlugins with namespace', () => {
     expect(r.messages['zh-CN']).toEqual({ hello: '你好' })
     expect(r.stores.get('x')).toEqual({ value: 1 })
   })
+
+  it('keeps prototype-sensitive token and locale keys as own registrations', () => {
+    const tokenKey = '__proto__'
+    const locale = '__proto__'
+    const messageKey = 'constructor'
+    const r = runPlugins([
+      createPlugin({
+        name: 'plain',
+        install(reg) {
+          reg.registerTokens({ [tokenKey]: 'token-value' })
+          reg.registerMessages(locale, { [messageKey]: 'message-value' })
+        },
+      }),
+    ])
+
+    expect(Object.prototype.hasOwnProperty.call(r.tokens, tokenKey)).toBe(true)
+    expect(r.tokens[tokenKey]).toBe('token-value')
+    expect(Object.getPrototypeOf(r.tokens)).toBe(Object.prototype)
+    expect(Object.prototype.hasOwnProperty.call(r.messages, locale)).toBe(true)
+    expect(r.messages[locale]).toEqual({ [messageKey]: 'message-value' })
+    expect(Object.getPrototypeOf(r.messages)).toBe(Object.prototype)
+  })
 })

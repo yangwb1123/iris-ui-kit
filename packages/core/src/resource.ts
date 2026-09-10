@@ -3,6 +3,13 @@ import { createDataSource, type DataSourceState } from './data-source'
 import { type SelectionModel } from './selection'
 import { filterSort, paginate, type SortState, type DataViewColumn } from './data-view'
 import type { ResilientFetcherOptions } from './resilient-fetcher'
+import { cloneRuntimeValue } from './outbox-runtime'
+
+const DEFAULT_PAGE_SIZE = 10
+
+function positiveInteger(value: number, fallback: number): number {
+  return Number.isFinite(value) && value > 0 ? Math.max(1, Math.trunc(value)) : fallback
+}
 
 /**
  * Framework-agnostic CRUD resource controller (L4 composite) — the canonical
@@ -97,15 +104,17 @@ export interface ResourceController<T> {
 
 function projectResourceState<T>(state: DataSourceState<T>): ResourceState<T> {
   return {
-    rows: state.rows,
+    // ResourceState is the public projection; do not let a consumer mutating a
+    // returned snapshot mutate the DataSource's canonical rows or controls.
+    rows: cloneRuntimeValue(state.rows),
     total: state.total,
     page: state.page,
     pageSize: state.pageSize,
-    sort: state.sort,
-    filters: state.filters,
+    sort: state.sort ? { ...state.sort } : null,
+    filters: { ...state.filters },
     loading: state.loading,
     error: state.error,
-    selectedKeys: state.selectedKeys,
+    selectedKeys: [...state.selectedKeys],
   }
 }
 
@@ -167,7 +176,13 @@ export function createClientFetcher<T>(
   columns: readonly DataViewColumn<T>[],
 ): (query: ResourceQuery) => Promise<{ rows: T[]; total: number }> {
   return async ({ page, pageSize, sort, filters }) => {
+    // ResourceQuery is normally normalized by createDataSource, but this
+    // fetcher is also public and is commonly called directly. Keep the
+    // pagination boundary finite and 1-based instead of allowing Array#slice
+    // coercion to turn malformed values into surprising pages.
+    const safePage = positiveInteger(page, 1)
+    const safePageSize = positiveInteger(pageSize, DEFAULT_PAGE_SIZE)
     const processed = filterSort(data, columns, { filters, sort })
-    return { rows: paginate(processed, page, pageSize), total: processed.length }
+    return { rows: paginate(processed, safePage, safePageSize), total: processed.length }
   }
 }

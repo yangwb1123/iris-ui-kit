@@ -41,10 +41,12 @@ export function createGridSelectionFeature<
   return {
     name: 'selection',
     setup(context) {
+      let active = true
       const model = createSelectionModel<K>({
         mode: options.mode,
         defaultSelected: options.defaultSelected,
         onChange(keys) {
+          if (!active) return
           options.onChange?.([...keys])
           context.emit<GridSelectionChange<K>>(GRID_SELECTION_CHANGE_EVENT, {
             selectedKeys: [...keys],
@@ -73,6 +75,11 @@ export function createGridSelectionFeature<
       }
       return {
         methods: featureMethods as unknown as Readonly<Record<string, GridMethod>>,
+        // A retained bridge model may outlive the grid component. Stop its
+        // feature callback after teardown, like the range/clipboard features.
+        dispose: () => {
+          active = false
+        },
       }
     },
   }

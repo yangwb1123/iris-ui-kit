@@ -125,6 +125,55 @@ describe('createGridEditingFeature', () => {
     expect(validations.some((validation) => !validation.commit)).toBe(true)
   })
 
+  it('runs custom validation after editRules and labels custom failures', () => {
+    const validations: Array<{ valid: boolean; commit: boolean; source: string }> = []
+    const commits: unknown[] = []
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: initialRows }),
+        createGridEditingFeature<Row>({
+          getRowKey: (row) => row.id,
+          getRules: (columnKey) => (columnKey === 'name' ? [{ required: true }] : undefined),
+          validate: (value) => (value === 'ok' ? null : 'custom failure'),
+          onValidation: ({ valid, commit, source }) => validations.push({ valid, commit, source }),
+          onCommit: (commit) => commits.push(commit),
+        }),
+      ],
+    })
+
+    grid.invoke('startCellEdit', 1, 'name')
+    grid.invoke('setCellDraft', 'blocked')
+    validations.length = 0
+    expect(grid.invoke<boolean>('commitCellEdit')).toBe(false)
+    expect(validations).toEqual([{ valid: false, commit: true, source: 'custom' }])
+    expect(commits).toHaveLength(0)
+
+    grid.invoke('setCellDraft', 'ok')
+    validations.length = 0
+    expect(grid.invoke<boolean>('commitCellEdit')).toBe(true)
+    expect(validations).toEqual([{ valid: true, commit: true, source: 'editRules' }])
+    expect(commits).toHaveLength(1)
+  })
+
+  it('marks declarative failures with the editRules source', () => {
+    const validations: Array<{ valid: boolean; commit: boolean; source: string }> = []
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: initialRows }),
+        createGridEditingFeature<Row>({
+          getRowKey: (row) => row.id,
+          getRules: () => [{ required: true }],
+          onValidation: ({ valid, commit, source }) => validations.push({ valid, commit, source }),
+        }),
+      ],
+    })
+    grid.invoke('startCellEdit', 1, 'name')
+    grid.invoke('setCellDraft', '')
+    validations.length = 0
+    expect(grid.invoke<boolean>('commitCellEdit')).toBe(false)
+    expect(validations).toEqual([{ valid: false, commit: true, source: 'editRules' }])
+  })
+
   it('runs a custom async validator once per commit and marks it as a commit validation', async () => {
     const validate = vi.fn(() => Promise.resolve(null))
     const validations: Array<{ valid: boolean; commit: boolean }> = []
@@ -206,6 +255,60 @@ describe('createGridEditingFeature', () => {
     const eventCount = stateEvents.mock.calls.length
     grid.destroy()
     expect(stateEvents).toHaveBeenCalledTimes(eventCount)
+  })
+
+  it('does not report pending validation after editing feature disposal', async () => {
+    const pending = deferred<string | null>()
+    const onValidation = vi.fn()
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: initialRows }),
+        createGridEditingFeature<Row>({
+          getRowKey: (row) => row.id,
+          validate: () => pending.promise,
+          onValidation,
+        }),
+      ],
+    })
+
+    grid.invoke('startCellEdit', 1, 'name')
+    grid.invoke('setCellDraft', 'late')
+    expect(grid.invoke<boolean>('commitCellEdit')).toBe(false)
+    grid.destroy()
+    pending.resolve(null)
+    await pending.promise
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(onValidation).not.toHaveBeenCalled()
+  })
+
+  it('drops a pending async commit when the draft changes before validation settles', async () => {
+    const pending = deferred<string | null>()
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: initialRows }),
+        createGridEditingFeature<Row>({
+          getRowKey: (row) => row.id,
+          validate: () => pending.promise,
+        }),
+      ],
+    })
+
+    grid.invoke('startCellEdit', 1, 'name')
+    grid.invoke('setCellDraft', 'first')
+    expect(grid.invoke<boolean>('commitCellEdit')).toBe(false)
+    grid.invoke('setCellDraft', 'second')
+    pending.resolve(null)
+    await pending.promise
+    await Promise.resolve()
+
+    expect(grid.invoke<Row[]>('getRows')[0]!.name).toBe('Ada')
+    expect(grid.invoke('getEditingState')).toMatchObject({
+      editing: { rowKey: 1, columnKey: 'name' },
+      draft: 'second',
+      validated: undefined,
+    })
   })
 
   it('closes no-op commits without emitting a row or commit transaction', () => {

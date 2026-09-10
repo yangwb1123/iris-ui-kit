@@ -1,6 +1,6 @@
 # Grid Core + Feature 重构设计
 
-> 状态：Phase 0–3 已实现（2026-08-24，含四框架 cell-mode、排序与过滤续批）。本文是后续 Grid 重构的真相源；
+> 状态：Phase 0–4 已实现并完成最终验证（2026-08-31，含最新 adversarial pass 的 Grid closure）。本文是后续 Grid 重构的真相源；
 > `docs/vxe-grid-comparison.md` 继续记录功能覆盖，不再作为架构设计文档。
 
 2026-08-28：Solid `columnPinMenu` parity gate accepted；静态列 pin 的 live fallback regression 已补测；Solid client **157 files / 1,111 tests**、SSR **7 files / 49 tests**，typecheck/lint/build、spec audit（**1,589 files / 0 violations**）、`pnpm check:manifest`、`git diff --check` 均通过，`scripts/arch-baseline.json` 未改。`arch-check:ratchet` 的阻断项仍为 baseline 已豁免的 6 个 React/Vue/Solid/Svelte 表文件，未调整 baseline。
@@ -450,7 +450,7 @@ rowCount、columnCount）。`createProTableStore` 的四个 legacy 导出方法�
 `@iris-ui-kit/plugin-charts/core` 管理，Grid Core 只提供 rows/methods，不耦合图表 renderer。旧 ProTable/IrisTable API 暂不删除：
 适配器仍可使用 legacy handle，新的 GridFeature API 作为显式可选组合入口，满足兼容优先和按需摇树。
 
-### Phase 4 — rows mutation boundary（进行中）
+### Phase 4 — rows mutation boundary（已完成）
 
 `createGridRowsFeature` 继续收窄行数据写入边界：在保留 `getRows/setRows/transactRows/syncRows`
 兼容方法的同时，新增 `getData/loadData/insert/remove/removeMany/update` model API 及对应的
@@ -595,13 +595,13 @@ history pristine 时重建 baseline。新增 Svelte undo 定向 10/10、SSR 1/1�
 cache，而是通过同一 rows transaction 写入 Core 的 `children` 槽；loading/epoch 仍留在适配器，因而
 旧的 spinner、重试、刷新丢弃陈旧回调和 `getSubRows` fallback 语义不变。懒加载提交标记为非业务变更：
 不会触发 `onDataChange`、undo 或 audit，但 Core 的 `find/update/remove` 随即可寻址已加载子节点；Svelte
-当前 Table 契约没有 `lazyLoad` prop，继续保持静态 `getSubRows` 路径。Core rows 定向回归 20/20，React
+后续补齐 `lazyLoad` 公共 prop，loading/epoch 仍由适配器拥有。Core rows 定向回归 20/20，React
 懒树/row-edit 25/25、Vue 懒树 11/11、Solid 懒树 10/10；React/Vue/Solid typecheck 通过。
 
 本次续批继续把已加载的 lazy children 接到所有树投影消费者：React 的 clipboard/range/FNR 等 keyed
 reconciliation、React/Vue/Solid 的 row-drag 都通过同一 `readRowChildren` 和 `setChildren` 走 Core
 canonical tree，React `expandAll` 也会递归 conventional `children`。树跨父级、隐藏 key、循环/重复节点以及
-computed children 无 setter 仍 fail-closed；flat 表格和 Svelte（当前无 `lazyLoad` prop）保持原契约。定向回归
+computed children 无 setter 仍 fail-closed；flat 表格与各端默认路径保持原契约。定向回归
 为 Core rows 20/20、React lazy/row-edit/static-drag 41/41、React lazy clipboard 6/6、Vue lazy/static-tree
 23/23、Solid lazy/static-tree 10/10；四端相关 typecheck/build/lint 通过。
 
@@ -620,6 +620,61 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 本次续批将平面与树的 remove→insert 位置计算继续收敛到 `table-rows` 的 `reorderRowsInList` 纯函数。Core
 `GridRowsModel` 与 `reorderTreeRows` 共用 `auto/before/after` 语义，computed key 仍按原 sibling index 解析，
 未知/相同 key 保持原数组引用并跳过 rows transaction；新增回归覆盖双向位置、computed key 与 identity no-op。
+
+2026-08-29：Grid Core data-source mutation boundary 续批将 outbox 的交付结果与队列并发边界收口：`createOutbox`
+保留 `flush(): Promise<number>` 兼容 API，新增 `flushDetailed`/`subscribeFlush` 的 item-aware outcome；执行期间的
+`enqueue/remove/clear` 按 live item identity 合并，不会被旧数组快照覆盖或复活。持久化路径新增显式
+`OutboxCodec`/JSON-safe snapshot guard，DataSource 的 closure payload 在 durable storage 下 fail-closed，并支持带
+`executor` 的 descriptor round-trip；`mutateResult`/`mutateRowResult` 区分 delivered/deferred/failed，旧 mutate API
+不再把 queued 或 exhausted mutation 当作成功，optimistic rows、pendingRows、rowErrors 与 resilient cache 只在
+真正 delivered 时进入成功/重载路径。Core 全量 **125 files / 1,789 tests**，outbox/data-source focused **60/60**，
+typecheck/build、lint（0 errors；仅既有 `grid-tree-children`/`table-views` complexity warnings）、Prettier 与
+`git diff --check` 通过；未修改架构 baseline 或生成 manifest。
+
+2026-08-29：Grid Core reconnecting-source generation safety 续批为 `createReconnectingSource` 增加 transport generation、
+幂等 teardown 与 reconnect token 护栏；过期 transport 的 message/open/error/close 回调、重复 close 与过期 timer 均
+fail-closed，连接/断开同步异常经既有 `onError` 通道处理。Core `realtime` focused **19/19**，隔离 worktree Core
+全量 **114 files / 1,705 tests**，typecheck/build/lint、定向 Prettier、`git diff --check` 与 runner acceptance gate
+通过；close terminal、open active-idempotent 兼容语义不变，未改 manifest 或架构 baseline。
+
+2026-08-29：Grid Core row-edit session 续批新增框架无关 `createTableRowEditModel`，统一多单元格 row-mode 的
+begin/switch/open/draft/commit/cancel/dispose、同步/异步 `editRules` epoch 护栏、注入式 number coercion 与 source-row
+identity；Svelte、Vue、Solid、React 仅保留各自 controller/renderer 外形、input refs/focus、DOM/render 和 rows/undo/audit
+回调。Core 的 commit-validation hook 支持 React validationSummary，未增加第二写回路径。Core **1,841 tests**，Svelte
+row-edit **8/8**、Vue focused **56/56**、Vue SSR **18/18**、Solid focused **33/33**、Solid full **1,133/1,133**、
+SSR **50/50**、hydration **1/1**、React row/validation/formula **67/67**、React SSR/hydration **42/42**；四端
+build/typecheck/lint、Core row-edit、Prettier、manifest check 与 `git diff --check` 通过，React 全量仅保留既有 Tree
+update-depth failures，未提交。
+
+2026-08-29：row-edit hardening follow-up 根据 adversarial review 收口：显式 `findRow` 缺失、源行 replacement、动态
+不可编辑、重复 pending validation 与 stale blur 均 fail-closed；Vue nested-tree 使用 Core rows `update`，Vue Tab 有明确
+commit/focus bridge；Core validation channel 区分 `editRules/custom/none`，detached async rule failure 只报告一次，unique
+规则支持 dataIndex resolver。数值 select unmatched-option 保持原行为。Hardening focused、四端 typecheck/build/lint、manifest、
+定向 Prettier 与 `git diff --check` 通过，read-only review **PASS**；full turbo/coverage/E2E/visual 未运行。
+
+2026-08-29：Grid Core pagination lifecycle 续批将分页的 mode、取消和销毁安全收口至 Core：显式 `paged` 的 `loadMore`
+替换页、`infinite` 追加，省略 mode 保持历史追加；页码/页大小非法值 fail-safe 归一化，AbortSignal 透传为可选第二参数，
+request generation + `AbortController` 防止陈旧结果写回，cancel 后可重试。React/Vue/Solid/Svelte pagination bridge 暴露
+`cancel` 并在卸载时取消；一参数 fetcher、默认页大小、SSR 无 AbortController 路径保持兼容。隔离 runner 已验证 Core focused/
+full **20/20、1,706/1,706**，Core build/typecheck/lint；移植后当前 workspace 独立复验 React/Vue/Solid/Svelte
+focused **6/6、7/7、4/4、4/4**，四端 typecheck/build/lint 通过；未提交。
+
+2026-08-29：Grid Core remote-table mutation boundary 续批将现有 DataSource cancellation/resilience 能力贯通
+`createRemoteTableSource`：query callback 以可选第二参数接收 `AbortSignal`，`resilient` 配置可透传 dedup/TTL/SWR、
+breaker 与 rate-limit；React/Vue/Solid/Svelte proxy 类型与薄桥保持一参数 callback 兼容，params 对象、latest-wins、
+destroy/SSR 与默认无 resilience 语义不变。Core/React/Vue/Solid/Svelte focused **22/22、14/14、18/18、24/24、20/20**，
+五包 typecheck/build/lint、Core framework-import guard、定向 Prettier 与 `git diff --check` 通过；未改 manifest、llms 或
+架构 baseline。
+
+2026-08-29：表格 grouping body plan 继续下沉至 Core `buildTableGroupPlan`；React 的单列/多列分组、首见字符串 key、
+`::` 层级 key、折叠子树、原始行索引/identity 与末级 summary rows 统一由纯函数投影，适配器保留 collapse state、
+props resolution、渲染和事件。Core grouping **71/71**、React grouping **40/40**，Core/React build/typecheck/lint、
+定向 Prettier、manifest check 与 `git diff --check` 通过，未改 manifest/llms 或架构 baseline。
+
+2026-08-29：表格 row-key 的字段/索引纯投影继续下沉至 Core `resolveTableRowKey`；Vue、Solid、Svelte 删除相同的
+`typeof`/index fallback，React 保留额外的 legacy `rowId` 与 tree-key 语义。字符串、数字（含空串、零、NaN、Infinity）、
+null/缺失回退及源行 identity 均有 Core/三端回归；Core build、三端 focused/typecheck/build/lint、manifest check、
+定向 Prettier 与 `git diff --check` 通过，未改 manifest/llms 或架构 baseline。
 
 2026-08-27：Vue columns-state 续批接入既有 Grid Core，Vue 全量 **180 files / 1,652 tests** 通过，typecheck/build 通过，lint 0 errors（保留既有 1 条 complexity warning）；`git diff --check` 通过，`pnpm check:manifest` 确认 2 个生成文件无变化；未调整 ratchet baseline。
 
@@ -653,6 +708,74 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 
 ## 8. 合并门
 
+2026-08-28：窄屏响应式布局下沉至 Core `computeResponsiveColumnLayout`，统一 leading tracks 预算、分组 pinned descendant 保护和 fitted natural width overflow 判断；React/Vue/Solid/Svelte 删除重复 responsive wrapper 与自然宽度投影，原有 480px、floor、identity 和 fail-closed 语义保持不变。Core responsive **15/15**、四端 responsive 回归 **26/26**，四端 typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：固定列 sticky offset 计算下沉至 Core `computePinnedColumnOffsets`，四端统一左右边缘累积和 leading track 偏移，框架层仅保留 style 输出；新增 Core offset 回归 **2/2**，React/Vue/Solid/Svelte pinned 回归 **44/44**，typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：pinned-boundary 的连续左 pinned prefix 计算继续下沉至 Core `leftPinnedCount`，新增 effective `pinOf` resolver 参数；React/Vue/Solid/Svelte 删除各自重复 prefix loop，同时保留静态列 fallback 与受控 pin map 语义。Core pinned-drag **4/4**、四端 boundary 回归 **27/27**，typecheck/build/lint、manifest 与 `git diff --check` 通过。
+
+2026-08-28：pinned-boundary 的 right block 定位与 boundary leaf 定位继续下沉至 Core `firstRightPinnedIndex` / `pinnedBoundaryIndex`，四端 adapter 仅保留受控提交和 DOM wiring；gapped pin、无右 pin、空 prefix 的边界语义保持不变。Core pinned-drag **4/4**、四端 boundary 回归 **27/27**，typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：列宽投影继续下沉至 Core `resolveInitialWidth` / `resolveColumnWidth` / `resolveColumnWidths` / `resolveColumnTrack(s)` / `isValidColumnWidth`；React/Solid/Svelte 移除重复的 px 解析、有限值校验和 CSS track 投影，Vue 保留既有 numeric grid-track 合同。Core column-width **4/4**，列宽/track 定向回归 React **42/42**、Vue **29/29**、Solid **20/20**、Svelte **22/22**，typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：横向列虚拟化窗口继续下沉至 Core `computeVisibleColumnIndices`，四端统一 overscan、pinned/transition 列 union 与非法宽度 fail-closed 语义；适配器仅提供响应式尺寸、列宽和 always-visible predicate。Core column-virtual **4/4**，四端 virtual/responsive 定向回归 React **130/130**、Vue **90/90**、Solid **83/83**、Svelte **78/78**，typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：列 track 位置投影继续下沉至 Core `countLeadingGridTracks` / `columnGridTrack`，四端移除重复的 leading utility count 与 1-based leaf track 公式；React/Vue/Solid/Svelte 的虚拟列、summary/footer、group header 对齐语义保持不变。Core grid-layout **2/2**，定向回归 React **110/110**、Vue **88/88**、Solid **81/81**、Svelte **76/76**，typecheck 与 `git diff --check` 通过。
+
+2026-08-28：完整 CSS grid track 字符串投影继续下沉至 Core `resolveGridTemplateColumns`，统一 leading utility tracks、叶列 authored width、fade collapsed track 与 adapter-specific numeric track 覆盖；React/Vue/Solid/Svelte 删除重复的 track 拼接循环，Vue 保留原有 numeric grid-template 合同。Core grid-layout **5/5**，定向回归 React **70/70**、Vue **19/19**、Solid **21/21**、Svelte **23/23**；四端 typecheck/build/lint、Core 全量 **118 files / 1,725 tests**、manifest、Prettier 与 `git diff --check` 通过。
+
+2026-08-28：grouped-header utility track 定位继续下沉至 Core `leadingGridTrack`，四端统一 rowDrag/sequence/detail/selection 的 1-based track 解析，保留 disabled utility 的 `null` fail-closed 语义；React/Vue/Solid/Svelte 删除 grouped-header 内联偏移公式。Core grid-layout **7/7**，grouped-header 定向回归 React **27/27**、Vue **26/26**、Solid **12/12**、Svelte **13/13**；四端 typecheck/build/lint、Prettier 与 `git diff --check` 通过。
+
+2026-08-28：body cell span occupancy 继续下沉至 Core `resolveGridSpan` / `computeGridSpanPlan`，四端共用 row-major coverage、covered-cell skip 与 null/undefined 单格默认语义；React/Vue/Solid 保留各自 render-pass 与 column-virtualization 生命周期，Svelte 删除 adapter-local span plan。非法非有限 span 不再进入 occupancy 循环，避免 malformed callback 卡死。Core grid-span **4/4**，相关回归 React **38/38**、Vue **28/28**、Solid **3/3**、Svelte **40/40**，四端 typecheck 与 `git diff --check` 通过。
+
+2026-08-28：列宽交互投影继续下沉至 Core `clampColumnWidth`、`DEFAULT_COLUMN_MIN_WIDTH` 与 `COLUMN_RESIZE_STEP`，四端统一有限宽度的 round/clamp 与键盘步长；Vue 显式保留既有 pointer fractional-width 合同（round=false），React/Solid/Svelte 保持整数 resize。`resolveInitialWidth` 同时对非法 numeric declaration/fallback fail-closed。Core column-width **5/5**，列宽回归 React **35/35**、Vue **88/88**、Solid **81/81**、Svelte **76/76**，四端 typecheck/build/lint 与 `git diff --check` 通过。
+
+2026-08-28：本地过滤投影继续下沉至 Core `filterTableRows`，统一大小写不敏感 substring、`filterMethod`、checked-value 的集合内 OR / 多 map AND、typed `filterRules` 与未知 key fail-open；`mergeFilterValues` 同步收敛远程 query map 序列化，并保留空集合不覆盖既有 text filter 的语义。React/Vue/Solid/Svelte 删除重复过滤循环与 map merge，公式列仍由各适配器的 `getValue` bridge 负责。Core 全量 **120 files / 1,736 tests**，过滤相关回归 React **134/134**、Vue **112/112**、Solid **98/98**、Svelte **77/77**；四端 typecheck/build/lint、manifest、定向 Prettier 与 `git diff --check` 通过。
+
+2026-08-28：表格排序投影继续下沉至 Core `createTableSortComparator` / `createTableMultiSortComparator` / `sortTableRows`，统一自定义 sorter、`sortType` coercion、方向链、未知 key 跳过与无有效 sort 的 identity；四端保留各自 formula/dataIndex value resolver，React query sort 与 Vue legacy pure helper 也改走 Core。Core table-sort **5/5**，排序/公式回归 React **49/49**、Vue **43/43**、Solid **62/62**、Svelte **59/59**；四端 typecheck 与定向测试通过。
+
+2026-08-28：表格值读取与公式 shadow-row 投影继续下沉至 Core `resolveTableColumnValue` / `materializeTableFormulaValues`，统一 formula 优先于 `dataIndex`/`key`、cross-table snapshot 与不可变 materialization；React/Vue/Solid/Svelte 仅保留类型/作用域薄桥，未改变空公式、无公式 identity 和源行不变语义。Core table-values **6/6**，formula/serializer 回归 React **46/46**、Vue **113/113**、Solid **91/91**、Svelte **89/89**；四端 typecheck 与定向测试通过。
+
+2026-08-28：公式列 edit-capability 判定继续下沉至 Core `isTableColumnEditable`，统一 `editable && !formula` 的只读公式语义；React/Vue/Solid/Svelte 仅保留 `isEditableColumn` 兼容别名，编辑入口、row mode 与 `data-editable` capability attr 继续共享同一 predicate。Core 全量 **122 files / 1,747 tests**，公式/序列化回归 React **40/40**、Vue **33/33**、Solid **79/79 + SSR 2/2**、Svelte **78/78 + SSR 3/3**；四端 typecheck/build/lint、manifest、定向 Prettier 与 `git diff --check` 通过。
+
+2026-08-28：列可见性 fade 的纯投影继续下沉至 Core `startColumnFade` / `advanceColumnFade` / `commitColumnFade` / `expandColumnFadeToLeaves`，四端统一 sparse visibility、pending/run 阶段、反转重启、完成提交和 grouped leaf 展开；rAF/timer、reduced-motion、focus recovery 与 DOM 属性仍留在适配器。Core column-fade **7/7**，fade 回归 React **34/34**、Vue **24/24**、Solid **15/15**、Svelte **19/19**；四端 typecheck 与定向测试通过。
+
+2026-08-28：表格范围与键盘投影继续收口至既有 Core `CellRangeController` / `nextGridCell`：四端 range bridge 统一由 Core 生成 normalized range，Shift+Arrow 的边界移动不再各自维护 row/column ternary，适配器仅保留 modifier、DOM focus 与 clipboard wiring。反向范围、无 anchor fallback、边界 no-op 与 Escape 清除语义保持不变；Core `cell-range` **10/10**、`roving` **17/17**，定向回归 React **87/87**、Vue **81/81**、Solid **57/57**、Svelte **54/54**；四端 typecheck 与 lint 通过。
+
+2026-08-28：平面 row-drag 的 list reorder 继续统一复用 Core `resolveRowDragProjection`、`reorderRowsInList` / `reorderRowsInListAt`，四端删除 adapter-local 的重复可见索引解析与 `findIndex` + `splice`；React insertion-line 的 pre-removal `insertIndex` 合同由 `reorderRowsInListAt` 精确承接，树拖拽继续走 `reorderTreeRows`。非法/同 key 的 identity、源行 identity、原数组不变与默认 remove-then-insert 语义保持不变；Core `table-rows` **30/30**，adapter drag 回归 React **10/10**、Vue **11/11**、Solid **22/22**、Svelte **5/5**；四端 typecheck 与定向测试通过。
+
+2026-08-28：平面 column-drag 的 list reorder 继续统一复用 Core `reorderColumnsInList` / `reorderColumnsInListAt`，React 的 frozen-zone clamp 仅保留 pin-zone 约束，四端删除重复 `findIndex` + `splice`；grouped leaf、controlled order proposal、no-op identity 与 columnPinMenu 的 drag-out pin 分支保持不变。Core `columns` **17/17**，adapter column-drag 回归 React **51/51**、Vue **16/16**、Solid **27/27**、Svelte **10/10**；四端 typecheck 与定向测试通过。
+
+2026-08-28：有效表格投影的 clipboard/range 写回继续下沉至 Core `reconcileProjectedRows`，统一 sorted/filtered/flattened rows 的 identity-key 映射、source index fallback 与 tree ancestor reconciliation；Vue/Solid/Svelte 删除重复的 visible-key/patch/reconcile 实现，React 保留其 `rowPatchKey` 的特殊 index-key fail-closed 合同。Core `table-projection` **3/3**，Vue paste/undo **12/12**、Solid **13/13**、Svelte **12/12**，四端 typecheck 与定向测试通过。
+
+2026-08-28：pinned-boundary 的 delta→左 pinned prefix 与目标列更新计划继续下沉至 Core `pinnedCountFromDelta` / `computePinnedCountPlan`，统一 gapped pin 的 prefix-width 起点、count clamp、非法 count fail-closed 与 changed-column identity；React/Vue/Solid/Svelte 仅保留响应式/controlled callback wiring。Core `pinned-drag` **6/6**，adapter 回归 React **17/17**、Vue **3/3**、Solid **3/3**、Svelte **4/4**；四端 typecheck 与定向测试通过。
+
+2026-08-28：表头选择状态投影继续下沉至 Core `computeSelectionFlags`，统一 visible keys 的 all/some/empty 语义，并允许 Vue 树级联注入 selected/indeterminate predicate；React/Vue/Solid/Svelte 删除重复 header checkbox flag 计算，保留各端受控同步与 toggle callback。Core selection **25/25**，表格回归 React **102/102**、Vue **81/81**、Solid **76/76**、Svelte **76/76**；四端 typecheck 与定向测试通过。
+
+2026-08-28：表头排序状态投影继续下沉至 Core `resolveTableSortInfo`，统一单列/多列 active、direction 与 zero-based sequence 解析；React/Vue/Solid/Svelte 删除重复 `findIndex`/state 解析，适配器仍负责 aria、图标 DOM 与 callback。Core table-sort **7/7**，排序/表头回归 React **114/114**、Vue **111/111**、Solid **88/88**、Svelte **93/93**；四端 typecheck 与 Core build、定向 Prettier、`git diff --check` 通过。
+
+2026-08-30：命名视图 snapshot 通道扩展（Svelte 切片）：Core `TableViewSnapshot` 仅新增可选便携字段 `multiSort`/`filters`/`filterValues`/`columnWidths`/`pageSize`/`expandedRowKeys`（`sort` 保留既有 null-clear 语义，旧 sort-only snapshot 继续有效，Core 保持零 DOM/框架依赖）；Svelte 命名视图 save 经 `capture` 采集当前实际拥有的通道（multiSort 按 `multiSort` 模式门控，filters/filterValues/columnWidths/expansion/pageSize 按既有 persistState 恢复门控采集），select 对存在字段经既有 Core feature setter/callback 回放、缺席字段不动，受控 prop 保持权威；columnVisibility/columnOrder 维持 persist 桥的既定 inert 合同。存储仅复用 `readTableViews`/`writeTableViews`，persistState 恢复顺序与代理首载行为不变。Core table-views **6/6**（新增），Svelte views 回归 **8/8** + table 定向 **76/76** + SSR **52**；Svelte typecheck/build/lint、hydration、Core build、定向 Prettier 与 `git diff --check` 通过。
+
+2026-08-30：命名视图 snapshot 通道扩展（Vue/Solid 切片）：两端 controller 对齐 Svelte 的 `capture`/`applySnapshot` hooks，save/select 通过现有 sorting、filtering、column-width、expansion 与 proxy page-size owners；sort-only legacy snapshot、可选字段缺席 no-op、controlled authority 与 storage/corrupt fail-closed 保持不变。`columnVisibility`/`columnOrder` 在无 named-view owner 时继续不采集、不回放，DOM/SSR 仅增加适配器 wiring。Vue named-view **8/8**、Solid named-view **8/8**，Core build、两端 typecheck 与 focused tests 通过，未改 manifest 或 arch baseline。
+
+2026-08-30：汇总/footer 数值投影继续下沉至 Core `projectTableSummary` / `projectTableSummaryCell`，统一 summary op、null/zero/numeric-string、aggregateAccuracy、空数据门控；四端仍由适配器提供 formula/dataIndex value bridge，并保留 custom render callback、remote page rows、group/pinned placement 与 DOM/SSR。Core `table-summary` **5/5**，React/Vue/Solid/Svelte 定向 summary/formula/group/pinned 回归均通过；未改 manifest/llms 或 ratchet baseline。
+
+2026-08-30：命令/MCP 执行边界继续收口：`runMcpTool` 在调用前校验 required/unknown、primitive type、finite number 与 enum，disabled/unknown/异常 command 返回稳定失败结果；`toMcpTools` 与 planner 对 sanitized-name collision 使用确定性唯一别名，保持非冲突名称兼容。Core commands **20/20**，Core 全量 **131 files / 1,881 tests**，build/typecheck 通过。
+
+2026-08-30：表格 body row-view 组装继续下沉至 Core `projectTableBodyRows`，统一 flat/tree 的 rowIndex 与 tree metadata 入口；四端保留过滤/排序输入、展开状态、lazy loading、grouping、DOM、事件和响应式。Core tree **5/5**，React/Vue/Solid/Svelte focused **44/44、29/29、68/68、61/61**；Core build/typecheck、适配器 build/typecheck/lint 与 `git diff --check` 通过。keyless tree 不新增未经契约证明的稳定身份语义。
+
+2026-08-30：修正分页 `hasMore()` 的 total 优先级：定义的 `total` 先于 short-page heuristic 参与 paged offset/infinite accumulated count 判断，unknown-total exhaustion 与取消、stale、dispose 语义不变。Pagination **22/22**，adversarial review PASS，Core build/typecheck 与定向 Prettier 通过。
+
+2026-08-30：Core virtualizer finite-input hardening：`createVirtualizer` 对 count、estimate、viewport/scroll/buffer/fixedSize、index 与 measure 做有限值/非负归一化；超大 finite count 在分配 size tree 前 fail-closed，Fenwick aggregate size capped，避免 NaN/Infinity/overflow 污染窗口状态。有效输入、零尺寸、stable-key/index-key、SSR 与既有 adapter API 保持不变；负小数 index 不再变成 0，非有限 measurement 不写 cache/tree。Core virtualizer **34/34**，全量 **131 files / 1,915 tests**，typecheck/build 通过，lint 0 errors / 8 complexity warnings；未改 adapter、manifest 或 arch baseline。
+
+2026-08-31：Core `query-cache` 的可选 `maxEntries` 已完成容量 hardening；finite capacity 会先做 floor/clamp 归一化，再进入有界 LRU，`get/fetch/set/invalidate` 刷新 recency；`undefined` 与非有限值保持无限容量，SWR/default 行为不变；被驱逐、移除或清空的 in-flight generation 会被 orphan，late settle 不会污染随后重建的同 key entry；`maxEntries: 0` 时 cache 不保留 settled entry，但仍会去重同 key 的 in-flight fetch。
+
+2026-08-31：Core 公共 barrel、row-edit、remote-table test 分解后均低于现有 ratchet baselines；React/Vue/Solid/Svelte 的主 Table 实现与主 Table 测试分解后也都低于各自现有 ratchet baselines。本批不改 public API；Svelte 修复 `useDataSource` initial-load `onMount` 与 same-id stale-blur identity，React 的 isomorphic layout effect 现覆盖 Table、grid virtual、`IrisVirtualScroll` 与 Select，并收口 pagination/table helper warnings，Vue 修复 resizer lifecycle 与 conditional DataSource `onMounted`。
+
+2026-08-31：`ResilientFetcherOptions.maxEntries` 为 additive option，并直接透传 `QueryCacheOptions.maxEntries`；`undefined`、`NaN`、`+Infinity` 与 `-Infinity` 继续保持无限容量。
+
+2026-08-31：最终 verified totals 为 Core **133 files / 1,922 tests**；React **273 files / 3,072 tests**；Vue **195 files / 1,749 tests**；Solid **170 files / 1,197 tests**（client **162 files / 1,147 tests**；SSR **8 files / 50 tests**）；Svelte **168 files / 1,159 tests**（client **163 files / 1,107 tests**；SSR **5 files / 52 tests**）。Core + 四适配器 full suites 合计 **9,099 tests**。Core 与四个适配器 full tests/typecheck/build/lint 全部通过（Svelte `svelte-check` **0 errors / 0 warnings**）；`pnpm check:manifest` 报告每框架 **155 components**、tokens **86**，Core framework-import guard、targeted Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 均通过。非阻断输出仅剩既有 lint complexity warnings（**10** total：Core **8**、React **1**、Vue **1**）、arch ratchet **301** non-blocking warnings 与预期的 jsdom navigation / localStorage stderr；keyless-tree identity 仍受现有 public API 限制，不臆造稳定 identity。
+
 每个迁移批次必须同时满足：
 
 - 默认不开启时 DOM、事件顺序和包体字节无回归；
@@ -661,6 +784,367 @@ computed children 无 setter 的语义不变；新增 Core 回归覆盖“有效
 - 主适配器文件净减行，不能以新 helper + 原逻辑双存；
 - 缺失 feature 有明确能力探测，不放空方法；
 - test/typecheck/lint/build、SSR、manifest 与 arch ratchet 通过。
+
+## 2026-08-31 Grid Core resilience follow-up（当前工作树，已验证）
+
+`ResilientFetcherOptions.maxEntries` 已按 additive 方式接入，并直接透传 `QueryCacheOptions.maxEntries`；focused resilient-fetcher 回归 **11/11** 覆盖 forwarded LRU eviction，以及 `undefined`、`NaN`、`±Infinity` 保持无限容量的兼容路径。
+
+最终 adversarial pass 额外修复了 `maxEntries: 0` 时“新建 fetch entry 在并发同 key 调用共享 in-flight promise 前被过早驱逐”的竞态；zero-capacity cache 现仍去重 in-flight 调用，但不保留任何 settled entry，并已补齐回归覆盖。
+
+Post-fix Core preflight **23 files / 262 tests** 与 Core full **133 files / 1,922 tests** 通过。
+
+## 2026-08-31 Grid Core realtime tuning hardening（当前工作树，已验证）
+
+`createReconnectingSource` 对非有限、负值和 fractional backoff/max-retry tuning 做确定性归一化，确保 delay/retry counter 为 finite/non-negative；有效/default 参数、`maxRetries: 0`、`factor: 0` 与 `maxBackoffMs < backoffMs` 语义保持。连接 generation、terminal `close()`、active-idempotent `open()`、唯一 reconnect timer、同步 connect/handler/teardown 异常和 SSR 无 DOM 依赖保持；补齐 `onStatus` reconnect throw 仍装载 timer、同步 `onOpen` throw 不丢 teardown 的竞态修复。Realtime **25/25**，Core 当前全量 **133 files / 1,930 tests**，Core typecheck/build/lint 通过（8 complexity warnings），adversarial review PASS；未改 adapter、manifest 或 arch baseline。
+
+## 2026-08-31 Grid Core zero-capacity cache and durable outbox follow-up（当前工作树，已验证）
+
+`query-cache` 的 `maxEntries: 0` 现在在 fetch、set、invalidate 路径都不保留 settled/orphaned entry，但仍保留同 key in-flight 去重；新增回归覆盖 in-flight 被 `set` 或 `invalidate` 替换后的容量边界。Durable outbox 的 `remove`/`clear` 仅在 storage commit 成功后标记 in-flight removal，持久化失败时仍排队的执行不会被误报为显式移除。Core focused **102/102**（query-cache 22、resilient-fetcher 11、data-source-resilient 19、outbox 16、virtualizer 34），Core 全量 **133 files / 1,924 tests**、build/typecheck 通过，lint **0 errors / 8 warnings**；定向 Prettier 与 `git diff --check` 通过。未改 public API、manifest 或 arch baseline。
+
+## 2026-08-31 React Grid projected-row reconciliation follow-up（当前工作树，已验证）
+
+React `IrisTable` 的 row patch reconciliation 现统一委托 Core `reconcileProjectedRows`；适配器继续保留 legacy `rowPatchKey` 的 `rowKey` / `rowId` / tree identity 解析，以及 index-key write-back 的 fail-closed 合同，不再重复维护可见投影 patch 合并循环。Delete 与 context-menu clear 在 sorted keyless `rowId` 视图上的 focused 回归已补齐，确认清空写回继续遵守旧契约。
+
+本批未修改任何 Core source 文件。最终 review 未再发现 concrete regression；当前 verification 口径更新为 Core **133 files / 1,924 tests**、React **273 files / 3,074 tests**、Vue **195 files / 1,749 tests**、Solid **170 files / 1,197 tests**（client **162 / 1,147**；SSR **8 / 50**）、Svelte **168 files / 1,159 tests**（client **163 / 1,107**；SSR **5 / 52**），Core + 四适配器 full suites 合计 **9,103 tests**。
+
+Gates：Core / React `typecheck`、build、lint 与受影响适配器 smoke / full checks 通过；targeted Prettier 与 `git diff --check` 通过。非阻断输出仅剩既有 lint complexity warnings（**10** total：Core **8**、React **1**、Vue **1**）、`pnpm arch-check:ratchet` **301** 条 non-blocking warnings、预期的测试环境 stderr（Node `ExperimentalWarning` localStorage；React 既有 jsdom navigation / `act(...)` / DOM nesting / list-key / intentional provider error logging），以及 keyless-tree identity 的 public API limitation。
+
+## 2026-09-01 Grid Core projected-row hardening（当前工作树，已验证）
+
+Core `reconcileProjectedRows` 的 flat path 继续补强：true no-op 现在保留原始
+`sourceRows` 的 source-array identity，与树路径的 no-op 合同一致；duplicate-key
+rows 的写回不再按 key 扇出，而是按各自唯一的 source slot 合并；duplicate row-object
+identity 则整体 fail-closed，不猜测来源。Core `table-projection` 覆盖同步补齐
+keyless sorted flat reconciliation、duplicate keys 与 duplicate row objects。
+
+React `IrisTable` 的 row patch reconciliation 在上一批已统一委托该 helper，因此本切片无任何
+adapter source 变更；Vue/Solid/Svelte 继续消费同一 Core 写回边界。
+
+Post-fix verification totals 更新为 Core **133 files / 1,936 tests**；React **273 files /
+3,074 tests**；Vue **195 files / 1,749 tests**；Solid **170 files / 1,197 tests**（client
+**162 files / 1,147 tests**；SSR **8 files / 50 tests**）；Svelte **168 files / 1,159 tests**
+（client **163 files / 1,107 tests**；SSR **5 files / 52 tests**）；Core + 四适配器 full
+suites 合计 **9,115 tests**。Core 与受影响适配器的 full tests/typecheck/build/lint、
+targeted Prettier、`git diff --check`、Core framework-import guard 与
+`pnpm check:manifest`（每框架 **155 components**、tokens **86**）均通过。
+
+同时，`packages/react/src/primitives/table/Table.tsx` 已压回当前 ratchet baseline：arch count
+**9,137** 与 baseline **9,137** 持平；但 `pnpm arch-check:ratchet` 当前仍保留且仅保留 1 个
+无关阻断项——`packages/core/src/realtime.test.ts` **547** 行，来自独立的 non-Grid 工作，
+因此本批不宣称 ratchet 全绿。非阻断输出仅剩既有 lint complexity warnings（**10** total：Core
+**8**、React **1**、Vue **1**）、arch ratchet **301** 条 non-blocking warnings、预期测试环境
+stderr（Node `ExperimentalWarning` localStorage；React 既有 jsdom navigation / `act(...)` /
+DOM nesting / list-key / intentional provider error logging）；keyless-tree identity 仍受现有
+public API 限制，不臆造稳定 identity。
+
+## 2026-09-01 Grid Core MCP and test-boundary follow-up（当前工作树，已验证）
+
+MCP command boundary 继续 fail-closed：无效/空 sanitized tool name 不暴露或执行，malformed parameter definition 返回稳定失败；LLM planner 对模型填充的 args 复用同一参数校验，invalid args 回退 deterministic planner。commands focused **23/23**，未加入授权、确认、限流或 durable outbox。
+
+`packages/core/src/realtime.test.ts` 已拆为主生命周期测试、connect-error 测试与共享 support helper；保留全部 **25** 个 realtime tests，不改 `realtime.ts` 或运行时契约，两个测试文件分别 **306/213** 行，均低于 500 行门槛。当前 Core full **134 files / 1,936 tests**；Core typecheck/build/lint、`pnpm arch-check:ratchet`（**0 blockers**，仅既有 warnings）、targeted Prettier 与 `git diff --check` 通过。未改 arch baseline、manifest 或禁止目录。
+
+## 2026-09-02 React Grid column-state handoff follow-up（当前工作树，定向已验证）
+
+React `useGridColumns` 的 widths handoff 继续补强：bridge 现在维护最近一次 uncontrolled/`defaultWidths` snapshot。受控 `widths` 移除时会立即渲染并静默同步回该快照，因此非受控 → 受控 → 非受控不会泄漏旧的 controlled width map；若初始即受控，snapshot 也会从 `defaultWidths` 而不是 `options.widths` 种下，所以撤掉控制后稳定回退默认宽度。
+
+对抗式复核同时发现 React-only 的 pinned handoff 也需要同样精度：`pinnedColumns` 从 controlled 回到 uncontrolled 时不再 blanket reset 到 `EMPTY_PINNED`，而是恢复最近一次 uncontrolled/default pinned snapshot，并保留显式 `null` unpin。该修正完全位于 React bridge；Core `columns` / `column-state` 契约未改，**无任何 Core source change**。
+
+Focused regressions 已补到 `packages/react/src/grid/useGridColumns.test.tsx`：覆盖 uncontrolled → controlled → uncontrolled widths restore、initially controlled width removal → `defaultWidths` restore，以及 pinned `null` snapshot restore。相关列状态验证同时重跑 Core `packages/core/src/grid-columns.test.ts`，以及 React `packages/react/src/primitives/table/auto-resize-columns.test.tsx`、`packages/react/src/primitives/table/reset-column-widths.test.tsx`、`packages/react/src/primitives/table/test/pin-column-menu.test.tsx`、`packages/react/src/primitives/table/test/pinned-drag-controlled-reset.test.tsx`；React `typecheck`/build/lint、targeted Prettier 与 `git diff --check` 通过。
+
+当前 verification ledger 更新为：Core **134 files / 1,941 tests**（当前 worktree 另含独立 MCP hardening）、React **273 files / 3,075 tests**、Vue **195 files / 1,749 tests**、Solid **170 files / 1,197 tests**（client **162 files / 1,147 tests**；SSR **8 files / 50 tests**）、Svelte **168 files / 1,159 tests**（client **163 files / 1,107 tests**；SSR **5 files / 52 tests**）；Core + 四适配器 full suites 合计 **9,121 tests**。本切片不宣称重跑全部包 gate；已确认的新增通过项限于上述 React/Core column surface。
+
+同时，本切片验证时 `pnpm arch-check:ratchet` 仍被独立的 non-Grid commands 文件阻断；该阻断随后由下一切片的模块拆分解决。keyless-tree identity 仍受现有 public API 限制，不臆造稳定 identity。
+
+## 2026-09-02 Grid Core remote-table hardening（当前工作树，已验证）
+
+framework-free `createRemoteTableSource` 继续收口 remote params 的可变边界：`sort` / `sorts` / `filters` 现在会在初始 params 摄取、`setParams` 摄取、派生 state 投影以及对外 `query(...)` 交接时统一 clone。调用方持有的入参对象与 query 内被修改的对象因此不再别名污染 live remote-table state，但值与既有 public API 行为保持不变；复核范围内的 DataSource / pagination 合同无需其他 source 改动。
+
+params / lifecycle / data-source / pagination focused 回归 **92/92** 通过。Core 当前 full verification 为 **136 files / 1,943 tests**；Core typecheck/build/lint 通过，lint 仅保留 **8** 条既有 warnings；targeted Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 通过。
+
+当前 worktree ledger 更新为：Core **136 files / 1,943 tests**、React **273 files / 3,075 tests**、Vue **195 files / 1,749 tests**、Solid **170 files / 1,197 tests**（client **162 files / 1,147 tests**；SSR **8 files / 50 tests**）、Svelte **168 files / 1,159 tests**（client **163 files / 1,107 tests**；SSR **5 files / 52 tests**）；Core + 四适配器合计 **9,123 tests**。这些 adapter totals 仅作为当前 worktree ledger 记录；本切片不宣称重跑了全部 adapter full suites。
+
+## 2026-09-02 Grid Core host reentrancy hardening（当前工作树，已验证）
+
+framework-free `packages/core/src/grid.ts` 的 capability host 继续补强 Phase 0 运行时边界：feature `setup()` 内若发生 reentrant `core.use()` / `core.ready()` / `core.destroy()`，外层 `use()` 失败现在会回滚该轮新增的全部 feature install（含嵌套 install）；失败后若实例尚未 destroy，则恢复进入 `use()` 前的 `status`，不再残留 reentrant `ready()` 造成的错误状态。若 `setup()` 中途已 destroy，host 会中止 `setup()` 之后的 methods/features 注册；rollback 也会跳过已移除 record，避免 double cleanup。该批只收口宿主实现，不改 public API、feature ordering 或既有 Phase 0–4 决策，Core 继续保持 framework-free。
+
+Focused regressions 新增 `packages/core/src/grid.reentrancy.test.ts`，共 **3** 个 tests，覆盖上述 host reentrancy 路径；现有 `packages/core/src/grid.test.ts` 因已处于 **500** 行 arch ratchet 上限而保持不动。
+
+当前 Core full verification 更新为 **138 files / 1,951 tests**；Core `typecheck` / build / lint、targeted Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 通过，lint 仅保留既有 warnings。当前 worktree ledger 为：Core **138 files / 1,951 tests**、React **273 files / 3,075 tests**、Vue **195 files / 1,749 tests**、Solid **170 files / 1,197 tests**（client **162 files / 1,147 tests**；SSR **8 files / 50 tests**）、Svelte **168 files / 1,159 tests**（client **163 files / 1,107 tests**；SSR **5 files / 52 tests**）；Core + 四适配器合计 **9,131 tests**。这些 adapter totals 仅作当前 ledger 记录，不表示本切片重跑了全部 adapter full suites。
+
+## 2026-09-02 Grid Core cell-edit stale-async hardening（当前工作树，Core 已验证）
+
+framework-free `packages/core/src/cell-edit.ts` 继续收口 cell-mode 的异步提交边界：当前编辑会话在 `setDraft(...)` 真正更换草稿值时会递增内部 session generation，因此上一份 draft 上已发出的晚到 async validation/commit 在 settle 时若 generation 已过期，就会直接 fail-closed。这样旧 draft 不会再被 stale promise 写回，也不会错误关闭后来仍处于打开状态的同一 cell session；public API、row-key 语义、rows `reason: 'cell-edit'` 事务和既有 adapter metadata 均保持不变。
+
+回归已补到 `packages/core/src/grid-editing.test.ts`，专门覆盖“pending async commit 期间 draft 改变后，旧结果不得落盘或关会话”的路径。当前切片实测通过：Core `cell-edit` + `grid-editing` focused **28/28**、React `useGridEditing` smoke **2/2**、Vue `useGridEditing` smoke **1/1**。Solid/Svelte 的 focused `useGridEditing` 在该 runner 因缺少环境依赖未能启动，因此这里只记录未运行，不宣称其通过。
+
+Core 当前 full verification 已更新为 **138 files / 1,953 tests**；Core build、typecheck、lint（**0 errors / 8 existing warnings**）、targeted Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 通过。当前 worktree ledger 为：Core **138 files / 1,953 tests**、React **273 files / 3,075 tests**、Vue **195 files / 1,749 tests**、Solid **170 files / 1,197 tests**（client **162 files / 1,147 tests**；SSR **8 files / 50 tests**）、Svelte **168 files / 1,159 tests**（client **163 files / 1,107 tests**；SSR **5 files / 52 tests**）；Core + 四适配器合计 **9,133 tests**。这些 adapter totals 仅作当前 ledger context，**不表示**本切片已全量重跑它们。
+
+## 2026-09-01 Grid Core command-module decomposition（当前工作树，已验证）
+
+保留 `@iris-ui-kit/core/commands` public entrypoint，将 command registry、MCP boundary、LLM planner 分拆为 `commands-registry.ts`、`commands-mcp.ts`、`commands-llm.ts`；public barrel `commands.ts` 仅 **37** 行，行为、导出、顺序与 SSR/framework-free contract 保持。原 `commands.test.ts` 拆为 registry/MCP/LLM 三组测试，分别 **73/332/121** 行；commands focused **28/28**，不删除或弱化覆盖。
+
+Core 当前 full **136 files / 1,941 tests**；Core typecheck/build/lint、`pnpm arch-check:ratchet`（**0 blockers**，仅既有 warnings）、targeted Prettier 与 `git diff --check` 通过。未改 arch baseline、manifest 或禁止目录。
+
+## 2026-09-01 Grid Core remote-table boundary hardening（当前工作树，已验证）
+
+`createRemoteTableSource` 现在在初始参数、`setParams`、派生 state 与 `options.query` handoff 边界复制 `sort`/`sorts`/`filters`，调用方或 query callback 修改传入对象不会隐式改写 controller state；旧参数、分页、signal/abort、latest-wins、resilient cache、destroy 与 SSR 语义保持。Remote-table/DataSource/pagination focused **92/92**；Core 当前 full **136 files / 1,943 tests**，typecheck/build/lint、`pnpm arch-check:ratchet`（**0 blockers**，仅既有 warnings）、targeted Prettier 与 `git diff --check` 通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-01 Grid Core DataSource ownership hardening（当前工作树，已验证）
+
+DataSource 在 setter/build/query 边界复制 sort、multiSort、filters、filterRules；fetch result rows、optimistic mutation rows 与 selectedKeys 也不再与调用方/内部 canonical state 共享可变容器，保留 `FilterRule.value` identity 及既有 fetch/mutation API。修复 fetcher/query 外部修改污染 live state、fetch-owned rows 后续修改反写 state，以及 in-place optimistic mutation 破坏 rollback canonical rows 的问题，并新增 ownership/rollback 回归。
+
+DataSource/resilient/outbox focused 回归通过；Core 当前 full **137 files / 1,948 tests**，typecheck/build/lint、`pnpm arch-check:ratchet`（**0 blockers**，仅既有 warnings）、targeted Prettier 与 `git diff --check` 通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-01 Grid Core feature-host reentrancy hardening（当前工作树，已验证）
+
+Core Grid feature host 现在对 `setup()` 内 reentrant `use()`、`ready()`、`destroy()` 做事务式保护：失败时回滚嵌套安装、恢复此前 status、避免 destroy 后继续注册 methods/features，并跳过已清理记录以防重复 dispose。保留 feature 依赖拓扑排序、生命周期顺序、ready/destroy 幂等与既有 public API；新增 `grid.reentrancy.test.ts`，未改变 framework-free/SSR contract。Grid focused tests、Core typecheck/build/lint、`pnpm arch-check:ratchet`（**0 blockers**，仅既有 warnings）、targeted Prettier 与 `git diff --check` 通过；Core 当前 full **137 files / 1,951 tests**。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-02 Grid Core selection and expansion controller hardening（当前工作树，已验证）
+
+Selection multi-mode 的 `NaN`/SameValueZero 删除语义已修复：`deselect(NaN)` 与 `toggle(NaN)` 不再因 `!==` 留下已选 key；默认/受控 mirror、顺序、onChange、store/index freshness 与 `computeSelectionFlags` 合同保持。Expansion model 现在在 direct `store.setState()`、batch 与 reentrant subscriber 写入后惰性重建 membership index，并从实际 post-notify state 同步 commit；single/multiple、NaN/Infinity key、顺序与既有 API 保持。
+
+Selection、tree-selection、expansion、grid-expansion 相关 focused 回归及 Core full 验证通过；Core 当前 **138 files / 1,957 tests**，typecheck/build/lint、`pnpm arch-check:ratchet`（**0 blockers**，仅既有 warnings）、targeted Prettier 与 `git diff --check` 通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-04 Grid Core tree projection write-back hardening（当前工作树，定向已验证）
+
+`packages/core/src/table-projection.ts` 现在在 canonical tree 存在 duplicate row keys 或 repeated row-object identities 时，对 tree projection write-back fail-closed，避免 ambiguous branch update；`packages/core/src/table-projection.test.ts` 新增对应 regression。本批为 additive hardening，不引入 keyless-tree identity，也不改变 public API。
+
+Runner validations：Core build/typecheck passed；Core focused `table-projection` / grid rows / clipboard tests **41/41** passed；React focused tests/typecheck/build/lint passed；Vue bridge test/lint passed，但 broader Vue checks 因缺少 workspace theme dependencies 被阻断；Solid typecheck/lint passed，tests/build 因缺少 `vite-plugin-solid` / `tsup` 被阻断；Svelte lint passed，tests/typecheck/build 因缺少 Svelte tooling 被阻断。Targeted Prettier、framework-free import guard 与 `git diff --check` passed。本批不宣称 full adapter reruns。
+
+## 2026-09-05 Grid Core virtualizer window hardening（当前工作树，已验证）
+
+`packages/core/src/virtualizer.ts` 修正 fixed-size window calculation：部分可见的首行现在会被纳入窗口；例如 count 10、size 20、viewport 20、scroll 10 时，indices 为 **[0, 1]**。`packages/core/src/virtualizer.test.ts` 新增上述 regression，并补充 invalid/fractional controls、huge counts、non-finite sizes 与 aggregate overflow 的 edge-case coverage。
+
+Pagination、sorting、filtering 与 range audit 未发现有证据支持的 defect（no evidence-backed defect）。本批不改变 public API 或 keyless-tree identity semantics。
+
+验证：Core build/typecheck passed；Core focused **112** tests passed；本切片后 Core full suite **138 files / 1,958 tests** passed；React/Vue focused adapter tests passed；React/Solid typecheck passed；Prettier、framework-free import guard、`git diff --check` 与 `pnpm arch-check:ratchet` passed。Solid tests/build 因缺少 `vite-plugin-solid` 被阻断；Svelte tests/typecheck/build 因缺少 tooling 被阻断；Vue typecheck 因缺少 workspace theme/tokens/icons/skins declarations 被阻断。本批不宣称 full adapter reruns。
+
+当前 ledger context：Core **138 files / 1,958 tests**、React **273 files / 3,075 tests**、Vue **195 files / 1,749 tests**、Solid **170 files / 1,197 tests**、Svelte **168 files / 1,159 tests**，total **9,138**；adapter totals 仅作 ledger context，不表示本切片已全量重跑。
+
+## 2026-09-05 Grid Core roving-navigation finite-input hardening（当前工作树，已验证）
+
+Core `roving` 导航数学现在对 NaN/Infinity/负值/fractional count 与 index fail-closed，避免全 disabled 或 infinite count 非终止；`nextGridCell` 的 invalid cell/pageSize 与 PageUp/PageDown disabled-target fallback 也保持确定性。保留 valid-input 的 loop/non-loop、Home/End、typeahead wrap/case/trim、same-row/column 与 public API 语义；无 DOM/框架依赖。
+
+Roving focused **23**、Core keyboard/grid focused **136**、React table keyboard focused **90**；Core 当前 full **138 files / 1,965 tests**，typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet`（**0 blockers**）通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-05 Grid Core formula malformed-row hardening（当前工作树，已验证）
+
+`packages/core/src/formula.ts` 现在安全拒绝 `null` 与非 object row；`evaluateFormula`（例如 `evaluateFormula("price", null)`）遇到 malformed row 时 fail-closed 返回 `null`，不再抛异常。`packages/core/src/formula.test.ts` 新增 malformed-row regression coverage。本批不改变 public API 或 keyless-tree identity semantics。
+
+Core build passed；Core focused formula/table-value tests **75 passed**；React formula tests **27 passed**；targeted Prettier、framework-free import guard 与 `git diff --check` passed。Vue focused formula checks 因缺少 `@iris-ui-kit/theme` 被阻断；Solid focused formula checks 因缺少 `vite-plugin-solid` 被阻断；Svelte focused formula checks 因缺少 Vitest module 被阻断。共享 worktree 中观察到的当前 Core full run 为 **138 files / 1,965 tests**；该计数不表示全部属于本 formula slice，也不表示本批重跑了完整 adapter suites。
+
+## 2026-09-05 React Grid column-state handoff hardening（当前工作树，定向已验证）
+
+`packages/react/src/grid/useGridColumns.ts` 现在跟踪最近一次 uncontrolled order snapshot；移除受控 `order` 后，bridge 会恢复该 snapshot，而不是暴露被 Core 拒绝的 optimistic order。`packages/react/src/grid/useGridColumns.test.tsx` 新增对应 regression，并补充 width/order/pin handoff coverage。本切片未修改任何 Core source 文件，也未改变 public API 或 keyless-tree identity semantics。
+
+验证：Core focused tests **47/47**、React column tests **45/45**、React typecheck、targeted Prettier、Core framework-free import guard 与 `git diff --check` 通过。Vue focused tests 因现有缺失依赖 `@iris-ui-kit/theme` 被阻断；Solid focused tests 因现有缺失依赖 `vite-plugin-solid` 被阻断；Svelte focused tests 因缺少 `vitest` module 被阻断。Full adapter suites 未重跑。
+
+## 2026-09-05 Grid Core clipboard and sort/filter boundary hardening（当前工作树，已验证）
+
+Clipboard Core 对 multi-cell overflow into empty grid、malformed `setValue`/`overflowRows`/`reconcileRows` 输出与 direct serializer coordinates fail-closed；HTML copy 增加 formula-injection safety，保留 TSV-only paste、adapter-owned I/O 与既有 API。Table sort/filter Core 现在对 NaN/Infinity、malformed sort/filter channels、异常 filter method 与 comparator result 做确定性 fail-closed；稳定 tie、多排序优先级、identity no-op、resolver contract 与有效输入行为保持。
+
+Core 当前 full **138 files / 1,975 tests**；clipboard/range、sort/filter、typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet`（**0 blockers**）通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-05 Grid Core summary/aggregate finite-input hardening（当前工作树，已验证）
+
+Summary/aggregate Core 对 malformed operation/column/spec/value callback/raw coercion 做 fail-closed；finite extreme values 的 avg 不再溢出，min/max 不再因超大输入触发 spread `RangeError`，fractional/non-finite `aggregateAccuracy` 不再误四舍五入。保留空数据默认值、count/null/zero/numeric-string 语义、排序与重复/未知列行为、adapter value resolver/custom render contract 及 framework-free/SSR 行为。
+
+Summary/aggregate focused **62**、Core 当前 full **138 files / 1,984 tests**；typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet`（**0 blockers**）通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-05 Grid Core table-summary/aggregate hardening follow-up（当前工作树，已验证）
+
+`packages/core/src/data-view/aggregate.ts` 与 `packages/core/src/table-summary.ts` 现在校验 malformed aggregate operations/specs/columns/callback inputs，safely coerce finite values，避免 average overflow 与 spread-based min/max `RangeError`，并拒绝 fractional/non-finite `aggregateAccuracy`。
+
+`packages/core/src/table-summary.test.ts` 与 `packages/core/src/data-view-filterable.test.ts` 含有对应 regression coverage；valid empty/default、count、ordering、duplicate/unknown-column、callback-exception、no-mutation 与 adapter value-resolution semantics 保持不变。
+
+验证：summary/aggregate focused **62** tests passed；当前 Core full run **1,984** tests passed；Core typecheck/build passed；lint passed with unrelated existing warnings；`git diff --check` 与 `pnpm arch-check:ratchet` passed。本切片不宣称 adapter tests 或 full adapter reruns；未修改 adapters、public API、keyless-tree identity semantics、manifests 或 prohibited files。
+
+## 2026-09-05 Grid Core tree mutation hardening and ratchet split（当前工作树，定向已验证）
+
+`packages/core/src/grid-tree-rows.ts` 与 `packages/core/src/grid-tree-children.ts` 现在在 keyed update/remove/child hydration 前 fail-closed：当可达树结构含 duplicate keys 或 repeated/cyclic row-object identity 时不写回；没有臆造 keyless identity。validation helper 仅为满足 arch ratchet、将 `grid-tree-rows.ts` 保持在 **478** 行而移至新文件 `packages/core/src/grid-tree-validation.ts`，public exports 与 runtime semantics unchanged。回归位于 `packages/core/src/grid-tree-rows.audit.test.ts`。
+
+验证：Core build、focused tree tests（**2 files / 3 tests**）、Core typecheck、targeted Prettier、framework-free import guard、`git diff --check` 与 `pnpm arch-check:ratchet` 均通过；ratchet 仅有 non-blocking warnings。Vue/Solid/Svelte tree tests 因既有缺失 workspace dependencies 被阻断；本切片不宣称 full adapter reruns。
+
+## 2026-09-05 Grid Core clipboard/range callback hardening（当前工作树，已验证）
+
+Clipboard/range Core 现在截断 fractional coordinates、忽略 non-finite updates，避免 overflow auto-ID collision；callback row/snapshot、malformed `setValue`/`overflowRows`/`reconcileRows`、partial/empty range 与 serializer 输入均 fail-closed。HTML formula safety 保持，TSV-only paste 与 adapter-owned clipboard I/O 不变。保留 valid-input 的 range、editable/formula、transaction metadata、no-op identity 与 public API contract，并新增 focused hardening coverage。
+
+Core 当前 full **140 files / 1,990 tests**；Core typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet`（**0 blockers**）通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-05 Grid Core keyboard/editing lifecycle hardening（当前工作树，定向已验证）
+
+`packages/core/src/keyboard-nav.ts` 现在会归一化无效的 count/index，并在选中前拒绝越界或 disabled 的 `initialIndex`；对应回归已补到 `packages/core/src/keyboard-nav.test.ts`。`packages/core/src/grid-editing.ts` 现在会在 dispose 后抑制异步校验回调，`packages/core/src/grid-editing.test.ts` 新增 disposal coverage。既有 public API 与 keyless-tree identity semantics 保持不变。
+
+验证：Core build/typecheck passed；Core focused keyboard/editing tests **95 passed**；React、Vue、Solid、Svelte bridge/table checks passed；targeted Prettier、framework-free import guard 与 `git diff --check` passed。React advanced suite 的 Vitest worker 出现 `onTaskUpdate` timeout，但 tests 已通过，focused React checks clean；本条不宣称 full adapter reruns。当前 shared-worktree context 中观察到 Core full run 为 **140 files / 1,993 tests**；该计数仅表示当前 shared-worktree context，并非可全部归因于本 slice。
+
+## 2026-09-05 Grid Core tree-selection cascade hardening（当前工作树，已验证）
+
+Tree selection 对 unknown/empty/disabled 操作现在 fail-closed，不再为 no-op 触发通知；disabled branch 从 ancestor cascade 排除，duplicate flat definitions 使用 first-definition-wins，nodes snapshot 不受调用方后续 mutation 影响。保留 branch checked/indeterminate 派生、leaf ordering、cycles/duplicate guards、NaN/Infinity/0 keys、reentrant store 与 framework-free/SSR contract，并新增 focused regression coverage。
+
+Tree-selection focused **17**、Core grid/tree focused **25**、React/Vue/Solid/Svelte tree checks **47/41/38/32**；Core 当前 full **140 files / 2,000 tests**，typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet`（**0 blockers**）通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-05 Grid Core selection/expansion lifecycle hardening（当前工作树，定向已验证）
+
+`packages/core/src/selection.ts` 与 `packages/core/src/expansion.ts` 现在会在 store/callback 通知前检测有效的 SameValueZero no-op；`packages/core/src/grid-selection.ts` 与 `packages/core/src/grid-expansion.ts` 在 Core dispose 后抑制 callback。`packages/core/src/selection.test.ts`、`packages/core/src/expansion.test.ts` 与 `packages/core/src/grid.test.ts` 新增对应 regression。既有 public API 与 keyless-tree identity semantics 保持不变。
+
+验证：Core build passed；Core focused tests **95 passed**；React bridge/lazy tests passed；Vue/Solid bridge tests passed；Solid/Svelte lazy tests passed；Core/React/Vue/Solid/Svelte typechecks passed；targeted ESLint/Prettier、framework-free import guard 与 `git diff --check` passed。Vue lazy-tree test 在 **120s** 超时；该 timeout 未产生 source changes。本批不宣称 full adapter reruns。
+
+## 2026-09-05 Grid Core test ratchet split（当前工作树，已验证）
+
+这是仅限测试的结构清理：`packages/core/src/grid.test.ts` 从 **521** 行拆为 **339** 行；新增 `packages/core/src/grid-selection-expansion.test.ts` **118** 行与 `packages/core/src/grid-sorting.test.ts` **69** 行。全部 **20** 个 Grid tests 均保留；3 个文件 / **20** 个 focused tests passed。未修改 `grid.ts`、feature source、public API 或 runtime behavior。
+
+验证：Core full suite **142 files / 2,005 tests**；Core typecheck/build/lint（**0 errors / 9 existing warnings**）、targeted Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 均通过。本批不宣称 full adapter reruns。
+
+## 2026-09-05 Grid Core resilience and test-boundary follow-up（当前工作树，已验证）
+
+`circuit-breaker` 的 half-open 状态现在只允许一个 trial in flight，避免并发请求同时穿过半开门；query-cache/resilient-fetcher 的 TTL/SWR、LRU、generation、zero-capacity 与既有默认语义保持。Grid selection/expansion 对 SameValueZero no-op 与 Core dispose 后 callback 做保护；`grid.test.ts` 按 host、selection/expansion、sorting 拆分，原有 **20** 个 Grid tests 全部保留，文件均低于 500 行门槛。
+
+当前 Core full **142 files / 2,005 tests**；resilience focused **78**、Grid focused **20**，Core typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet`（**0 blockers**）通过。未改 adapter、manifest、arch baseline 或禁止目录。
+
+## 2026-09-06 Grid Core sort/filter bridge hardening（当前工作树，定向已验证）
+
+`packages/core/src/grid-sorting.ts` 现在对语义等价的 fresh-object sort/multi-sort setters 抑制 callbacks/events 与不必要的 store writes；`packages/core/src/grid-filtering.ts` 增加等价的 no-op guards，并使 clear 保持 atomic，只通知实际发生变化的 channels。回归位于 `packages/core/src/grid-state.test.ts` 与 `packages/core/src/grid-sorting.test.ts`。未改变 keyless-tree identity 或 public API semantics。
+
+验证：Core build passed；Core focused tests **30 passed**；React focused tests **38 passed**；React/Vue/Solid/Svelte typechecks passed；targeted Prettier、framework-free import guard 与 `git diff --check` passed。更广的 adapter filter-panel suites 存在既有 **5-second timeouts**；未修改 adapter source，也未运行 full adapter reruns。
+
+## 2026-09-06 Grid Core range/clipboard hardening（当前工作树，已验证）
+
+`packages/core/src/grid-clipboard.ts` 现在将 paste callback/event row snapshots 与 custom `setRows` bindings 隔离；`packages/core/src/range-stats.ts` 对 Symbol 等无法 coercion 的值按 non-numeric 处理，不再抛异常。回归覆盖位于 `packages/core/src/grid-range-clipboard.test.ts` 与 `packages/core/src/range-stats.test.ts`。
+
+保留 shallow nested-row semantics；未修改 adapter、public API 或 keyless-tree identity semantics。
+
+验证：Core build passed；Core focused tests **44 passed**；React/Vue/Solid/Svelte range/clipboard tests passed；React/Vue/Solid/Svelte SSR tests passed；targeted Prettier、framework-free import guard 与 `git diff --check` passed。本批不宣称 full adapter reruns。
+
+## 2026-09-06 Grid Core flat row transaction hardening（当前工作树，已验证）
+
+- `packages/core/src/grid-rows.ts` 现在将“同长度且所有 row 引用均未变化”的数组视为 `commit`/`loadData` no-op，避免 replacement store write/notification/transaction；`packages/core/src/grid-rows.test.ts` 新增 regression coverage。
+- 未修改 adapter、public API 或 keyless-tree identity semantics。`packages/core/src/grid-rows-lazy.ts` 不存在；lazy behavior 仍位于现有 tree-child/adapter paths。
+- 验证：Core build/typecheck passed；focused Core tests **54 passed**；React bridge **10 passed**、Vue bridge **3 passed**、Solid bridge **3 passed**、Svelte bridge **3 passed**；lazy tests React **14 passed**、Vue **7 passed**、Solid **10 passed**、Svelte **14 passed**；targeted Prettier、framework-free import guard 与 `git diff --check` passed。
+- Vue parity file 有 **3** 个 unrelated filter-test timeouts，但 lazy tests passed；本条不宣称 full adapter reruns。
+
+## 2026-09-06 Grid Core layout/span/responsive hardening（当前工作树，定向已验证）
+
+`packages/core/src/responsive.ts` 现在在 responsive tail hiding 期间快照 pinned-column 结果，因此 malformed/re-entrant pin callbacks 不会被重复调用并抛错；`packages/core/src/grid-span.ts` 将 fractional spans 归一化为正的 CSS Grid 整数。回归位于 `packages/core/src/responsive.test.ts` 与 `packages/core/src/grid-span.test.ts`。
+
+layout/width/column virtual/fade helpers 审计未发现其他有证据支持的 defect。未修改 adapter source、public API 或 keyless-tree identity semantics。
+
+验证：Core build/typecheck passed；Core focused tests **47 passed**；React/Vue/Solid/Svelte layout、virtualization、span、pinned、responsive 与 SSR-focused tests passed；四个适配器 typechecks passed；Svelte check **0 errors / 0 warnings**；targeted Prettier、framework-free import guard 与 `git diff --check` passed。Full repository suite 与 dedicated RTL table tests 仍在本次 focused audit 范围之外；本批不宣称 full adapter reruns。
+
+## 2026-09-06 Iris Core lifecycle, data-boundary, and pure utility hardening（当前工作树，已验证）
+
+Core outbox 修复 `__proto__` payload、duplicate/malformed persisted metadata、reentrant subscriber ordering 与 storage-save-after-resolve bookkeeping；pagination、ResourceController、query parser、path、table export、column、i18n、nav、date/responsive utilities 完成对应的 malformed input、ownership、cycle、finite-value 与 lifecycle fail-closed hardening。保留 legacy closure/in-memory outbox、pagination omitted-mode append、现有 query grammar、path/date/local-time、export byte compatibility、Grid/adapter ownership 与 framework-free/SSR 语义；未引入 cursor pagination、授权或宽泛重构。
+
+最近验证：outbox focused **39**、pagination **28**、resource/DataSource **79**、query-parser **49**、path **71**、table-export **37**、columns/column-type **36**、i18n **25**、nav **40**、date/responsive **35**（DST **17**）；Core full **142 files / 2,079 tests**，typecheck/build/lint、targeted Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 通过（仅既有 warnings）。Grid clipboard source ratchet split 后 `grid-clipboard.ts` **401** 行、helper **117** 行，public exports/behavior unchanged。未修改 adapters、manifest/llms、arch baseline 或禁止目录。
+
+## 2026-09-06 Grid/Core form, plugin, and controller hardening（当前工作树，已验证）
+
+Form Core 收口验证/提交的 reentrant lifecycle、snapshot ownership、prototype-sensitive fields、nested array planning、draft hydrate/serialize 与 fractional index/step；Undo stack 归一化 history limit，plugin runtime 修复 lazy/eager last-wins、partial install cleanup、duplicate dependency ordering 与 registry prototype safety。Grid Core 收口 rows transaction reentrancy/ownership、NaN key 与 index normalization、tree removal fail-closed、column-state no-op/width/pin validation、pagination no-op/disposal；layout/span/responsive 边界保持 framework-free。
+
+最近验证：form focused **180**、undo/event-bus **39**、plugin **76**、Grid columns **13**、Grid pagination **22**、Grid rows/tree **64**；Core full **145 files / 2,131 tests**，typecheck/build/lint、Prettier、`git diff --check` 与 `pnpm arch-check:ratchet` 通过（仅既有 warnings）。未修改 adapters、manifest/llms、arch baseline 或禁止目录。
+
+## 2026-09-06 Grid Core row-edit adapter identity hardening（当前工作树，定向已验证）
+
+- Same-ID row-edit begin/switch previously reused adapter session projections, allowing a stale old-editor callback to commit or cancel a newly opened session; this was reproduced in Solid. Successful begin/switch now resets row-session projections across React/Vue/Solid/Svelte, and stale cancel callbacks perform identity checks before acting.
+- Files touched: `packages/react/src/primitives/table/table-row-edit.tsx`, `packages/react/src/primitives/table/Table.tsx`, `packages/vue/src/primitives/table/table-row-edit.ts`, `packages/vue/src/primitives/table/table-edit-renderers.ts`, `packages/solid/src/primitives/table/table-row-edit.tsx`, `packages/solid/src/primitives/table/table-edit-renderers.tsx`, `packages/solid/src/primitives/table/table-row-edit.test.tsx`, `packages/svelte/src/primitives/table/table-row-edit.svelte.ts`, `packages/svelte/src/primitives/table/TableBodyRow.svelte`.
+- No Core source changes, no public API or keyless-tree identity changes.
+- Validation: Core row-edit tests **22**; React **13**; Vue **9**; Solid **14**; Svelte **9**; all four adapter typechecks; targeted Prettier; framework-free Core import guard; `git diff --check` passed. This slice does not claim full adapter reruns.
+- The workspace had extensive pre-existing unrelated changes; they are not attributed to this slice.
+
+## 2026-09-07 Grid Core table views/group hardening（当前工作树，定向已验证）
+
+- `packages/core/src/table-group.ts` 现在会在同一个 row object 多次出现时保留彼此不同的 source indexes；`packages/core/src/table-group.test.ts` 新增对应 regression。
+- `packages/core/src/table-views.ts` 现在将显式 `fallback: null` 视为关闭 ambient storage，并将 `storage: false` 视为跳过 lookup；`packages/core/src/table-views.test.ts` 新增 persistence-boundary coverage。
+- 未修改 adapter source、public API 或 keyless-tree identity semantics。
+- 验证：Core build passed；Core focused tests **52 passed**；React **79**、Vue **17**、Solid **11**、Svelte **11** focused checks passed；四个适配器 typechecks passed；targeted Prettier、framework-free import guard 与 `git diff --check` passed。
+- Full repository/E2E gates 与 full adapter suites 未运行。
+
+## 2026-09-07 Grid Core virtual-scroll bridge hardening（当前工作树，定向已验证）
+
+- Solid/Vue/Svelte fixed-window bridges now consume Core virtualizer state, so partial-scroll visibility matches Core. All four adapters pass fixed-size mode to Core and remeasure on fixed-size handoff.
+- React/Solid/Vue re-seat keyed measurements when data arrays change. Focused partial-boundary regressions were added across all four adapters; the React table expectation was updated for the already-fixed Core boundary behavior.
+- Reproduced defect: Solid with `scrollTop=10`, row/viewport height `20`, and `buffer=0` rendered one row instead of two.
+- No new Core source changes in this slice; no public API or keyless-tree identity changes.
+- Validation: Core virtualizer/grid tests **41 passed**; focused adapter/table tests passed; React/Vue/Solid/Svelte typechecks passed; SSR/hydration tests passed; targeted ESLint/Prettier, framework-free Core import guard, and `git diff --check` passed.
+- Full monorepo gates and full adapter suites were not run.
+- 本条仅记录 fixed-window slice；auto measurement 的 index-keyed stale-height follow-up 见后续独立条目。
+
+## 2026-09-06 Iris Core profile hardening（当前工作树，已验证）
+
+- Profile Core 对 hostile getter/proxy、malformed storage/raw state、prototype-sensitive keys、深层 snapshot/存储 ownership、no-op mutation、localStorage 异常、HTTP failed PUT、headers 隔离、async save serialization 做 fail-closed hardening。
+- 本条 runtime hardening 仅涉及 `packages/core/src/profile.ts` 与 `packages/core/src/profile.test.ts`；后续 `profile-helpers.ts` 拆分属于 ratchet-only decomposition。Profile focused **18**、Core full **145 files / 2,138 tests**、typecheck/lint（**0 errors**，仅既有 complexity warnings）、Prettier、framework-free import guard、`git diff --check` 通过。未宣称 build/整仓门禁。
+- 兼容 API 的 `profile.store` 仍暴露 raw mutable Store；函数值自有属性不深拷贝，hydrate 竞态契约未改变。
+
+## 2026-09-06 Grid Core table group/view hardening（当前工作树，定向已验证）
+
+- `buildTableGroupPlan` 修复同一 row object 重复出现时 source index 被 Map 覆盖；`table-views` 让显式 `fallback: null`/`storage: false` 不触碰 ambient localStorage。
+- 仅修改 `packages/core/src/table-group.ts`、`packages/core/src/table-group.test.ts`、`packages/core/src/table-views.ts`、`packages/core/src/table-views.test.ts`，不改 adapter；验证 Core build、group/view focused **52**、React **79**、Vue **17**、Solid **11**、Svelte **11**、四端 typecheck、targeted Prettier、framework-free import guard、`git diff --check` 通过。未运行 full repository/E2E。
+
+## 2026-09-07 Grid Core pagination bridge hardening（当前工作树，定向已验证）
+
+- 复现 Solid controlled page handoff defect：page 从 **1→2** 后 Core model 仍停在 **1**；`packages/solid/src/grid/index.ts` 现以响应式方式同步 controlled page，并加入 regression coverage。
+- `packages/svelte/src/grid/useGrid.ts` 现使用 sync helper，并以 focused harness/tests 覆盖 controlled synchronization。
+- `packages/core/src/grid-pagination.ts` 增加 safe-integer normalization；`setPageSize` 遇 invalid/equivalent 输入时保留当前 page 并成为 true no-op，`grid-pagination.test.ts` 新增对应 coverage。React/Vue 不需要 source changes。
+- 不引入 page-to-total clamping；现有 public tests 明确允许超出 total 的 page。未修改 remote-table、data-source、outbox、query-cache 或 keyless-tree identity。
+- 验证：Core build passed；Core focused tests **40**；React **35**；Vue **22**；Solid relevant tests **10**；Svelte relevant tests 与 typecheck passed；四个 adapter typechecks、targeted Prettier、framework-free import guard 与 `git diff --check` passed。Full adapter/monorepo suites 未重跑。
+
+## 2026-09-06 Iris Core machine hardening（当前工作树，已验证）
+
+这是一次窄范围 machine 审计；本条 runtime hardening 仅涉及 `packages/core/src/machine.ts` 与 `packages/core/src/machine.test.ts`：修复一层 compound state 的 child→child transition 丢失 parent handler/entry/exit/after、child target 与 top-level target 混淆、timer scope/cancellation/stale callback/invalid delay、entry action reentrant send 未排队，以及 stop 后仍调度新 timer 的问题。后续 `machine.test-support.ts` 与 `machine.reentrancy.test.ts` 拆分属于 ratchet-only decomposition。
+
+验证：machine focused **24/24**；该批 agent 完成时 Core full **145 files / 2,145 tests**，随后全量本地验证为 **145 files / 2,146 tests**；Core build、typecheck、lint **0 errors**（仅 complexity warnings）、targeted Prettier、framework-free import guard 与 `git diff --check` 通过。本批未覆盖异常 callback 回滚、context 深拷贝、超过一层嵌套、parallel/actors；未修改 adapters、API、keyless-tree 或禁止路径，不宣称整仓或四框架 full gate。
+
+## 2026-09-07 Iris Core keymap hardening（当前工作树，已验证）
+
+这是一次窄范围 Core 审计，仅修改 `packages/core/src/keymap.ts` 与 `packages/core/src/keymap.test.ts`：malformed runtime input fail-closed；`normalizeKeymap` 忽略 inherited override keys；拒绝空 `+` segment，同时保留带空格的合法 `Ctrl + Shift + Z`；`format`/`match` 对 malformed input 做保护。Cmd/Meta/Option 同义词、重复同义 modifier、default alias replacement、exact modifier matching、case/space normalization 与 SSR/no-op 语义保持不变。
+
+验证：keymap focused **22**；Core full（agent evidence）**145 files / 2,150 tests**，随后本地 Core 受其他已落盘 Core slices 影响为 **145 files / 2,146 tests**；Core typecheck、lint **0 errors / 20 complexity warnings**、targeted Prettier、framework-free import guard 与 `git diff --check` 通过。未覆盖 hostile Proxy/accessor getter；未修改 adapter、public API 或禁止路径，不宣称整仓或四框架 full gate。
+
+## 2026-09-07 Grid Core arch-ratchet decomposition follow-up（当前工作树，已验证）
+
+- 本轮仅做 arch ratchet decomposition：`packages/core/src/profile.ts` **378** 行 + 新 `packages/core/src/profile-helpers.ts` **164** 行；`packages/core/src/machine.test.ts` **434** 行 + `packages/core/src/machine.test-support.ts` **41** 行 + `packages/core/src/machine.reentrancy.test.ts` **53** 行；React `packages/react/src/primitives/table/table-row-edit.tsx` **349** 行 + 新 `packages/react/src/primitives/table/table-row-edit-projection.ts` **160** 行。
+- `pnpm arch-check:ratchet` 无 blockers；Core/React focused 验证、typecheck/build、targeted Prettier、framework-free guard 与 `git diff --check` passed。public API/behavior unchanged，`scripts/arch-baseline.json` 未改。
+
+## 2026-09-07 Grid Core window hardening（当前工作树，定向已验证）
+
+- 涉及 `packages/core/src/window/{geometry,manager,session}.ts` 与 `packages/core/src/window.test.ts`。
+- 对 malformed/non-finite/null/throwing geometry、workspace/focus/z reentrancy、session geometry ownership 做 fail-closed hardening。
+- Window focused **36**；Core typecheck/build、targeted Prettier、framework-free guard 与 `git diff --check` passed；无 tracked dist。
+
+## 2026-09-07 Grid Core virtual auto-measurement bridge follow-up（当前工作树，定向已验证）
+
+- 涉及 React/Vue/Solid/Svelte virtual-scroll sources/tests；已复现 auto measurement 的 index-keyed stale height 污染 keyed reorder，现由 Core `virtualizer.measure` keyed cache 接管，`estimate` 仅作为 configured fallback。
+- Focused：React **16**、Vue **12**、Solid **6**、Svelte **12**；四端 typecheck、targeted Prettier、framework-free guard 与 `git diff --check` passed。
+- 本 follow-up 没有 Core source change；不宣称 full adapter/monorepo gate。
+
+## 2026-09-07 React Grid visibility snapshot hardening（当前工作树，定向已验证）
+
+- `packages/react/src/grid/useGridColumns.ts` now clones controlled visibility into the returned state snapshot, preventing a caller mutation of the controlled map from mutating a previously returned snapshot; `packages/react/src/grid/useGridColumns.test.tsx` adds the regression.
+- Existing width/order/pinned handoff, rejected-proposal, silent-sync, callback, and SSR paths were rechecked with no further changes.
+- No Core source, public API, or keyless-tree identity semantics changed. No other files changed by this slice; full adapter reruns are not claimed.
+- Validation: focused React tests **8 passed**; React typecheck; targeted Prettier; `git diff --check` passed.
+
+## 2026-09-07 Grid Core selection/expansion adapter-boundary hardening（当前工作树，定向已验证）
+
+- Reproduced a React controlled selection handoff defect: after a rejected toggle, controlled → uncontrolled exposed the rejected `[a,b]` proposal instead of the prior uncontrolled snapshot.
+- React selection now handles controlled handoff, SameValueZero comparison, and immutable snapshots; React expansion snapshots are immutable. Vue/Solid/Svelte added selection handoff parity and selection/expansion snapshot copying.
+- Files touched: `packages/react/src/grid/useGridSelection.ts`, `packages/react/src/grid/useGridExpansion.ts`, `packages/react/src/grid/useGridCore.test.tsx`, `packages/vue/src/grid/index.ts`, `packages/solid/src/grid/index.ts`, `packages/solid/src/primitives/table/IrisTable.tsx`, `packages/svelte/src/grid/useGrid.ts`, `packages/svelte/src/useStore.ts`, `packages/svelte/src/primitives/table/IrisTable.svelte`.
+- No Core source, public API, or keyless-tree identity semantics changed.
+- Validation: Core focused **55**; React **94**; Vue **81**; Solid **59**; Svelte **51**; all four adapter typechecks; targeted ESLint/Prettier; Core framework-free import guard; `git diff --check` passed.
+- Full monorepo gates and full adapter suites were not run.
+
+## 2026-09-07 Grid Core clipboard malformed-input hardening（当前工作树，定向已验证）
+
+- `packages/core/src/grid-clipboard.ts` now runtime-guards paste text so `GridClipboardModel.paste(null)` fails closed instead of throwing; `packages/core/src/grid-clipboard-malformed.test.ts` adds the regression.
+- No adapter source, public API, or keyless-tree identity semantics changed.
+- Validation: Core build/typecheck passed; focused clipboard tests **23 passed**; React hook **2 passed**; Vue **22 passed**; Solid **10 passed**; Svelte **22 passed**; Vue/Solid/Svelte SSR formula checks passed; all four adapter typechecks passed; targeted Prettier/ESLint passed; framework-free Core import guard passed; and `git diff --check` passed.
+- The React grid-clipboard integration suite remains an existing dirty-worktree **6/6 timeout** before and after this slice, and was not modified. Full adapter/monorepo gates were not run.
+
+## 2026-09-07 Grid Core four-adapter column bridge snapshot audit（当前工作树，定向已验证）
+
+- The audit reproduced three adapter-boundary defects: React controlled order/width/pinned snapshots previously aliased caller inputs; Vue/Solid/Svelte store snapshots aliased Core state; and Vue/Solid/Svelte order/width/pinned handoff retained rejected controlled values.
+- The minimal adapter fix clones React controlled snapshots, copies Vue/Solid/Svelte store snapshots, and synchronizes independent uncontrolled snapshots across all four adapters' order/width/pinned channels. No Core/public API/keyless-tree identity changes.
+- Files in scope: `packages/react/src/grid/useGridColumns.ts` + `packages/react/src/grid/useGridColumns.test.tsx`; `packages/vue/src/grid/index.ts` + `packages/vue/src/grid/index.test.ts`; `packages/solid/src/grid/index.ts` + `packages/solid/src/grid/index.test.tsx`; `packages/svelte/src/grid/useGrid.ts`, `packages/svelte/src/grid/syncGridColumns.svelte.ts`, `packages/svelte/src/grid/GridColumnsBridgeHarness.svelte` + `packages/svelte/src/grid/index.test.ts`.
+- Validation: all four adapter typechecks; adapter grid tests React **36**, Vue **9**, Solid **11**, Svelte **27**; focused table tests React **96**, Vue **18**, Solid **5**, Svelte **15**; no remaining defect in scope. Full adapter/monorepo gates were not run.
 
 ## 9. 明确不做
 

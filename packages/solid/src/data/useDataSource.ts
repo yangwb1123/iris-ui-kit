@@ -1,13 +1,13 @@
 import { createEffect, onCleanup, type Accessor } from 'solid-js'
 import {
   createDataSource,
-  type DataSourceController,
+  type AdvancedDataSourceController,
   type DataSourceConfig,
   type DataSourceState,
 } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
-export interface UseDataSource<T> extends DataSourceController<T> {
+export interface UseDataSource<T> extends AdvancedDataSourceController<T> {
   /**
    * The live data-source state as a Solid accessor — call `state()` to read:
    * rows, total, page/pageSize, sort/multiSort, filters/filterRules,

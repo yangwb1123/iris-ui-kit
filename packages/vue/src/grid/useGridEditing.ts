@@ -10,7 +10,7 @@ import {
   type GridFeature,
 } from '@iris-ui-kit/core/grid'
 import type { CellEditState } from '@iris-ui-kit/core'
-import { useStore } from '../useStore'
+import { useStoreSelector } from '../useStore'
 
 export interface UseGridEditingOptions<Row extends Record<string, unknown>> extends Omit<
   GridEditingFeatureOptions<Row>,
@@ -69,7 +69,7 @@ export function useGridEditing<Row extends Record<string, unknown>>(
       onCommit: (commit) => latest.value.onCommit?.(commit),
     }),
   )
-  const state = useStore(model.store) as ShallowRef<CellEditState<GridEditingKey>>
+  const state = useStoreSelector(model.store, () => model.getState())
   return {
     core,
     model,

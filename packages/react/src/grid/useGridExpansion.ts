@@ -40,5 +40,7 @@ export function useGridExpansion<
   )
   const expandedKeys = useStore(model.store)
 
-  return { core, model, expandedKeys }
+  // The core store owns its mutable array; expose a snapshot so consumers
+  // cannot mutate the controller by editing the bridge result in place.
+  return { core, model, expandedKeys: [...expandedKeys] }
 }

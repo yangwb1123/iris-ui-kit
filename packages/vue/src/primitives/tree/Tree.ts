@@ -164,15 +164,22 @@ export const IrisTree = defineComponent({
     const checkNodes = computed<TreeSelectionNode[]>(() => {
       return flattenTreeSelectionNodes(props.nodes, {
         getKey: (node) => node.id,
-        getChildren: (node) => node.children ?? lazyCache.value.get(node.id),
+        getChildren: (node) => {
+          if (node.children && node.children.length > 0) return node.children
+          if (lazyCache.value.has(node.id)) return lazyCache.value.get(node.id)
+          return node.children
+        },
         isDisabled: (node) => node.disabled === true,
       })
     })
 
-    // Rebuild the model whenever the tree shape changes; `defaultChecked`
-    // re-seeds then. A `shallowRef` mirrors the live checked set so the render
-    // function re-runs on every check change (matching the `IrisTransfer`
-    // store-binding pattern).
+    // `defaultChecked` is an uncontrolled seed, not a synchronization
+    // channel. Rebuild only when the flattened hierarchy/disabled shape
+    // changes, preserving the currently checked leaves across that rebuild.
+    // A `shallowRef` mirrors the live checked set so the render function
+    // re-runs on every check change (matching the `IrisTransfer` store-binding
+    // pattern).
+    const checkShape = computed(() => JSON.stringify(checkNodes.value))
     let checkModel = createTreeSelection({
       nodes: checkNodes.value,
       defaultChecked: props.defaultChecked,
@@ -182,11 +189,13 @@ export const IrisTree = defineComponent({
     let unsubscribe = checkModel.selection.store.subscribe((keys) => {
       checkedKeys.value = keys
     })
-    watch([checkNodes, () => props.defaultChecked], () => {
+    watch(checkShape, (shape, previousShape) => {
+      if (shape === previousShape) return
+      const checkedLeaves = checkModel.getCheckedLeaves()
       unsubscribe()
       checkModel = createTreeSelection({
         nodes: checkNodes.value,
-        defaultChecked: props.defaultChecked,
+        defaultChecked: checkedLeaves,
         onChange: (keys) => emit('checkedChange', keys),
       })
       checkedKeys.value = checkModel.getChecked()

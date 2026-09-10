@@ -77,6 +77,31 @@ describe('createResilientFetcher', () => {
     expect(rf.breaker!.state).toBe('closed')
   })
 
+  it('allows only one concurrent half-open trial across cache keys', async () => {
+    let clock = 0
+    const rf = createResilientFetcher<number>({
+      breaker: { failureThreshold: 1, resetMs: 100 },
+      now: () => clock,
+    })
+    await expect(
+      rf.fetch('failed', async () => {
+        throw new Error('down')
+      }),
+    ).rejects.toThrow('down')
+
+    clock = 100
+    let resolveTrial!: (value: number) => void
+    const trialFetcher = vi.fn(() => new Promise<number>((resolve) => (resolveTrial = resolve)))
+    const trial = rf.fetch('trial', trialFetcher)
+    const concurrent = rf.fetch('concurrent', async () => 2)
+
+    await expect(concurrent).rejects.toThrow('Circuit breaker is open')
+    expect(trialFetcher).toHaveBeenCalledTimes(1)
+    resolveTrial(1)
+    await expect(trial).resolves.toBe(1)
+    expect(rf.breaker!.state).toBe('closed')
+  })
+
   it('exposes the cache for invalidation', async () => {
     const clock = 0
     const rf = createResilientFetcher<number>({ ttlMs: 10_000, now: () => clock })
@@ -86,6 +111,40 @@ describe('createResilientFetcher', () => {
     value = 2
     rf.cache.invalidate('k')
     expect(await rf.fetch('k', fetcher)).toBe(2)
+  })
+
+  it('forwards maxEntries so the cache evicts the least recently used entry', async () => {
+    const rf = createResilientFetcher<number>({ ttlMs: 10_000, maxEntries: 2, breaker: false })
+    const fetcher = vi.fn(async (key: string) => ({ a: 1, b: 2, c: 3 })[key]!)
+
+    expect(await rf.fetch('a', fetcher)).toBe(1)
+    expect(await rf.fetch('b', fetcher)).toBe(2)
+    expect(await rf.fetch('a', fetcher)).toBe(1) // cached hit refreshes recency
+    expect(await rf.fetch('c', fetcher)).toBe(3)
+
+    expect(fetcher).toHaveBeenCalledTimes(3)
+    expect(rf.cache.get('b')).toBeUndefined()
+    expect(rf.cache.get('a')?.data).toBe(1)
+    expect(rf.cache.get('c')?.data).toBe(3)
+  })
+
+  it('keeps default and invalid maxEntries values compatible with the unbounded cache default', async () => {
+    for (const maxEntries of [
+      undefined,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+    ]) {
+      const rf = createResilientFetcher<number>(
+        maxEntries === undefined
+          ? { ttlMs: 10_000, breaker: false }
+          : { ttlMs: 10_000, maxEntries, breaker: false },
+      )
+      await rf.fetch('a', async () => 1)
+      await rf.fetch('b', async () => 2)
+      expect(rf.cache.get('a')?.data).toBe(1)
+      expect(rf.cache.get('b')?.data).toBe(2)
+    }
   })
 
   it('breaker can be disabled', async () => {
@@ -110,5 +169,28 @@ describe('createResilientFetcher', () => {
     expect(await rf.fetch('k', fetcher, { staleWhileRevalidate: true })).toBe(1) // stale served
     await flush()
     expect(rf.cache.get('k')!.data).toBe(2) // refreshed in background
+  })
+
+  it('supports an opt-in factory SWR default without changing default-off behavior', async () => {
+    let clock = 0
+    const rf = createResilientFetcher<number>({
+      ttlMs: 100,
+      staleWhileRevalidate: true,
+      breaker: false,
+      now: () => clock,
+    })
+    let value = 1
+    const fetcher = vi.fn(async () => value)
+    await rf.fetch('k', fetcher)
+    clock = 500
+    value = 2
+    expect(await rf.fetch('k', fetcher)).toBe(1)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    await flush()
+    expect(rf.cache.get('k')?.data).toBe(2)
+
+    clock = 1000
+    value = 3
+    expect(await rf.fetch('k', fetcher, { staleWhileRevalidate: false })).toBe(3)
   })
 })

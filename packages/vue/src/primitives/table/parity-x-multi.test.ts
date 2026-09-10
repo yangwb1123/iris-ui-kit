@@ -114,10 +114,15 @@ describe('IrisTable multiSort (vxe sort-config.multiple parity, batch X)', () =>
       attachTo: host,
     })
     await settle()
-    expect(query).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sort: null, filters: {} })
+    expect(query.mock.lastCall?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
     await wrapper.find('[data-iris-table-header="name"]').trigger('click')
     await settle()
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -126,7 +131,7 @@ describe('IrisTable multiSort (vxe sort-config.multiple parity, batch X)', () =>
     })
     await wrapper.find('[data-iris-table-header="age"]').trigger('click')
     await settle()
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -151,7 +156,7 @@ describe('IrisTable multiSort (vxe sort-config.multiple parity, batch X)', () =>
     await wrapper.find('[data-iris-table-header="name"]').trigger('click')
     await settle()
     // No `sorts` key — the single-column channel stays byte-identical.
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: { key: 'name', direction: 'asc' },
@@ -178,7 +183,7 @@ describe('IrisTable multiSort (vxe sort-config.multiple parity, batch X)', () =>
       attachTo: host,
     })
     await settle()
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,
@@ -192,7 +197,7 @@ describe('IrisTable multiSort (vxe sort-config.multiple parity, batch X)', () =>
       ],
     })
     await settle()
-    expect(query).toHaveBeenLastCalledWith({
+    expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
       sort: null,

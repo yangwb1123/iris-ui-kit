@@ -380,9 +380,9 @@ describe('@iris-ui-kit/react IrisTable filterValues remote mode (proxy, batch I)
     await waitFor(() => {
       expect(container.querySelector('[data-iris-table-cell="name"]')).toBeTruthy()
     })
-    expect(query).toHaveBeenCalledWith(
-      expect.objectContaining({ filters: { status: 'active,paused' } }),
-    )
+    expect(query.mock.calls[0]?.[0]).toMatchObject({
+      filters: { status: 'active,paused' },
+    })
   })
 
   it('confirming a filter re-queries with the comma-joined set', async () => {
@@ -412,9 +412,10 @@ describe('@iris-ui-kit/react IrisTable filterValues remote mode (proxy, batch I)
       fireEvent.click(panel()!.querySelector('[data-iris-filter-confirm]') as HTMLElement)
     })
     await waitFor(() => {
-      expect(query).toHaveBeenLastCalledWith(
-        expect.objectContaining({ filters: { status: 'active' }, page: 1 }),
-      )
+      expect((query.mock.lastCall as unknown[] | undefined)?.[0]).toMatchObject({
+        filters: { status: 'active' },
+        page: 1,
+      })
     })
   })
 })

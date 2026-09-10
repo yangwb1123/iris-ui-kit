@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   createUserProfile,
   memoryProfileStorage,
+  localStorageProfileStorage,
   httpProfileStorage,
   mergeProfiles,
   syncedProfileStorage,
@@ -52,9 +53,124 @@ describe('createUserProfile — installs', () => {
     expect(p.getPref<string>('skin')).toBe('macos')
     expect(p.getPref('nope')).toBeUndefined()
   })
+
+  it('does not expose mutable snapshots or accept malformed runtime inputs', async () => {
+    const prefs = Object.create(null) as Record<string, unknown>
+    Object.defineProperty(prefs, '__proto__', { value: { polluted: true }, enumerable: true })
+    const p = createUserProfile({
+      storage: {
+        load: () =>
+          ({
+            version: 1,
+            installed: [
+              { appId: 'ok', installedAt: 1, pinned: false, config: { nested: { value: 1 } } },
+              { appId: 'bad-time', installedAt: Infinity, pinned: false, config: {} },
+              { appId: 7, installedAt: 2, pinned: false, config: {} },
+            ],
+            prefs,
+          }) as ProfileData,
+        save: () => undefined,
+      },
+    })
+
+    await expect(p.hydrate()).resolves.toBeUndefined()
+    expect(p.isInstalled('ok')).toBe(true)
+    expect(p.isInstalled('bad-time')).toBe(false)
+    expect(({} as { polluted?: boolean }).polluted).toBeUndefined()
+
+    const state = p.getState()
+    state.installed[0]!.config.nested = { value: 99 }
+    const config = p.getAppConfig('ok')
+    config.nested = { value: 100 }
+    const pref = p.getPref<Record<string, boolean>>('__proto__')
+    pref!.polluted = false
+    expect(p.getAppConfig('ok')).toEqual({ nested: { value: 1 } })
+    expect(p.getPref<Record<string, boolean>>('__proto__')).toEqual({ polluted: true })
+
+    expect(() => p.install(7 as unknown as string)).not.toThrow()
+    const hostileOpts = new Proxy(
+      {},
+      {
+        get: () => {
+          throw new Error('hostile option getter')
+        },
+      },
+    )
+    expect(() => p.install('opts', hostileOpts as { pinned?: boolean })).not.toThrow()
+    expect(() => p.setPref('__proto__', { safe: true })).not.toThrow()
+    expect(p.getPref('__proto__')).toEqual({ safe: true })
+
+    p.store.setState({ version: NaN, installed: null, prefs: null } as unknown as ProfileData)
+    expect(() => p.isInstalled('anything')).not.toThrow()
+    expect(() => p.install('after-raw-store-corruption')).not.toThrow()
+  })
+
+  it('fails closed for hostile records in hydrate, merge, and memory storage', async () => {
+    const hostileApp = Object.create(null) as Record<string, unknown>
+    Object.defineProperty(hostileApp, 'appId', {
+      enumerable: true,
+      get: () => {
+        throw new Error('hostile appId getter')
+      },
+    })
+    const malformed = {
+      version: 1,
+      installed: [hostileApp],
+      prefs: {},
+    } as unknown as ProfileData
+
+    expect(() => memoryProfileStorage(malformed)).not.toThrow()
+    expect(() => mergeProfiles(malformed, malformed)).not.toThrow()
+    const hostileProfile = Object.create(null) as Record<string, unknown>
+    Object.defineProperty(hostileProfile, 'installed', {
+      enumerable: true,
+      get: () => {
+        throw new Error('hostile installed getter')
+      },
+    })
+    const p = createUserProfile({
+      storage: { load: () => hostileProfile as ProfileData, save: () => undefined },
+    })
+    await expect(p.hydrate()).resolves.toBeUndefined()
+    expect(p.getState().installed).toEqual([])
+  })
+
+  it('does not emit persistence or notifications for mutation no-ops', () => {
+    const save = vi.fn()
+    const p = createUserProfile({ storage: { load: () => null, save } })
+    const listener = vi.fn()
+    p.subscribe(listener)
+
+    p.setPinned('missing', true)
+    p.setAppConfig('missing', { a: 1 })
+    expect(listener).not.toHaveBeenCalled()
+
+    p.install('mail', { pinned: true, config: { a: 1 } })
+    listener.mockClear()
+    p.setPinned('mail', true)
+    p.setAppConfig('mail', { a: 1 })
+    expect(listener).not.toHaveBeenCalled()
+    expect(save).not.toHaveBeenCalled()
+  })
 })
 
 describe('createUserProfile — pluggable persistence', () => {
+  it('treats local storage access failures as an unavailable backend', () => {
+    const localStorage = {
+      getItem: () => {
+        throw new Error('storage access denied')
+      },
+      setItem: () => {
+        throw new Error('storage access denied')
+      },
+    }
+    vi.stubGlobal('localStorage', localStorage)
+    const storage = localStorageProfileStorage()
+    expect(storage.load()).toBeNull()
+    expect(() => storage.save({ version: 1, installed: [], prefs: {} })).not.toThrow()
+    vi.unstubAllGlobals()
+  })
+
   it('persists through the storage backend on flush', async () => {
     const saved: ProfileData[] = []
     const storage: ProfileStorage = {
@@ -127,6 +243,36 @@ describe('createUserProfile — pluggable persistence', () => {
     expect(p2.isInstalled('mail')).toBe(true)
   })
 
+  it('does not let fetch mutate HTTP storage headers', async () => {
+    const headers = { authorization: 'Bearer token' }
+    const seen: Array<{ headers?: Record<string, string> }> = []
+    const cloud = httpProfileStorage({
+      url: '/profile',
+      headers,
+      fetch: (_url, init) => {
+        seen.push({ headers: init?.headers })
+        if (init?.headers) init.headers.authorization = 'mutated by fetch'
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(null) })
+      },
+    })
+
+    await cloud.load()
+    await cloud.save({ version: 1, installed: [], prefs: {} })
+    expect(headers.authorization).toBe('Bearer token')
+    expect(seen[0]!.headers).not.toBe(headers)
+    expect(seen[1]!.headers).not.toBe(headers)
+  })
+
+  it('reports a failed HTTP save instead of resolving successfully', async () => {
+    const cloud = httpProfileStorage({
+      url: '/profile',
+      fetch: () => Promise.resolve({ ok: false, json: () => Promise.resolve(null) }),
+    })
+    await expect(cloud.save({ version: 1, installed: [], prefs: {} })).rejects.toThrow(
+      'Profile save failed',
+    )
+  })
+
   it('mergeProfiles unions installs (latest wins) + merges prefs', () => {
     const a: ProfileData = {
       version: 1,
@@ -180,5 +326,37 @@ describe('createUserProfile — pluggable persistence', () => {
     await p.flush()
     expect(save).toHaveBeenCalledTimes(1)
     expect(save.mock.calls[0]![0].installed).toHaveLength(3)
+  })
+
+  it('serializes async saves so a late older write cannot win', async () => {
+    let releaseFirst!: () => void
+    let writeCount = 0
+    let persisted: ProfileData | null = null
+    const firstWrite = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+    const storage: ProfileStorage = {
+      load: () => null,
+      save: (data) => {
+        const snapshot = structuredClone(data)
+        writeCount++
+        if (writeCount === 1) {
+          return firstWrite.then(() => {
+            persisted = snapshot
+          })
+        }
+        persisted = snapshot
+      },
+    }
+    const p = createUserProfile({ storage })
+    p.install('first')
+    const firstFlush = p.flush()
+    await Promise.resolve()
+    p.install('second')
+    const secondFlush = p.flush()
+    releaseFirst()
+    await Promise.all([firstFlush, secondFlush])
+
+    expect(persisted!.installed.map((app) => app.appId)).toEqual(['first', 'second'])
   })
 })

@@ -166,6 +166,54 @@ describe('aggregate', () => {
     expect(aggregate([], get, 'min')).toBeNaN()
     expect(aggregate([], get, 'max')).toBeNaN()
   })
+  it('fails closed for malformed operations, accessors, and raw values', () => {
+    expect(aggregate(data, get, 'median' as never)).toBe(0)
+    expect(aggregate(data, undefined as never, 'sum')).toBe(0)
+    expect(aggregate(data, undefined as never, 'min')).toBeNaN()
+    expect(aggregate([{ n: Symbol('not numeric') }], (row) => row.n, 'sum')).toBe(0)
+  })
+  it('keeps an average representable when summing finite extremes overflows', () => {
+    const extreme = [{ n: Number.MAX_VALUE }, { n: Number.MAX_VALUE }]
+    expect(aggregate(extreme, (row) => row.n, 'sum')).toBe(Infinity)
+    expect(aggregate(extreme, (row) => row.n, 'avg')).toBe(Number.MAX_VALUE)
+  })
+  it('does not spread large numeric inputs into Math.min/Math.max', () => {
+    const large = Array.from({ length: 200_000 }, (_, n) => ({ n }))
+    expect(aggregate(large, (row) => row.n, 'min')).toBe(0)
+    expect(aggregate(large, (row) => row.n, 'max')).toBe(199_999)
+  })
+  it('preserves accessor exceptions for valid callbacks', () => {
+    const error = new Error('accessor failed')
+    expect(() =>
+      aggregate(
+        data,
+        () => {
+          throw error
+        },
+        'sum',
+      ),
+    ).toThrow(error)
+  })
+})
+
+describe('summarize malformed runtime inputs', () => {
+  it('skips malformed and unknown columns/specs without mutating inputs', () => {
+    const malformedColumns = [
+      null,
+      { key: 'broken', getValue: 42 },
+      ...cols,
+    ] as unknown as DataViewColumn<Row>[]
+    const specs = [
+      { key: 'unknown', op: 'sum' },
+      { key: 'age', op: 'bogus' },
+      { key: 'age', op: 'sum' },
+    ] as never[]
+    const beforeColumns = malformedColumns.slice()
+    const beforeSpecs = specs.slice()
+    expect(summarize(rows, malformedColumns, specs)).toEqual({ age: 90 })
+    expect(malformedColumns).toEqual(beforeColumns)
+    expect(specs).toEqual(beforeSpecs)
+  })
 })
 
 describe('summarize', () => {

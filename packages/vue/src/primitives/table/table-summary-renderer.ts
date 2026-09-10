@@ -1,4 +1,4 @@
-import { aggregate } from '@iris-ui-kit/core'
+import { projectTableSummary } from '@iris-ui-kit/core'
 import { h, type VNode } from 'vue'
 import type { IrisTableColumn } from './types'
 
@@ -20,18 +20,16 @@ export interface TableSummaryRendererContext {
 
 /** Render the global summary row after its leading placeholder cells are built. */
 export function renderTableSummaryRow(ctx: TableSummaryRendererContext): VNode | null {
-  if (ctx.bodyData.length === 0 || !ctx.leafColumns.some((column) => column.summary)) return null
+  const summary = projectTableSummary(ctx.bodyData, ctx.leafColumns, ctx.getCellValue)
+  if (!summary.shouldRender) return null
 
   const summaryCells: VNode[] = [...ctx.leadingCells]
   for (let columnIndex = 0; columnIndex < ctx.leafColumns.length; columnIndex += 1) {
     const column = ctx.leafColumns[columnIndex]
     if (ctx.visibleColSet && !ctx.visibleColSet.has(columnIndex)) continue
     const align = column.align ?? 'left'
-    const operation = column.summary
+    const { operation, value } = summary.cells[columnIndex]!
     const fadeStyle = ctx.columnFadeStyle(column)
-    const value = operation
-      ? aggregate(ctx.bodyData, (row) => ctx.getCellValue(row, column), operation)
-      : null
     const content: VNode | VNode[] | string =
       operation != null && value != null
         ? column.renderSummary

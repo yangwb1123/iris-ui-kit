@@ -19,20 +19,6 @@ export interface UseGridRangeResult<Row extends Record<string, unknown>> {
   range: CellRange | null
 }
 
-function rangeOf(state: CellRangeState): CellRange | null {
-  if (!state.anchor || !state.active) return null
-  return {
-    start: {
-      row: Math.min(state.anchor.row, state.active.row),
-      col: Math.min(state.anchor.col, state.active.col),
-    },
-    end: {
-      row: Math.max(state.anchor.row, state.active.row),
-      col: Math.max(state.anchor.col, state.active.col),
-    },
-  }
-}
-
 /** Installs the range feature and bridges its controller snapshot into React. */
 export function useGridRange<Row extends Record<string, unknown> = Record<string, unknown>>(
   core: GridCore<Row>,
@@ -47,7 +33,9 @@ export function useGridRange<Row extends Record<string, unknown> = Record<string
     }),
   )
   const state = React.useSyncExternalStore(model.subscribe, model.getState, model.getState)
-  const range = React.useMemo(() => rangeOf(state), [state])
+  // Keep the subscription as the render dependency, but let the Core model
+  // own normalization so adapters cannot drift on inverted ranges.
+  const range = React.useMemo(() => model.getRange(), [model, state])
 
   return { core, model, state, range }
 }

@@ -81,24 +81,27 @@ function matchBrace(s: string, open: number): number {
 }
 
 /** Parse an ICU plural body (`=0 {none} one {# item} other {# items}`) → cases. */
-function parsePluralCases(body: string): Record<string, string> {
-  const cases: Record<string, string> = {}
+function parsePluralCases(body: string): Record<string, string> | undefined {
+  const cases: Record<string, string> = Object.create(null) as Record<string, string>
   let i = 0
   while (i < body.length) {
     while (i < body.length && /\s/.test(body[i]!)) i += 1
+    if (i >= body.length) break
     let selector = ''
     while (i < body.length && !/\s/.test(body[i]!) && body[i] !== '{') {
       selector += body[i]
       i += 1
     }
     while (i < body.length && /\s/.test(body[i]!)) i += 1
-    if (body[i] !== '{') break
+    if (!selector || body[i] !== '{') return undefined
     const end = matchBrace(body, i)
-    if (end === -1) break
-    if (selector) cases[selector] = body.slice(i + 1, end)
+    if (end === -1) return undefined
+    cases[selector] = body.slice(i + 1, end)
     i = end + 1
   }
-  return cases
+  // ICU plural messages require an `other` arm. Treat incomplete bodies as
+  // literal text rather than silently deleting the message.
+  return Object.prototype.hasOwnProperty.call(cases, 'other') ? cases : undefined
 }
 
 /**
@@ -127,20 +130,31 @@ function interpolate(
       const plural = /^(\w+)\s*,\s*plural\s*,(.*)$/s.exec(inner)
       if (plural) {
         const [, name, body] = plural
-        const value = params[name!]
+        const hasValue = Object.prototype.hasOwnProperty.call(params, name!)
+        const value = hasValue ? params[name!] : undefined
         if (typeof value === 'number') {
           const cases = parsePluralCases(body!)
-          const text =
-            cases[`=${value}`] ??
-            cases[new Intl.PluralRules(safeLocale(locale)).select(value)] ??
-            cases.other ??
-            ''
-          out += text.replace(/#/g, String(value))
+          if (!cases) {
+            out += `{${inner}}`
+          } else {
+            let category = 'other'
+            try {
+              if (typeof Intl.PluralRules === 'function') {
+                category = new Intl.PluralRules(safeLocale(locale)).select(value)
+              }
+            } catch {
+              // Unsupported Intl data or a non-finite runtime value: use the
+              // required fallback arm instead of failing a render.
+            }
+            const text = cases[`=${value}`] ?? cases[category] ?? cases.other
+            out += text.replace(/#/g, String(value))
+          }
         } else {
           out += `{${inner}}` // missing/non-numeric → leave visible
         }
       } else if (/^\w+$/.test(inner)) {
-        const value = params[inner]
+        const hasValue = Object.prototype.hasOwnProperty.call(params, inner)
+        const value = hasValue ? params[inner] : undefined
         out += value === undefined ? `{${inner}}` : String(value)
       } else {
         out += `{${inner}}`
@@ -154,6 +168,95 @@ function interpolate(
   return out
 }
 
+const DATE_FORMAT_OPTION_KEYS = [
+  'localeMatcher',
+  'calendar',
+  'numberingSystem',
+  'hour12',
+  'hourCycle',
+  'timeZone',
+  'weekday',
+  'era',
+  'year',
+  'month',
+  'day',
+  'dayPeriod',
+  'hour',
+  'minute',
+  'second',
+  'fractionalSecondDigits',
+  'timeZoneName',
+  'formatMatcher',
+  'dateStyle',
+  'timeStyle',
+] as const
+
+const NUMBER_FORMAT_OPTION_KEYS = [
+  'localeMatcher',
+  'numberingSystem',
+  'style',
+  'currency',
+  'currencyDisplay',
+  'currencySign',
+  'unit',
+  'unitDisplay',
+  'notation',
+  'compactDisplay',
+  'useGrouping',
+  'signDisplay',
+  'minimumIntegerDigits',
+  'minimumFractionDigits',
+  'maximumFractionDigits',
+  'minimumSignificantDigits',
+  'maximumSignificantDigits',
+  'roundingPriority',
+  'roundingIncrement',
+  'roundingMode',
+  'trailingZeroDisplay',
+] as const
+
+const RELATIVE_TIME_FORMAT_OPTION_KEYS = [
+  'localeMatcher',
+  'numberingSystem',
+  'numeric',
+  'style',
+] as const
+
+function encodeCacheValue(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined
+  if (typeof value === 'string') return `string:${JSON.stringify(value)}`
+  if (typeof value === 'boolean') return `boolean:${value}`
+  if (typeof value === 'number') {
+    if (Number.isNaN(value)) return 'number:NaN'
+    if (Object.is(value, -0)) return 'number:-0'
+    return `number:${value}`
+  }
+  // Intl option values are normally primitives. Bypass the cache for unusual
+  // values so malformed options still reach Intl instead of colliding with a
+  // valid `{}` cache entry.
+  return null
+}
+
+function formatterCacheKey(
+  locale: string,
+  options: unknown,
+  optionKeys: readonly string[],
+): string | undefined {
+  if (options === undefined) return `${locale}|undefined`
+  if (options === null || typeof options !== 'object') return undefined
+  const parts: string[] = []
+  try {
+    for (const key of optionKeys) {
+      const encoded = encodeCacheValue((options as Record<string, unknown>)[key])
+      if (encoded === null) return undefined
+      if (encoded !== undefined) parts.push(`${key}=${encoded}`)
+    }
+  } catch {
+    return undefined
+  }
+  return `${locale}|${parts.join('|')}`
+}
+
 export function createI18n(config: I18nConfig = {}): I18n {
   const store = createStore<I18nState>({
     locale: config.locale ?? DEFAULT_LOCALE,
@@ -162,19 +265,32 @@ export function createI18n(config: I18nConfig = {}): I18n {
 
   const resolve = (key: string): string => {
     const { messages } = store.getState()
-    return messages[key] ?? defaultMessages[key] ?? key
+    const override = Object.prototype.hasOwnProperty.call(messages, key) ? messages[key] : undefined
+    if (typeof override === 'string') return override
+    const fallback = Object.prototype.hasOwnProperty.call(defaultMessages, key)
+      ? defaultMessages[key]
+      : undefined
+    return typeof fallback === 'string' ? fallback : key
   }
 
   // Memoize Intl formatters by (locale, options). Constructing an `Intl.*Format`
   // is the expensive part (`.format()` is cheap); a date/number column over N
   // rows previously built N formatters per render. Formatters are pure for a
   // given key so the cache never needs invalidation; it is GC'd with this i18n
-  // instance. A differing option key-order at worst causes a harmless cache miss.
+  // instance. Keys use the effective Intl options (including inherited values)
+  // and never invoke `toJSON`, so malformed objects cannot alias valid entries.
   const dtfCache = new Map<string, Intl.DateTimeFormat>()
   const nfCache = new Map<string, Intl.NumberFormat>()
   const rtfCache = new Map<string, Intl.RelativeTimeFormat>()
-  const cached = <F>(cache: Map<string, F>, locale: string, options: unknown, make: () => F): F => {
-    const cacheKey = `${locale}|${JSON.stringify(options ?? {})}`
+  const cached = <F>(
+    cache: Map<string, F>,
+    locale: string,
+    options: unknown,
+    optionKeys: readonly string[],
+    make: () => F,
+  ): F => {
+    const cacheKey = formatterCacheKey(locale, options, optionKeys)
+    if (cacheKey === undefined) return make()
     let formatter = cache.get(cacheKey)
     if (formatter === undefined) {
       formatter = make()
@@ -188,7 +304,8 @@ export function createI18n(config: I18nConfig = {}): I18n {
     getState: store.getState,
     subscribe: store.subscribe,
     t: (key, params) => interpolate(resolve(key), params, store.getState().locale),
-    setLocale: (locale) => store.setState((s) => ({ ...s, locale })),
+    setLocale: (locale) =>
+      store.setState((s) => (Object.is(s.locale, locale) ? s : { ...s, locale })),
     setMessages: (messages) =>
       store.setState((s) => ({ ...s, messages: { ...s.messages, ...messages } })),
     formatDate: (value, options) => {
@@ -197,14 +314,19 @@ export function createI18n(config: I18nConfig = {}): I18n {
         dtfCache,
         locale,
         options,
+        DATE_FORMAT_OPTION_KEYS,
         () => new Intl.DateTimeFormat(locale, options),
       ).format(value)
     },
     formatNumber: (value, options) => {
       const locale = safeLocale(store.getState().locale)
-      return cached(nfCache, locale, options, () => new Intl.NumberFormat(locale, options)).format(
-        value,
-      )
+      return cached(
+        nfCache,
+        locale,
+        options,
+        NUMBER_FORMAT_OPTION_KEYS,
+        () => new Intl.NumberFormat(locale, options),
+      ).format(value)
     },
     formatRelativeTime: (value, unit, options) => {
       const locale = safeLocale(store.getState().locale)
@@ -212,6 +334,7 @@ export function createI18n(config: I18nConfig = {}): I18n {
         rtfCache,
         locale,
         options,
+        RELATIVE_TIME_FORMAT_OPTION_KEYS,
         () => new Intl.RelativeTimeFormat(locale, options),
       ).format(value, unit)
     },

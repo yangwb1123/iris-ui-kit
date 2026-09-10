@@ -4,6 +4,7 @@ import {
   createGridCore,
   GRID_COLUMNS_CHANGE_EVENT,
   type GridColumnsChange,
+  type GridColumnsModel,
 } from './grid'
 
 describe('createGridColumnsFeature', () => {
@@ -98,6 +99,57 @@ describe('createGridColumnsFeature', () => {
     expect(core.invoke('getColumnOrder')).toEqual([])
     expect(onOrderChange).toHaveBeenLastCalledWith(undefined)
     expect(core.invoke('getColumnPinned')).toEqual({ name: null })
+  })
+
+  it('deduplicates order keys and treats controlled semantic no-ops as no-ops', () => {
+    const onOrderChange = vi.fn()
+    const model = createGridColumnsFeature({ onOrderChange })
+    const core = createGridCore({ features: [model] })
+    const columns = core.invoke<GridColumnsModel>('getColumnsModel')
+    let storeNotifications = 0
+    columns.store.subscribe(() => storeNotifications++)
+
+    columns.setOrder(['name', 'name', 'age'])
+    expect(columns.get().order).toEqual(['name', 'age'])
+    expect(onOrderChange).toHaveBeenLastCalledWith(['name', 'age'])
+
+    storeNotifications = 0
+    columns.syncWidths({ width: 0 })
+    columns.syncWidths({ width: -0 })
+    expect(storeNotifications).toBe(1)
+    columns.syncWidths({ width: 0 })
+    expect(storeNotifications).toBe(1)
+  })
+
+  it('handles inherited keys and rejects malformed width and pin values', () => {
+    const model = createGridColumnsFeature({
+      defaultWidths: { good: 100, bad: Number.NaN, negative: -1 },
+      defaultPinned: { good: 'left', bad: 'middle' as never },
+    })
+    const core = createGridCore({ features: [model] })
+
+    core.invoke('toggleColumnVisibility', 'toString')
+    core.invoke('setColumnWidth', 'good', Number.POSITIVE_INFINITY)
+    core.invoke('setColumnPinned', 'bad', 'middle')
+
+    expect(core.invoke('getColumnVisibility')).toEqual({ toString: false })
+    expect(core.invoke('getColumnWidths')).toEqual({ good: 100 })
+    expect(core.invoke('getColumnPinned')).toEqual({ good: 'left' })
+  })
+
+  it('stops callbacks and events from a retained model after grid disposal', () => {
+    const onWidthsChange = vi.fn()
+    const event = vi.fn()
+    const core = createGridCore({ features: [createGridColumnsFeature({ onWidthsChange })] })
+    const model = core.invoke<GridColumnsModel>('getColumnsModel')
+    core.on(GRID_COLUMNS_CHANGE_EVENT, event)
+    core.destroy()
+
+    model.setWidth('name', 120)
+
+    expect(onWidthsChange).not.toHaveBeenCalled()
+    expect(event).not.toHaveBeenCalled()
+    expect(model.get().widths).toEqual({ name: 120 })
   })
 
   it('silently synchronizes controlled state without callbacks or events', () => {

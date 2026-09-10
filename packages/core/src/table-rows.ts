@@ -9,17 +9,57 @@
  * changed so callers can skip downstream work cheaply.
  */
 
-/** Auto id for a key-less row: max numeric key in the list + 1 (1 when none). */
+/**
+ * Resolve a table row key from a configured field, falling back to the row's
+ * current index when the field is not a string or number. Values such as NaN
+ * and the empty string are preserved because their runtime types are number
+ * and string respectively. The row is read only and never mutated.
+ */
+export function resolveTableRowKey(
+  row: Record<string, unknown>,
+  rowKeyField: string,
+  index: number,
+): string | number {
+  const value = row[rowKeyField]
+  return typeof value === 'string' || typeof value === 'number' ? value : index
+}
+
+/** Auto id for a key-less row: max numeric key + 1, avoiding overflow collisions. */
 function nextAutoId<Row extends Record<string, unknown>>(
   rows: readonly Row[],
   rowKeyField: string,
 ): number {
   let max = 0
+  const used = new Set<number>()
   for (const row of rows) {
     const value = (row as Record<string, unknown>)[rowKeyField]
-    if (typeof value === 'number' && Number.isFinite(value) && value > max) max = value
+    if (typeof value !== 'number') continue
+    used.add(value)
+    if (Number.isFinite(value) && value > max) max = value
   }
-  return max + 1
+
+  const next = max + 1
+  if (Number.isFinite(next) && !used.has(next)) return next
+
+  // Number.MAX_VALUE + 1 is Infinity. If that would collide, choose the
+  // first available positive integer instead of returning a duplicate key.
+  let fallback = 1
+  while (used.has(fallback)) fallback += 1
+  return fallback
+}
+
+function sameRowKey(left: string | number, right: string | number): boolean {
+  // SameValueZero keeps the usual 0/-0 key equivalence while making NaN
+  // addressable instead of silently turning it into an unfindable row.
+  return left === right || (Number.isNaN(left) && Number.isNaN(right))
+}
+
+function insertionIndex(index: number | undefined, length: number): number | undefined {
+  if (index === undefined) return length
+  if (typeof index !== 'number' || Number.isNaN(index)) return undefined
+  if (index === Number.POSITIVE_INFINITY) return length
+  if (index === Number.NEGATIVE_INFINITY) return 0
+  return Math.max(0, Math.min(Math.trunc(index), length))
 }
 
 /**
@@ -39,7 +79,8 @@ export function insertRowInList<Row extends Record<string, unknown>>(
     existing === undefined || existing === null
       ? ({ ...row, [rowKeyField]: nextAutoId(rows, rowKeyField) } as Row)
       : row
-  const at = index === undefined ? rows.length : Math.max(0, Math.min(index, rows.length))
+  const at = insertionIndex(index, rows.length)
+  if (at === undefined) return rows as Row[]
   const next = rows.slice()
   next.splice(at, 0, entry)
   return next
@@ -61,11 +102,14 @@ export function cloneRowInList<Row extends Record<string, unknown>>(
   key: string | number,
   index?: number,
 ): Row[] {
-  const sourceIndex = rows.findIndex((row) => (row as Record<string, unknown>)[rowKeyField] === key)
+  const sourceIndex = rows.findIndex((row) =>
+    sameRowKey((row as Record<string, unknown>)[rowKeyField] as string | number, key),
+  )
   if (sourceIndex < 0) return rows as Row[]
   const source = rows[sourceIndex]!
   const clone = { ...source, [rowKeyField]: nextAutoId(rows, rowKeyField) } as Row
-  const at = index === undefined ? sourceIndex + 1 : Math.max(0, Math.min(index, rows.length))
+  const at = index === undefined ? sourceIndex + 1 : insertionIndex(index, rows.length)
+  if (at === undefined) return rows as Row[]
   const next = rows.slice()
   next.splice(at, 0, clone)
   return next
@@ -80,7 +124,9 @@ export function removeRowFromList<Row extends Record<string, unknown>>(
   rowKeyField: string,
   key: string | number,
 ): Row[] {
-  const index = rows.findIndex((row) => (row as Record<string, unknown>)[rowKeyField] === key)
+  const index = rows.findIndex((row) =>
+    sameRowKey((row as Record<string, unknown>)[rowKeyField] as string | number, key),
+  )
   if (index < 0) return rows as Row[]
   return rows.filter((_, i) => i !== index)
 }
@@ -104,6 +150,44 @@ export function removeRowsFromList<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Resolve the active and over rows from a visible drag projection. The
+ * returned row references are preserved so adapters can decide whether a
+ * visible row is also the canonical source row (important for sorted,
+ * filtered, and flattened tree views). Keys are resolved against the original
+ * visible indexes, which keeps index-derived row ids stable during the drop.
+ */
+export interface RowDragProjection<Row> {
+  readonly fromIndex: number
+  readonly toIndex: number
+  readonly fromRow: Row | undefined
+  readonly toRow: Row | undefined
+  readonly fromKey: string | number | undefined
+  readonly toKey: string | number | undefined
+}
+
+export function resolveRowDragProjection<Row>(
+  visibleRows: readonly Row[],
+  activeId: string,
+  overId: string,
+  getRowKey: (row: Row, index: number) => string | number | undefined,
+): RowDragProjection<Row> {
+  const findIndex = (id: string): number =>
+    visibleRows.findIndex((row, index) => String(getRowKey(row, index)) === id)
+  const fromIndex = findIndex(activeId)
+  const toIndex = findIndex(overId)
+  const fromRow = fromIndex < 0 ? undefined : visibleRows[fromIndex]
+  const toRow = toIndex < 0 ? undefined : visibleRows[toIndex]
+  return {
+    fromIndex,
+    toIndex,
+    fromRow,
+    toRow,
+    fromKey: fromRow === undefined ? undefined : getRowKey(fromRow, fromIndex),
+    toKey: toRow === undefined ? undefined : getRowKey(toRow, toIndex),
+  }
+}
+
+/**
  * Reorder two keyed rows in one sibling list (vxe row-drag parity).
  *
  * `position: 'auto'` preserves the historical remove-then-insert behavior:
@@ -121,8 +205,12 @@ export function reorderRowsInList<Row extends Record<string, unknown>>(
   toKey: string | number,
   position: 'auto' | 'before' | 'after' = 'auto',
 ): Row[] {
-  const fromIndex = rows.findIndex((row, rowIndex) => getRowKey(row, rowIndex) === fromKey)
-  const toIndex = rows.findIndex((row, rowIndex) => getRowKey(row, rowIndex) === toKey)
+  const fromIndex = rows.findIndex((row, rowIndex) =>
+    sameRowKey(getRowKey(row, rowIndex) as string | number, fromKey),
+  )
+  const toIndex = rows.findIndex((row, rowIndex) =>
+    sameRowKey(getRowKey(row, rowIndex) as string | number, toKey),
+  )
   if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return rows as Row[]
 
   const next = [...rows]
@@ -132,6 +220,34 @@ export function reorderRowsInList<Row extends Record<string, unknown>>(
   const insertionIndex =
     position === 'after' ? targetIndex + 1 : position === 'before' ? targetIndex : toIndex
   next.splice(insertionIndex, 0, moved)
+  if (next.every((row, index) => Object.is(row, rows[index]))) return rows as Row[]
+  return next
+}
+
+/**
+ * Reorder a keyed row to an insertion index expressed in the ORIGINAL list.
+ * This is the projection used by insertion-line drag UIs: the target index is
+ * computed before removing the source row, then `splice(from, 1)` and
+ * `splice(insertIndex, 0, moved)` preserve the legacy placement contract.
+ * Inputs are never mutated and identity-only moves return the original list.
+ */
+export function reorderRowsInListAt<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  getRowKey: (row: Row, index: number) => string | number | undefined,
+  fromKey: string | number,
+  insertIndex: number,
+): Row[] {
+  const fromIndex = rows.findIndex((row, rowIndex) =>
+    sameRowKey(getRowKey(row, rowIndex) as string | number, fromKey),
+  )
+  if (fromIndex < 0 || !Number.isFinite(insertIndex) || fromIndex === insertIndex) {
+    return rows as Row[]
+  }
+
+  const next = [...rows]
+  const [moved] = next.splice(fromIndex, 1)
+  if (!moved) return rows as Row[]
+  next.splice(Math.trunc(insertIndex), 0, moved)
   if (next.every((row, index) => Object.is(row, rows[index]))) return rows as Row[]
   return next
 }
@@ -147,7 +263,10 @@ export function updateRowInList<Row extends Record<string, unknown>>(
   key: string | number,
   patch: Partial<Row>,
 ): Row[] {
-  const index = rows.findIndex((row) => (row as Record<string, unknown>)[rowKeyField] === key)
+  if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) return rows as Row[]
+  const index = rows.findIndex((row) =>
+    sameRowKey((row as Record<string, unknown>)[rowKeyField] as string | number, key),
+  )
   if (index < 0) return rows as Row[]
   return rows.map((row, i) => (i === index ? { ...row, ...patch } : row))
 }

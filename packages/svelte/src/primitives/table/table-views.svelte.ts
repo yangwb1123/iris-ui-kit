@@ -7,11 +7,17 @@ import type {
   IrisTableViewSnapshot,
 } from './types'
 
-/** Keeps named-view persistence and tab selection out of the table renderer. */
+/** Keeps named-view persistence and tab selection out of the table renderer.
+ *  `sort` stays the wired-in legacy channel; `capture`/`applySnapshot` project
+ *  the table's additional owned view channels (multiSort/filters/…). Capture
+ *  is read at save time and must only return fields the table can replay;
+ *  replay skips absent fields and leaves controlled props authoritative. */
 export function createTableViewsController(options: {
   config: () => IrisTableProps['views']
   sort: () => IrisTableSortState | null
   applySort: (sort: IrisTableSortState | null) => void
+  capture?: () => Omit<Partial<IrisTableViewSnapshot>, 'sort'>
+  applySnapshot?: (snapshot: IrisTableViewSnapshot) => void
   onActiveViewChange?: (key: string | null) => void
 }): {
   readonly viewList: IrisTableNamedView[]
@@ -43,6 +49,9 @@ export function createTableViewsController(options: {
     const snapshot = view.snapshot as IrisTableViewSnapshot
     if (Object.prototype.hasOwnProperty.call(snapshot, 'sort'))
       options.applySort(snapshot.sort ?? null)
+    // Present non-sort fields replay through the owning feature setters;
+    // absent fields (legacy snapshots) leave the current state untouched.
+    options.applySnapshot?.(snapshot)
     internalActiveView = key
     options.onActiveViewChange?.(key)
   }
@@ -53,7 +62,7 @@ export function createTableViewsController(options: {
     const currentSort = options.sort()
     const entry: IrisTableNamedView = {
       name: trimmed,
-      snapshot: { sort: currentSort ? { ...currentSort } : null },
+      snapshot: { sort: currentSort ? { ...currentSort } : null, ...options.capture?.() },
     }
     const index = viewList.findIndex((view) => view.name === trimmed)
     persist(

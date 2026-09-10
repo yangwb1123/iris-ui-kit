@@ -74,6 +74,50 @@ function normalizedFormat(format: unknown): TableCopyFormat {
   return format === 'csv' || format === 'html' ? format : 'tsv'
 }
 
+function normalizedRange(
+  range: TableClipboardRange,
+  rowCount: number,
+  columnCount: number,
+): TableClipboardRange | null {
+  if (
+    !range ||
+    typeof range !== 'object' ||
+    !range.start ||
+    typeof range.start !== 'object' ||
+    !range.end ||
+    typeof range.end !== 'object' ||
+    rowCount <= 0 ||
+    columnCount <= 0
+  )
+    return null
+  const raw = [range.start.row, range.start.col, range.end.row, range.end.col]
+  if (!raw.every((value) => Number.isFinite(value))) return null
+  const [startRow, startColumn, endRow, endColumn] = raw.map(Math.trunc) as [
+    number,
+    number,
+    number,
+    number,
+  ]
+  const lastRow = Math.max(0, rowCount - 1)
+  const lastColumn = Math.max(0, columnCount - 1)
+  return {
+    start: {
+      row: Math.max(0, Math.min(startRow, endRow, lastRow)),
+      col: Math.max(0, Math.min(startColumn, endColumn, lastColumn)),
+    },
+    end: {
+      row: Math.max(0, Math.min(Math.max(startRow, endRow), lastRow)),
+      col: Math.max(0, Math.min(Math.max(startColumn, endColumn), lastColumn)),
+    },
+  }
+}
+
+function safeHtmlCell(value: unknown): unknown {
+  if (value == null) return ''
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  return safeCell(value)
+}
+
 /** Serialize the currently selected rectangle; ranges are headerless except for HTML. */
 export function serializeTableRange<Row extends Record<string, unknown>>(
   rows: readonly Row[],
@@ -83,10 +127,12 @@ export function serializeTableRange<Row extends Record<string, unknown>>(
   copyWithFormat = false,
   resolveValue: TableClipboardValueResolver<Row> = resolveTableValue,
 ): string {
-  const startRow = Math.min(range.start.row, range.end.row)
-  const endRow = Math.max(range.start.row, range.end.row)
-  const startCol = Math.min(range.start.col, range.end.col)
-  const endCol = Math.max(range.start.col, range.end.col)
+  const normalized = normalizedRange(range, rows.length, columns.length)
+  if (!normalized) return ''
+  const startRow = normalized.start.row
+  const endRow = normalized.end.row
+  const startCol = normalized.start.col
+  const endCol = normalized.end.col
   const selected = columns.slice(startCol, endCol + 1)
   const outputFormat = normalizedFormat(format)
   if (outputFormat === 'html') {
@@ -102,12 +148,14 @@ export function serializeTableRange<Row extends Record<string, unknown>>(
       for (const column of selected) {
         if (!row) continue
         const raw = resolveValue(row, column)
-        output[typeof column.dataIndex === 'string' ? column.dataIndex : column.key] =
+        const value =
           copyWithFormat && column.formatter
             ? tableDisplayText(row, column, resolveValue)
             : column.exportRaw
               ? raw
               : applyTableMask(raw, column)
+        output[typeof column.dataIndex === 'string' ? column.dataIndex : column.key] =
+          safeHtmlCell(value)
       }
       htmlRows.push(output)
     }

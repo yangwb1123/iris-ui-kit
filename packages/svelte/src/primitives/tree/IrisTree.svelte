@@ -75,6 +75,7 @@
   // Lazy children cache
   let childrenCache = $state<Map<string, IrisTreeNode[]>>(new Map())
   let loadingNodes = $state<Set<string>>(new Set())
+  let errorNodes = $state<Set<string>>(new Set())
 
   const expandedSet = $derived(
     isExpandedControlled ? new Set(expandedProp ?? []) : internalExpanded,
@@ -90,8 +91,8 @@
   function flatten(nodeList: IrisTreeNode[], depth: number, parentId: string | null): FlatNode[] {
     const out: FlatNode[] = []
     for (const node of nodeList) {
-      const cachedChildren = childrenCache.get(node.id)
-      const resolvedChildren = cachedChildren ?? node.children
+      const eagerChildren = node.children && node.children.length > 0 ? node.children : undefined
+      const resolvedChildren = eagerChildren ?? childrenCache.get(node.id)
       const hasChildren = node.isLeaf
         ? false
         : resolvedChildren
@@ -113,20 +114,41 @@
   const checkNodes = $derived(
     flattenTreeSelectionNodes(nodes, {
       getKey: (node) => node.id,
-      getChildren: (node) => node.children ?? childrenCache.get(node.id),
+      getChildren: (node) => {
+        if (node.children && node.children.length > 0) return node.children
+        if (childrenCache.has(node.id)) return childrenCache.get(node.id)
+        return node.children
+      },
       isDisabled: (node) => node.disabled === true,
     }),
   )
 
-  // Rebuild the cascade model when the tree shape changes; `defaultChecked`
-  // re-seeds then. The model owns its checked-set store.
-  const checkModel = $derived(
+  // `defaultChecked` is an uncontrolled seed. Keep the model alive across
+  // equivalent prop replacements, and rebuild only when the flattened
+  // hierarchy/disabled shape changes while preserving checked leaves.
+  const checkShape = $derived(JSON.stringify(checkNodes))
+  // svelte-ignore state_referenced_locally — the model is seeded once; shape
+  // changes are handled explicitly by the effect below.
+  let checkModel = $state(
     createTreeSelection({
       nodes: checkNodes,
       defaultChecked,
       onChange: (keys) => onCheckedChange?.(keys),
     }),
   )
+  // svelte-ignore state_referenced_locally — capture the initial shape only.
+  let appliedCheckShape = checkShape
+  $effect(() => {
+    const shape = checkShape
+    if (shape === appliedCheckShape) return
+    const checkedLeaves = checkModel.getCheckedLeaves()
+    checkModel = createTreeSelection({
+      nodes: checkNodes,
+      defaultChecked: checkedLeaves,
+      onChange: (keys) => onCheckedChange?.(keys),
+    })
+    appliedCheckShape = shape
+  })
 
   // Re-render when the checked set changes. Mirror the model's store into local
   // reactive state (re-subscribing whenever the model is rebuilt); reading
@@ -192,14 +214,31 @@
         const ls = new Set(loadingNodes)
         ls.add(node.id)
         loadingNodes = ls
-        node.loadChildren().then((children) => {
-          const cache = new Map(childrenCache)
-          cache.set(node.id, children)
-          childrenCache = cache
-          const ls2 = new Set(loadingNodes)
-          ls2.delete(node.id)
-          loadingNodes = ls2
-        })
+        node
+          .loadChildren()
+          .then((children) => {
+            const cache = new Map(childrenCache)
+            cache.set(node.id, children)
+            childrenCache = cache
+            const errors = new Set(errorNodes)
+            errors.delete(node.id)
+            errorNodes = errors
+            const ls2 = new Set(loadingNodes)
+            ls2.delete(node.id)
+            loadingNodes = ls2
+          })
+          .catch(() => {
+            const errors = new Set(errorNodes)
+            errors.add(node.id)
+            errorNodes = errors
+            const ls2 = new Set(loadingNodes)
+            ls2.delete(node.id)
+            loadingNodes = ls2
+            const next = new Set(expandedSet)
+            next.delete(node.id)
+            setExpanded([...next])
+            onCollapse?.(node.id)
+          })
       }
     }
   }
@@ -308,6 +347,8 @@
         tabindex={isFocused || (idx === 0 && !activeId) ? 0 : -1}
         data-iris-tree-item
         data-state={isSelected ? 'selected' : 'idle'}
+        data-loading={loadingNodes.has(fn.node.id) ? '' : undefined}
+        data-error={errorNodes.has(fn.node.id) ? '' : undefined}
         onkeydown={(e) => onKeyDown(e, fn, idx)}
         onfocus={() => {
           activeId = fn.node.id

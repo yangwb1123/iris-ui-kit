@@ -108,9 +108,14 @@ export interface KeyboardNavController {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-// Clamp index to valid range. Returns -1 when count <= 0 or no enabled items.
+// Normalize item counts at the controller boundary so every stored index is
+// an integer in a real item list. Returns 0 for invalid runtime counts.
+const normalizeCount = (count: number): number =>
+  Number.isSafeInteger(count) && count > 0 ? count : 0
+
+// Clamp index to valid range. Returns -1 for an empty list or invalid index.
 const clamp = (i: number, count: number): number => {
-  if (count <= 0) return -1
+  if (count <= 0 || !Number.isSafeInteger(i)) return -1
   if (i < 0) return -1
   if (i >= count) return count - 1
   return i
@@ -154,9 +159,13 @@ interface KeyboardNavKeyHandlers {
 
 function createKeyboardNavState(config: KeyboardNavConfig): KeyboardNavState {
   const isEnabled = config.isEnabled ?? (() => true)
-  const count = Math.max(0, config.count)
+  const count = normalizeCount(config.count)
   const initial =
-    config.initialIndex !== undefined && isEnabled(config.initialIndex)
+    config.initialIndex !== undefined &&
+    Number.isSafeInteger(config.initialIndex) &&
+    config.initialIndex >= 0 &&
+    config.initialIndex < count &&
+    isEnabled(config.initialIndex)
       ? config.initialIndex
       : firstOrFallback(count, isEnabled)
   return {
@@ -236,7 +245,7 @@ function createKeyboardNavOperations(state: KeyboardNavState): KeyboardNavOperat
       if (last >= 0) emitKeyboardIndex(state, last)
     },
     reset(count) {
-      if (count !== undefined) state.count = Math.max(0, count)
+      if (count !== undefined) state.count = normalizeCount(count)
       const current = keyboardSafeIndex(state)
       if (current < 0 || !state.isEnabled(current)) {
         emitKeyboardIndex(state, firstOrFallback(state.count, state.isEnabled))

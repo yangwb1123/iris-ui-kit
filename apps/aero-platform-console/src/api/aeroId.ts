@@ -1,7 +1,17 @@
-import type { AccountView, AggregateView, Dataset, JsonRecord, PageData, Profile } from '../types'
+import type {
+  AccountView,
+  AggregateView,
+  ConsistencyMode,
+  Dataset,
+  JsonRecord,
+  PageData,
+  Profile,
+  SourceHealth,
+} from '../types'
 
 const requestTimeoutMs = 15_000
 const maxJsonResponseBytes = 2 * 1024 * 1024
+const maxExportResponseBytes = 64 * 1024 * 1024
 
 interface ErrorEnvelope {
   error?: { code?: string; message?: string; request_id?: string }
@@ -11,6 +21,24 @@ export interface RequestOptions {
   query?: Record<string, string | number | string[] | undefined>
   body?: unknown
   idempotencyKey?: string
+}
+
+export interface DownloadedFile {
+  blob: Blob
+  filename: string
+}
+
+export interface AuditEventFilters {
+  source?: string
+  actorUid?: string
+  requestId?: string
+  tenantId?: string
+  action?: string
+  resourceType?: string
+  accountId?: string
+  operationId?: string
+  from?: string
+  to?: string
 }
 
 export class AeroIdError extends Error {
@@ -46,7 +74,21 @@ function pageOf(data: JsonRecord, field: string): PageData<JsonRecord> {
 }
 
 function activityPage(data: JsonRecord): PageData<JsonRecord> {
-  if (Array.isArray(data.events)) return pageOf(data, 'events')
+  if (Array.isArray(data.events)) {
+    return {
+      ...pageOf(data, 'events'),
+      partial: data.partial === true,
+      generatedAt: typeof data.generated_at === 'string' ? data.generated_at : undefined,
+      sourceErrors: isRecord(data.source_errors)
+        ? Object.fromEntries(
+            Object.entries(data.source_errors).map(([key, value]) => [key, String(value)]),
+          )
+        : undefined,
+      staleDatasets: Array.isArray(data.stale_datasets)
+        ? data.stale_datasets.map(String)
+        : undefined,
+    }
+  }
   const snapshot = records(data.snapshots).find(
     (item) => item.dataset === 'aero-im.activity_summary',
   )
@@ -74,6 +116,27 @@ export class AeroIdClient {
     })
   }
 
+  async getSourceHealth(): Promise<SourceHealth[]> {
+    const url = this.buildServiceURL('/health/sources')
+    const headers = new Headers({
+      Accept: 'application/json',
+      'X-Request-ID': crypto.randomUUID(),
+    })
+    const response = await this.performRequest(url, 'GET', headers, undefined)
+    const data = dataOf(await this.readResponse(response))
+    return records(data.sources).flatMap((item) => {
+      if (typeof item.source !== 'string') return []
+      const status = item.status === 'ok' ? 'ok' : 'degraded'
+      return [
+        {
+          source: item.source,
+          status,
+          error: typeof item.error === 'string' ? item.error : undefined,
+        },
+      ]
+    })
+  }
+
   async getMe(): Promise<AccountView> {
     return dataOf(await this.request('GET', '/me')) as AccountView
   }
@@ -90,6 +153,18 @@ export class AeroIdClient {
     return dataOf(
       await this.request('GET', '/me/overview', {
         query: { dataset: datasets, consistency: 'eventual' },
+      }),
+    ) as AggregateView
+  }
+
+  async getData(
+    datasets: string[],
+    consistency: ConsistencyMode = 'eventual',
+    maxAge?: string,
+  ): Promise<AggregateView> {
+    return dataOf(
+      await this.request('GET', '/me/data', {
+        query: { dataset: datasets, consistency, max_age: maxAge },
       }),
     ) as AggregateView
   }
@@ -121,6 +196,33 @@ export class AeroIdClient {
     )
   }
 
+  async getSyncJob(id: string): Promise<JsonRecord> {
+    return dataOf(await this.request('GET', `/sync/jobs/${encodeURIComponent(id)}`))
+  }
+
+  async reconcileSyncJob(id: string): Promise<JsonRecord> {
+    return dataOf(await this.request('POST', `/sync/jobs/${encodeURIComponent(id)}/reconcile`))
+  }
+
+  async downloadExport(id: string, oneTime = false): Promise<DownloadedFile> {
+    const token = this.accessToken().trim()
+    if (!token) throw new AeroIdError(401, 'auth.required', '登录状态已失效')
+    const url = this.buildURL(`/sync/jobs/${encodeURIComponent(id)}/export/download`, {
+      one_time: oneTime ? 'true' : undefined,
+    })
+    const response = await this.performRequest(url, 'GET', this.buildHeaders(token, {}), undefined)
+    if (!response.ok) {
+      await this.readResponse(response)
+      throw new AeroIdError(response.status, 'request.failed', '下载失败')
+    }
+    const contentType = response.headers.get('Content-Type')?.split(';', 1)[0].trim()
+    if (contentType !== 'application/json') {
+      throw new AeroIdError(response.status, 'response.invalid', 'aero-id 返回了无效导出文件')
+    }
+    const blob = await this.readExport(response)
+    return { blob, filename: 'aero-id-export.json' }
+  }
+
   async createSyncJob(datasets: string[]): Promise<JsonRecord> {
     const key = crypto.randomUUID()
     return dataOf(
@@ -141,6 +243,16 @@ export class AeroIdClient {
     )
   }
 
+  async createEraseJob(): Promise<JsonRecord> {
+    const key = crypto.randomUUID()
+    return dataOf(
+      await this.request('POST', '/me/erase', {
+        idempotencyKey: key,
+        body: { idempotency_key: key },
+      }),
+    )
+  }
+
   async listOperations(cursor?: string): Promise<PageData<JsonRecord>> {
     return pageOf(
       dataOf(await this.request('GET', '/operations', { query: { cursor, limit: 50 } })),
@@ -150,6 +262,56 @@ export class AeroIdClient {
 
   async getOperation(id: string): Promise<JsonRecord> {
     return dataOf(await this.request('GET', `/operations/${encodeURIComponent(id)}`))
+  }
+
+  async reconcileOperation(id: string): Promise<JsonRecord> {
+    return dataOf(await this.request('POST', `/operations/${encodeURIComponent(id)}/reconcile`))
+  }
+
+  async getOperationTimeline(id: string, cursor?: string): Promise<PageData<JsonRecord>> {
+    return pageOf(
+      dataOf(
+        await this.request('GET', `/audit/operations/${encodeURIComponent(id)}`, {
+          query: { cursor, limit: 50 },
+        }),
+      ),
+      'events',
+    )
+  }
+
+  async listAuditEvents(
+    filters: AuditEventFilters = {},
+    cursor?: string,
+  ): Promise<PageData<JsonRecord>> {
+    return pageOf(
+      dataOf(
+        await this.request('GET', '/audit/events', {
+          query: {
+            source: filters.source,
+            actor_uid: filters.actorUid,
+            request_id: filters.requestId,
+            tenant_id: filters.tenantId,
+            action: filters.action,
+            resource_type: filters.resourceType,
+            account_id: filters.accountId,
+            operation_id: filters.operationId,
+            from: filters.from,
+            to: filters.to,
+            cursor,
+            limit: 50,
+          },
+        }),
+      ),
+      'events',
+    )
+  }
+
+  async verifyAuditChain(source: string, partition: string): Promise<JsonRecord> {
+    return dataOf(
+      await this.request('GET', '/audit/verify', {
+        query: { source, partition },
+      }),
+    )
   }
 
   private async request(
@@ -174,6 +336,12 @@ export class AeroIdClient {
         url.searchParams.append(name, String(value))
     }
     return url
+  }
+
+  private buildServiceURL(path: string): URL {
+    const normalized = this.baseUrl.replace(/\/+$/, '')
+    const serviceBase = normalized.endsWith('/v1') ? normalized.slice(0, -3) : normalized
+    return new URL(`${serviceBase}/${path.replace(/^\/+/, '')}`)
   }
 
   private buildHeaders(token: string, options: RequestOptions): Headers {
@@ -238,5 +406,40 @@ export class AeroIdClient {
       )
     }
     return payload
+  }
+
+  private async readExport(response: Response): Promise<Blob> {
+    const declaredLength = Number(response.headers.get('Content-Length'))
+    if (Number.isFinite(declaredLength) && declaredLength > maxExportResponseBytes) {
+      throw new AeroIdError(response.status, 'response.too_large', 'aero-id 导出文件过大')
+    }
+    if (!response.body) {
+      const bytes = await response.arrayBuffer()
+      if (bytes.byteLength > maxExportResponseBytes) {
+        throw new AeroIdError(response.status, 'response.too_large', 'aero-id 导出文件过大')
+      }
+      return new Blob([bytes], { type: 'application/json' })
+    }
+
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > maxExportResponseBytes) {
+        await reader.cancel()
+        throw new AeroIdError(response.status, 'response.too_large', 'aero-id 导出文件过大')
+      }
+      chunks.push(value)
+    }
+    const bytes = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return new Blob([bytes.buffer], { type: 'application/json' })
   }
 }

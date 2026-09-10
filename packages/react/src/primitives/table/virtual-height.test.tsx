@@ -152,10 +152,12 @@ describe('@iris-ui-kit/react IrisTable variable-height virtualScroll (batch AG)'
       />,
     )
     await scrollTo(400)
-    // first = floor(400/36) = 11 → window [7, 15) = 8 rows (7..14).
-    expect(virtualItems().length).toBe(8)
+    // jsdom's viewport is 0px, but row 11 starts at 396px and intersects the
+    // partial scroll position at 400px. The core fixed window therefore keeps
+    // it plus the four-row buffer: [7, 16) = 9 rows (7..15).
+    expect(virtualItems().length).toBe(9)
     expect(slot(7).style.transform).toBe('translateY(252px)')
-    expect(slot(14).style.transform).toBe('translateY(504px)')
+    expect(slot(15).style.transform).toBe('translateY(540px)')
   })
 
   it('variable heights address the VIRTUAL PLAN index (detail slots interleave)', () => {

@@ -1,4 +1,5 @@
 import { createMemo, type Accessor } from 'solid-js'
+import { resolveGridTemplateColumns } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 const SELECTION_COL_WIDTH = 40
@@ -16,24 +17,14 @@ export function createTableGridTemplate<Row extends Record<string, unknown>>(opt
   isCollapsed: (key: string) => boolean
 }): Accessor<string> {
   return createMemo(() => {
-    const parts: string[] = []
-    if (options.rowDrag()) parts.push(`${40}px`)
-    if (options.seq()) parts.push(`${SEQ_COL_WIDTH}px`)
-    if (options.hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
-    if (options.selectable()) parts.push(`${SELECTION_COL_WIDTH}px`)
-    for (const column of options.leafColumns()) {
-      if (options.isCollapsed(column.key)) {
-        parts.push('0px')
-        continue
-      }
-      const width = options.widths()[column.key]
-      // Keep the pre-fade Solid bridge's authored and fallback track semantics.
-      if (width != null) parts.push(`${width}px`)
-      else if (typeof column.width === 'number') parts.push(`${column.width}px`)
-      else if (column.width === 'auto') parts.push('minmax(max-content, max-content)')
-      else if (typeof column.width === 'string') parts.push(column.width)
-      else parts.push('minmax(0, 1fr)')
-    }
-    return parts.join(' ')
+    return resolveGridTemplateColumns(options.leafColumns(), options.widths(), {
+      leadingTracks: [
+        ...(options.rowDrag() ? [40] : []),
+        ...(options.seq() ? [SEQ_COL_WIDTH] : []),
+        ...(options.hasDetail() ? [EXPAND_COL_WIDTH] : []),
+        ...(options.selectable() ? [SELECTION_COL_WIDTH] : []),
+      ],
+      isCollapsed: (column) => options.isCollapsed(column.key),
+    })
   })
 }

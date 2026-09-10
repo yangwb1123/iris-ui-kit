@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createOutbox, type OutboxItem, type OutboxStorage } from './outbox'
+import {
+  createOutbox,
+  OutboxSerializationError,
+  type OutboxItem,
+  type OutboxStorage,
+} from './outbox'
 
 /** A sequential id generator for deterministic tests. */
 function ids() {
@@ -108,23 +113,382 @@ describe('createOutbox', () => {
     expect(a + b).toBeGreaterThanOrEqual(1)
   })
 
-  it('notifies subscribers on enqueue and delivery', async () => {
-    const sizes: number[] = []
-    const outbox = createOutbox<number>({ execute: async () => {}, generateId: ids() })
-    outbox.subscribe((items) => sizes.push(items.length))
+  it('does not start a nested runner when execute calls flush re-entrantly', async () => {
+    let nested!: Promise<unknown>
+    const execute = vi.fn(async () => {
+      nested = outbox.flushDetailed()
+    })
+    const outbox = createOutbox<number>({ execute, generateId: ids() })
     outbox.enqueue(1)
-    await outbox.flush()
-    expect(sizes[0]).toBe(1) // after enqueue
-    expect(sizes[sizes.length - 1]).toBe(0) // after delivery
+    const flushing = outbox.flushDetailed()
+
+    await flushing
+    expect(nested).toBe(flushing)
+    expect(execute).toHaveBeenCalledTimes(1)
   })
 
-  it('remove() and clear() drop items', () => {
+  it('notifies subscribers in order on re-entrant enqueue and delivery', async () => {
+    const observed: number[][] = []
     const outbox = createOutbox<number>({ execute: async () => {}, generateId: ids() })
+    let nested = false
+    outbox.subscribe(() => {
+      if (!nested) {
+        nested = true
+        outbox.enqueue(2)
+      }
+    })
+    outbox.subscribe((items) => observed.push(items.map((item) => item.payload)))
+    outbox.enqueue(1)
+    expect(observed.slice(0, 2)).toEqual([[1], [1, 2]])
+    await outbox.flush()
+    expect(observed[observed.length - 1]).toEqual([])
+  })
+
+  it('remove does not mark an in-flight item when durable persistence fails', async () => {
+    let saved: OutboxItem<number>[] = []
+    let failSave = false
+    const storage: OutboxStorage<number> = {
+      load: () => saved,
+      save: (items) => {
+        if (failSave) throw new Error('storage unavailable')
+        saved = items
+      },
+    }
+    let started!: () => void
+    let release!: () => void
+    const startedPromise = new Promise<void>((resolve) => (started = resolve))
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const outbox = createOutbox<number>({
+      execute: async () => {
+        started()
+        await gate
+      },
+      storage,
+      generateId: ids(),
+    })
     const id = outbox.enqueue(1)
+    const flushing = outbox.flushDetailed()
+    await startedPromise
+
+    failSave = true
+    expect(() => outbox.remove(id)).toThrow('storage unavailable')
+    expect(outbox.items().map((item) => item.id)).toEqual([id])
+    failSave = false
+    release()
+
+    await expect(flushing).resolves.toMatchObject({ status: 'delivered', delivered: 1, failed: 0 })
+    expect(outbox.items()).toEqual([])
+  })
+
+  it('clear does not mark an in-flight item when durable persistence fails', async () => {
+    let saved: OutboxItem<number>[] = []
+    let failSave = false
+    const storage: OutboxStorage<number> = {
+      load: () => saved,
+      save: (items) => {
+        if (failSave) throw new Error('storage unavailable')
+        saved = items
+      },
+    }
+    let started!: () => void
+    let release!: () => void
+    const startedPromise = new Promise<void>((resolve) => (started = resolve))
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const delivered: number[] = []
+    const outbox = createOutbox<number>({
+      execute: async (payload) => {
+        delivered.push(payload)
+        if (payload === 1 && delivered.length === 1) {
+          started()
+          await gate
+        }
+      },
+      storage,
+      generateId: ids(),
+    })
+    outbox.enqueue(1)
     outbox.enqueue(2)
-    outbox.remove(id)
-    expect(outbox.pendingCount()).toBe(1)
+    const flushing = outbox.flushDetailed()
+    await startedPromise
+
+    failSave = true
+    expect(() => outbox.clear()).toThrow('storage unavailable')
+    expect(outbox.pendingCount()).toBe(2)
+    failSave = false
+    release()
+
+    await expect(flushing).resolves.toMatchObject({ status: 'delivered', delivered: 2, failed: 0 })
+    expect(delivered).toEqual([1, 2])
+    expect(outbox.items()).toEqual([])
+  })
+
+  it('merges enqueue and remove while execute is awaiting', async () => {
+    let started!: () => void
+    let release!: () => void
+    const startedPromise = new Promise<void>((resolve) => (started = resolve))
+    const executeGate = new Promise<void>((resolve) => (release = resolve))
+    const delivered: number[] = []
+    const outbox = createOutbox<number>({
+      execute: async (payload) => {
+        delivered.push(payload)
+        if (payload === 1) {
+          started()
+          await executeGate
+        }
+      },
+      generateId: ids(),
+    })
+    const first = outbox.enqueue(1)
+    const flushing = outbox.flushDetailed()
+    await startedPromise
+    outbox.remove(first)
+    const second = outbox.enqueue(2)
+    const removed = outbox.enqueue(3)
+    outbox.remove(removed)
+    release()
+
+    const result = await flushing
+    expect(result.delivered).toBe(1)
+    expect(result.failed).toBe(1)
+    expect(delivered).toEqual([1, 2])
+    expect(outbox.items()).toEqual([])
+    expect(second).toBe('id1')
+  })
+
+  it('clear during execute is not undone when the in-flight item settles', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const execute = vi.fn(async () => {
+      await gate
+    })
+    const outbox = createOutbox<number>({ execute, generateId: ids() })
+    outbox.enqueue(1)
+    const flushing = outbox.flushDetailed()
+    await Promise.resolve()
+    outbox.enqueue(2)
     outbox.clear()
-    expect(outbox.pendingCount()).toBe(0)
+    release()
+
+    const result = await flushing
+    expect(result).toMatchObject({ delivered: 0, failed: 1, status: 'failed' })
+    expect(result.outcomes[0]).toMatchObject({
+      status: 'failed',
+      executorStatus: 'resolved',
+      queued: false,
+      removed: true,
+      error: expect.objectContaining({ code: 'OUTBOX_ITEM_REMOVED' }),
+    })
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(outbox.items()).toEqual([])
+  })
+
+  it('preserves a successful executor outcome when an in-flight item is removed', async () => {
+    let started!: () => void
+    let release!: () => void
+    const startedPromise = new Promise<void>((resolve) => (started = resolve))
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const outbox = createOutbox<number>({
+      execute: async () => {
+        started()
+        await gate
+      },
+      generateId: ids(),
+    })
+    const id = outbox.enqueue(1)
+    const flushing = outbox.flushDetailed()
+    await startedPromise
+    outbox.remove(id)
+    release()
+
+    await expect(flushing).resolves.toMatchObject({
+      status: 'failed',
+      delivered: 0,
+      failed: 1,
+      outcomes: [
+        {
+          id,
+          status: 'failed',
+          executorStatus: 'resolved',
+          queued: false,
+          removed: true,
+          error: expect.objectContaining({ code: 'OUTBOX_ITEM_REMOVED' }),
+        },
+      ],
+    })
+    // Explicit removal makes a resolved executor uncertain, so even the
+    // compatibility flush() count cannot claim confirmed delivery.
+    expect(await outbox.flush()).toBe(0)
+    expect(outbox.items()).toEqual([])
+  })
+
+  it('continues with a new item when an in-flight failed item is removed', async () => {
+    let started!: () => void
+    let rejectFirst!: (error: Error) => void
+    const startedPromise = new Promise<void>((resolve) => (started = resolve))
+    const delivered: number[] = []
+    const outbox = createOutbox<number>({
+      execute: async (payload) => {
+        if (payload === 1) {
+          started()
+          await new Promise<never>((_, reject) => (rejectFirst = reject))
+          return
+        }
+        delivered.push(payload)
+      },
+      generateId: ids(),
+    })
+    const first = outbox.enqueue(1)
+    const flushing = outbox.flushDetailed()
+    await startedPromise
+    outbox.remove(first)
+    outbox.enqueue(2)
+    rejectFirst(new Error('dropped'))
+
+    const result = await flushing
+    expect(result).toMatchObject({ status: 'failed', delivered: 1, failed: 1, deferred: 0 })
+    expect(result.outcomes[0]).toMatchObject({
+      id: first,
+      status: 'failed',
+      executorStatus: 'rejected',
+      queued: false,
+      removed: true,
+      error: expect.objectContaining({ message: 'dropped' }),
+    })
+    expect(delivered).toEqual([2])
+    expect(outbox.items()).toEqual([])
+  })
+
+  it('reports deferred and exhausted failures without counting either as delivered', async () => {
+    const outbox = createOutbox<number>({
+      execute: async () => {
+        throw new Error('offline')
+      },
+      maxAttempts: 2,
+      generateId: ids(),
+    })
+    const id = outbox.enqueue(1)
+    const first = await outbox.flushDetailed()
+    expect(first.status).toBe('deferred')
+    expect(first.delivered).toBe(0)
+    expect(first.deferred).toBe(1)
+    expect(first.failed).toBe(0)
+    expect(first.outcomes[0]).toMatchObject({
+      id,
+      status: 'deferred',
+      attempts: 1,
+      queued: true,
+      error: expect.any(Error),
+    })
+
+    const second = await outbox.flushDetailed()
+    expect(second.status).toBe('failed')
+    expect(second.delivered).toBe(0)
+    expect(second.failed).toBe(1)
+    expect(second.outcomes[0]).toMatchObject({ id, status: 'failed', attempts: 2 })
+    expect(outbox.items()[0]).toMatchObject({ id, status: 'failed', error: 'offline' })
+    const existingFailure = await outbox.flushDetailed()
+    expect(existingFailure).toMatchObject({ status: 'failed', delivered: 0, failed: 1 })
+  })
+
+  it('round-trips JSON descriptors through an injected executor without storing closures', async () => {
+    type Runtime = { descriptor: { type: string; value: number }; run: () => Promise<void> }
+    type Stored = { type: string; value: number }
+    let json = '[]'
+    const storage: OutboxStorage<Stored> = {
+      load: () => JSON.parse(json) as OutboxItem<Stored>[],
+      save: (items) => {
+        json = JSON.stringify(items)
+      },
+    }
+    const executed: Stored[] = []
+    const codec = {
+      encode: (payload: Runtime): Stored => payload.descriptor,
+      decode: (descriptor: Stored): Runtime => ({
+        descriptor,
+        run: async () => {
+          executed.push(descriptor)
+        },
+      }),
+    }
+    const first = createOutbox<Runtime, Stored>({
+      execute: async (payload) => payload.run(),
+      storage,
+      codec,
+      generateId: ids(),
+    })
+    first.enqueue({ descriptor: { type: 'rename', value: 7 }, run: async () => {} })
+    expect(json).not.toContain('run')
+
+    const second = createOutbox<Runtime, Stored>({
+      execute: async (payload) => payload.run(),
+      storage,
+      codec,
+    })
+    expect(second.items()[0]?.payload.descriptor).toEqual({ type: 'rename', value: 7 })
+    await second.flush()
+    expect(executed).toEqual([{ type: 'rename', value: 7 }])
+    expect(json).toBe('[]')
+  })
+
+  it('fails closed for a closure sent to custom storage and isolates snapshots', () => {
+    let saved: OutboxItem<{ value: number }>[] = []
+    const storage: OutboxStorage<{ value: number }> = {
+      load: () => saved,
+      save: (items) => {
+        saved = items
+      },
+    }
+    const outbox = createOutbox<{ value: number }>({
+      execute: async () => {},
+      storage,
+      generateId: ids(),
+    })
+    const input = { value: 1 }
+    expect(() =>
+      outbox.enqueue(input as { value: number } & { run?: () => Promise<void> }),
+    ).not.toThrow()
+    input.value = 7
+    const item = outbox.items()[0]!
+    item.payload.value = 9
+    saved[0]!.payload.value = 8
+    expect(outbox.items()[0]!.payload.value).toBe(1)
+
+    const closureStorage: OutboxStorage<{ run: () => Promise<void> }> = {
+      load: () => [],
+      save: () => {},
+    }
+    const closureOutbox = createOutbox<{ run: () => Promise<void> }>({
+      execute: async () => {},
+      storage: closureStorage,
+      generateId: ids(),
+    })
+    expect(() => closureOutbox.enqueue({ run: async () => {} })).toThrow(OutboxSerializationError)
+
+    const duplicate = createOutbox<number>({ execute: async () => {}, generateId: () => 'same' })
+    duplicate.enqueue(1)
+    expect(() => duplicate.enqueue(2)).toThrow()
+    const malformed: OutboxStorage<number> = {
+      load: () => [{ id: 'bad', payload: 1, attempts: Number.NaN, status: 'pending' }],
+      save: () => {},
+    }
+    expect(() => createOutbox({ execute: async () => {}, storage: malformed })).toThrow(
+      OutboxSerializationError,
+    )
+  })
+
+  it('preserves an own __proto__ payload key across the durable boundary', () => {
+    let saved: OutboxItem<Record<string, unknown>>[] = []
+    const storage: OutboxStorage<Record<string, unknown>> = {
+      load: () => saved,
+      save: (items) => (saved = items),
+    }
+    const outbox = createOutbox<Record<string, unknown>>({
+      execute: async () => {},
+      storage,
+      generateId: ids(),
+    })
+    outbox.enqueue(JSON.parse('{"type":"test","__proto__":{"polluted":true}}'))
+    expect(Object.prototype.hasOwnProperty.call(outbox.items()[0]!.payload, '__proto__')).toBe(true)
+    expect(Object.prototype.polluted).toBeUndefined()
   })
 })

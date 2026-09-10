@@ -68,6 +68,34 @@ describe('@iris-ui-kit/react IrisVirtualScroll', () => {
     expect(firstIdx).toBeGreaterThan(10)
   })
 
+  it('keeps both fixed rows mounted when scrolling through a row boundary', async () => {
+    const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(20)
+    try {
+      const { container } = render(
+        <IrisVirtualScroll
+          items={[0, 1, 2]}
+          itemHeight={20}
+          height={20}
+          buffer={0}
+          renderItem={(item) => <span>{item}</span>}
+        />,
+      )
+      const root = container.querySelector('[data-iris-virtual-scroll]') as HTMLDivElement
+      act(() => {
+        root.scrollTop = 10
+        fireEvent.scroll(root)
+      })
+      await act(async () => {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      })
+      expect(
+        visibleItems().map((node) => Number(node.getAttribute('data-iris-virtual-index'))),
+      ).toEqual([0, 1])
+    } finally {
+      height.mockRestore()
+    }
+  })
+
   it('renderItem receives item + index', () => {
     const spy = vi.fn(renderItem)
     render(<IrisVirtualScroll items={items} itemHeight={40} height={400} renderItem={spy} />)
@@ -254,6 +282,94 @@ describe('@iris-ui-kit/react IrisVirtualScroll auto-measure', () => {
       expect(item1()?.style.transform).toBe('translateY(50px)')
     } finally {
       if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      globalThis.ResizeObserver = RealRO
+    }
+  })
+
+  it('does not reuse an auto measurement by index after a keyed reorder', () => {
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60)
+    const rows = [
+      { id: 'a', height: 20 },
+      { id: 'b', height: 100 },
+      { id: 'c', height: 20 },
+    ]
+    const ros: Array<{
+      cb: ResizeObserverCallback
+      els: Element[]
+      flush: (els?: Element[]) => void
+    }> = []
+    const RealRO = globalThis.ResizeObserver
+    class MockRO {
+      els: Element[] = []
+      constructor(public cb: ResizeObserverCallback) {
+        ros.push({ cb, els: this.els, flush: (els = this.els) => this.flush(els) })
+      }
+      observe(el: Element) {
+        this.els.push(el)
+      }
+      unobserve(el: Element) {
+        this.els = this.els.filter((e) => e !== el)
+      }
+      disconnect() {
+        this.els = []
+      }
+      flush(els = this.els) {
+        this.cb(
+          els.map((target) => ({ target }) as ResizeObserverEntry),
+          this as never,
+        )
+      }
+    }
+    globalThis.ResizeObserver = MockRO as unknown as typeof ResizeObserver
+    const heightSpy = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        const id = this.querySelector<HTMLElement>('[data-row-id]')?.dataset.rowId
+        return rows.find((row) => row.id === id)?.height ?? 20
+      },
+    })
+
+    try {
+      const { container, rerender } = render(
+        <IrisVirtualScroll
+          items={rows}
+          itemHeight="auto"
+          estimatedItemHeight={20}
+          height={60}
+          buffer={0}
+          keyOf={(row) => row.id}
+          renderItem={(row) => <span data-row-id={row.id}>{row.id}</span>}
+        />,
+      )
+      const rowRo = ros.find((r) =>
+        r.els.some((e) => (e as HTMLElement).hasAttribute('data-iris-virtual-item')),
+      )
+      const b = container.querySelector('[data-iris-virtual-index="1"]') as HTMLElement
+      expect(rowRo).toBeTruthy()
+      expect(b.offsetHeight).toBe(100)
+      act(() => rowRo!.flush([b]))
+      expect(
+        (container.querySelector('[data-iris-virtual-spacer]') as HTMLElement).style.height,
+      ).toBe('140px')
+
+      rerender(
+        <IrisVirtualScroll
+          items={[rows[0]!, rows[2]!, { id: 'd', height: 20 }]}
+          itemHeight="auto"
+          estimatedItemHeight={20}
+          height={60}
+          buffer={0}
+          keyOf={(row) => row.id}
+          renderItem={(row) => <span data-row-id={row.id}>{row.id}</span>}
+        />,
+      )
+      expect(
+        (container.querySelector('[data-iris-virtual-spacer]') as HTMLElement).style.height,
+      ).toBe('60px')
+    } finally {
+      if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      clientHeight.mockRestore()
       globalThis.ResizeObserver = RealRO
     }
   })

@@ -83,27 +83,65 @@ function pathError(message: string, input: string, fallback: PathSegment[]): Pat
   return fallback
 }
 
-/** Validate the input string has no null bytes and balanced brackets. */
-function validatePathSafety(str: string, segments: PathSegment[]): PathSegment[] | null {
-  if (str.includes('\0')) {
-    return pathError('parsePath: null byte (\\x00) in path string is not allowed', str, segments)
-  }
+/** Return a bracket-balance error for a malformed path string, or null. */
+function findBracketBalanceError(str: string): string | null {
   let depth = 0
   for (let i = 0; i < str.length; i++) {
     if (str[i] === '[') depth++
     else if (str[i] === ']') depth--
-    if (depth < 0) {
-      return pathError(
-        'parsePath: unexpected closing bracket "]" without opening "["',
-        str,
-        segments,
-      )
-    }
+    if (depth < 0) return 'parsePath: unexpected closing bracket "]" without opening "["'
   }
-  if (depth > 0) {
-    return pathError('parsePath: unclosed bracket — missing "]"', str, segments)
+  return depth > 0 ? 'parsePath: unclosed bracket — missing "]"' : null
+}
+
+function findSeparatorSyntaxError(str: string): string | null {
+  if (str.startsWith('.') || str.endsWith('.') || /\.\./.test(str)) {
+    return 'parsePath: empty segment from consecutive dots ".." is not allowed'
+  }
+  if (/\.\[/.test(str)) {
+    return 'parsePath: a bracket segment must not follow an empty dotted segment'
+  }
+  if (/\][^.[\]]/.test(str)) {
+    return 'parsePath: a segment after a bracket must be separated by a dot or bracket'
   }
   return null
+}
+
+function findBracketContentError(str: string): string | null {
+  // Bracket keys cannot contain brackets, and quoted keys must use matching
+  // delimiters. This keeps the existing intentionally small bracket grammar.
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] !== '[') continue
+    const close = str.indexOf(']', i + 1)
+    const inner = str.slice(i + 1, close)
+    if (inner.includes('[') || inner.trim() === '') {
+      return 'parsePath: empty bracket "[]" is not allowed'
+    }
+    const first = inner[0]
+    const last = inner[inner.length - 1]
+    if (first === "'" || first === '"' || last === "'" || last === '"') {
+      if (first !== last || inner.length < 2) {
+        return 'parsePath: malformed quoted bracket segment'
+      }
+      if (inner.slice(1, -1) === '') return 'parsePath: empty bracket key is not allowed'
+    }
+    i = close
+  }
+  return null
+}
+
+/** Return a syntax error for malformed path strings, or null when valid. */
+function findPathSyntaxError(str: string): string | null {
+  if (str.includes('\0')) return 'parsePath: null byte (\\x00) in path string is not allowed'
+  return (
+    findBracketBalanceError(str) ?? findSeparatorSyntaxError(str) ?? findBracketContentError(str)
+  )
+}
+
+/** Validate the input string has no null bytes and balanced brackets. */
+function validatePathSafety(str: string, segments: PathSegment[]): PathSegment[] | null {
+  const message = findPathSyntaxError(str)
+  return message ? pathError(message, str, segments) : null
 }
 
 /** Parse the regex loop: extract segments from a validated path string. */
@@ -220,10 +258,22 @@ export function formatPath(path: Path): string {
   const segments = Array.isArray(path) ? path : parsePath(path as string)
   let out = ''
   for (const seg of segments) {
-    if (typeof seg === 'number') out += `[${seg}]`
-    else out += out === '' ? seg : `.${seg}`
+    if (typeof seg === 'number') {
+      out += `[${seg}]`
+    } else if (/^\d+$/.test(seg) || /[.[\]]/.test(seg)) {
+      // Preserve string-vs-number and literal-dot segment identity when a
+      // segment array is formatted and parsed again.
+      out += `['${seg}']`
+    } else {
+      out += out === '' ? seg : `.${seg}`
+    }
   }
   return out
+}
+
+function getOwnProperty(node: unknown, key: PathSegment): unknown {
+  if (node == null || !Object.prototype.hasOwnProperty.call(node, key)) return undefined
+  return (node as Record<PathSegment, unknown>)[key]
 }
 
 /** Read the value at `path` from `obj`, or `undefined` if any segment is missing. */
@@ -231,8 +281,8 @@ export function getByPath(obj: unknown, path: Path): unknown {
   const segments = Array.isArray(path) ? path : parsePath(path as string)
   let cur: unknown = obj
   for (const seg of segments) {
-    if (cur == null) return undefined
-    cur = (cur as Record<PathSegment, unknown>)[seg]
+    cur = getOwnProperty(cur, seg)
+    if (cur === undefined) return undefined
   }
   return cur
 }
@@ -247,6 +297,26 @@ function cloneContainer(node: unknown, nextSeg: PathSegment): Record<PathSegment
   return (isIndex(nextSeg) ? [] : {}) as Record<PathSegment, unknown>
 }
 
+/** Define a data property without invoking prototype setters such as __proto__. */
+function setOwnProperty(
+  container: Record<PathSegment, unknown>,
+  key: PathSegment,
+  value: unknown,
+): void {
+  const descriptor = Object.getOwnPropertyDescriptor(container, key)
+  if (descriptor && !descriptor.configurable) {
+    // Array#length is the relevant non-configurable property on cloned arrays.
+    Object.defineProperty(container, key, { value })
+    return
+  }
+  Object.defineProperty(container, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  })
+}
+
 /**
  * Return a copy of `obj` with the value at `path` set to `value`, cloning ONLY
  * the containers along the touched path (structural sharing — siblings keep
@@ -259,11 +329,11 @@ export function setByPath<T>(obj: T, path: Path, value: unknown): T {
   let cur = root
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i]!
-    const child = cloneContainer(cur[seg], segments[i + 1]!)
-    cur[seg] = child
+    const child = cloneContainer(getOwnProperty(cur, seg), segments[i + 1]!)
+    setOwnProperty(cur, seg, child)
     cur = child
   }
-  cur[segments[segments.length - 1]!] = value
+  setOwnProperty(cur, segments[segments.length - 1]!, value)
   return root as T
 }
 
@@ -281,12 +351,19 @@ export function deleteByPath<T>(obj: T, path: Path): T {
   if (parent == null || typeof parent !== 'object') return obj
   let nextParent: unknown
   if (Array.isArray(parent)) {
-    if (typeof last !== 'number' || last < 0 || last >= parent.length) return obj
+    if (
+      typeof last !== 'number' ||
+      !Number.isSafeInteger(last) ||
+      last < 0 ||
+      last >= parent.length ||
+      !Object.prototype.hasOwnProperty.call(parent, last)
+    )
+      return obj
     const arr = [...parent]
     arr.splice(last, 1)
     nextParent = arr
   } else {
-    if (!(last in (parent as object))) return obj
+    if (!Object.prototype.hasOwnProperty.call(parent, last)) return obj
     const rec = { ...(parent as Record<PathSegment, unknown>) }
     delete rec[last]
     nextParent = rec
@@ -326,19 +403,7 @@ export function escapePathSegment(seg: string): string {
  * Use this before calling {@link parsePath} on user-supplied path strings.
  */
 export function isPathSafe(path: string): boolean {
-  if (path.includes('\0')) return false
-  // Check for unclosed brackets
-  let depth = 0
-  for (let i = 0; i < path.length; i++) {
-    if (path[i] === '[') depth++
-    else if (path[i] === ']') depth--
-    if (depth < 0) return false
-  }
-  if (depth !== 0) return false
-  // Check for consecutive dots (empty segment)
-  if (/\.\./.test(path)) return false
-  // Check for empty brackets
-  if (/\[\s*\]/.test(path)) return false
+  if (findPathSyntaxError(path) !== null) return false
   // Check for reserved prototype keys — parse with allowReserved to avoid
   // throwing, then manually validate.
   const segments = parsePath(path, { allowReserved: true })
@@ -366,9 +431,16 @@ export function rekeyByArrayMutation<T>(
   prefix: string,
   remap: (index: number) => number | null,
 ): Record<string, T> {
+  if (!isPathSafe(prefix)) return { ...map }
   const prefixSegs = parsePath(prefix)
   const out: Record<string, T> = {}
   for (const key of Object.keys(map)) {
+    // Invalid keys must not be partially parsed into a different valid path in
+    // production (for example, `items[0].constructor` becoming `items[0]`).
+    if (!isPathSafe(key)) {
+      setOwnProperty(out, key, map[key]!)
+      continue
+    }
     const segs = parsePath(key)
     // Does this key live under `prefix[<index>]…`?
     const under =
@@ -376,15 +448,21 @@ export function rekeyByArrayMutation<T>(
       prefixSegs.every((p, i) => p === segs[i]) &&
       typeof segs[prefixSegs.length] === 'number'
     if (!under) {
-      out[key] = map[key]!
+      setOwnProperty(out, key, map[key]!)
       continue
     }
     const idx = segs[prefixSegs.length] as number
     const nextIdx = remap(idx)
     if (nextIdx == null) continue // dropped (e.g. the removed element)
+    if (!Number.isSafeInteger(nextIdx) || nextIdx < 0) {
+      // A remap must produce a real 0-based element index; do not emit a
+      // malformed key when a caller supplies an invalid remap result.
+      setOwnProperty(out, key, map[key]!)
+      continue
+    }
     const nextSegs = [...segs]
     nextSegs[prefixSegs.length] = nextIdx
-    out[formatPath(nextSegs)] = map[key]!
+    setOwnProperty(out, formatPath(nextSegs), map[key]!)
   }
   return out
 }

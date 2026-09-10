@@ -93,10 +93,27 @@ export interface TreeSelectionModel<K extends SelectionKey = string> {
 interface TreeSelectionIndex<K extends SelectionKey> {
   childrenOf: Map<K, K[]>
   nodeOf: Map<K, TreeSelectionNode<K>>
+  isKnown(key: K): boolean
   isLeaf(key: K): boolean
   isDisabled(key: K): boolean
   enabledLeavesUnder(key: K): K[]
   affectedLeaves(key: K): K[]
+}
+
+function snapshotTreeSelectionNodes<K extends SelectionKey>(
+  nodes: TreeSelectionNode<K>[],
+): TreeSelectionNode<K>[] {
+  const snapshot: TreeSelectionNode<K>[] = []
+  const seenKeys = new Set<K>()
+  for (const node of nodes) {
+    // Match flattenTreeSelectionNodes' first-definition-wins behavior. Keeping
+    // duplicate definitions in the parent index can otherwise create phantom
+    // edges (and turn a leaf into a cyclic branch).
+    if (seenKeys.has(node.key)) continue
+    seenKeys.add(node.key)
+    snapshot.push({ ...node })
+  }
+  return snapshot
 }
 
 function createTreeSelectionIndex<K extends SelectionKey>(
@@ -106,7 +123,7 @@ function createTreeSelectionIndex<K extends SelectionKey>(
   const nodeOf = new Map<K, TreeSelectionNode<K>>()
   for (const node of nodes) {
     nodeOf.set(node.key, node)
-    if (!childrenOf.has(node.key)) childrenOf.set(node.key, [])
+    childrenOf.set(node.key, [])
   }
   for (const node of nodes) {
     if (node.parentKey !== undefined && nodeOf.has(node.parentKey)) {
@@ -115,29 +132,45 @@ function createTreeSelectionIndex<K extends SelectionKey>(
     }
   }
 
+  const isKnown = (key: K): boolean => nodeOf.has(key)
   const isLeaf = (key: K): boolean => (childrenOf.get(key)?.length ?? 0) === 0
   const isDisabled = (key: K): boolean => nodeOf.get(key)?.disabled === true
 
-  /** Depth-first descendants of `key` (excluding `key`), cycle-guarded. */
-  function descendants(key: K, visited = new Set<K>()): K[] {
+  /**
+   * Enabled leaves below `key`, stopping at disabled branches. A disabled
+   * branch may still derive its own state from enabled children, but an
+   * enabled ancestor must not cascade through it.
+   */
+  const enabledLeavesUnder = (key: K): K[] => {
     const out: K[] = []
-    for (const child of childrenOf.get(key) ?? []) {
-      if (visited.has(child)) continue
-      visited.add(child)
-      out.push(child, ...descendants(child, visited))
+    const visited = new Set<K>()
+    const walk = (parentKey: K): void => {
+      for (const child of childrenOf.get(parentKey) ?? []) {
+        if (visited.has(child)) continue
+        visited.add(child)
+        if (isDisabled(child)) continue
+        if (isLeaf(child)) out.push(child)
+        else walk(child)
+      }
     }
+    walk(key)
     return out
   }
-
-  const enabledLeavesUnder = (key: K): K[] =>
-    descendants(key).filter((candidate) => isLeaf(candidate) && !isDisabled(candidate))
   const affectedLeaves = (key: K): K[] => {
-    if (isDisabled(key)) return []
+    if (!isKnown(key) || isDisabled(key)) return []
     if (isLeaf(key)) return [key]
     return enabledLeavesUnder(key)
   }
 
-  return { childrenOf, nodeOf, isLeaf, isDisabled, enabledLeavesUnder, affectedLeaves }
+  return {
+    childrenOf,
+    nodeOf,
+    isKnown,
+    isLeaf,
+    isDisabled,
+    enabledLeavesUnder,
+    affectedLeaves,
+  }
 }
 
 function createTreeSelectionState<K extends SelectionKey>(
@@ -146,28 +179,32 @@ function createTreeSelectionState<K extends SelectionKey>(
 ): {
   isChecked(key: K): boolean
   isIndeterminate(key: K): boolean
-  setChecked(key: K, checked: boolean): void
+  setChecked(key: K, checked: boolean): boolean
 } {
   const isChecked = (key: K): boolean => {
-    if (index.isLeaf(key)) return selection.isSelected(key)
+    if (!index.isKnown(key)) return false
+    if (index.isLeaf(key)) return !index.isDisabled(key) && selection.isSelected(key)
     const leaves = index.enabledLeavesUnder(key)
     return leaves.length > 0 && leaves.every((leaf) => selection.isSelected(leaf))
   }
   const isIndeterminate = (key: K): boolean => {
-    if (index.isLeaf(key)) return false
+    if (!index.isKnown(key) || index.isLeaf(key)) return false
     const leaves = index.enabledLeavesUnder(key)
     const checked = leaves.filter((leaf) => selection.isSelected(leaf)).length
     return checked > 0 && checked < leaves.length
   }
-  const setChecked = (key: K, checked: boolean): void => {
+  const setChecked = (key: K, checked: boolean): boolean => {
     const leaves = index.affectedLeaves(key)
-    if (leaves.length === 0) return
-    const next = new Set<K>(selection.get())
+    if (leaves.length === 0) return false
+    const current = selection.get()
+    if (leaves.every((leaf) => selection.isSelected(leaf) === checked)) return false
+    const next = new Set<K>(current)
     for (const leaf of leaves) {
       if (checked) next.add(leaf)
       else next.delete(leaf)
     }
     selection.set([...next])
+    return true
   }
   return { isChecked, isIndeterminate, setChecked }
 }
@@ -179,26 +216,27 @@ function createTreeSelectionApi<K extends SelectionKey>(
   onChange: ((keys: K[]) => void) | undefined,
 ): TreeSelectionModel<K> {
   const state = createTreeSelectionState(index, selection)
+  const getCheckedLeaves = (): K[] =>
+    selection
+      .get()
+      .filter((key) => index.isKnown(key) && index.isLeaf(key) && !index.isDisabled(key))
   const notify = (): void => onChange?.(api.getChecked())
   const api: TreeSelectionModel<K> = {
     selection,
     isChecked: state.isChecked,
     isIndeterminate: state.isIndeterminate,
     toggle(key) {
-      state.setChecked(key, !state.isChecked(key))
-      notify()
+      if (state.setChecked(key, !state.isChecked(key))) notify()
     },
     check(key) {
-      state.setChecked(key, true)
-      notify()
+      if (state.setChecked(key, true)) notify()
     },
     uncheck(key) {
-      state.setChecked(key, false)
-      notify()
+      if (state.setChecked(key, false)) notify()
     },
-    getCheckedLeaves: () => selection.get(),
+    getCheckedLeaves,
     getChecked: () => {
-      const result = new Set<K>(selection.get())
+      const result = new Set<K>(getCheckedLeaves())
       for (const node of nodes) {
         if (!index.isLeaf(node.key) && state.isChecked(node.key)) result.add(node.key)
       }
@@ -211,7 +249,10 @@ function createTreeSelectionApi<K extends SelectionKey>(
 export function createTreeSelection<K extends SelectionKey = string>(
   config: TreeSelectionConfig<K>,
 ): TreeSelectionModel<K> {
-  const { nodes } = config
+  // Node definitions are constructor input, not a live update channel. Snapshot
+  // and first-definition-dedupe them so later caller mutation cannot desync the
+  // index from getChecked(), and malformed duplicate edges cannot leak through.
+  const nodes = snapshotTreeSelectionNodes(config.nodes)
 
   // Checked-leaf set is the source of truth; branch checked/indeterminate are
   // DERIVED from their leaves, so the tree can never hold an inconsistent state.

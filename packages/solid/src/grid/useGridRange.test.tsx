@@ -30,6 +30,48 @@ describe('useGridRange', () => {
     expect(onChange).toHaveBeenCalledTimes(2)
   })
 
+  it('isolates mutable bridge snapshots from the model and later range events', () => {
+    const onChange = vi.fn<(change: GridRangeChange) => void>()
+    const { result } = renderHook(() => {
+      const core = useGridCore<Row>()
+      return { core, range: useGridRange(core, { onChange }) }
+    })
+
+    result.core.invoke('startCellRange', 3, 2)
+    result.core.invoke('extendCellRange', 1, 0)
+    const exposed = result.range.state()
+    exposed.anchor!.row = 99
+    exposed.active!.col = 99
+
+    expect(result.range.model.getState()).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 1, col: 0 },
+    })
+    expect(result.range.model.getRange()).toEqual({
+      start: { row: 1, col: 0 },
+      end: { row: 3, col: 2 },
+    })
+    expect(onChange).toHaveBeenCalledTimes(2)
+
+    result.range.model.extendRange(4, 4)
+    expect(result.range.state()).toEqual({
+      anchor: { row: 3, col: 2 },
+      active: { row: 4, col: 4 },
+    })
+    expect(result.range.range()).toEqual({
+      start: { row: 3, col: 2 },
+      end: { row: 4, col: 4 },
+    })
+    expect(onChange).toHaveBeenLastCalledWith({
+      state: { anchor: { row: 3, col: 2 }, active: { row: 4, col: 4 } },
+      range: { start: { row: 3, col: 2 }, end: { row: 4, col: 4 } },
+    })
+
+    result.range.model.clearRange()
+    expect(result.range.state()).toEqual({ anchor: null, active: null })
+    expect(result.range.range()).toBeNull()
+  })
+
   it('stops feature callbacks after the Grid Core is destroyed', () => {
     let core: GridCore<Row> | undefined
     let model: GridRangeModel | undefined

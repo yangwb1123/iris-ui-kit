@@ -8,13 +8,20 @@ import {
   type ComputedRef,
   type Ref,
 } from 'vue'
-import { flattenLeafColumns } from '@iris-ui-kit/core'
+import {
+  advanceColumnFade,
+  applyColumnVisibility,
+  commitColumnFade,
+  expandColumnFadeToLeaves,
+  isColumnFadeCollapsed,
+  mergeColumnFadeVisibility,
+  startColumnFade,
+  type ColumnFadeOverlay,
+} from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableColumnVisibility } from './types'
 
 type TableRow = Record<string, unknown>
 type TableColumn = IrisTableColumn<TableRow>
-type ColumnFadeEntry = { dir: 'in' | 'out'; phase: 'pending' | 'run' }
-type ColumnFadeOverlay = Record<string, ColumnFadeEntry>
 
 export interface TableColumnFadeOptions {
   /** The already bridged Grid Core visibility snapshot. */
@@ -57,33 +64,6 @@ export function createTableColumnFade(options: TableColumnFadeOptions): TableCol
 
   const topLevelColumn = (key: string): TableColumn | undefined =>
     options.columns.value.find((column) => column.key === key)
-
-  const fadeFlip = (current: ColumnFadeOverlay): ColumnFadeOverlay | undefined => {
-    let changed = false
-    const next: ColumnFadeOverlay = {}
-    for (const [key, entry] of Object.entries(current)) {
-      if (entry.phase === 'pending') {
-        next[key] = { dir: entry.dir, phase: 'run' }
-        changed = true
-      } else {
-        next[key] = entry
-      }
-    }
-    return changed ? next : undefined
-  }
-
-  const fadeCommit = (current: ColumnFadeOverlay): ColumnFadeOverlay | undefined => {
-    let changed = false
-    const next: ColumnFadeOverlay = {}
-    const visibility = options.visibility()
-    for (const [key, entry] of Object.entries(current)) {
-      const visible = visibility[key] !== false
-      const done = entry.dir === 'out' ? !visible : visible
-      if (done) changed = true
-      else next[key] = entry
-    }
-    return changed ? next : undefined
-  }
 
   const cancelFadeSchedule = (): void => {
     fadeFocusCandidate = null
@@ -144,21 +124,14 @@ export function createTableColumnFade(options: TableColumnFadeOptions): TableCol
         return
       }
 
-      const overlay = { ...fadeOverlay.value }
       const activeElement = typeof document !== 'undefined' ? document.activeElement : null
-      const changedKeys = new Set<string>()
-      for (const key of new Set([...Object.keys(previous), ...Object.keys(next)])) {
-        // Visibility is intentionally evaluated at the same top-level boundary
-        // as the existing table renderer. A leaf key cannot animate a group
-        // that the current columnVisibility semantics leave mounted.
-        if (!topLevelColumn(key)) continue
-        const wasVisible = previous[key] !== false
-        const isVisible = next[key] !== false
-        if (wasVisible === isVisible) continue
-        overlay[key] = { dir: isVisible ? 'in' : 'out', phase: 'pending' }
-        changedKeys.add(key)
-      }
-      if (changedKeys.size === 0) return
+      const overlay = startColumnFade(
+        previous,
+        next,
+        fadeOverlay.value,
+        (key) => topLevelColumn(key) !== undefined,
+      )
+      if (!overlay) return
 
       fadeOverlay.value = overlay
       fadeFocusCandidate = activeElement
@@ -177,7 +150,7 @@ export function createTableColumnFade(options: TableColumnFadeOptions): TableCol
             if (disposed) return
             fadeFlipRaf = null
             const candidate = fadeFocusCandidate
-            fadeOverlay.value = fadeFlip(fadeOverlay.value) ?? fadeOverlay.value
+            fadeOverlay.value = advanceColumnFade(fadeOverlay.value) ?? fadeOverlay.value
             void nextTick(() => recoverFocus(candidate))
           })
         })
@@ -186,7 +159,8 @@ export function createTableColumnFade(options: TableColumnFadeOptions): TableCol
       fadeCommitTimer = setTimeout(() => {
         if (disposed) return
         fadeCommitTimer = null
-        fadeOverlay.value = fadeCommit(fadeOverlay.value) ?? fadeOverlay.value
+        fadeOverlay.value =
+          commitColumnFade(fadeOverlay.value, options.visibility()) ?? fadeOverlay.value
       }, FADE_DURATION_MS)
     },
   )
@@ -196,30 +170,18 @@ export function createTableColumnFade(options: TableColumnFadeOptions): TableCol
     cancelFadeSchedule()
   })
 
-  const effectiveVisibility = computed<IrisTableColumnVisibility>(() => {
-    if (Object.keys(fadeOverlay.value).length === 0) return options.visibility()
-    const merged = { ...options.visibility() }
-    for (const key of Object.keys(fadeOverlay.value)) merged[key] = true
-    return merged
-  })
+  const effectiveVisibility = computed<IrisTableColumnVisibility>(
+    () => mergeColumnFadeVisibility(options.visibility(), fadeOverlay.value) ?? {},
+  )
 
   const displayColumns = computed<TableColumn[]>(() => {
     const visibility = effectiveVisibility.value
-    if (Object.keys(visibility).length === 0) return options.columns.value
-    return options.columns.value.filter((column) => visibility[column.key] !== false)
+    return applyColumnVisibility(options.columns.value, visibility)
   })
 
-  const fadeByLeaf = computed<ColumnFadeOverlay>(() => {
-    if (Object.keys(fadeOverlay.value).length === 0) return {}
-    const out: ColumnFadeOverlay = {}
-    for (const [key, entry] of Object.entries(fadeOverlay.value)) {
-      const top = topLevelColumn(key)
-      if (!top) continue
-      const leaves = top.children && top.children.length > 0 ? flattenLeafColumns([top]) : [top]
-      for (const leaf of leaves) out[leaf.key] = entry
-    }
-    return out
-  })
+  const fadeByLeaf = computed<ColumnFadeOverlay>(() =>
+    expandColumnFadeToLeaves(fadeOverlay.value, options.columns.value),
+  )
 
   const columnFadeAttr = (column: TableColumn): 'in' | 'out' | undefined =>
     (fadeOverlay.value[column.key] ?? fadeByLeaf.value[column.key])?.dir
@@ -246,11 +208,7 @@ export function createTableColumnFade(options: TableColumnFadeOptions): TableCol
 
   const isCollapsed = (key: string): boolean => {
     const entry = fadeByLeaf.value[key]
-    return Boolean(
-      entry &&
-      ((entry.dir === 'out' && entry.phase === 'run') ||
-        (entry.dir === 'in' && entry.phase === 'pending')),
-    )
+    return entry !== undefined && isColumnFadeCollapsed(entry)
   }
 
   return {

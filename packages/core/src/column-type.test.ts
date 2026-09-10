@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectColumnType } from './column-type'
+import { applyDetectedColumnDefaults, detectColumnType } from './column-type'
 
 describe('detectColumnType', () => {
   it('all-number samples → number', () => {
@@ -52,6 +52,71 @@ describe('detectColumnType', () => {
     expect(detectColumnType([1, null, 2])).toBe('number')
     expect(detectColumnType([])).toBe('string')
     expect(detectColumnType([null, undefined])).toBe('string')
+  })
+
+  it('applies alignment defaults recursively and preserves explicit values', () => {
+    const columns = [
+      {
+        key: 'group',
+        align: 'center' as const,
+        children: [{ key: 'age' }, { key: 'name', align: 'right' as const }],
+      },
+    ]
+    const projected = applyDetectedColumnDefaults(columns, {
+      group: 'string',
+      age: 'number',
+      name: 'string',
+    })
+
+    expect(projected[0]).not.toBe(columns[0])
+    expect(projected[0]?.align).toBe('center')
+    expect(projected[0]?.children?.[0]?.align).toBe('right')
+    expect(projected[0]?.children?.[1]).toStrictEqual(columns[0]?.children?.[1])
+  })
+
+  it('optionally fills sortType while preserving explicit sortType', () => {
+    const columns = [{ key: 'age' }, { key: 'name', sortType: 'auto' as const }]
+    const projected = applyDetectedColumnDefaults(
+      columns,
+      { age: 'number', name: 'string' },
+      { fillSortType: true },
+    )
+
+    expect(projected.map((column) => column.sortType)).toEqual(['number', 'auto'])
+  })
+
+  it('keeps identity for columns without a detected entry', () => {
+    const columns = [{ key: 'age', align: 'right' as const }]
+    expect(applyDetectedColumnDefaults(columns, {})).toBe(columns)
+    expect(applyDetectedColumnDefaults(columns, { age: 'number' })[0]).not.toBe(columns[0])
+  })
+
+  it('uses own detected entries only and terminates on cyclic/malformed trees', () => {
+    const cyclic = { key: 'cycle' } as {
+      key: string
+      children?: (typeof cyclic)[]
+      align?: 'left' | 'center' | 'right'
+    }
+    cyclic.children = [cyclic]
+    const malformed = { key: 'malformed', children: {} as (typeof cyclic)[] }
+    const detected = Object.create({ cycle: 'number' }) as Record<string, 'number'>
+    detected.malformed = 'number'
+
+    const projected = applyDetectedColumnDefaults([cyclic, malformed], detected)
+    expect(projected[0]).not.toBe(cyclic)
+    expect(projected[0]?.align).toBeUndefined()
+    expect(projected[1]?.align).toBe('right')
+    expect(cyclic.align).toBeUndefined()
+  })
+
+  it('does not mutate caller-owned children while projecting recursive defaults', () => {
+    const child = { key: 'age' }
+    const columns = [{ key: 'group', children: [child] }]
+    const projected = applyDetectedColumnDefaults(columns, { age: 'number' })
+
+    expect(projected[0]?.children).not.toBe(columns[0]?.children)
+    expect(projected[0]?.children?.[0]).not.toBe(child)
+    expect(child).toEqual({ key: 'age' })
   })
 
   it('samples only the first 50 non-nullish values (a 51st dissenter does not flip)', () => {

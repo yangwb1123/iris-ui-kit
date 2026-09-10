@@ -41,17 +41,42 @@ export interface ComputeResponsiveColumnsOptions {
 function naturalWidthOf(
   col: ResponsiveColumn,
   widthOf: (col: ResponsiveColumn) => number,
+  ancestors = new Set<object>(),
 ): number | null {
-  if (col.children && col.children.length > 0) {
+  if (
+    col === null ||
+    typeof col !== 'object' ||
+    typeof col.key !== 'string' ||
+    ancestors.has(col)
+  ) {
+    return null
+  }
+  const children = (col as { children?: unknown }).children
+  if (children !== undefined && !Array.isArray(children)) return null
+  if (children && children.length > 0) {
+    ancestors.add(col)
     let total = 0
-    for (const child of col.children) {
-      const width = naturalWidthOf(child, widthOf)
-      if (width === null) return null
+    for (const child of children) {
+      const width = naturalWidthOf(child, widthOf, ancestors)
+      if (width === null) {
+        ancestors.delete(col)
+        return null
+      }
       total += width
+      if (!Number.isFinite(total)) {
+        ancestors.delete(col)
+        return null
+      }
     }
+    ancestors.delete(col)
     return total
   }
-  const width = widthOf(col)
+  let width: number
+  try {
+    width = widthOf(col)
+  } catch {
+    return null
+  }
   // A broken measurement must never turn the fit budget into NaN/Infinity or
   // make the algorithm hide arbitrary columns.  Returning null lets the
   // caller preserve the original column list (fail-closed).
@@ -62,6 +87,7 @@ interface ResponsiveMeasurement {
   total: number
   freeCount: number
   naturalWidths: number[]
+  pinned: boolean[]
 }
 
 function measureResponsiveColumns(
@@ -72,28 +98,36 @@ function measureResponsiveColumns(
   let total = 0
   let freeCount = 0
   const naturalWidths: number[] = []
+  const pinned: boolean[] = []
   for (const col of columns) {
     const width = naturalWidthOf(col, widthOf)
     if (width === null) return null
     naturalWidths.push(width)
     total += width
-    if (!isPinned(col)) freeCount += 1
+    if (!Number.isFinite(total)) return null
+    let isColumnPinned: boolean
+    try {
+      isColumnPinned = isPinned(col)
+    } catch {
+      return null
+    }
+    if (typeof isColumnPinned !== 'boolean') return null
+    pinned.push(isColumnPinned)
+    if (!isColumnPinned) freeCount += 1
   }
-  return { total, freeCount, naturalWidths }
+  return { total, freeCount, naturalWidths, pinned }
 }
 
 function hideResponsiveTail(
   columns: readonly ResponsiveColumn[],
   containerWidth: number,
   floor: number,
-  isPinned: (col: ResponsiveColumn) => boolean,
   measurement: ResponsiveMeasurement,
 ): boolean[] {
   const kept = new Array<boolean>(columns.length).fill(true)
   let { total, freeCount } = measurement
   for (let i = columns.length - 1; i >= 0 && total > containerWidth; i -= 1) {
-    const col = columns[i]!
-    if (isPinned(col) || freeCount <= floor) continue
+    if (measurement.pinned[i] || freeCount <= floor) continue
     kept[i] = false
     freeCount -= 1
     total -= measurement.naturalWidths[i]!
@@ -135,11 +169,116 @@ export function computeResponsiveColumns<C extends ResponsiveColumn>(
     floor = 1,
     narrowWidth = RESPONSIVE_NARROW_WIDTH,
   } = options
-  if (containerWidth <= 0 || containerWidth >= narrowWidth) return columns
+  if (
+    !Number.isFinite(containerWidth) ||
+    containerWidth <= 0 ||
+    !Number.isFinite(narrowWidth) ||
+    narrowWidth <= 0 ||
+    containerWidth >= narrowWidth ||
+    !Number.isFinite(floor) ||
+    !Number.isInteger(floor) ||
+    floor < 1
+  ) {
+    return columns
+  }
   if (columns.length === 0) return columns
   const measurement = measureResponsiveColumns(columns, widthOf, isPinned)
   if (measurement === null || measurement.total <= containerWidth) return columns
-  const kept = hideResponsiveTail(columns, containerWidth, floor, isPinned, measurement)
+  const kept = hideResponsiveTail(columns, containerWidth, floor, measurement)
   if (!hasResponsiveHiddenColumns(kept)) return columns
   return columns.filter((_, i) => kept[i]!)
+}
+
+/** Options for the table-level responsive projection, including leading tracks. */
+export interface ComputeResponsiveColumnLayoutOptions<C extends ResponsiveColumn> {
+  /** Width of a leaf column in pixels. */
+  widthOf: (column: C) => number
+  /** Pin resolver for leaves; grouped columns inherit protection from descendants. */
+  isPinnedLeaf?: (column: C) => boolean
+  /** Width consumed by non-data leading tracks (drag/seq/detail/selection). */
+  leadingWidth?: number
+  /** Minimum number of unprotected top-level columns to retain. */
+  floor?: number
+  /** Narrow threshold; defaults to {@link RESPONSIVE_NARROW_WIDTH}. */
+  narrowWidth?: number
+}
+
+/** Result of the table-level responsive projection. */
+export interface ResponsiveColumnLayout<C extends ResponsiveColumn> {
+  /** Fitted top-level columns; identity is preserved when no columns hide. */
+  readonly columns: readonly C[]
+  /** Whether the fitted table still exceeds the measured container width. */
+  readonly overflow: boolean
+}
+
+/**
+ * Apply the complete narrow-table projection used by adapters: subtract
+ * leading tracks, protect grouped descendants, fit top-level columns, and
+ * report overflow from the fitted natural width. Keeping this in Core avoids
+ * three subtly different adapter copies of the same budget math.
+ */
+export function computeResponsiveColumnLayout<C extends ResponsiveColumn>(
+  columns: readonly C[],
+  containerWidth: number,
+  options: ComputeResponsiveColumnLayoutOptions<C>,
+): ResponsiveColumnLayout<C> {
+  const leadingWidth = options.leadingWidth ?? 0
+  const narrowWidth = options.narrowWidth ?? RESPONSIVE_NARROW_WIDTH
+  if (
+    !Number.isFinite(containerWidth) ||
+    containerWidth <= 0 ||
+    !Number.isFinite(narrowWidth) ||
+    narrowWidth <= 0 ||
+    containerWidth >= narrowWidth ||
+    !Number.isFinite(leadingWidth) ||
+    leadingWidth < 0
+  ) {
+    return { columns, overflow: false }
+  }
+
+  const isPinned = (column: ResponsiveColumn, ancestors = new Set<object>()): boolean | null => {
+    if (
+      column === null ||
+      typeof column !== 'object' ||
+      typeof column.key !== 'string' ||
+      ancestors.has(column)
+    ) {
+      return null
+    }
+    const children = (column as { children?: unknown }).children
+    if (children !== undefined && !Array.isArray(children)) return null
+    if (children && children.length > 0) {
+      ancestors.add(column)
+      let pinned = false
+      for (const child of children) {
+        const childPinned = isPinned(child, ancestors)
+        if (childPinned === null) {
+          ancestors.delete(column)
+          return null
+        }
+        pinned ||= childPinned
+      }
+      ancestors.delete(column)
+      return pinned
+    }
+    try {
+      return options.isPinnedLeaf?.(column as C) ?? false
+    } catch {
+      return null
+    }
+  }
+  const fitted = computeResponsiveColumns(columns, Math.max(1, containerWidth - leadingWidth), {
+    widthOf: (column) => options.widthOf(column as C),
+    isPinned: (column) => isPinned(column) ?? true,
+    floor: options.floor,
+    narrowWidth: narrowWidth - leadingWidth,
+  })
+  let natural = leadingWidth
+  for (const column of fitted) {
+    const width = naturalWidthOf(column, (leaf) => options.widthOf(leaf as C))
+    if (width === null) return { columns: fitted, overflow: false }
+    natural += width
+    if (!Number.isFinite(natural)) return { columns: fitted, overflow: false }
+  }
+  return { columns: fitted, overflow: natural > containerWidth }
 }

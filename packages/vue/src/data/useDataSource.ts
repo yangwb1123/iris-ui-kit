@@ -1,13 +1,13 @@
-import { onMounted, onScopeDispose, type ShallowRef } from 'vue'
+import { getCurrentInstance, onMounted, onScopeDispose, type ShallowRef } from 'vue'
 import {
   createDataSource,
-  type DataSourceController,
+  type AdvancedDataSourceController,
   type DataSourceConfig,
   type DataSourceState,
 } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
-export interface UseDataSource<T> extends DataSourceController<T> {
+export interface UseDataSource<T> extends AdvancedDataSourceController<T> {
   /**
    * The live data-source state as a reactive ref: rows, total, page/pageSize,
    * sort/multiSort, filters/filterRules, loading/loadingMore, hasMore,
@@ -36,7 +36,7 @@ export function useDataSource<T>(config: DataSourceConfig<T>): UseDataSource<T> 
   const controller = createDataSource({ ...config, immediate: false })
   const immediate = config.immediate !== false
 
-  if (immediate) {
+  if (immediate && getCurrentInstance()) {
     onMounted(() => void controller.load())
   }
   // Abort any in-flight fetch + detach the controller's internal subscriptions

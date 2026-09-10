@@ -53,10 +53,17 @@ export function endOfMonth(date: Date): Date {
  * leading days from the previous month and trailing days from the next, so the
  * grid is always 42 cells. `weekStartsOn` 0–6 (0=Sunday).
  */
+function normalizeWeekStartsOn(weekStartsOn: number): number {
+  if (!Number.isFinite(weekStartsOn)) return 0
+  const integer = Math.trunc(weekStartsOn)
+  return ((integer % 7) + 7) % 7
+}
+
 export function buildMonthMatrix(date: Date, weekStartsOn: number): Date[][] {
   const first = startOfMonth(date)
   const firstWeekday = first.getDay()
-  const offset = (firstWeekday - weekStartsOn + 7) % 7
+  const normalizedWeekStartsOn = normalizeWeekStartsOn(weekStartsOn)
+  const offset = (firstWeekday - normalizedWeekStartsOn + 7) % 7
   const start = addDays(first, -offset)
   const rows: Date[][] = []
   for (let r = 0; r < 6; r += 1) {
@@ -86,6 +93,7 @@ function safeLocale(locale: string | undefined): string | undefined {
 }
 
 export function formatMonthYear(date: Date, locale?: string): string {
+  if (!Number.isFinite(date.getTime())) return ''
   return new Intl.DateTimeFormat(safeLocale(locale), { month: 'long', year: 'numeric' }).format(
     date,
   )
@@ -95,9 +103,10 @@ export function getWeekdayNames(weekStartsOn: number, locale?: string): string[]
   // Reference week from a known Sunday (1970-01-04 was a Sunday).
   const sunday = new Date(1970, 0, 4)
   const fmt = new Intl.DateTimeFormat(safeLocale(locale), { weekday: 'short' })
+  const normalizedWeekStartsOn = normalizeWeekStartsOn(weekStartsOn)
   const names: string[] = []
   for (let i = 0; i < 7; i += 1) {
-    const day = addDays(sunday, (weekStartsOn + i) % 7)
+    const day = addDays(sunday, normalizedWeekStartsOn + i)
     names.push(fmt.format(day))
   }
   return names
@@ -108,6 +117,7 @@ export function getWeekdayNames(weekStartsOn: number, locale?: string): string[]
  * timezones east/west of UTC), this is the day as the user sees it locally.
  */
 export function formatLocalISO(date: Date): string {
+  if (!Number.isFinite(date.getTime())) return ''
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
@@ -121,6 +131,7 @@ export function formatLocalISO(date: Date): string {
  * Used by the table freshness stamp (batch AS) and any clock display.
  */
 export function formatClock(date: Date): string {
+  if (!Number.isFinite(date.getTime())) return ''
   const h = String(date.getHours()).padStart(2, '0')
   const m = String(date.getMinutes()).padStart(2, '0')
   const s = String(date.getSeconds()).padStart(2, '0')
@@ -135,6 +146,7 @@ export function clampDate(date: Date, min?: Date, max?: Date): Date {
 }
 
 export function isOutOfRange(date: Date, min?: Date, max?: Date): boolean {
+  if (!Number.isFinite(date.getTime())) return true
   if (min && startOfDay(date) < startOfDay(min)) return true
   if (max && startOfDay(date) > startOfDay(max)) return true
   return false

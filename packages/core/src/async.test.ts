@@ -145,6 +145,41 @@ describe('createAsyncResource', () => {
     expect(r.getState().data).toBe(7) // superseded load never wrote
   })
 
+  it('handles a fetcher that throws synchronously as an error result', async () => {
+    const error = new Error('sync failure')
+    const r = createAsyncResource(() => {
+      throw error
+    })
+
+    await expect(r.load()).resolves.toBeUndefined()
+    expect(r.getState()).toEqual({ status: 'error', data: undefined, error })
+  })
+
+  it('does not start work or mutate state after destroy', async () => {
+    const fetcher = vi.fn(async () => 42)
+    const r = createAsyncResource(fetcher, { initialData: 7 })
+    r.destroy()
+
+    await expect(r.load()).resolves.toBeUndefined()
+    await expect(r.reload()).resolves.toBeUndefined()
+    r.mutate(9)
+    r.reset()
+
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(r.getState()).toEqual({ status: 'success', data: 7, error: undefined })
+  })
+
+  it('does not invoke a fetcher if loading notification destroys the resource', async () => {
+    const fetcher = vi.fn(async () => 42)
+    const r = createAsyncResource(fetcher)
+    r.subscribe((state) => {
+      if (state.status === 'loading') r.destroy()
+    })
+
+    await expect(r.load()).resolves.toBeUndefined()
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
   it('a fetcher that ignores the signal still works (backward compatible)', async () => {
     const r = createAsyncResource(async (n: number) => n * 2)
     expect(await r.load(21)).toBe(42)

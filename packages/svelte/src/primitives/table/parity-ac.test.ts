@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, waitFor, cleanup } from '@testing-library/svelte'
 import IrisTable from './IrisTable.svelte'
+import type { IrisTableHandle, IrisTableProxyQueryParams } from './types'
 
 afterEach(cleanup)
 
@@ -33,6 +34,14 @@ function pageQuery(rows = data) {
 
 function bodyRows(container: HTMLElement): HTMLElement[] {
   return [...container.querySelectorAll('[data-iris-table-body] [data-iris-table-row]')]
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => {
+    resolve = r
+  })
+  return { promise, resolve }
 }
 
 describe('IrisTable batch AC — columnVisibility / filters / seq', () => {
@@ -201,6 +210,83 @@ describe('IrisTable batch AC — proxyConfig', () => {
     await waitFor(() => {
       expect(bodyRows(container).length).toBe(3)
     })
+  })
+
+  it('forwards proxy AbortSignal without changing params and keeps one-argument callbacks compatible', async () => {
+    const query = vi.fn(
+      async (
+        params: IrisTableProxyQueryParams,
+        signal?: AbortSignal,
+      ): Promise<{ rows: Array<Record<string, unknown>>; total: number }> => {
+        expect(Object.keys(params)).toEqual(['page', 'pageSize', 'sort', 'filters'])
+        expect(signal).toBeInstanceOf(AbortSignal)
+        return { rows: [data[0]], total: 1 }
+      },
+    )
+    const first = render(IrisTable, {
+      props: { columns, proxyConfig: { query } },
+    })
+    await waitFor(() => expect(bodyRows(first.container).length).toBe(1))
+    expect(query.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
+
+    const oneArgumentQuery = pageQuery()
+    const second = render(IrisTable, {
+      props: { columns, proxyConfig: { query: oneArgumentQuery } },
+    })
+    await waitFor(() => expect(bodyRows(second.container).length).toBe(3))
+  })
+
+  it('forwards Core resilient options without changing proxy params or the initial request count', async () => {
+    const query = vi.fn(async (_params: IrisTableProxyQueryParams) => ({
+      rows: [data[0]],
+      total: 1,
+    }))
+    const tableRef: { current: IrisTableHandle | null } = { current: null }
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        proxyConfig: { query, resilient: { ttlMs: 60_000 } },
+        tableRef,
+      },
+    })
+    await waitFor(() => expect(bodyRows(container).length).toBe(1))
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query.mock.calls[0]?.[0]).toEqual({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
+    await waitFor(() => expect(tableRef.current).not.toBeNull())
+    tableRef.current!.reloadData()
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    expect(query).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts stale proxy requests and never publishes their late rows', async () => {
+    const first = deferred<{ rows: Array<Record<string, unknown>>; total: number }>()
+    const second = deferred<{ rows: Array<Record<string, unknown>>; total: number }>()
+    const signals: Array<AbortSignal | undefined> = []
+    const query = vi.fn((_params: IrisTableProxyQueryParams, signal?: AbortSignal) => {
+      signals.push(signal)
+      return signals.length === 1 ? first.promise : second.promise
+    })
+    const tableRef: { current: IrisTableHandle | null } = { current: null }
+    const { container } = render(IrisTable, {
+      props: { columns, proxyConfig: { query }, tableRef },
+    })
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(tableRef.current).not.toBeNull())
+    tableRef.current!.reloadData()
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
+    expect(signals[0]?.aborted).toBe(true)
+    expect(signals[1]).toBeInstanceOf(AbortSignal)
+
+    second.resolve({ rows: [data[1]], total: 1 })
+    await waitFor(() => expect(bodyRows(container)[0]?.textContent).toContain('Bob'))
+    first.resolve({ rows: [data[0]], total: 1 })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(bodyRows(container)[0]?.textContent).toContain('Bob')
   })
 
   it('remoteSort re-queries with the active sort', async () => {

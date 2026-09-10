@@ -2,21 +2,21 @@ import * as React from 'react'
 import { IrisCard } from '@iris-ui-kit/react'
 import type { AeroIdClient } from '../api/aeroId'
 import { PageHeader } from '../components/PageHeader'
-import { PageError, PageLoading } from '../components/PageState'
+import { PageError, PageLoading, PageMore } from '../components/PageState'
 import { RecordTable } from '../components/RecordTable'
-import { useAsyncResource } from '../hooks/useAsyncResource'
+import { useCursorResource } from '../hooks/useCursorResource'
 
 export function ConnectionsPage({ client }: { client: AeroIdClient }): React.ReactElement {
-  const load = React.useCallback(async () => {
-    const [sources, memberships] = await Promise.all([
-      client.listSources(),
-      client.listMemberships(),
-    ])
-    return { sources, memberships }
-  }, [client])
-  const resource = useAsyncResource(load)
-  if (resource.loading) return <PageLoading />
-  if (resource.error) return <PageError error={resource.error} retry={resource.reload} />
+  const loadSources = React.useCallback((cursor?: string) => client.listSources(cursor), [client])
+  const loadMemberships = React.useCallback(
+    (cursor?: string) => client.listMemberships(cursor),
+    [client],
+  )
+  const sources = useCursorResource(loadSources)
+  const memberships = useCursorResource(loadMemberships)
+  if (sources.loading || memberships.loading) return <PageLoading />
+  if (sources.error) return <PageError error={sources.error} retry={sources.reload} />
+  if (memberships.error) return <PageError error={memberships.error} retry={memberships.reload} />
   return (
     <section>
       <PageHeader
@@ -25,7 +25,7 @@ export function ConnectionsPage({ client }: { client: AeroIdClient }): React.Rea
       />
       <IrisCard variant="outline" header="来源账户">
         <RecordTable
-          records={resource.data!.sources.items}
+          records={sources.data!.items}
           columns={[
             { key: 'source', label: '来源', aliases: ['source_system'] },
             { key: 'source_account_id', label: '来源账户', aliases: ['external_id', 'subject'] },
@@ -35,10 +35,16 @@ export function ConnectionsPage({ client }: { client: AeroIdClient }): React.Rea
           ]}
           empty="尚未关联来源账户"
         />
+        <PageMore
+          available={Boolean(sources.data!.nextCursor)}
+          loading={sources.loadingMore}
+          error={sources.loadMoreError}
+          load={sources.loadMore}
+        />
       </IrisCard>
       <IrisCard variant="outline" header="成员关系">
         <RecordTable
-          records={resource.data!.memberships.items}
+          records={memberships.data!.items}
           columns={[
             { key: 'source', label: '来源' },
             { key: 'scope_type', label: '作用域类型' },
@@ -47,6 +53,12 @@ export function ConnectionsPage({ client }: { client: AeroIdClient }): React.Rea
             { key: 'status', label: '状态', kind: 'status' },
           ]}
           empty="暂无成员关系"
+        />
+        <PageMore
+          available={Boolean(memberships.data!.nextCursor)}
+          loading={memberships.loadingMore}
+          error={memberships.loadMoreError}
+          load={memberships.loadMore}
         />
       </IrisCard>
     </section>

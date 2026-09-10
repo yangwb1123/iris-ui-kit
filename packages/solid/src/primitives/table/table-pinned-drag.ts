@@ -1,4 +1,9 @@
-import { pinnedCountFromBudget } from '@iris-ui-kit/core'
+import {
+  computePinnedCountPlan,
+  firstRightPinnedIndex as getFirstRightPinnedIndex,
+  pinnedBoundaryIndex,
+  pinnedCountFromDelta,
+} from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 type Pin = 'left' | 'right' | null
@@ -18,51 +23,24 @@ export function createPinnedDragMath<Row extends Record<string, unknown>>(option
   commitPinnedCount: (count: number) => void
 } {
   const pinOf = options.pinOf ?? ((column: IrisTableColumn<Row>): Pin => column.pinned ?? null)
-  const firstRightPinnedIndex = (): number => {
-    const columns = options.columns()
-    const index = columns.findIndex((column) => pinOf(column) === 'right')
-    return index < 0 ? columns.length : index
-  }
-  const leadingLeftPinnedCount = (columns: IrisTableColumn<Row>[], cap: number): number => {
-    let count = 0
-    for (let index = 0; index < cap; index += 1) {
-      if (pinOf(columns[index]!) === 'left') count = index + 1
-      else return count
-    }
-    return count
-  }
+  const firstRightPinnedIndex = (): number => getFirstRightPinnedIndex(options.columns(), pinOf)
   const boundaryKey = (): string | null => {
     if (!options.enabled()) return null
     const columns = options.columns()
-    for (let index = firstRightPinnedIndex() - 1; index >= 0; index -= 1) {
-      if (pinOf(columns[index]!) === 'left') return columns[index]!.key
-    }
-    return null
+    const index = pinnedBoundaryIndex(columns, pinOf, firstRightPinnedIndex())
+    return index >= 0 ? columns[index]!.key : null
   }
-  const resolvePinnedCount = (dx: number): number => {
-    const columns = options.columns()
-    const cap = firstRightPinnedIndex()
-    const current = leadingLeftPinnedCount(columns, cap)
-    let currentWidth = 0
-    for (let index = 0; index < current; index += 1)
-      currentWidth += options.widthOf(columns[index]!)
-    return pinnedCountFromBudget(columns, options.widthOf, currentWidth + dx, cap)
-  }
+  const resolvePinnedCount = (dx: number): number =>
+    pinnedCountFromDelta(options.columns(), options.widthOf, dx, firstRightPinnedIndex(), pinOf)
   const commitPinnedCount = (count: number): void => {
     if (!options.enabled()) return
-    const columns = options.columns()
-    const cap = firstRightPinnedIndex()
-    const clamped = Math.max(0, Math.min(cap, count))
-    const current = leadingLeftPinnedCount(columns, cap)
-    if (clamped === current) return
-    for (let index = 0; index < cap; index += 1) {
-      const column = columns[index]!
-      const target: Pin = index < clamped ? 'left' : null
-      if (pinOf(column) === target) continue
-      if (options.controlled?.()) options.setPinned?.(column.key, target)
-      else options.onColumnPinnedChange?.(column.key, target)
+    const plan = computePinnedCountPlan(options.columns(), pinOf, count, firstRightPinnedIndex())
+    if (plan.count === plan.current) return
+    for (const update of plan.updates) {
+      if (options.controlled?.()) options.setPinned?.(update.column.key, update.pinned)
+      else options.onColumnPinnedChange?.(update.column.key, update.pinned)
     }
-    options.onPinnedCountChange?.(clamped)
+    options.onPinnedCountChange?.(plan.count)
   }
   return { boundaryKey, resolvePinnedCount, commitPinnedCount }
 }

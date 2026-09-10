@@ -41,10 +41,12 @@ export function RecordTable({
   records,
   columns,
   empty = '暂无数据',
+  actions,
 }: {
   records: JsonRecord[]
   columns: RecordColumn[]
   empty?: string
+  actions?: { label?: string; render(record: JsonRecord): React.ReactNode }
 }): React.ReactElement {
   if (records.length === 0)
     return <IrisEmptyState title={empty} description="当前筛选条件没有记录。" />
@@ -56,14 +58,25 @@ export function RecordTable({
             {columns.map((column) => (
               <th key={column.key}>{column.label}</th>
             ))}
+            {actions ? <th>{actions.label ?? '操作'}</th> : null}
           </tr>
         </thead>
         <tbody>
           {records.map((record, index) => (
-            <tr key={String(record.id ?? record.event_id ?? record.account_id ?? index)}>
+            <tr
+              key={String(
+                record.id ??
+                  record.job_id ??
+                  record.operation_id ??
+                  record.event_id ??
+                  record.account_id ??
+                  index,
+              )}
+            >
               {columns.map((column) => (
                 <td key={column.key}>{display(valueOf(record, column), column.kind)}</td>
               ))}
+              {actions ? <td>{actions.render(record)}</td> : null}
             </tr>
           ))}
         </tbody>

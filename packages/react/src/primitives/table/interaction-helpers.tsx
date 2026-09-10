@@ -109,7 +109,7 @@ export function nextDensity(d: IrisTableDensity): IrisTableDensity {
 export function rangeFillCellStyle(handleCell: boolean, targetCell: boolean): React.CSSProperties {
   return {
     ...(handleCell ? { position: 'relative', zIndex: 2 } : null),
-    ...(targetCell ? { background: RANGE_FILL_TARGET_BG } : null),
+    ...(targetCell ? { backgroundColor: RANGE_FILL_TARGET_BG } : null),
   }
 }
 

@@ -39,6 +39,8 @@ describe('createGridRowsFeature', () => {
 
     expect(core.invoke<boolean>('transactRows', (rows) => [...rows])).toBe(false)
     expect(core.invoke<boolean>('transactRows', (rows) => rows.slice())).toBe(false)
+    expect(model.commit([...storeState])).toBe(false)
+    expect(model.loadData([...storeState])).toBe(false)
 
     expect(model.store.getState()).toBe(storeState)
     expect(storeChange).not.toHaveBeenCalled()

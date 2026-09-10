@@ -79,6 +79,58 @@ describe('runPlugins', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('registered by multiple plugins'))
   })
 
+  it('applies last-wins semantics across eager and lazy store registrations', () => {
+    const eagerThenLazy = runPlugins([
+      createPlugin({
+        name: 'p',
+        install(reg) {
+          reg.registerStore('s', () => 'eager')
+          reg.registerLazyStore('s', () => 'lazy')
+        },
+      }),
+    ])
+    expect(eagerThenLazy.stores.get('s')).toBe('lazy')
+
+    const lazyThenEager = runPlugins([
+      createPlugin({
+        name: 'p',
+        install(reg) {
+          reg.registerLazyStore('s', () => 'lazy')
+          reg.registerStore('s', () => 'eager')
+        },
+      }),
+    ])
+    expect(lazyThenEager.stores.get('s')).toBe('eager')
+  })
+
+  it('replaces a materialized lazy store with a later registration', () => {
+    const result = runPlugins([
+      createPlugin({
+        name: 'p',
+        install(reg) {
+          reg.registerLazyStore('s', () => 'first')
+          expect(reg.readStore('s')).toBe('first')
+          reg.registerLazyStore('s', () => 'second')
+        },
+      }),
+    ])
+    expect(result.stores.get('s')).toBe('second')
+  })
+
+  it('fails clearly instead of recursing when a lazy store reads itself', () => {
+    let read: (() => unknown) | undefined
+    const result = runPlugins([
+      createPlugin({
+        name: 'p',
+        install(reg) {
+          read = () => reg.readStore('s')
+          reg.registerLazyStore('s', () => read!())
+        },
+      }),
+    ])
+    expect(() => result.stores.get('s')).toThrow(/Reentrant lazy store factory/)
+  })
+
   it('merges messages for the same locale across plugins', () => {
     const a = createPlugin({ name: 'a', install: (r) => r.registerMessages('zh-CN', { a: '1' }) })
     const b = createPlugin({ name: 'b', install: (r) => r.registerMessages('zh-CN', { b: '2' }) })
@@ -122,6 +174,28 @@ describe('runPlugins', () => {
     expect(warn).toHaveBeenCalled()
   })
 
+  it('does not let duplicate names suppress dependency ordering for another definition', () => {
+    const log: string[] = []
+    const first = createPlugin({
+      name: 'duplicate',
+      dependsOn: ['first-dependency'],
+      install: () => log.push('first'),
+    })
+    const second = createPlugin({
+      name: 'duplicate',
+      dependsOn: ['second-dependency'],
+      install: () => log.push('second'),
+    })
+    runPlugins([
+      first,
+      second,
+      createPlugin({ name: 'first-dependency', install: () => log.push('first-dependency') }),
+      createPlugin({ name: 'second-dependency', install: () => log.push('second-dependency') }),
+    ])
+    expect(log.indexOf('first-dependency')).toBeLessThan(log.indexOf('first'))
+    expect(log.indexOf('second-dependency')).toBeLessThan(log.indexOf('second'))
+  })
+
   it('collects teardowns from install return values and onTeardown, runs LIFO', () => {
     const order: string[] = []
     const a = createPlugin({
@@ -146,6 +220,37 @@ describe('runPlugins', () => {
     r.teardown()
     r.teardown()
     expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans up partial registrations when an install hook throws', () => {
+    const cleanup = vi.fn()
+    let bus: ReturnType<typeof runPlugins>['bus'] | undefined
+    const first = createPlugin({
+      name: 'first',
+      install(reg) {
+        bus = reg.bus
+        reg.bus.on('leak', () => {})
+        reg.onTeardown(cleanup)
+      },
+    })
+    const failing = createPlugin({
+      name: 'failing',
+      install() {
+        throw new Error('install failed')
+      },
+    })
+
+    expect(() => runPlugins([first, failing])).toThrow('install failed')
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(bus?.listenerCount('leak')).toBe(0)
+  })
+
+  it('rejects malformed runtime plugin definitions before installing', () => {
+    const install = vi.fn()
+    expect(() =>
+      runPlugins([{ name: 'bad', install: undefined } as unknown as IrisPlugin]),
+    ).toThrow(/must have an install function/)
+    expect(install).not.toHaveBeenCalled()
   })
 
   it('a throwing teardown is isolated and does not block the rest', () => {

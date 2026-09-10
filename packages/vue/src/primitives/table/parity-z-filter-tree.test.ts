@@ -198,9 +198,9 @@ describe('IrisTable batch Z — filterValues panel (vxe filterConfig parity)', (
       attachTo: host,
     })
     await settle()
-    expect(query).toHaveBeenCalledWith(
-      expect.objectContaining({ filters: { status: 'active,paused' } }),
-    )
+    expect(query.mock.calls[0]?.[0]).toMatchObject({
+      filters: { status: 'active,paused' },
+    })
     // Confirming a filter re-queries with the comma-joined set.
     await wrapper.find('[data-iris-filter-trigger="status"]').trigger('click')
     await nextTick()
@@ -211,9 +211,10 @@ describe('IrisTable batch Z — filterValues panel (vxe filterConfig parity)', (
     ;(panel()!.querySelector('[data-iris-filter-confirm]') as HTMLElement).click()
     await wrapper.setProps({ filterValues: { status: ['active'] } })
     await settle()
-    expect(query).toHaveBeenLastCalledWith(
-      expect.objectContaining({ filters: { status: 'active' }, page: 1 }),
-    )
+    expect(query.mock.lastCall?.[0]).toMatchObject({
+      filters: { status: 'active' },
+      page: 1,
+    })
   })
 })
 

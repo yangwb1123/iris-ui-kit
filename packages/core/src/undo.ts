@@ -92,7 +92,13 @@ export interface UndoStack<T> {
 // ─── Implementation ─────────────────────────────────────────────────────────
 
 export function createUndoStack<T>(options: UndoStackOptions<T> = {}): UndoStack<T> {
-  const maxHistory = options.maxHistory ?? 50
+  const requestedMaxHistory = options.maxHistory ?? 50
+  // A history depth is an array bound and therefore must be a finite,
+  // non-negative integer. Invalid runtime values disable recording rather than
+  // allowing fractional pointers or an accidental unbounded history.
+  const maxHistory = Number.isFinite(requestedMaxHistory)
+    ? Math.max(0, Math.floor(requestedMaxHistory))
+    : 0
   const equals = options.equals ?? Object.is
   const merge = options.merge
 
@@ -108,8 +114,8 @@ export function createUndoStack<T>(options: UndoStackOptions<T> = {}): UndoStack
   let ptr = -1
 
   // Push the initial snapshot if provided (unless maxHistory=0 disables undo).
-  if (options.initial !== undefined && maxHistory > 0) {
-    stack.push(options.initial)
+  if (Object.prototype.hasOwnProperty.call(options, 'initial') && maxHistory > 0) {
+    stack.push(options.initial as T)
     ptr = 0
   }
 
@@ -134,21 +140,28 @@ export function createUndoStack<T>(options: UndoStackOptions<T> = {}): UndoStack
     push(snapshot: T): T {
       if (maxHistory <= 0) return snapshot
 
+      let shouldMerge = false
       // Compare with the current top (at ptr).
       if (ptr >= 0) {
         const top = stack[ptr]!
         // Skip identical snapshots.
         if (equals(top, snapshot)) return top
-        // Merge: replace top instead of push.
-        if (merge?.(top, snapshot)) {
-          stack[ptr] = snapshot
-          return snapshot
-        }
+        // Evaluate before mutating so a throwing merge predicate leaves the
+        // stack, including its redo branch, untouched.
+        shouldMerge = merge?.(top, snapshot) ?? false
       }
 
-      // Clear any redo entries beyond ptr.
+      // A non-duplicate push starts a new branch, including when it merges
+      // into the current snapshot. Clear redo entries before coalescing so a
+      // merged branch cannot retain stale redo history.
       if (ptr < stack.length - 1) {
         stack.splice(ptr + 1)
+      }
+
+      // Merge: replace top instead of push.
+      if (shouldMerge) {
+        stack[ptr] = snapshot
+        return snapshot
       }
 
       stack.push(snapshot)

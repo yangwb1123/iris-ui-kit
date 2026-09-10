@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { resolveTableSortInfo } from '@iris-ui-kit/core'
   import type { IrisTableColumn, IrisTableSortState } from './types'
 
   let {
@@ -13,13 +14,16 @@
     sortState: IrisTableSortState | null
   } = $props()
 
-  const multiIndex = $derived(
-    multiSort ? multiSortState.findIndex((state) => state.key === column.key) : -1,
+  const sortInfo = $derived(
+    resolveTableSortInfo(column.key, {
+      multiSort,
+      multiSortState,
+      sort: sortState,
+    }),
   )
-  const active = $derived(multiSort ? multiIndex >= 0 : sortState?.key === column.key)
-  const direction = $derived(
-    active ? (multiSort ? multiSortState[multiIndex]!.direction : sortState!.direction) : null,
-  )
+  const multiIndex = $derived(sortInfo.multiIndex)
+  const active = $derived(sortInfo.isActive)
+  const direction = $derived(sortInfo.direction)
 </script>
 
 {#if column.sortable}

@@ -142,9 +142,9 @@ describe('IrisTable parity-AD: filter panel (filterValues)', () => {
     await waitFor(() => {
       expect(container.querySelector('[data-iris-table-cell="name"]')).toBeTruthy()
     })
-    expect(query).toHaveBeenCalledWith(
-      expect.objectContaining({ filters: { status: 'active,paused' } }),
-    )
+    expect((query.mock.calls[0] as unknown[] | undefined)?.[0]).toMatchObject({
+      filters: { status: 'active,paused' },
+    })
   })
 })
 

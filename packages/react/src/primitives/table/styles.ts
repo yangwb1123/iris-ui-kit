@@ -1,8 +1,9 @@
 import type React from 'react'
+import { DEFAULT_COLUMN_WIDTH } from '@iris-ui-kit/core'
 
 export const SELECTION_COL_WIDTH = 40
 export const EXPAND_COL_WIDTH = 40
-export const DEFAULT_PINNED_WIDTH = 140
+export const DEFAULT_PINNED_WIDTH = DEFAULT_COLUMN_WIDTH
 
 /** Shared style for full-width empty / loading / error state rows. */
 export const STATE_ROW_STYLE: React.CSSProperties = {

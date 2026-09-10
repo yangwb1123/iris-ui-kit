@@ -42,8 +42,35 @@ function cloneRange(range: CellRange | null): CellRange | null {
   return range ? { start: { ...range.start }, end: { ...range.end } } : null
 }
 
+function normalizeCoordinate(value: number): number | null {
+  return Number.isFinite(value) ? Math.trunc(value) : null
+}
+
 export function createGridRangeModel(): GridRangeModel {
-  return createCellRange()
+  const model = createCellRange()
+  const normalizeAddress = (row: number, column: number): CellRange['start'] | null => {
+    const normalizedRow = normalizeCoordinate(row)
+    const normalizedColumn = normalizeCoordinate(column)
+    return normalizedRow === null || normalizedColumn === null
+      ? null
+      : { row: normalizedRow, col: normalizedColumn }
+  }
+
+  return {
+    ...model,
+    startRange(row, column) {
+      const address = normalizeAddress(row, column)
+      if (address) model.startRange(address.row, address.col)
+    },
+    extendRange(row, column) {
+      const address = normalizeAddress(row, column)
+      if (address) model.extendRange(address.row, address.col)
+    },
+    isInRange(row, column) {
+      const address = normalizeAddress(row, column)
+      return address ? model.isInRange(address.row, address.col) : false
+    },
+  }
 }
 
 /** Optional rectangular selection capability; rendering and pointer capture stay in adapters. */

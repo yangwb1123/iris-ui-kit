@@ -1,6 +1,7 @@
 import { createEffect, createSignal, on, onCleanup, type Accessor } from 'solid-js'
 import {
   createRemoteTableSource,
+  mergeFilterValues,
   mergeFormFilters,
   type RemoteTableSource,
   type RemoteTableSourceState,
@@ -14,17 +15,6 @@ const EMPTY_PROXY_STATE: RemoteTableSourceState<never> = {
   loading: false,
   error: null,
   params: { page: 1, pageSize: 10, sort: null, filters: {} },
-}
-
-function mergeFilterValues(
-  filters: Record<string, string>,
-  filterValues: Record<string, string[]>,
-): Record<string, string> {
-  const next = { ...filters }
-  for (const [key, values] of Object.entries(filterValues)) {
-    if (values.length > 0) next[key] = values.join(',')
-  }
-  return next
 }
 
 export interface UseTableProxyOptions<Row extends Record<string, unknown>> {
@@ -68,8 +58,9 @@ export function useTableProxy<Row extends Record<string, unknown>>(
       if (proxy) return
       const config = options.props.proxyConfig!
       proxy = createRemoteTableSource<Row>({
-        query: (params) => options.props.proxyConfig!.query(params),
+        query: (params, signal) => options.props.proxyConfig!.query(params, signal),
         autoLoad: false,
+        resilient: config.resilient,
         initialParams: {
           page: config.defaultPage ?? 1,
           pageSize: config.pageSize ?? 10,

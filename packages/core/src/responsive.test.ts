@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeResponsiveColumnLayout,
   computeResponsiveColumns,
   RESPONSIVE_NARROW_WIDTH,
   type ResponsiveColumn,
@@ -157,6 +158,121 @@ describe('@iris-ui-kit/core computeResponsiveColumns (batch CY)', () => {
         }),
       ).toBe(cols)
     }
+  })
+
+  it('projects leading tracks and reports overflow from the fitted columns', () => {
+    const cols: Col[] = [
+      { key: 'a', width: 100 },
+      { key: 'b', width: 100 },
+      { key: 'c', width: 100 },
+    ]
+    const result = computeResponsiveColumnLayout(cols, 250, {
+      leadingWidth: 50,
+      widthOf,
+    })
+
+    expect(result.columns.map((column) => column.key)).toEqual(['a', 'b'])
+    expect(result.overflow).toBe(false)
+  })
+
+  it('protects grouped pinned descendants and reports unavoidable overflow', () => {
+    const cols: Col[] = [
+      {
+        key: 'group',
+        children: [
+          { key: 'pin', width: 180 },
+          { key: 'free', width: 100 },
+        ],
+      },
+      { key: 'tail', width: 100 },
+      { key: 'tail2', width: 100 },
+    ]
+    const result = computeResponsiveColumnLayout(cols, 200, {
+      widthOf,
+      isPinnedLeaf: (column) => column.key === 'pin',
+    })
+
+    expect(result.columns.map((column) => column.key)).toEqual(['group', 'tail'])
+    expect(result.overflow).toBe(true)
+  })
+
+  it('keeps identity and clears overflow outside the narrow measurement path', () => {
+    const cols: Col[] = [
+      { key: 'a', width: 400 },
+      { key: 'b', width: 400 },
+    ]
+    expect(computeResponsiveColumnLayout(cols, 480, { widthOf }).columns).toBe(cols)
+    expect(computeResponsiveColumnLayout(cols, 480, { widthOf }).overflow).toBe(false)
+    expect(computeResponsiveColumnLayout(cols, 0, { widthOf }).columns).toBe(cols)
+  })
+
+  it('snapshots pin results when a callback would fail on reinvocation', () => {
+    const cols: Col[] = [
+      { key: 'a', width: 100 },
+      { key: 'b', width: 100 },
+      { key: 'c', width: 100 },
+    ]
+    let calls = 0
+    let result: readonly Col[] | undefined
+    expect(() => {
+      result = computeResponsiveColumns(cols, 100, {
+        widthOf,
+        isPinned: () => {
+          calls += 1
+          if (calls > cols.length) throw new Error('malformed pin callback')
+          return false
+        },
+      })
+    }).not.toThrow()
+    expect(result?.map((column) => column.key)).toEqual(['a'])
+    expect(calls).toBe(cols.length)
+  })
+
+  it('fails closed for malformed fit options without blanking columns', () => {
+    const cols: Col[] = [
+      { key: 'a', width: 100 },
+      { key: 'b', width: 100 },
+      { key: 'c', width: 100 },
+    ]
+    for (const floor of [Number.NaN, Number.POSITIVE_INFINITY, -1, 1.5]) {
+      expect(computeResponsiveColumns(cols, 100, { widthOf, floor })).toBe(cols)
+    }
+    for (const narrowWidth of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      expect(computeResponsiveColumns(cols, 100, { widthOf, narrowWidth })).toBe(cols)
+    }
+    for (const leadingWidth of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      const result = computeResponsiveColumnLayout(cols, 100, { widthOf, leadingWidth })
+      expect(result.columns).toBe(cols)
+      expect(result.overflow).toBe(false)
+    }
+    expect(computeResponsiveColumns(cols, Number.NaN, { widthOf })).toBe(cols)
+  })
+
+  it('fails closed for cyclic and malformed grouped trees', () => {
+    const cyclic = { key: 'cycle' } as Col & { children: Col[] }
+    cyclic.children = [cyclic]
+    const malformed = { key: 'bad', children: [{ width: 100 }] } as unknown as Col
+
+    for (const columns of [[cyclic], [malformed]]) {
+      expect(() => computeResponsiveColumns(columns, 100, { widthOf })).not.toThrow()
+      expect(computeResponsiveColumns(columns, 100, { widthOf })).toBe(columns)
+      const result = computeResponsiveColumnLayout(columns, 100, { widthOf })
+      expect(result.columns).toBe(columns)
+      expect(result.overflow).toBe(false)
+    }
+  })
+
+  it('fails closed when finite leaf widths overflow their numeric sum', () => {
+    const cols: Col[] = [
+      { key: 'a', width: Number.MAX_VALUE },
+      { key: 'b', width: Number.MAX_VALUE },
+    ]
+    expect(computeResponsiveColumns(cols, 100, { widthOf })).toBe(cols)
+    const grouped: Col[] = [
+      { key: 'group', children: [cols[0]!, cols[1]!] },
+      { key: 'tail', width: 100 },
+    ]
+    expect(computeResponsiveColumns(grouped, 100, { widthOf })).toBe(grouped)
   })
 
   it('exposes the documented 480px threshold constant', () => {

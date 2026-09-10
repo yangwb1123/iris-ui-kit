@@ -157,6 +157,37 @@ interface VirtualizerRuntime {
   clampScroll(offset: number): number
 }
 
+function finiteNonNegative(value: number | undefined, fallback = 0): number {
+  return value !== undefined && Number.isFinite(value) ? Math.max(0, value) : fallback
+}
+
+// The size tree owns two JS arrays, so a merely safe integer can still cause a
+// RangeError or exhaust the process before the virtualizer can window anything.
+const MAX_VIRTUALIZER_COUNT = 1_000_000
+
+function normalizeCount(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  const count = Math.trunc(value)
+  return Number.isSafeInteger(count) ? Math.min(MAX_VIRTUALIZER_COUNT, Math.max(0, count)) : 0
+}
+
+function normalizeFixedSize(size: number | null | undefined): number | null {
+  return size === null || size === undefined || !Number.isFinite(size) ? null : Math.max(0, size)
+}
+
+/** Keep the aggregate tree finite even for very large, individually finite sizes. */
+function normalizeItemSize(size: number, count: number): number {
+  if (!Number.isFinite(size)) return 0
+  if (count <= 0) return 0
+  // Leave one item's worth of headroom for floating-point rounding while
+  // aggregating all `count` entries in the Fenwick tree.
+  return Math.min(Math.max(0, size), Number.MAX_VALUE / (count + 1))
+}
+
+function normalizeIndex(index: number): number {
+  return Number.isFinite(index) && index >= 0 ? Math.trunc(index) : -1
+}
+
 function cloneVirtualizerState(state: VirtualizerState): VirtualizerState {
   return {
     ...state,
@@ -202,7 +233,7 @@ function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState
   if (fixedSize !== null) {
     const size = Math.max(1, fixedSize)
     const first = Math.min(Math.floor(top / size), count - 1)
-    const visibleCount = fixedSize <= 0 ? 0 : Math.ceil(viewportSize / fixedSize)
+    const visibleCount = fixedSize <= 0 ? 0 : Math.ceil((top - first * size + viewportSize) / size)
     startIndex = Math.max(0, first - buffer)
     endIndex = Math.min(count, first + visibleCount + buffer) - 1
   } else {
@@ -226,7 +257,7 @@ function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState
 }
 
 function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime {
-  const count = Math.max(0, config.count)
+  const count = normalizeCount(config.count)
   const keyOf = config.getItemKey ?? ((index: number) => index)
   const hasExplicitKey = config.getItemKey !== undefined
   if (process.env.NODE_ENV === 'development' && !hasExplicitKey && count > 0) {
@@ -241,29 +272,31 @@ function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime
       ? config.estimateSize
       : (_index: number) => config.estimateSize as number
   const measured = new Map<string | number, number>()
-  const tree = createSizeTree(count, (index) => {
-    const measuredSize = measured.get(keyOf(index))
-    return measuredSize !== undefined ? measuredSize : Math.max(0, estimate(index))
-  })
   const runtime = {} as VirtualizerRuntime
   runtime.count = count
-  runtime.viewportSize = Math.max(0, config.viewportSize ?? 0)
-  runtime.scrollOffset = Math.max(0, config.scrollOffset ?? 0)
-  runtime.buffer = Math.max(0, Math.floor(config.buffer ?? 0))
-  runtime.fixedSize =
-    config.fixedSize === null || config.fixedSize === undefined
-      ? null
-      : Math.max(0, config.fixedSize)
+  const tree = createSizeTree(count, (index) => {
+    const measuredSize = measured.get(keyOf(index))
+    return normalizeItemSize(
+      measuredSize !== undefined ? measuredSize : estimate(index),
+      runtime.count,
+    )
+  })
+  runtime.viewportSize = finiteNonNegative(config.viewportSize)
+  runtime.scrollOffset = finiteNonNegative(config.scrollOffset)
+  runtime.buffer = Math.floor(finiteNonNegative(config.buffer))
+  runtime.fixedSize = normalizeFixedSize(config.fixedSize)
   runtime.hasExplicitKey = hasExplicitKey
   runtime.keyOf = keyOf
-  runtime.estimate = estimate
+  runtime.estimate = (index) => normalizeItemSize(estimate(index), runtime.count)
   runtime.measured = measured
   runtime.tree = tree
   runtime.computeWindow = () => computeVirtualizerWindow(runtime)
   runtime.store = createStore(runtime.computeWindow())
   runtime.sync = () => runtime.store.setState(runtime.computeWindow())
-  runtime.clampScroll = (offset) =>
-    Math.max(0, Math.min(offset, Math.max(0, runtime.tree.total() - runtime.viewportSize)))
+  runtime.clampScroll = (offset) => {
+    const safeOffset = finiteNonNegative(offset)
+    return Math.min(safeOffset, Math.max(0, runtime.tree.total() - runtime.viewportSize))
+  }
   return runtime
 }
 
@@ -275,7 +308,7 @@ function setVirtualizerScroll(runtime: VirtualizerRuntime, offset: number): void
 }
 
 function setVirtualizerViewport(runtime: VirtualizerRuntime, size: number): void {
-  const next = Math.max(0, size)
+  const next = finiteNonNegative(size)
   if (next === runtime.viewportSize) return
   runtime.viewportSize = next
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
@@ -283,28 +316,28 @@ function setVirtualizerViewport(runtime: VirtualizerRuntime, size: number): void
 }
 
 function setVirtualizerBuffer(runtime: VirtualizerRuntime, buffer: number): void {
-  const next = Math.max(0, Math.floor(Number.isFinite(buffer) ? buffer : 0))
+  const next = Math.floor(finiteNonNegative(buffer))
   if (next === runtime.buffer) return
   runtime.buffer = next
   runtime.sync()
 }
 
 function setVirtualizerFixedSize(runtime: VirtualizerRuntime, size: number | null): void {
-  const next = size === null || !Number.isFinite(size) ? null : Math.max(0, size)
+  const next = normalizeFixedSize(size)
   if (next === runtime.fixedSize) return
   runtime.fixedSize = next
   runtime.sync()
 }
 
 function setVirtualizerCount(runtime: VirtualizerRuntime, next: number): void {
-  runtime.count = Math.max(0, next)
+  runtime.count = normalizeCount(next)
   runtime.tree.reset(runtime.count)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
 }
 
 function replaceVirtualizerData(runtime: VirtualizerRuntime, next: number): void {
-  runtime.count = Math.max(0, next)
+  runtime.count = normalizeCount(next)
   runtime.measured.clear()
   runtime.tree.reset(runtime.count)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
@@ -312,9 +345,11 @@ function replaceVirtualizerData(runtime: VirtualizerRuntime, next: number): void
 }
 
 function measureVirtualizerItem(runtime: VirtualizerRuntime, index: number, size: number): void {
-  if (index < 0 || index >= runtime.count) return
-  runtime.measured.set(runtime.keyOf(index), Math.max(0, size))
-  if (!runtime.tree.set(index, size)) return
+  const safeIndex = normalizeIndex(index)
+  if (safeIndex < 0 || safeIndex >= runtime.count || !Number.isFinite(size)) return
+  const next = normalizeItemSize(size, runtime.count)
+  runtime.measured.set(runtime.keyOf(safeIndex), next)
+  if (!runtime.tree.set(safeIndex, next)) return
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
 }
@@ -332,7 +367,7 @@ function scrollVirtualizerToIndex(
   align: 'start' | 'center' | 'end',
 ): number {
   if (runtime.count <= 0) return 0
-  const targetIndex = Math.max(0, Math.min(index, runtime.count - 1))
+  const targetIndex = Math.max(0, Math.min(normalizeIndex(index), runtime.count - 1))
   const start = runtime.tree.prefix(targetIndex)
   const size = runtime.tree.sizeOf(targetIndex)
   const target =

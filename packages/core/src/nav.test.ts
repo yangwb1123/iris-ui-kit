@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  branchTrail,
   buildNavTree,
+  filterNavByAccess,
   isBranch,
+  nodeAllowsRoles,
   visibleNav,
   flattenNav,
   findNavNode,
@@ -56,6 +59,17 @@ describe('nav selectors', () => {
       { key: 'c', title: 'C' },
     ])
     expect(v.map((n) => n.key)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('preserves leaf identity while projecting branches', () => {
+    const leaf: NavNode = { key: 'leaf', title: 'Leaf' }
+    const branch: NavNode = { key: 'branch', title: 'Branch', children: [leaf] }
+
+    expect(visibleNav([leaf])[0]).toBe(leaf)
+    expect(visibleNav([branch])[0]).not.toBe(branch)
+    expect(filterNavByAccess([leaf], () => true)[0]).toBe(leaf)
+    expect(filterNavByAccess([branch], () => true)[0]).not.toBe(branch)
+    expect(firstLeaf(leaf)).toBe(leaf)
   })
 
   it('flattenNav walks depth-first, parents before children', () => {
@@ -136,6 +150,92 @@ describe('nav selectors', () => {
       expect(flattenNav([n]).map((r) => r.key)).toEqual(['n'])
     })
 
+    it('cycle-protects every tree selector, not only flattenNav', () => {
+      const a: NavNode = { key: 'a', title: 'A', children: [] }
+      const b: NavNode = { key: 'b', title: 'B', children: [a] }
+      a.children = [b]
+
+      expect(() => visibleNav([a])).not.toThrow()
+      expect(flattenNav(visibleNav([a])).map((n) => n.key)).toEqual(['a', 'b'])
+      expect(findNavPath([a], 'missing')).toEqual([])
+      expect(branchTrail([a], 'b')).toEqual(['a'])
+      expect(firstLeaf(a).key).toBe('a')
+      expect(flattenNav(filterNavByAccess([a], () => true, false)).map((n) => n.key)).toEqual([
+        'a',
+        'b',
+      ])
+    })
+
+    it('ignores malformed entries and malformed child collections', () => {
+      const valid: NavNode = { key: 'valid', title: 'Valid', children: {} as NavNode[] }
+      const malformed = [null, 1, { title: 'missing key' }, valid] as unknown as NavNode[]
+
+      expect(visibleNav(malformed).map((n) => n.key)).toEqual(['valid'])
+      expect(flattenNav(malformed).map((n) => n.key)).toEqual(['valid'])
+      expect(findNavPath(malformed, 'valid')).toEqual([valid])
+      expect(filterNavByAccess(malformed, () => true)).toEqual([valid])
+      expect(firstLeaf(valid)).toBe(valid)
+    })
+
+    it('handles a deeply nested tree without recursion limits', () => {
+      const nodes: NavNode[] = []
+      for (let i = 0; i < 12000; i += 1) {
+        nodes.push({ key: `deep-${i}`, title: `Deep ${i}` })
+        if (i > 0) nodes[i - 1]!.children = [nodes[i]!]
+      }
+      const root = nodes[0]!
+
+      expect(flattenNav([root])).toHaveLength(nodes.length)
+      expect(flattenNav(visibleNav([root]))).toHaveLength(nodes.length)
+      expect(findNavPath([root], 'deep-11999')).toHaveLength(nodes.length)
+      expect(flattenNav(filterNavByAccess([root], () => true)).length).toBe(nodes.length)
+      expect(firstLeaf(root)).toBe(nodes[nodes.length - 1])
+    })
+
+    it('handles inherited fields and prototype-sensitive keys safely', () => {
+      const inherited = Object.create({
+        key: 'inherited',
+        hidden: true,
+        roles: ['admin'],
+      }) as NavNode
+      inherited.title = 'Inherited'
+      const special = Object.create(null) as NavNode
+      special.key = '__proto__'
+      special.title = 'Special'
+      const tree = [inherited, special]
+
+      expect(flattenNav(tree)).toEqual([special])
+      expect(visibleNav(tree)).toEqual([special])
+      expect(nodeAllowsRoles(inherited, [])).toBe(true)
+      expect(
+        buildNavTree([
+          { key: '__proto__', title: 'Proto' },
+          { key: 'constructor', title: 'Constructor' },
+          { key: '__proto__', title: 'Duplicate' },
+        ]).map((n) => n.key),
+      ).toEqual(['__proto__', 'constructor'])
+    })
+
+    it('keeps finite order ahead of non-finite orders deterministically', () => {
+      const result = visibleNav([
+        { key: 'nan', title: 'NaN', order: Number.NaN },
+        { key: 'finite', title: 'Finite', order: 1 },
+        { key: 'positive', title: 'Positive', order: Number.POSITIVE_INFINITY },
+        { key: 'negative', title: 'Negative', order: Number.NEGATIVE_INFINITY },
+        { key: 'missing', title: 'Missing' },
+      ])
+      expect(result.map((n) => n.key)).toEqual(['finite', 'nan', 'positive', 'negative', 'missing'])
+    })
+
+    it('supports an empty string as a real parent key', () => {
+      const result = buildNavTree([
+        { key: '', title: 'Empty' },
+        { key: 'child', title: 'Child', parentKey: '' },
+      ])
+      expect(result).toHaveLength(1)
+      expect(result[0]!.children?.map((n) => n.key)).toEqual(['child'])
+    })
+
     it('mixed normal + cyclic branch still produces all reachable unique nodes', () => {
       const a: NavNode = { key: 'a', title: 'A', children: [] }
       const b: NavNode = { key: 'b', title: 'B', children: [a] }
@@ -158,7 +258,7 @@ describe('nav selectors', () => {
     })
   })
 
-  describe('depth limit', () => {
+  describe('deep nesting', () => {
     /**
      * Build a chain of `count` nodes: node_0 → node_1 → … → node_{count-1}
      * Using iterative construction to avoid stack overflow during test setup.
@@ -175,22 +275,18 @@ describe('nav selectors', () => {
       return nodes[0]!
     }
 
-    it('truncates when chain depth exceeds MAX_DEPTH (1000)', () => {
-      // A chain of 1002 nodes: depths 0..1000 are allowed (1001 nodes),
-      // depth 1001 exceeds limit and is truncated.
+    it('does not truncate a chain beyond the former depth limit', () => {
+      // A chain of 1002 nodes remains fully traversable.
       const root = chain(1002)
       const result = flattenNav([root])
-      // Nodes at depth 0..1000 are processed (1001 nodes), node_1001 at
-      // depth 1001 is truncated.
-      expect(result).toHaveLength(1001)
+      // Iterative traversal keeps every valid node, regardless of depth.
+      expect(result).toHaveLength(1002)
       expect(result[0]!.key).toBe('node_0')
       expect(result[1000]!.key).toBe('node_1000')
-      // node_1001 is never reached (depth 1001 > MAX_DEPTH 1000)
-      expect(result.find((n) => n.key === 'node_1001')).toBeUndefined()
+      expect(result[1001]!.key).toBe('node_1001')
     })
 
-    it('does not truncate at exactly MAX_DEPTH levels', () => {
-      // A chain of 1001 nodes: depths 0..1000, all within limit.
+    it('handles a chain with 1001 nodes', () => {
       const root = chain(1001)
       const result = flattenNav([root])
       expect(result).toHaveLength(1001)
@@ -235,6 +331,16 @@ describe('buildNavTree', () => {
         .sort(),
     ).toEqual(['a', 'b', 'orphan'])
   })
+
+  it('builds a deeply nested flat tree without quadratic parent walks', () => {
+    const flat = Array.from({ length: 12000 }, (_, index) => ({
+      key: `flat-${index}`,
+      title: `Flat ${index}`,
+      parentKey: index === 0 ? null : `flat-${index - 1}`,
+    }))
+    const result = buildNavTree(flat)
+    expect(flattenNav(result)).toHaveLength(flat.length)
+  })
 })
 
 describe('matchRoutePattern', () => {
@@ -248,5 +354,10 @@ describe('matchRoutePattern', () => {
     expect(matchRoutePattern('/orders', '/orders/:id')).toBe(false)
     expect(matchRoutePattern('/users/42', '/orders/:id')).toBe(false)
     expect(matchRoutePattern('/orders/42/items', '/orders/:id')).toBe(false)
+  })
+
+  it('fails closed for malformed non-string runtime inputs', () => {
+    expect(matchRoutePattern(Number.NaN as unknown as string, '/orders')).toBe(false)
+    expect(matchRoutePattern('/orders', Number.POSITIVE_INFINITY as unknown as string)).toBe(false)
   })
 })

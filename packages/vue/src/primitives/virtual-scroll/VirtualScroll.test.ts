@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisVirtualScroll } from './VirtualScroll'
@@ -109,6 +109,40 @@ describe('IrisVirtualScroll', () => {
     expect(Math.min(...indices)).toBeGreaterThan(10)
   })
 
+  it('keeps both fixed rows mounted when scrolling through a row boundary', async () => {
+    const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(20)
+    try {
+      const Boundary = defineComponent({
+        setup() {
+          return () =>
+            h(
+              IrisVirtualScroll,
+              { items: [0, 1, 2], itemHeight: 20, height: 20, buffer: 0 },
+              { item: ({ item }: { item: number }) => h('span', String(item)) },
+            )
+        },
+      })
+      const wrapper = mount(Boundary, { attachTo: host })
+      await nextTick()
+      const viewport = wrapper.find('[data-iris-virtual-scroll]').element as HTMLElement
+      Object.defineProperty(viewport, 'scrollTop', {
+        value: 10,
+        writable: true,
+        configurable: true,
+      })
+      viewport.dispatchEvent(new Event('scroll'))
+      await new Promise((r) => requestAnimationFrame(() => r(null)))
+      await nextTick()
+      expect(
+        wrapper
+          .findAll('[data-iris-virtual-index]')
+          .map((el) => Number(el.attributes('data-iris-virtual-index'))),
+      ).toEqual([0, 1])
+    } finally {
+      height.mockRestore()
+    }
+  })
+
   it('exposes scrollToIndex via expose', async () => {
     const exposedRef = ref<unknown>(null)
     const Holder = defineComponent({
@@ -217,6 +251,84 @@ describe('IrisVirtualScroll auto-measure', () => {
       expect(row1().attributes('style')).toContain('translateY(50px)')
     } finally {
       if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      globalThis.ResizeObserver = RealRO
+    }
+  })
+
+  it('does not reuse an auto measurement by index after a keyed reorder', async () => {
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60)
+    const rows = [
+      { id: 'a', height: 20 },
+      { id: 'b', height: 100 },
+      { id: 'c', height: 20 },
+    ]
+    const ros: Array<{ els: Element[]; flush: (els?: Element[]) => void }> = []
+    const RealRO = globalThis.ResizeObserver
+    class MockRO {
+      els: Element[] = []
+      constructor(public cb: ResizeObserverCallback) {
+        ros.push({ els: this.els, flush: (els = this.els) => this.flush(els) })
+      }
+      observe(el: Element) {
+        this.els.push(el)
+      }
+      unobserve(el: Element) {
+        this.els = this.els.filter((e) => e !== el)
+      }
+      disconnect() {
+        this.els = []
+      }
+      flush(els = this.els) {
+        this.cb(
+          els.map((target) => ({ target }) as ResizeObserverEntry),
+          this as never,
+        )
+      }
+    }
+    globalThis.ResizeObserver = MockRO as unknown as typeof ResizeObserver
+    const heightSpy = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        const id = this.querySelector<HTMLElement>('[data-row-id]')?.dataset.rowId
+        return rows.find((row) => row.id === id)?.height ?? 20
+      },
+    })
+
+    try {
+      const wrapper = mount(IrisVirtualScroll, {
+        props: {
+          items: rows,
+          itemHeight: 'auto',
+          estimatedItemHeight: 20,
+          height: 60,
+          buffer: 0,
+          keyOf: (row: unknown) => (row as { id: string }).id,
+        },
+        slots: {
+          item: ({ item }: { item: (typeof rows)[number] }) =>
+            h('span', { 'data-row-id': item.id }, item.id),
+        },
+      })
+      await nextTick()
+      const rowRo = ros.find((r) =>
+        r.els.some((e) => (e as HTMLElement).hasAttribute('data-iris-virtual-item')),
+      )
+      const b = wrapper.find('[data-iris-virtual-index="1"]').element
+      expect(rowRo).toBeTruthy()
+      rowRo!.flush([b])
+      await nextTick()
+      expect(wrapper.find('[data-iris-virtual-spacer]').attributes('style')).toContain(
+        'height: 140px',
+      )
+
+      await wrapper.setProps({ items: [rows[0]!, rows[2]!, { id: 'd', height: 20 }] })
+      expect(wrapper.find('[data-iris-virtual-spacer]').attributes('style')).toContain(
+        'height: 60px',
+      )
+    } finally {
+      if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      clientHeight.mockRestore()
       globalThis.ResizeObserver = RealRO
     }
   })

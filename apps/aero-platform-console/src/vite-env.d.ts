@@ -9,6 +9,7 @@ interface AeroPlatformRuntimeConfig {
   redirectUri?: string
   aeroIdApiBase?: string
   auditConsoleUrl?: string
+  snaplinkConsoleUrl?: string
   aeroImConsoleUrl?: string
   aeroVaultConsoleUrl?: string
 }

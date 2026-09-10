@@ -3,12 +3,14 @@ import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useDrag } from '../drag/useDrag'
+import { clampColumnWidth, COLUMN_RESIZE_STEP } from '@iris-ui-kit/core'
 import type {
-  IrisTableColumn,
   IrisTableContextMenuItem,
   IrisTableContextMenuParams,
   IrisTableFilterOption,
 } from './types'
+
+export { resolveInitialWidth } from '@iris-ui-kit/core'
 
 /** Floating right-click menu for the table. */
 export function TableContextMenu<Row extends Record<string, unknown>>(props: {
@@ -242,8 +244,7 @@ export function ColumnResizeHandle(props: {
 }): JSX.Element {
   const [handle, setHandle] = createSignal<HTMLElement | null>(null)
   let startWidth = 0
-  const clamp = (width: number): number =>
-    Math.max(props.minWidth, Math.min(props.maxWidth, Math.round(width)))
+  const clamp = (width: number): number => clampColumnWidth(width, props.minWidth, props.maxWidth)
   useDrag({
     handle,
     onStart: () => {
@@ -265,11 +266,11 @@ export function ColumnResizeHandle(props: {
         if (event.key === 'ArrowLeft') {
           event.preventDefault()
           event.stopPropagation()
-          props.onResize(props.colKey, clamp(props.width() - 16))
+          props.onResize(props.colKey, clamp(props.width() - COLUMN_RESIZE_STEP))
         } else if (event.key === 'ArrowRight') {
           event.preventDefault()
           event.stopPropagation()
-          props.onResize(props.colKey, clamp(props.width() + 16))
+          props.onResize(props.colKey, clamp(props.width() + COLUMN_RESIZE_STEP))
         }
       }}
       style={{
@@ -284,15 +285,4 @@ export function ColumnResizeHandle(props: {
       }}
     />
   )
-}
-
-export function resolveInitialWidth<Row extends Record<string, unknown>>(
-  col: IrisTableColumn<Row>,
-): number {
-  if (typeof col.width === 'number') return col.width
-  if (typeof col.width === 'string') {
-    const match = col.width.match(/^(\d+(?:\.\d+)?)px$/)
-    if (match) return Number(match[1])
-  }
-  return 140
 }

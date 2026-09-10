@@ -38,9 +38,26 @@ describe('date helpers', () => {
     expect(feb.getDate()).toBe(29)
   })
 
+  it('handles fractional and non-finite increments without hanging', () => {
+    const date = new Date(2024, 0, 15)
+    expect(addDays(date, 1.9).getTime()).toBe(addDays(date, 1).getTime())
+    expect(addMonths(date, 1.9).getTime()).toBe(addMonths(date, 1).getTime())
+    expect(Number.isNaN(addDays(date, Number.POSITIVE_INFINITY).getTime())).toBe(true)
+    expect(Number.isNaN(addMonths(date, Number.NaN).getTime())).toBe(true)
+  })
+
   it('startOfMonth / endOfMonth', () => {
     expect(startOfMonth(new Date(2024, 1, 15)).getDate()).toBe(1)
     expect(endOfMonth(new Date(2024, 1, 15)).getDate()).toBe(29)
+  })
+
+  it('uses local calendar dates across DST and end-of-month clamps', () => {
+    const beforeDst = new Date(2024, 2, 9, 12)
+    expect(formatLocalISO(addDays(beforeDst, 1))).toBe('2024-03-10')
+
+    const clamped = addMonths(new Date(2024, 0, 31, 12), 1)
+    expect(formatLocalISO(clamped)).toBe('2024-02-29')
+    expect(clamped.getHours()).toBe(12)
   })
 
   it('buildMonthMatrix is always 6×7 and covers the month', () => {
@@ -50,6 +67,22 @@ describe('date helpers', () => {
     const flat = matrix.flat()
     expect(flat.some((d) => isSameDay(d, new Date(2024, 1, 1)))).toBe(true)
     expect(flat.some((d) => isSameDay(d, new Date(2024, 1, 29)))).toBe(true)
+  })
+
+  it('normalizes malformed weekStartsOn values without invalid or duplicate weekdays', () => {
+    const expected = getWeekdayNames(1, 'en-US')
+    for (const weekStartsOn of [1.5, -5.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const names = getWeekdayNames(weekStartsOn, 'en-US')
+      const matrix = buildMonthMatrix(new Date(2024, 1, 1), weekStartsOn)
+      expect(names).toEqual(
+        getWeekdayNames(Number.isFinite(weekStartsOn) ? Math.trunc(weekStartsOn) : 0, 'en-US'),
+      )
+      expect(new Set(names).size).toBe(7)
+      expect(matrix).toHaveLength(6)
+      expect(matrix.every((row) => row.length === 7)).toBe(true)
+      expect(matrix.flat().every((date) => Number.isFinite(date.getTime()))).toBe(true)
+    }
+    expect(expected).toHaveLength(7)
   })
 
   it('formatLocalISO is local-time YYYY-MM-DD', () => {
@@ -64,6 +97,20 @@ describe('date helpers', () => {
   it('formatClock pads single-digit hours/minutes/seconds', () => {
     expect(formatClock(new Date(2026, 0, 1, 9, 5, 30))).toBe('09:05:30')
     expect(formatClock(new Date(2026, 0, 1, 13, 7, 3))).toBe('13:07:03')
+  })
+
+  it('fails closed for invalid Dates', () => {
+    const invalid = new Date(Number.NaN)
+    expect(() => formatMonthYear(invalid, 'en-US')).not.toThrow()
+    expect(formatMonthYear(invalid, 'en-US')).toBe('')
+    expect(formatLocalISO(invalid)).toBe('')
+    expect(formatClock(invalid)).toBe('')
+    expect(isOutOfRange(invalid, new Date(2024, 0, 1), new Date(2024, 0, 2))).toBe(true)
+
+    const matrix = buildMonthMatrix(invalid, 0)
+    expect(matrix).toHaveLength(6)
+    expect(matrix.every((row) => row.length === 7)).toBe(true)
+    expect(matrix.flat().every((date) => !Number.isFinite(date.getTime()))).toBe(true)
   })
 
   it('clampDate / isOutOfRange', () => {

@@ -276,7 +276,7 @@
 
 ## 2026-08-10 16:58:44 — stage 'review' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-q-review.md [ok]: Findings: **1. MAJOR — autoResize implements the exact approach the baseline explicitly rejected: measured-px inline height instea; Passed checks: - scrollbarConfig: attr only for `theme:'thin'`, defaults unchanged; webkit 6px + thumb `--iris-border`/hover `--iris-pr
+- task /home/u1/iris-ui/docs/vxe-grid/batch-q-review.md [ok]: Findings: \*\*1. MAJOR — autoResize implements the exact approach the baseline explicitly rejected: measured-px inline height instea; Passed checks: - scrollbarConfig: attr only for `theme:'thin'`, defaults unchanged; webkit 6px + thumb `--iris-border`/hover `--iris-pr
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-review.md
 
 ## 2026-08-11 00:47:16 — stage 'gate' — PASS
@@ -413,7 +413,7 @@
 
 ## 2026-08-11 01:59:19 — stage 'review' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-w-review.md [ok]: Verdict: **FAIL** — written to `docs/vxe-grid/batch-w-review.md`: No source files modified (scratch verification test removed; the two dirty docs pre-date my review).; Verification results: | Command | Result |; Findings: **F1 — HIGH — stale after mount** (`Table.tsx:2118-2119`, root cause `2216-2220`): `tableRef.current` is assigned **once; Checklist: 1. getFilteredData fresh+copy — **FAIL** (F1; copy semantics correct)
+- task /home/u1/iris-ui/docs/vxe-grid/batch-w-review.md [ok]: Verdict: **FAIL** — written to `docs/vxe-grid/batch-w-review.md`: No source files modified (scratch verification test removed; the two dirty docs pre-date my review).; Verification results: | Command | Result |; Findings: **F1 — HIGH — stale after mount** (`Table.tsx:2118-2119`, root cause `2216-2220`): `tableRef.current` is assigned **once; Checklist: 1. getFilteredData fresh+copy — **FAIL\*\* (F1; copy semantics correct)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-w-review.md
 
 ## 2026-08-11 02:12:30 — stage 'gate' — PASS
@@ -709,7 +709,7 @@
 
 ## 2026-08-12 17:23:50 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-aj-adapt.md [ok]: Report — iris-ui grid 批 AJ (range stats + query-view linkage): **Commit:** `a1883276` — `feat(table): grid 批 AJ——范围统计 rangeStats + 视图快照携带 query（iris 独有）` (13 files, +658/−20, tree cle; Files changed: | File | Change |; Verification (all pass): - `core test` → **1300 passed** (+8) · `react typecheck` clean · `react test` → **1891 passed** (+7) · `react lint` → **; Constraints honored: Core framework-free (rangeStats has zero framework imports; `grep` clean), react-only, additive only, no dist/tgz/node_m; Left: - `change-budget` soft limits exceeded (13 files / 315 core lines vs 5/300 targets) — advisory, non-blocking; the task's
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aj-adapt.md [ok]: Report — iris-ui grid 批 AJ (range stats + query-view linkage): **Commit:** `a1883276` — `feat(table): grid 批 AJ——范围统计 rangeStats + 视图快照携带 query（iris 独有）` (13 files, +658/−20, tree cle; Files changed: | File | Change |; Verification (all pass): - `core test` → **1300 passed** (+8) · `react typecheck` clean · `react test` → **1891 passed** (+7) · `react lint` → \*\*; Constraints honored: Core framework-free (rangeStats has zero framework imports; `grep` clean), react-only, additive only, no dist/tgz/node_m; Left: - `change-budget` soft limits exceeded (13 files / 315 core lines vs 5/300 targets) — advisory, non-blocking; the task's
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aj-adapt.md
 
 ## 2026-08-12 17:31:28 — stage 'review' — PASS
@@ -785,7 +785,7 @@
 
 ## 2026-08-12 22:02:25 — stage 'review' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-am-review.md`; What I verified: **Checklist 1 — `suggest`** ✅; Command results: - core test **1317 ✅** · react test **1925 ✅** · typecheck **clean** · lint **0 errors** · `check:manifest` **up to date; Findings (all LOW/INFO): 1. **LOW** `Table.tsx:2350` — `items.push()` mutates the caller-provided context-menu array; use a spread instead.
+- task /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-am-review.md`; What I verified: **Checklist 1 — `suggest`** ✅; Command results: - core test **1317 ✅** · react test **1925 ✅** · typecheck **clean** · lint **0 errors** · `check:manifest` **up to date; Findings (all LOW/INFO): 1. **LOW\*\* `Table.tsx:2350` — `items.push()` mutates the caller-provided context-menu array; use a spread instead.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md
 
 ## 2026-08-12 22:17:20 — stage 'gate' — PASS
@@ -845,7 +845,7 @@
 
 ## 2026-08-13 15:10:19 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-ap-adapt.md [ok]: 完成报告 — batch AP（选择汇总 + 选中行导出）; Files changed (commit `60b3bc5c`, 11 files: 9 modified + 2 new): | File | Change |; Tests added (12, file 302 lines ≤ 500): - **selectionSummary (7)**: defaults off; hides without selection; count + per-sum-column totals over **selected rows on; Gate results: - `--filter @iris-ui-kit/react typecheck` ✅; What is left / notes: - **File count**: prompt capped at "≤4 changed files + tests"; the baseline's own file map required 5 source files + doc
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ap-adapt.md [ok]: 完成报告 — batch AP（选择汇总 + 选中行导出）; Files changed (commit `60b3bc5c`, 11 files: 9 modified + 2 new): | File | Change |; Tests added (12, file 302 lines ≤ 500): - **selectionSummary (7)**: defaults off; hides without selection; count + per-sum-column totals over **selected rows on; Gate results: - `--filter @iris-ui-kit/react typecheck` ✅; What is left / notes: - **File count\*\*: prompt capped at "≤4 changed files + tests"; the baseline's own file map required 5 source files + doc
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-adapt.md
 
 ## 2026-08-13 15:14:29 — stage 'review' — PASS
@@ -935,7 +935,7 @@
 
 ## 2026-08-13 23:34:09 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-at-adapt.md [ok]: Report — batch AT (audit log) ✅: **Commits:** `f3414302` (feat: 14 files) · `3d224333` (chore: adapt 报告); Files changed (4 new + 9 edits + manifest + docs): | File | Change |; Verification (all green): - **core test: 1377 passed** (+11) · **react typecheck: clean** · **react test: 2014 passed** (+9, 0 regressions) · **re; What is left: - vue/solid/svelte wiring for `auditLog` (core material ready; "react only" scope)
+- task /home/u1/iris-ui/docs/vxe-grid/batch-at-adapt.md [ok]: Report — batch AT (audit log) ✅: **Commits:** `f3414302` (feat: 14 files) · `3d224333` (chore: adapt 报告); Files changed (4 new + 9 edits + manifest + docs): | File | Change |; Verification (all green): - **core test: 1377 passed** (+11) · **react typecheck: clean** · **react test: 2014 passed** (+9, 0 regressions) · \*\*re; What is left: - vue/solid/svelte wiring for `auditLog` (core material ready; "react only" scope)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-adapt.md
 
 ## 2026-08-13 23:41:16 — stage 'review' — PASS
@@ -955,7 +955,7 @@
 
 ## 2026-08-14 00:48:58 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-au-adapt.md [ok]: Report — batch AU (compare view) ✅: **Commits:** `db4afc33` (feat) · `7df7ea09` (chore: adapt 报告); Files changed (2 new source + 7 edits + 1 new test + docs + manifest): | File | Change |; Verification (all green): - **core test: 1396 passed** (+19) · **react typecheck: clean** · **react test: 2027 passed** (+13, 0 regressions) · **r; Documented decisions: - **Direction per baseline**: `diffRows(liveData, compareWith, rowKey)` — live rows absent from the snapshot → `data-iri; What is left: - vue/solid/svelte wiring for `compareWith` (core material ready; "react only" scope)
+- task /home/u1/iris-ui/docs/vxe-grid/batch-au-adapt.md [ok]: Report — batch AU (compare view) ✅: **Commits:** `db4afc33` (feat) · `7df7ea09` (chore: adapt 报告); Files changed (2 new source + 7 edits + 1 new test + docs + manifest): | File | Change |; Verification (all green): - **core test: 1396 passed** (+19) · **react typecheck: clean** · **react test: 2027 passed** (+13, 0 regressions) · **r; Documented decisions: - **Direction per baseline\*\*: `diffRows(liveData, compareWith, rowKey)` — live rows absent from the snapshot → `data-iri; What is left: - vue/solid/svelte wiring for `compareWith` (core material ready; "react only" scope)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-adapt.md
 
 ## 2026-08-14 00:55:56 — stage 'review' — PASS
@@ -1094,7 +1094,7 @@
 
 ## 2026-08-14 19:37:32 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-ba-adapt.md [ok]: Files changed (15 — 4 new + 7 mandated edits + 2 generated + 2 runner bookkeeping): | File | Change |; Tests added — 23: - **core `version-history.test.ts` — 14 tests**: empty start · pre-change rows+type+index/at fill · default `edit` · def; Verification: - core test **1438 passed** (+14) · react test **2087 passed** (+9) · typecheck (core + react) clean · react lint **0 er; What is left: - `@iris-ui-kit/core/version-history` **own subpath** (package.json exports + tsup entry) — skipped to stay within the f
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ba-adapt.md [ok]: Files changed (15 — 4 new + 7 mandated edits + 2 generated + 2 runner bookkeeping): | File | Change |; Tests added — 23: - **core `version-history.test.ts` — 14 tests**: empty start · pre-change rows+type+index/at fill · default `edit` · def; Verification: - core test **1438 passed** (+14) · react test **2087 passed** (+9) · typecheck (core + react) clean · react lint **0 er; What is left: - `@iris-ui-kit/core/version-history` **own subpath\*\* (package.json exports + tsup entry) — skipped to stay within the f
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-adapt.md
 
 ## 2026-08-14 19:41:17 — stage 'review' — PASS
@@ -1129,7 +1129,7 @@
 
 ## 2026-08-14 22:54:31 — stage 'baseline' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md [ok]: Summary: **Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md` (231 lines). Zero source files touched — `gi
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md [ok]: Summary: \*\*Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md` (231 lines). Zero source files touched — `gi
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md
 
 ## 2026-08-15 06:30:00 — stage 'adapt' — PASS
@@ -1209,7 +1209,7 @@
 
 ## 2026-08-15 00:36:49 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-bf-gate.md [ok]: Results: **Gate** (all run fresh): `turbo run test typecheck lint build` → **180/180 tasks successful** · `pnpm audit` → **0 vuln
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bf-gate.md [ok]: Results: **Gate** (all run fresh): `turbo run test typecheck lint build` → **180/180 tasks successful** · `pnpm audit` → \*\*0 vuln
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bf-gate.md
 
 ## 2026-08-15 00:41:46 — stage 'baseline' — PASS
@@ -1384,7 +1384,7 @@
 
 ## 2026-08-15 04:29:59 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-bn-adapt.md [ok]: 批 BN 完成报告 — 行高自定义 `rowHeight`（iris 独有）: **Commit**: `a9e88cbd` — `feat(table): grid 批 BN——行高自定义 rowHeight（iris 独有）`（工作树仅剩 runner 的预存 `DECISIONS.md`/`batch-bm-ga; 实现（全部按 baseline 验证方案，零偏差）: **Prop** — `props.ts`在`virtualScroll` 之后、`persistState` 之前：`rowHeight?: number | ((index: number) => number)`（单行函数形，ma; 测试（13 新，`row-height.test.tsx`277 行 ≤500）: 规格强制三件套优先：**固定**（非虚拟行 inline height / 虚拟闭式窗口 +`translateY(i*N)`+ spacer）· **函数**（非虚拟逐行`fn(i)`/ 虚拟累计 top = 前缀和 + spac; 文档:`docs/vxe-grid-comparison.md` 三站点：iris 独有表新行（rowHeight，紧跟 notePopover 行后）· 构建状态行追加批 BN · test count 2219→2232; 验证（全部 ✅）: | 门 | 结果 |
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bn-adapt.md [ok]: 批 BN 完成报告 — 行高自定义 `rowHeight`（iris 独有）: **Commit**: `a9e88cbd` — `feat(table): grid 批 BN——行高自定义 rowHeight（iris 独有）`（工作树仅剩 runner 的预存 `DECISIONS.md`/`batch-bm-ga; 实现（全部按 baseline 验证方案，零偏差）: **Prop** — `props.ts`在`virtualScroll` 之后、`persistState` 之前：`rowHeight?: number | ((index: number) => number)`（单行函数形，ma; 测试（13 新，`row-height.test.tsx`277 行 ≤500）: 规格强制三件套优先：**固定**（非虚拟行 inline height / 虚拟闭式窗口 +`translateY(i\*N)`+ spacer）· **函数**（非虚拟逐行`fn(i)`/ 虚拟累计 top = 前缀和 + spac; 文档:`docs/vxe-grid-comparison.md` 三站点：iris 独有表新行（rowHeight，紧跟 notePopover 行后）· 构建状态行追加批 BN · test count 2219→2232; 验证（全部 ✅）: | 门 | 结果 |
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bn-adapt.md
 
 ## 2026-08-15 04:32:55 — stage 'review' — PASS
@@ -1489,7 +1489,7 @@
 
 ## 2026-08-15 06:39:12 — stage 'review' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md [ok]: Verdict: **FAIL** — `docs/vxe-grid/batch-bt-review.md` written: Reviewed commit `12addddc` against the baseline, inspected the full diff, re-ran every requested gate, and empirically v; Verification (all independently re-run ✅): - **core test** 1517/1517 · **react test** 2294/2294 (+13 new) · **react typecheck** clean · **react lint** 0 errors (1 ; Findings: 1. **HIGH (gate-blocking)** — `Table.tsx:3394-3401`: `handleSelectionDragPointerDown` calls `setPointerCapture` on **eve
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md [ok]: Verdict: **FAIL** — `docs/vxe-grid/batch-bt-review.md` written: Reviewed commit `12addddc` against the baseline, inspected the full diff, re-ran every requested gate, and empirically v; Verification (all independently re-run ✅): - **core test** 1517/1517 · **react test** 2294/2294 (+13 new) · **react typecheck** clean · **react lint** 0 errors (1 ; Findings: 1. **HIGH (gate-blocking)** — `Table.tsx:3394-3401`: `handleSelectionDragPointerDown` calls `setPointerCapture` on \*\*eve
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md
 
 ## 2026-08-15 06:46:22 — stage 'gate' — PASS
@@ -1689,7 +1689,7 @@
 
 ## 2026-08-15 17:01:32 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md [ok]: Files changed (1 commit): `feat(table): grid 批 CA——单元格链接自动检测（iris 独有）` — core `auto-link.ts` `detectAutoLink` (URL `/^https?:\/\/\S+$/i` + email byte-identical to `mask.ts` `EMAIL_RE`, whole-text anchored, never throws) + barrel export · react `props.ts` `autoLink?: boolean` (after `compareWith`) + `Table.tsx` (import/destructure/module helper `renderAutoLinkCell` next to `contextCellText` — mask→formatter??raw display chain, `typeof string` gate; render branch after `col.link` before `col.formatter` — link column wins, fall-through byte-同形) + NEW `auto-link.test.tsx`. Tests added (15): core 8 (url/url-tail/scheme-case/email/plain/embedded/empty/ftp-host) · react 7 (url anchor _blank+noreferrer/email anchor/no-match plain/link column wins/formatter chain/no-prop lazy/stopPropagation). Verification (all ✅): core test **1525/1525** (1517→1525) · react typecheck **clean** · react test **2392/2392** (2385→2392) · react lint **0 errors** (1 pre-existing complexity warning) · iris-ui-spec.py **0 violations** · gen:manifest regenerated (propCount 165→**166**, eventCount 31 unchanged, manifest 69/69). Constraints: core framework-free · react-only · additive; test files ≤500 lines; types.ts/styles.ts/i18n/三框架 zero change. What is left: Runner's review/gate stage.
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md [ok]: Files changed (1 commit): `feat(table): grid 批 CA——单元格链接自动检测（iris 独有）` — core `auto-link.ts` `detectAutoLink` (URL `/^https?:\/\/\S+$/i` + email byte-identical to `mask.ts` `EMAIL_RE`, whole-text anchored, never throws) + barrel export · react `props.ts` `autoLink?: boolean` (after `compareWith`) + `Table.tsx` (import/destructure/module helper `renderAutoLinkCell` next to `contextCellText` — mask→formatter??raw display chain, `typeof string` gate; render branch after `col.link` before `col.formatter` — link column wins, fall-through byte-同形) + NEW `auto-link.test.tsx`. Tests added (15): core 8 (url/url-tail/scheme-case/email/plain/embedded/empty/ftp-host) · react 7 (url anchor \_blank+noreferrer/email anchor/no-match plain/link column wins/formatter chain/no-prop lazy/stopPropagation). Verification (all ✅): core test **1525/1525** (1517→1525) · react typecheck **clean** · react test **2392/2392** (2385→2392) · react lint **0 errors** (1 pre-existing complexity warning) · iris-ui-spec.py **0 violations** · gen:manifest regenerated (propCount 165→**166**, eventCount 31 unchanged, manifest 69/69). Constraints: core framework-free · react-only · additive; test files ≤500 lines; types.ts/styles.ts/i18n/三框架 zero change. What is left: Runner's review/gate stage.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ca-adapt.md
 
 ## 2026-08-15 17:03:53 — stage 'adapt' — PASS
@@ -2404,7 +2404,7 @@
 
 ## 2026-08-16 16:48:43 — stage 'baseline' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md [ok]: 核心发现（逐行复核，非引用旧文）: 批 DB（`editSidebar?: boolean`）是**纯视图层集成**——底层全部就位：批 AT 的 `createAuditLog`（ring 200，seq 永不重置）、批 BA 的 `createVersionHistory; Baseline 内容: - **Exact design**：prop 契约（props.ts :951 后）+ 工具栏触发器（⏳，接 history 之后）+ 右侧边面板（portal、fixed 360px、无 backdrop 非模态，fiat）+ **合并
+- task /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md [ok]: 核心发现（逐行复核，非引用旧文）: 批 DB（`editSidebar?: boolean`）是**纯视图层集成**——底层全部就位：批 AT 的 `createAuditLog`（ring 200，seq 永不重置）、批 BA 的 `createVersionHistory; Baseline 内容: - **Exact design**：prop 契约（props.ts :951 后）+ 工具栏触发器（⏳，接 history 之后）+ 右侧边面板（portal、fixed 360px、无 backdrop 非模态，fiat）+ \*\*合并
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-db-baseline.md
 
 ## 2026-08-16 17:33:48 — stage 'adapt' — PASS
@@ -2534,7 +2534,7 @@
 
 ## 2026-08-17 07:30:59 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md [ok]: Verdict: `docs/vxe-grid/batch-de-review.md` → **PASS** (no blocking findings).; Full repo gate: ```; Final test counts: | Suite | Result |; Comparison doc: Updated `docs/vxe-grid-comparison.md` (iris 独有 section):; Commit: `git add -A -- . ':!apps/ssr-solidstart/.vinxi'` committed successfully:
+- task /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md [ok]: Verdict: `docs/vxe-grid/batch-de-review.md` → **PASS** (no blocking findings).; Full repo gate: ```; Final test counts: | Suite | Result |; Comparison doc: Updated `docs/vxe-grid-comparison.md`(iris 独有 section):; Commit:`git add -A -- . ':!apps/ssr-solidstart/.vinxi'` committed successfully:
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-de-gate.md
 
 ## 2026-08-17 07:33:41 — stage 'baseline' — PASS
@@ -2579,7 +2579,7 @@
 
 ## 2026-08-17 08:08:47 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md [ok]: Refst Report — 批 DG Gate: PASS: **Review verdict:** PASS (no blocking, no new P2; two informational P2s from review require no gate fix); Full repo gate: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2` → **180/180 tasks; Audit: - **0 vulnerabilities** (`pnpm audit`); Manifest: - `gen:manifest` regenerated (155 × 4 = 620 contracts, 86 tokens); Docs: Updated `docs/vxe-grid-comparison.md` iris 独有 section (new 批 DG table row + 构建状态 entry); appended gate record to `docs/v
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md [ok]: Refst Report — 批 DG Gate: PASS: **Review verdict:** PASS (no blocking, no new P2; two informational P2s from review require no gate fix); Full repo gate: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2` → **180/180 tasks; Audit: - **0 vulnerabilities\*\* (`pnpm audit`); Manifest: - `gen:manifest` regenerated (155 × 4 = 620 contracts, 86 tokens); Docs: Updated `docs/vxe-grid-comparison.md` iris 独有 section (new 批 DG table row + 构建状态 entry); appended gate record to `docs/v
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dg-gate.md
 
 ## 2026-08-17 08:14:27 — stage 'baseline' — PASS
@@ -2832,7 +2832,7 @@ generated output, and `git diff --check` passed.
 
 ## 2026-08-22 03:09:14 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-gate.md [ok]: Verdict: `batch-dm-review.md` → **PASS**（验证式 adapt：功能已在 `61ec5418` 交付，`ef13c225` 补 manifest 卫生；本轮 gate 确认全绿）; Gate results: - **Full repo gate** — `corepack pnpm turbo run test typecheck lint build --concurrency=2` → *_180/180 tasks successful_; Docs updated（`docs/vxe-grid-comparison.md`，iris 独有 section）: - **新增 批 DM 行**：`autoSaveState` 定时整包快照——`props/editing.ts:286` 紧邻 `persistState`、类型 `{ intervalMs?, storage?, key? }` 于 ; Commit: - **Hash:** `473bcbc29cfddc8b08612e0fac18558064d1f027`; Final test counts: | Suite | Files | Tests |
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dm-gate.md [ok]: Verdict: `batch-dm-review.md` → **PASS**（验证式 adapt：功能已在 `61ec5418` 交付，`ef13c225` 补 manifest 卫生；本轮 gate 确认全绿）; Gate results: - **Full repo gate** — `corepack pnpm turbo run test typecheck lint build --concurrency=2` → \*_180/180 tasks successful_; Docs updated（`docs/vxe-grid-comparison.md`，iris 独有 section）: - **新增 批 DM 行**：`autoSaveState` 定时整包快照——`props/editing.ts:286` 紧邻 `persistState`、类型 `{ intervalMs?, storage?, key? }` 于 ; Commit: - **Hash:** `473bcbc29cfddc8b08612e0fac18558064d1f027`; Final test counts: | Suite | Files | Tests |
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dm-gate.md
 
 ## 2026-08-22 03:12:02 — stage 'baseline' — PASS
@@ -2867,7 +2867,7 @@ generated output, and `git diff --check` passed.
 
 ## 2026-08-22 03:34:00 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md [ok]: Verification-style adapt — feature already shipped at `61ec5418` (formatContextSelection, formatActions opt-in, __iris-format-number/upper keys, commitRowList funnel); verified all baseline anchors; closed 2 actionable non-blocking observations with explicit tests in `batch-dl-dt.test.tsx` (+2, now 13 tests/312 lines): (1) user onSelect never sees format keys (custom item still routes), (2) no-match (format-number on text / format-upper on number) → zero commits, onDataChange not called; observation #3 (string write-back) is spec-inherent. Gate: core 104 files/1597 ✓ · react typecheck ✓ · react 246 files/2818 ✓ (+2) · lint 0 errors (2 pre-existing Table.tsx complexity warnings) · iris-ui-spec 0 violations (1535 files) · gen:manifest no diff (155×4, 86 tokens). DO suites 43 tests (13+13+17). Commit: feat(react): grid 批 DO——单元格右键格式（iris 独有）
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md [ok]: Verification-style adapt — feature already shipped at `61ec5418` (formatContextSelection, formatActions opt-in, \_\_iris-format-number/upper keys, commitRowList funnel); verified all baseline anchors; closed 2 actionable non-blocking observations with explicit tests in `batch-dl-dt.test.tsx` (+2, now 13 tests/312 lines): (1) user onSelect never sees format keys (custom item still routes), (2) no-match (format-number on text / format-upper on number) → zero commits, onDataChange not called; observation #3 (string write-back) is spec-inherent. Gate: core 104 files/1597 ✓ · react typecheck ✓ · react 246 files/2818 ✓ (+2) · lint 0 errors (2 pre-existing Table.tsx complexity warnings) · iris-ui-spec 0 violations (1535 files) · gen:manifest no diff (155×4, 86 tokens). DO suites 43 tests (13+13+17). Commit: feat(react): grid 批 DO——单元格右键格式（iris 独有）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-adapt.md
 
 ## 2026-08-22 03:35:55 — stage 'adapt' — PASS
@@ -2882,7 +2882,7 @@ generated output, and `git diff --check` passed.
 
 ## 2026-08-22 12:00:00 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md [ok]: Gate PASS — review verdict PASS; full repo gate `turbo run test typecheck lint build --concurrency=2` 180/180 successful (135 cached) · `pnpm audit:security` 0 vulnerabilities · `gen:manifest`+`check:manifest` up to date (155×4, 86 tokens, DO zero diff) · updated `docs/vxe-grid-comparison.md` (iris 独有 批 DO row: contextMenu.formatActions opt-in, keys __iris-format-number/__iris-format-upper, formatContextSelection toFixed(2)/toUpperCase via commitRowList 'edit', onSelect interception, i18n en+zh) + 构建状态 summary · batch-do-gate.md rewritten as real gate report. Final counts: react 246 files/2818 · core 104 files/1597 · DO suites 43/43 · commit: feat(table): grid 批 DO——单元格右键格式（iris 独有）
+- task /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md [ok]: Gate PASS — review verdict PASS; full repo gate `turbo run test typecheck lint build --concurrency=2` 180/180 successful (135 cached) · `pnpm audit:security` 0 vulnerabilities · `gen:manifest`+`check:manifest` up to date (155×4, 86 tokens, DO zero diff) · updated `docs/vxe-grid-comparison.md` (iris 独有 批 DO row: contextMenu.formatActions opt-in, keys **iris-format-number/**iris-format-upper, formatContextSelection toFixed(2)/toUpperCase via commitRowList 'edit', onSelect interception, i18n en+zh) + 构建状态 summary · batch-do-gate.md rewritten as real gate report. Final counts: react 246 files/2818 · core 104 files/1597 · DO suites 43/43 · commit: feat(table): grid 批 DO——单元格右键格式（iris 独有）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-do-gate.md
 
 ## 2026-08-22 03:44:09 — stage 'gate' — PASS
@@ -2952,7 +2952,7 @@ generated output, and `git diff --check` passed.
 
 ## 2026-08-22 04:38:24 — stage 'baseline' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md [ok]: Baseline summary — 批 DR：单元格编辑快捷键（iris 独有）: **Exact design** — spec（`editKeys?: Array<'F2' | 'Enter' | 'Space'>`，可编辑单元格聚焦时按这些键进入编辑；默认 F2；配置扩展；测试自定义键编辑）**已在 HEAD `2a
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md [ok]: Baseline summary — 批 DR：单元格编辑快捷键（iris 独有）: **Exact design** — spec（`editKeys?: Array<'F2' | 'Enter' | 'Space'>`，可编辑单元格聚焦时按这些键进入编辑；默认 F2；配置扩展；测试自定义键编辑）\*\*已在 HEAD `2a
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dr-baseline.md
 
 ## 2026-08-22 — stage 'adapt' — PASS
@@ -3067,7 +3067,7 @@ generated output, and `git diff --check` passed.
 
 ## 2026-08-22 07:45:48 — stage 'review' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-dv-review.md [ok]: Verdict: **FAIL** ❌: Verdict written to `docs/vxe-grid/batch-dv-review.md`. No implementation files touched (diagnostic probe deleted; `packa; Verification results — all gates green: - core test: 106 files / **1641** ✓ · react typecheck ✓ · react test: 249 files / **2855** (incl. batch-dv 13/13 + SSR 5; Why FAIL (findings): **#1 medium — `Table.tsx:1763-1777`**: a fully-uncontrolled table (`urlState` on, zero owning callbacks) **destroys a se
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dv-review.md [ok]: Verdict: **FAIL** ❌: Verdict written to `docs/vxe-grid/batch-dv-review.md`. No implementation files touched (diagnostic probe deleted; `packa; Verification results — all gates green: - core test: 106 files / **1641** ✓ · react typecheck ✓ · react test: 249 files / **2855** (incl. batch-dv 13/13 + SSR 5; Why FAIL (findings): **#1 medium — `Table.tsx:1763-1777`**: a fully-uncontrolled table (`urlState` on, zero owning callbacks) \*\*destroys a se
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dv-review.md
 
 ## 2026-08-22 08:02:38 — stage 'gate' — PASS
@@ -3077,7 +3077,7 @@ generated output, and `git diff --check` passed.
 
 ## 2026-08-22 08:03:34 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md [ok]: Verdict: FAIL → fixed → PASS ✅: `batch-dv-review.md` found **#1 medium** (fully-uncontrolled table destroys a seeded `_table` deep link at mount) + **#2; Fixes applied (small + localized, exactly as recommended): 1. **`Table.tsx` URL write effect** — added `ownsChannel` gate (`(multiSort ? onMultiSortChange : onSortChange) || onFil; Full gate (re-run): | Gate | Result |; Final test counts (fresh runs): - **react**: 249 files — **2855/2855** ✅ (batch-dv 13/13 jsdom + SSR 5/5 node); Commit: **`e671b85c`** (`e671b85c7915b10f37373e986881f25f51860a18`) — `feat(table): grid 批 DV——URL 状态深链（iris 独有）`, 6 files (2 so
+- task /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md [ok]: Verdict: FAIL → fixed → PASS ✅: `batch-dv-review.md` found **#1 medium** (fully-uncontrolled table destroys a seeded `_table` deep link at mount) + **#2; Fixes applied (small + localized, exactly as recommended): 1. **`Table.tsx` URL write effect** — added `ownsChannel` gate (`(multiSort ? onMultiSortChange : onSortChange) || onFil; Full gate (re-run): | Gate | Result |; Final test counts (fresh runs): - **react**: 249 files — **2855/2855** ✅ (batch-dv 13/13 jsdom + SSR 5/5 node); Commit: **`e671b85c`\*\* (`e671b85c7915b10f37373e986881f25f51860a18`) — `feat(table): grid 批 DV——URL 状态深链（iris 独有）`, 6 files (2 so
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-dv-gate.md
 
 ## 2026-08-22 08:08:42 — stage 'baseline' — PASS
@@ -3353,4 +3353,9 @@ generated output, and `git diff --check` passed.
 ## 2026-08-22 16:20:00 — stage 'gate' — PASS
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md [ok]: 报告: **Verdict**: `batch-en-review.md` = **PASS**（3 LOW / 2 INFO，无阻塞项）— 全仓库门禁执行通过并已提交。; 门禁结果: | Check | Result |; 最终测试计数（逐包直跑实测）: - **vue** 167 files / **1599**（+11 批 EN audit-log.test.ts）+ SSR ✅
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md
+
+## 2026-08-22 16:17:04 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md [ok]: Verdict: `batch-en-review.md` = **PASS**（3 LOW / 2 INFO，无阻塞项）; 门禁结果: | Check | Result |; Commit: ```; 最终测试计数（逐包直跑实测）: - **vue** 167 files / **1599**（+11 批 EN audit-log.test.ts）+ SSR ✅; 文档更新: - `comparison.md`：新增 **批 EN** 行（`✅ vue`，gate 实测全仓库块）+ 构建状态段落条目 + 汇总行 vue 1588→**1599**；review 3 LOW / 2 INFO 全数收入（select
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-en-gate.md

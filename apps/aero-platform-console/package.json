@@ -17,16 +17,16 @@
   "dependencies": {
     "@iris-ui-kit/plugin-locale-zh": "0.1.0",
     "@iris-ui-kit/react": "0.2.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "25.0.1",
     "typescript": "5.9.3",
-    "vite": "^6.4.3",
+    "vite": "^8.2.2",
     "vitest": "3.2.6"
   }
 }

@@ -27,3 +27,50 @@
 
 - task .pi-batch/sverp/gate.md [ok]
 - evidence: .pi-batch/sverp/gate.md
+
+## 2026-08-10 18:05:43 — stage 'diagnose' — PASS
+
+- task .pi-batch/sverp/diagnose.md [ok]: 所有权判定: **缺陷归属 `@iris-ui-kit/vue` 组件层**（`packages/vue/src/admin/NavMenu.ts` + `primitives/menu/*`），**非 sverpweb 业务逻辑**。已核验 sverp; 已验证 Bug 清单（实测复现，含根因 file:line）; A. IrisNavMenu（sverpweb 实际路径）: **A1（高）激活分支轨迹在菜单异步到达后不展开** — 深链刷新时当前页在菜单中不可见、无高亮。; B. primitives/menu/\*（IrisMenuSub 系列，当前 sverpweb 未用）: **B1（严重）嵌套子菜单默认 teleport 下点击叶子会先关闭根菜单、select 丢失**：根 `IrisMenuContent` 的 `useDismiss`（`MenuContent.ts:42-46`）exclude 仅 `[; 已核验正常项（勿误修）: vertical 点击展开/收起、叶子点击父级保持展开、分支不可选中、多展开语义、`expandedKeys` 受控 v-model、disabled 分支/叶子、Up/Down/Home/End 导航、`activeKey` 变化时轨迹自
+- evidence: .pi-batch/sverp/diagnose.md
+
+## 2026-08-10 18:35:24 — stage 'fix' — PASS
+
+- task .pi-batch/sverp/fix.md [ok]: Files / symbols changed (9 files, all in `packages/vue/src`): | File | Changes |; Regression tests: - `admin/NavMenu.test.ts` (35 tests): new A1 (async items), A2 (click toggle, no expandedKeys pollution), A3 (Escape clo; Gate results: - `pnpm --filter @iris-ui-kit/vue typecheck` ✅ (`tsc --noEmit` clean)
+- evidence: .pi-batch/sverp/fix.md
+
+## 2026-08-10 19:26:37 — stage 'review' — PASS
+
+- task .pi-batch/sverp/reviews/qa_lead.md [ok]: Findings: | Category | Severity | Title | Location | Description | Risk | Recommendation | Priority |; Test Coverage Analysis (empirical v8, this change's files): | Component | Unit | Integration | E2E | Gaps |; Critical Test Scenarios: | Scenario | Type | Priority | Current Status |; Final Summary: - **Overall Test Health: Good** — for the delivered change. Empirically verified: 48/48 green × 3 runs, `NavMenu.ts` at
+- task .pi-batch/sverp/reviews/code-implementer.md [ok]: 实现概述: 作为 `iris-fix-publish-pipeline` 战役第 4 阶段（orchestrator 选定角色 `["qa_lead", "code-implementer", "staff_engineer"]`）的 code-imp; 文件清单（本次加固修改）: - `packages/vue/src/admin/NavMenu.ts` — 新增 `isolateAtDepth()`，接入 hover/click/键盘三条开路径; 核心发现与修复: | # | 严重度 | 缺陷（均实测复现） | 修复 |; 验证步骤与结果: ```bash; 已知限制（见报告详述，不阻塞）: 1. hover 切换后不「回退」到 click-pinned 弹层（antd revert 语义，后续可做）
+- task .pi-batch/sverp/reviews/architect.md [ok]: 结论先行: 本次修复**作为缺陷修补是高质量的**（96.96% stmts / 90.12% branch、48/48 测试 ×3 确定性、接口改动全部可加、code-implementer 又实测复现并修复 3 个追加缺陷）。但作为架构事件，它暴露; 1. 架构评估; 1.1 当前架构的优势: | 方面 | 评价 |; 1.2 结构性局限（按严重度排序）: **① 修复落点在适配器而非 core（根本问题）**; 1.3 关键设计决策评审: | 决策 | 评审 | 备注 |
+- task .pi-batch/sverp/reviews/ux_designer.md [ok]: Verdict: Good (for the Vue deliverable): I read all 9 changed files directly plus the docs surface and cross-framework counterparts. The fix converts real user p; Key findings (14 total): **The dominant UX issue — cross-framework parity (P1, High):** react/solid/svelte NavMenu have _none_ of A2–A10/B1–B4 (v; Accessibility: Partially Compliant: Attribute-level review is strong (focus-visible ring via tokens, logical properties, truthful expanded state, no keyboar
+- task .pi-batch/sverp/reviews/code-implementer.md [ok]: 实现概述: 对 `iris-fix-publish-pipeline` 的菜单缺陷修复（`fix.md`，`packages/vue/src/**` 9 文件）执行第 2 轮独立代码级加固审查：逐文件阅读 → 对可疑路径写 scratch 测试在 js; 文件清单（本轮改动）: - `packages/vue/src/admin/NavMenu.ts` — **视口钉扎层**（fixed 定位 + 触发器 rect 坐标 + capture scroll/resize 监听生命周期，RTL 感知）；ArrowUp ; 关键设计决策: - **钉扎而非 portal**：弹层保持 in-flow DOM，打开时以 `position: fixed` + 触发器 `getBoundingClientRect()` 坐标钉到视口，脱离侧栏 overflow 剪裁；嵌套弹层保持; 验证结果: ```bash; 已知限制（不阻塞）: 1. hover 切换后不回退到 click-pinned（antd revert 语义，后续可做）2. `expandedKeys` 陈旧键不修剪 3. disabled 分支键盘仍开弹层 4. B2 150ms 窗内短暂双开（与 ant
+- evidence: .pi-batch/sverp/reviews/qa_lead.md, .pi-batch/sverp/reviews/code-implementer.md, .pi-batch/sverp/reviews/architect.md, .pi-batch/sverp/reviews/ux_designer.md, .pi-batch/sverp/reviews/code-implementer.md
+
+## 2026-08-10 19:30:27 — stage 'gate' — PASS (gate verdict: PASS)
+
+- task .pi-batch/sverp/gate.md [ok]
+- evidence: .pi-batch/sverp/gate.md
+
+## 2026-09-02 15:31:32 — stage 'diagnose' — PASS
+
+- task .pi-batch/sverp/diagnose.md [ok]: 结论(所有权判定): \*\*ROUTED-TO-SVERPWEB: 页面组合问题 —— Order 列 7rem 宽度 + 强制 `width:100%` 令 IrisNumberInput 的 min-content(≈118px)溢出 6px 导致 +/− 控; 证据链; 1. 库侧排查(全部无缺陷): | 组件 | 文件 | 结论 |; 2. 缺陷根因 A — +/− 控件不对齐(页面布局决策): - `sverpweb-stable/apps/web/src/style.css:1690-1692`:`.system-routes-editor__grid--parent { grid-template-columns: minma; 3. 缺陷根因 B — 表单整体间距/排版“不协调”(页面 token 错配): - `style.css:1665-1673` `.system-routes-editor { gap: var(--iris-space-4) }`、`:1680-1696`各 grid`gap: var(--iris-space-
+- evidence: .pi-batch/sverp/diagnose.md
+
+## 2026-09-02 15:32:18 — stage 'fix' — PASS
+
+- task .pi-batch/sverp/fix.md [ok]
+- evidence: .pi-batch/sverp/fix.md
+
+## 2026-09-02 17:01:57 — stage 'review' — PASS
+
+- task .pi-batch/sverp/reviews/ux_designer.md [ok]: Findings; Finding 1: | Field | Description |; Finding 2: | Field | Description |; Finding 3: | Field | Description |; Finding 4: | Field | Description |
+- task .pi-batch/sverp/reviews/qa_lead.md [ok]: 0. 证据核验（QA 对 fix 报告的独立复核）: 在出具结论前，我对 fix 报告的关键事实主张做了源码级复核：; Findings: | Field | Finding 1 |; Test Coverage Analysis: | Component | Unit Tests | Integration Tests | E2E Tests | Gaps |; Critical Test Scenarios: | Scenario | Type | Priority | Current Status |; Final Summary: - **Overall Test Health**: **Needs Work** — iris-ui 库侧 **Good**（行为测试 + 契约 + token 审计 + 视觉回归齐备）；sverpweb-stable 消费侧存在\*\*结构
+- task .pi-batch/sverp/reviews/architect.md [ok]
+- task .pi-batch/sverp/reviews/devops_engineer.md [FAILED: task timed out]
+- evidence: .pi-batch/sverp/reviews/ux_designer.md, .pi-batch/sverp/reviews/qa_lead.md, .pi-batch/sverp/reviews/architect.md, .pi-batch/sverp/reviews/devops_engineer.md
+
+## 2026-09-02 17:12:49 — stage 'gate' — PASS (gate verdict: PASS)
+
+- task .pi-batch/sverp/gate.md [ok]: Gate Verification — sverpweb `/system/routes` NumberInput routing campaign: | # | Criterion | Result | Independent evidence |
+- evidence: .pi-batch/sverp/gate.md

@@ -76,6 +76,52 @@ describe('createGridEditingFeature', () => {
     expect(grid.invoke('getEditingState')).toMatchObject({ editing: null, validated: 'Alicia' })
   })
 
+  it('isolates callback and event commit payloads from canonical rows', () => {
+    const callbackCommits: GridEditingCommit<Row>[] = []
+    const eventCommits: GridEditingCommit<Row>[] = []
+    let eventInitial: { rowName: string; nextRowName: string } | undefined
+    const grid = createGridCore<Row>({
+      features: [
+        createGridRowsFeature<Row>({ defaultRows: initialRows }),
+        createGridEditingFeature<Row>({
+          getRowKey: (row) => row.id,
+          onCommit: (commit) => {
+            callbackCommits.push(commit)
+            commit.row.name = 'callback row'
+            commit.nextRow.name = 'callback next row'
+          },
+        }),
+      ],
+    })
+    grid.on<GridEditingCommit<Row>>(GRID_EDITING_COMMIT_EVENT, (commit) => {
+      eventCommits.push(commit)
+      eventInitial = { rowName: commit.row.name, nextRowName: commit.nextRow.name }
+      commit.row.name = 'event row'
+      commit.nextRow.name = 'event next row'
+    })
+
+    grid.invoke('startCellEdit', 1, 'name')
+    grid.invoke('setCellDraft', 'Alicia')
+    expect(grid.invoke<boolean>('commitCellEdit')).toBe(true)
+
+    const callbackCommit = callbackCommits[0]!
+    const eventCommit = eventCommits[0]!
+    const canonicalRow = grid.invoke<Row[]>('getRows')[0]!
+    expect(callbackCommit).not.toBe(eventCommit)
+    expect(callbackCommit.row).not.toBe(eventCommit.row)
+    expect(callbackCommit.nextRow).not.toBe(eventCommit.nextRow)
+    expect(eventInitial).toEqual({ rowName: 'Ada', nextRowName: 'Alicia' })
+    expect(callbackCommit.row.name).toBe('callback row')
+    expect(callbackCommit.nextRow.name).toBe('callback next row')
+    expect(eventCommit.row.name).toBe('event row')
+    expect(eventCommit.nextRow.name).toBe('event next row')
+    expect(canonicalRow.name).toBe('Alicia')
+    expect(canonicalRow).not.toBe(callbackCommit.row)
+    expect(canonicalRow).not.toBe(callbackCommit.nextRow)
+    expect(canonicalRow).not.toBe(eventCommit.row)
+    expect(canonicalRow).not.toBe(eventCommit.nextRow)
+  })
+
   it('coerces before custom validation and keeps rejected sessions open', () => {
     const grid = createGridCore<Row>({
       features: [

@@ -342,17 +342,17 @@ class GridEditingModelEngine<Row extends Record<string, unknown>> implements Gri
       changed = this.bindings.setRows(nextRows, commitOptions)
     }
     if (!changed) return
-    const commit: GridEditingCommit<Row> = {
+    const createCommit = (): GridEditingCommit<Row> => ({
       rowKey: target.rowKey,
       columnKey: target.columnKey,
       rowIndex: found.rowIndex,
-      row: found.row,
-      nextRow,
+      row: { ...found.row },
+      nextRow: { ...nextRow },
       oldValue,
       value,
-    }
-    this.options.onCommit?.(commit)
-    this.emitCommit?.(commit)
+    })
+    this.options.onCommit?.(createCommit())
+    this.emitCommit?.(createCommit())
   }
 
   getState(): CellEditState<GridEditingKey> {

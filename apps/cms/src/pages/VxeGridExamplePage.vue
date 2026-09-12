@@ -4,6 +4,7 @@ import {
   IrisTable,
   type IrisTableColumn,
   type IrisTableColumnWidths,
+  type IrisTableContextMenuParams,
   type IrisTableProxyConfig,
   type IrisTableProxyQueryParams,
 } from '@iris-ui-kit/vue'
@@ -70,6 +71,62 @@ const columnWidths = ref<IrisTableColumnWidths>({ name: 200 })
 
 function handleControlledColumnWidthsChange(next: IrisTableColumnWidths): void {
   columnWidths.value = next
+}
+
+const controlledColumnVisibilityColumns: IrisTableColumn[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'role', title: 'Role' },
+  { key: 'status', title: 'Status' },
+]
+
+const controlledColumnVisibilityData: Array<Record<string, unknown>> = [
+  { id: 1, name: 'Alice', role: 'Admin', status: 'active' },
+  { id: 2, name: 'Bob', role: 'Editor', status: 'paused' },
+]
+
+const controlledColumnVisibilityKeys = ['name', 'role', 'status'] as const
+type ControlledColumnVisibilityKey = (typeof controlledColumnVisibilityKeys)[number]
+const columnVisibility = ref<Record<string, boolean>>({ status: false })
+
+function handleColumnVisibilityChange(next: Record<string, boolean>): void {
+  columnVisibility.value = next
+}
+
+function isColumnVisible(key: string): boolean {
+  return columnVisibility.value[key] !== false
+}
+
+function toggleColumnVisibility(key: ControlledColumnVisibilityKey): void {
+  handleColumnVisibilityChange({
+    ...columnVisibility.value,
+    [key]: columnVisibility.value[key] === false,
+  })
+}
+
+const visibleColumnKeys = computed(() =>
+  controlledColumnVisibilityKeys.filter((key) => isColumnVisible(key)),
+)
+
+const contextMenuColumns: IrisTableColumn[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'status', title: 'Status' },
+]
+
+const contextMenuData: Array<Record<string, unknown>> = [
+  { key: 61001, name: 'Alice', status: 'active' },
+  { key: 61002, name: 'Bob', status: 'paused' },
+  { key: 61003, name: 'Carol', status: 'active' },
+]
+
+const contextMenuReadout = ref('No action yet')
+const contextMenuConfig = {
+  items: () => [
+    { key: 'inspect', label: 'Inspect' },
+    { key: 'open', label: 'Open' },
+  ],
+  onSelect: (action: string, { row, column }: IrisTableContextMenuParams) => {
+    contextMenuReadout.value = `Last action: ${action} row ${String(row.key)} column ${column.key}`
+  },
 }
 
 interface GroupedSummaryRow extends Record<string, unknown> {
@@ -302,6 +359,124 @@ function handleColumnReorder(nextColumns: IrisTableColumn[]) {
           font-size: var(--iris-font-size-sm, 13px);
         "
         >{{ JSON.stringify(columnWidths) }}</output
+      >
+    </section>
+
+    <section data-iris-vxe-section="column-visibility">
+      <h2 style="margin: 0 0 var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-lg, 16px)">
+        受控列可见性（Controlled column visibility）
+      </h2>
+      <p
+        style="
+          margin: 0 0 var(--iris-space-md, 12px);
+          font-size: var(--iris-font-size-sm, 13px);
+          color: var(--iris-muted);
+        "
+      >
+        父组件持有列可见性映射；点击按钮更新同一份状态，表格会同步隐藏或显示列。
+      </p>
+      <div
+        style="
+          display: flex;
+          gap: var(--iris-gap-sm, 8px);
+          margin-block-end: var(--iris-space-md, 12px);
+        "
+      >
+        <button
+          type="button"
+          data-iris-vxe-visibility-toggle="status"
+          aria-label="Toggle status column visibility"
+          :aria-pressed="isColumnVisible('status')"
+          style="
+            padding: var(--iris-space-xs, 6px) var(--iris-space-md, 12px);
+            border: 1px solid var(--iris-border);
+            border-radius: var(--iris-radius-md, 6px);
+            background: var(--iris-surface, var(--iris-background));
+            color: var(--iris-foreground);
+            font-size: var(--iris-font-size-sm, 13px);
+            cursor: pointer;
+          "
+          @click="toggleColumnVisibility('status')"
+        >
+          Status: {{ isColumnVisible('status') ? 'visible' : 'hidden' }}
+        </button>
+        <button
+          type="button"
+          data-iris-vxe-visibility-toggle="role"
+          aria-label="Toggle role column visibility"
+          :aria-pressed="isColumnVisible('role')"
+          style="
+            padding: var(--iris-space-xs, 6px) var(--iris-space-md, 12px);
+            border: 1px solid var(--iris-border);
+            border-radius: var(--iris-radius-md, 6px);
+            background: var(--iris-surface, var(--iris-background));
+            color: var(--iris-foreground);
+            font-size: var(--iris-font-size-sm, 13px);
+            cursor: pointer;
+          "
+          @click="toggleColumnVisibility('role')"
+        >
+          Role: {{ isColumnVisible('role') ? 'visible' : 'hidden' }}
+        </button>
+      </div>
+      <IrisTable
+        bordered
+        row-key="id"
+        :columns="controlledColumnVisibilityColumns"
+        :data="controlledColumnVisibilityData"
+        :column-visibility="columnVisibility"
+        @update:columnVisibility="handleColumnVisibilityChange"
+      />
+      <output
+        data-iris-vxe-visibility-readout
+        aria-live="polite"
+        style="
+          display: block;
+          margin-block-start: var(--iris-space-md, 12px);
+          padding: var(--iris-space-sm, 8px) var(--iris-space-md, 12px);
+          border: 1px solid var(--iris-border);
+          border-radius: var(--iris-radius-md, 6px);
+          color: var(--iris-muted);
+          font-size: var(--iris-font-size-sm, 13px);
+        "
+        >visible: {{ JSON.stringify(visibleColumnKeys) }}</output
+      >
+    </section>
+
+    <section data-iris-vxe-section="context-menu">
+      <h2 style="margin: 0 0 var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-lg, 16px)">
+        VxeGrid body-cell context menu
+      </h2>
+      <p
+        style="
+          margin: 0 0 var(--iris-space-md, 12px);
+          font-size: var(--iris-font-size-sm, 13px);
+          color: var(--iris-muted);
+        "
+      >
+        The menu lifecycle is internally uncontrolled; the page controls the action readout. Inspect
+        and Open are enabled. The fixture is loaded, valid, and non-empty, with no empty, error, or
+        loading branch.
+      </p>
+      <IrisTable
+        row-key="key"
+        :columns="contextMenuColumns"
+        :data="contextMenuData"
+        :context-menu="contextMenuConfig"
+      />
+      <output
+        data-iris-vxe-context-menu-readout
+        aria-live="polite"
+        style="
+          display: block;
+          margin-block-start: var(--iris-space-md, 12px);
+          padding: var(--iris-space-sm, 8px) var(--iris-space-md, 12px);
+          border: 1px solid var(--iris-border);
+          border-radius: var(--iris-radius-md, 6px);
+          color: var(--iris-muted);
+          font-size: var(--iris-font-size-sm, 13px);
+        "
+        >{{ contextMenuReadout }}</output
       >
     </section>
 

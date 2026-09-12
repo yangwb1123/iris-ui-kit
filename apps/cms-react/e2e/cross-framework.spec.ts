@@ -242,6 +242,161 @@ test('viewer role comes from auth and cannot see privileged navigation', async (
   await expect(page.getByRole('button', { name: 'Roles & access', exact: true })).toHaveCount(0)
 })
 
+test('VxeGrid Example — controlled column visibility across framework bundles', async ({
+  page,
+}, testInfo) => {
+  await login(page)
+  if (testInfo.project.name === 'chromium') {
+    await page.goto('/#vxe-example')
+  } else {
+    await page.locator('[data-iris-nav-item][data-key="vxe-example"]').click()
+  }
+
+  const section = page.locator('[data-iris-vxe-section="column-visibility"]')
+  const table = section.locator('[data-iris-table]')
+  const readout = section.locator('[data-iris-vxe-visibility-readout]')
+  const statusToggle = section.locator('[data-iris-vxe-visibility-toggle="status"]')
+  const roleToggle = section.locator('[data-iris-vxe-visibility-toggle="role"]')
+  const bodyRows = table.locator(
+    '[role="row"]:not([data-iris-table-row="header"]):not([data-iris-table-row="summary"])',
+  )
+  const headerKeys = () =>
+    table
+      .locator('[data-iris-table-header]')
+      .evaluateAll((headers) =>
+        headers.map((header) => header.getAttribute('data-iris-table-header') ?? ''),
+      )
+
+  await expect(section).toHaveCount(1)
+  await expect(
+    section.getByRole('heading', {
+      name: '受控列可见性（Controlled column visibility）',
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(table).toHaveCount(1)
+  await expect(table).toBeVisible()
+  await expect.poll(headerKeys).toEqual(['name', 'role'])
+  await expect(readout).toHaveText('visible: ["name","role"]')
+  await expect(table.locator('[data-iris-table-header="status"]')).toHaveCount(0)
+  await expect(table.locator('[data-iris-table-cell="status"]')).toHaveCount(0)
+  await expect(table.locator('[data-iris-table-cell="name"]')).toHaveText(['Alice', 'Bob'])
+  await expect(table.locator('[data-iris-table-cell="role"]')).toHaveText(['Admin', 'Editor'])
+  await expect(statusToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(roleToggle).toHaveAttribute('aria-pressed', 'true')
+  const initialRowCount = await bodyRows.count()
+  expect(initialRowCount).toBe(2)
+
+  await statusToggle.click()
+  await expect(statusToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(headerKeys).toEqual(['name', 'role', 'status'])
+  await expect(readout).toHaveText('visible: ["name","role","status"]')
+  await expect(table.locator('[data-iris-table-cell="status"]')).toHaveText(['active', 'paused'])
+  await expect(table.locator('[data-iris-table-cell="name"]')).toHaveText(['Alice', 'Bob'])
+  await expect(table.locator('[data-iris-table-cell="role"]')).toHaveText(['Admin', 'Editor'])
+
+  await roleToggle.click()
+  await expect(roleToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect.poll(headerKeys).toEqual(['name', 'status'])
+  await expect(readout).toHaveText('visible: ["name","status"]')
+  await expect(table.locator('[data-iris-table-header="role"]')).toHaveCount(0)
+  await expect(table.locator('[data-iris-table-cell="role"]')).toHaveCount(0)
+  await expect(table.locator('[data-iris-table-cell="name"]')).toHaveText(['Alice', 'Bob'])
+  await expect(table.locator('[data-iris-table-cell="status"]')).toHaveText(['active', 'paused'])
+  await expect(bodyRows).toHaveCount(initialRowCount)
+})
+
+test('VxeGrid Example — context menu across framework bundles', async ({ page }, testInfo) => {
+  await login(page)
+  if (testInfo.project.name === 'chromium') {
+    await page.goto('/#vxe-example')
+  } else {
+    await page.locator('[data-iris-nav-item][data-key="vxe-example"]').click()
+  }
+
+  const section = page.locator('[data-iris-vxe-section="context-menu"]')
+  const table = section.locator('[data-iris-table]')
+  const leafHeaders = table.locator('[data-iris-table-header]:not([data-iris-table-header-group])')
+  const bodyRows = table.locator(
+    '[data-iris-table-row-key], [data-iris-table-row]:not([data-iris-table-row="header"]):not([data-iris-table-row="summary"])',
+  )
+  const readout = section.locator('[data-iris-vxe-context-menu-readout]')
+  const menu = page.locator('[data-iris-table-context-menu]')
+  const rowByKey = (key: string) =>
+    table.locator(`[data-iris-table-row="${key}"], [data-iris-table-row-key="${key}"]`)
+  const headerSnapshot = () =>
+    leafHeaders.evaluateAll((headers) =>
+      headers.map((header) => ({
+        key: header.getAttribute('data-iris-table-header') ?? '',
+        title: header.textContent?.trim() ?? '',
+      })),
+    )
+  const bodyRowKeys = () =>
+    bodyRows.evaluateAll((rows) =>
+      rows.map(
+        (row) =>
+          row.getAttribute('data-iris-table-row-key') ??
+          row.getAttribute('data-iris-table-row') ??
+          '',
+      ),
+    )
+
+  await expect(section).toHaveCount(1)
+  await expect(section).toBeVisible()
+  await expect(
+    section.getByRole('heading', { name: 'VxeGrid body-cell context menu', exact: true }),
+  ).toBeVisible()
+  await expect(table).toHaveCount(1)
+  await expect(table).toBeVisible()
+  await expect(leafHeaders).toHaveCount(2)
+  await expect.poll(headerSnapshot).toEqual([
+    { key: 'name', title: 'Name' },
+    { key: 'status', title: 'Status' },
+  ])
+  await expect(bodyRows).toHaveCount(3)
+  await expect.poll(bodyRowKeys).toEqual(['61001', '61002', '61003'])
+  await expect(readout).toHaveText('No action yet')
+
+  const nameHeader = table.locator('[data-iris-table-header="name"]')
+  const targetRow = rowByKey('61002')
+  const targetCell = targetRow.locator('[data-iris-table-cell="status"]')
+  await expect(targetRow).toHaveCount(1)
+  await expect(targetCell).toHaveCount(1)
+  await targetCell.scrollIntoViewIfNeeded()
+
+  await targetCell.click({ button: 'right' })
+  await expect(menu).toHaveCount(1)
+  await expect(menu).toHaveAttribute('role', 'menu')
+  for (const [key, label] of [
+    ['inspect', 'Inspect'],
+    ['open', 'Open'],
+  ] as const) {
+    const item = menu.locator(`[data-iris-table-context-menu-item="${key}"]`)
+    await expect(item).toHaveCount(1)
+    await expect(item).toHaveAttribute('role', 'menuitem')
+    await expect(item).toHaveAccessibleName(label)
+    await expect(item).not.toBeDisabled()
+  }
+
+  await menu.locator('[data-iris-table-context-menu-item="inspect"]').click()
+  await expect(readout).toHaveAttribute('aria-live', 'polite')
+  await expect(readout).toHaveText('Last action: inspect row 61002 column status')
+  await expect(menu).toHaveCount(0)
+
+  await nameHeader.click({ button: 'right' })
+  await expect(menu).toHaveCount(0)
+
+  await targetCell.click({ button: 'right' })
+  await expect(menu).toHaveCount(1)
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+
+  await targetCell.click({ button: 'right' })
+  await expect(menu).toHaveCount(1)
+  await nameHeader.click()
+  await expect(menu).toHaveCount(0)
+})
+
 test('dashboard renders deterministic IrisCountdown release example across framework bundles', async ({
   page,
 }) => {

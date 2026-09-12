@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisDashboardGrid, IrisDashboardCard, IrisBadge, IrisCountdown } from '@iris-ui-kit/vue'
+import {
+  IrisDashboardGrid,
+  IrisDashboardCard,
+  IrisBadge,
+  IrisCountdown,
+  IrisMenu,
+  IrisMenuTrigger,
+  IrisMenuContent,
+  IrisMenuItem,
+  IrisMenuSeparator,
+  IrisMenuSub,
+  IrisScrollArea,
+} from '@iris-ui-kit/vue'
 
 type Tone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
 const stats: { label: string; value: string; delta: string; tone: Tone }[] = [
@@ -10,11 +22,35 @@ const stats: { label: string; value: string; delta: string; tone: Tone }[] = [
   { label: 'Errors (24h)', value: '3', delta: '-2', tone: 'danger' },
 ]
 
+const operationsActivity = [
+  'Build #1842 promoted to production',
+  'Mira approved release notes',
+  'API latency returned to normal',
+  'Scheduled backup completed',
+  'New editor role created',
+  'Webhook delivery retried',
+  'Security scan passed',
+  'Audit policy updated',
+]
+
 const base = Date.now()
 const expiredFinishCount = ref(0)
+const lastAction = ref('none')
 
 function handleExpiredFinish(): void {
   expiredFinishCount.value += 1
+}
+
+function handleRefreshActivity(): void {
+  lastAction.value = 'Refresh activity'
+}
+
+function handleExportReport(): void {
+  // The disabled menu item intentionally leaves the action feedback unchanged.
+}
+
+function handleViewAuditLog(): void {
+  lastAction.value = 'View audit log'
 }
 </script>
 
@@ -96,6 +132,102 @@ function handleExpiredFinish(): void {
             Expired finish callbacks:
             <span data-iris-countdown-finish-count>{{ expiredFinishCount }}</span>
           </p>
+        </section>
+      </IrisDashboardCard>
+
+      <IrisDashboardCard col-span="full">
+        <section
+          data-iris-dashboard-section="operations"
+          aria-labelledby="dashboard-operations-heading"
+        >
+          <h2
+            id="dashboard-operations-heading"
+            style="margin: 0 0 var(--iris-space-xs, 8px); font-size: var(--iris-font-size-lg, 16px)"
+          >
+            Operations
+          </h2>
+          <p
+            style="
+              margin: 0 0 var(--iris-space-md, 16px);
+              color: var(--iris-muted);
+              font-size: var(--iris-font-size-sm, 13px);
+            "
+          >
+            Use the menu to manage activity and review the loaded feed. Disabled actions remain
+            unavailable.
+          </p>
+          <div style="display: grid; gap: var(--iris-space-md, 16px)">
+            <IrisMenu>
+              <IrisMenuTrigger
+                data-iris-dashboard-menu-trigger
+                style="
+                  padding: var(--iris-space-xs, 8px) var(--iris-space-md, 16px);
+                  border: 1px solid var(--iris-border);
+                  border-radius: var(--iris-radius-md, 6px);
+                  background: var(--iris-surface);
+                  color: var(--iris-foreground);
+                  font: inherit;
+                  font-size: var(--iris-font-size-sm, 13px);
+                  cursor: pointer;
+                "
+              >
+                Operations
+              </IrisMenuTrigger>
+              <IrisMenuContent data-iris-dashboard-menu>
+                <IrisMenuItem @select="handleRefreshActivity">Refresh activity</IrisMenuItem>
+                <IrisMenuItem disabled @select="handleExportReport"> Export report </IrisMenuItem>
+                <IrisMenuSeparator />
+                <IrisMenuSub label="More operations">
+                  <IrisMenuItem @select="handleViewAuditLog">View audit log</IrisMenuItem>
+                </IrisMenuSub>
+              </IrisMenuContent>
+            </IrisMenu>
+
+            <IrisScrollArea
+              data-iris-dashboard-activity-feed
+              role="region"
+              aria-label="Activity feed"
+              axis="vertical"
+              :max-height="180"
+              style="
+                border: 1px solid var(--iris-border);
+                border-radius: var(--iris-radius-md, 6px);
+                background: var(--iris-surface);
+                color: var(--iris-foreground);
+                font-size: var(--iris-font-size-sm, 13px);
+              "
+            >
+              <div
+                v-for="activity in operationsActivity"
+                :key="activity"
+                data-iris-dashboard-activity-row
+                style="
+                  display: flex;
+                  align-items: center;
+                  min-height: var(--iris-space-3xl, 48px);
+                  padding: var(--iris-space-sm, 8px) var(--iris-space-md, 16px);
+                  border-block-end: 1px solid var(--iris-border);
+                "
+              >
+                {{ activity }}
+              </div>
+            </IrisScrollArea>
+
+            <output
+              data-iris-dashboard-action
+              aria-live="polite"
+              style="
+                display: block;
+                margin: 0;
+                padding: var(--iris-space-sm, 12px) var(--iris-space-md, 16px);
+                border: 1px solid var(--iris-border);
+                border-radius: var(--iris-radius-md, 6px);
+                color: var(--iris-muted);
+                font-size: var(--iris-font-size-sm, 13px);
+              "
+              >Last action: {{ lastAction }}</output
+            >
+          </div>
         </section>
       </IrisDashboardCard>
     </IrisDashboardGrid>

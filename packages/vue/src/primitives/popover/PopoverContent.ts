@@ -1,4 +1,14 @@
-import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
+import {
+  Teleport,
+  defineComponent,
+  h,
+  inject,
+  nextTick,
+  onScopeDispose,
+  ref,
+  watch,
+  type PropType,
+} from 'vue'
 import { installFloatingAnimations, ANIM_POPOVER } from '../floating/animations'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
@@ -30,8 +40,17 @@ export const IrisPopoverContent = defineComponent({
     }
     const innerRef = ref<HTMLElement | null>(null)
     // Mirror into ctx.contentRef so siblings (Trigger, useDismiss) can see it.
+    // Register the content with an outer popover as well: nested popovers and
+    // other teleported surfaces must not dismiss their ancestor on pointerdown.
+    let unregisterDismissExclusion: (() => void) | null = null
     watch(innerRef, (el) => {
       ctx.contentRef.value = el
+      unregisterDismissExclusion?.()
+      unregisterDismissExclusion = el ? ctx.registerDismissExclusion(el) : null
+    })
+    onScopeDispose(() => {
+      unregisterDismissExclusion?.()
+      unregisterDismissExclusion = null
     })
     const { floatingStyles } = useFloating({
       anchor: ctx.triggerRef,
@@ -43,6 +62,7 @@ export const IrisPopoverContent = defineComponent({
     useDismiss({
       enabled: ctx.open,
       exclude: [ctx.triggerRef, innerRef],
+      excludePredicate: ctx.isDismissExcluded,
       onDismiss: () => ctx.setOpen(false),
     })
     // Focus management: focus content on open; restore focus to trigger on close.

@@ -1,6 +1,17 @@
-import { Teleport, defineComponent, h, inject, ref, watch, type PropType, type VNode } from 'vue'
+import {
+  Teleport,
+  defineComponent,
+  h,
+  inject,
+  onScopeDispose,
+  ref,
+  watch,
+  type PropType,
+  type VNode,
+} from 'vue'
 import { installFloatingAnimations, ANIM_DIALOG } from '../floating/animations'
 import { DialogContextKey } from './context'
+import { PopoverContextKey } from '../popover/context'
 import { useFocusTrap, useBodyScrollLock } from '../modal-utils'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'
 /**
@@ -28,9 +39,22 @@ export const IrisDialogContent = defineComponent({
     if (!ctx) {
       throw new Error('[iris-ui] IrisDialogContent must be a descendant of IrisDialog')
     }
+    // A dialog may be opened from a popover while both surfaces are
+    // teleported to body. Register only the dialog content (not its backdrop)
+    // so content pointerdowns stay inside the ancestor popover, while a mask
+    // click retains normal outside-dismiss behavior.
+    const parentPopover = inject(PopoverContextKey, null)
     const innerRef = ref<HTMLElement | null>(null)
+    let unregisterDismissExclusion: (() => void) | null = null
     watch(innerRef, (el) => {
       ctx.contentRef.value = el
+      unregisterDismissExclusion?.()
+      unregisterDismissExclusion =
+        el && parentPopover ? parentPopover.registerDismissExclusion(el) : null
+    })
+    onScopeDispose(() => {
+      unregisterDismissExclusion?.()
+      unregisterDismissExclusion = null
     })
     useBodyScrollLock(ctx.open)
     useFocusTrap({

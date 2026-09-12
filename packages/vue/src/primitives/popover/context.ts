@@ -10,6 +10,10 @@ export interface PopoverContext {
   contentId: string
   placement: Placement
   offset: number
+  /** Register teleported descendant surfaces that belong to this popover. */
+  registerDismissExclusion: (element: HTMLElement) => () => void
+  /** Test whether a pointer target belongs to a registered descendant surface. */
+  isDismissExcluded: (target: EventTarget | null) => boolean
 }
 
 export const PopoverContextKey: InjectionKey<PopoverContext> = Symbol('IrisPopover')

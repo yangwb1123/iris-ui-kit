@@ -5,7 +5,43 @@ import { IrisButton } from '../button/Button'
 import { IrisPopover } from './Popover'
 import { IrisPopoverTrigger } from './PopoverTrigger'
 import { IrisPopoverContent } from './PopoverContent'
+import { IrisDialog } from '../dialog/Dialog'
+import { IrisDialogContent } from '../dialog/DialogContent'
 import { PopoverContextKey } from './context'
+
+const NestedDialogHarness = defineComponent({
+  setup() {
+    const confirmed = ref(false)
+    return {
+      confirmed,
+      render: () =>
+        h(
+          IrisPopover,
+          { defaultOpen: true },
+          {
+            default: () => [
+              h(IrisPopoverTrigger, null, () => 'Trigger'),
+              h(IrisPopoverContent, { 'data-testid': 'popover-content' }, () =>
+                h(
+                  IrisDialog,
+                  { open: true, 'onUpdate:open': () => undefined },
+                  {
+                    default: () =>
+                      h(IrisDialogContent, { 'data-testid': 'dialog-content' }, () =>
+                        h('button', { onClick: () => (confirmed.value = true) }, 'Confirm'),
+                      ),
+                  },
+                ),
+              ),
+            ],
+          },
+        ),
+    }
+  },
+  render() {
+    return this.render()
+  },
+})
 
 function Harness(slotConfig?: {
   triggerLabel?: string
@@ -180,6 +216,27 @@ describe('IrisPopover', () => {
     content.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     await nextTick()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  })
+
+  it('keeps a teleported dialog content inside its ancestor popover', async () => {
+    const wrapper = mount(NestedDialogHarness, { attachTo: host })
+    await nextTick()
+    await flushPromises()
+
+    const popover = document.querySelector('[data-testid="popover-content"]')
+    const dialog = document.querySelector('[data-testid="dialog-content"]') as HTMLElement | null
+    expect(popover).not.toBeNull()
+    expect(dialog).not.toBeNull()
+
+    dialog?.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }))
+    await nextTick()
+    expect(document.querySelector('[data-testid="popover-content"]')).not.toBeNull()
+
+    dialog
+      ?.querySelector('button')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    expect(wrapper.vm.confirmed).toBe(true)
+    wrapper.unmount()
   })
 
   it('controlled mode: opens when prop flips true', async () => {

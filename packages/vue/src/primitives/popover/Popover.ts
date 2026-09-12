@@ -1,4 +1,4 @@
-import { computed, defineComponent, provide, ref, useId, watch, type PropType } from 'vue'
+import { computed, defineComponent, inject, provide, ref, useId, watch, type PropType } from 'vue'
 import { createFloatingMachine, type Placement } from '@iris-ui-kit/core'
 import { useMachine } from '../../machine/useMachine'
 import { PopoverContextKey } from './context'
@@ -60,9 +60,29 @@ export const IrisPopover = defineComponent({
       emit('update:open', value)
     }
 
+    const parentPopover = inject(PopoverContextKey, null)
     const triggerRef = ref<HTMLElement | null>(null)
     const contentRef = ref<HTMLElement | null>(null)
     const contentId = useId()
+    const dismissExclusions = new Set<HTMLElement>()
+
+    const registerDismissExclusion = (element: HTMLElement): (() => void) => {
+      dismissExclusions.add(element)
+      const unregisterFromParent = parentPopover?.registerDismissExclusion(element)
+      return () => {
+        dismissExclusions.delete(element)
+        unregisterFromParent?.()
+      }
+    }
+
+    const isDismissExcluded = (target: EventTarget | null): boolean => {
+      if (target && typeof Node !== 'undefined' && target instanceof Node) {
+        for (const element of dismissExclusions) {
+          if (element === target || element.contains(target)) return true
+        }
+      }
+      return false
+    }
 
     provide(PopoverContextKey, {
       machine,
@@ -73,6 +93,8 @@ export const IrisPopover = defineComponent({
       contentId,
       placement: props.placement,
       offset: props.offset,
+      registerDismissExclusion,
+      isDismissExcluded,
     })
 
     return () => slots.default?.()

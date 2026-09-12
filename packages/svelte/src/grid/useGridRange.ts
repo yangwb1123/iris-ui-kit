@@ -24,7 +24,7 @@ export function useGridRange<Row extends Record<string, unknown> = Record<string
   options: UseGridRangeOptions = {},
 ): UseGridRangeResult {
   if (!core.hasFeature('range')) {
-    core.use(createGridRangeFeature<Row>({ onChange: options.onChange }))
+    core.use(createGridRangeFeature<Row>({ onChange: (change) => options.onChange?.(change) }))
   }
   const model = core.invoke<GridRangeModel>('getRangeModel')
   const state = toStore(model)

@@ -173,6 +173,35 @@ describe('IrisTable inline-edit validation', () => {
     expect(editor(container)).toBeNull()
     expect(onCellEdit).not.toHaveBeenCalled()
   })
+
+  it('emits null when clearing a nullable number cell', async () => {
+    const onCellEdit = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns: [
+          {
+            key: 'amountCell',
+            dataIndex: 'amount',
+            title: 'Amount',
+            editable: true,
+            editor: 'number' as const,
+          },
+        ],
+        data: [{ id: 1, amount: null }],
+        editConfig: { mode: 'cell' },
+        onCellEdit,
+      },
+    })
+    const amountCell = container.querySelector('[data-iris-table-cell="amountCell"]')!
+    await fireEvent.dblClick(amountCell)
+    const amountEditor = editor(container)!
+    await fireEvent.input(amountEditor, { target: { value: '' } })
+    await fireEvent.keyDown(amountEditor, { key: 'Enter' })
+
+    expect(onCellEdit).toHaveBeenCalledTimes(1)
+    expect(onCellEdit.mock.calls[0]![0].newValue).toBeNull()
+    expect(onCellEdit.mock.calls[0]![0].newValue).not.toBe('')
+  })
 })
 
 describe('IrisTable summary/footer row', () => {

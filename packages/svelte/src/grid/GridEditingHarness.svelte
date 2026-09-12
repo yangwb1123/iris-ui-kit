@@ -9,26 +9,38 @@
   } from '@iris-ui-kit/core/grid'
   import { useGridCore, useGridEditing, useGridRows, type UseGridEditingResult } from './useGrid'
 
-  type Row = { id: number; name: string }
+  type Row = { id: number; name: string; amount: number | null | string }
 
   let {
     onCommit,
     onRowsChange,
     onStateChange,
     onReady,
+    getValue,
+    coerce,
+    columnKey = 'name',
+    draft = 'Grace',
   }: {
     onCommit?: (commit: GridEditingCommit<Row>) => void
     onRowsChange?: (transaction: GridRowsTransaction<Row>) => void
     onStateChange?: (state: CellEditState<GridEditingKey>) => void
     onReady?: (core: GridCore<Row>, editing: UseGridEditingResult<Row>) => void
+    getValue?: (row: Row, columnKey: string) => unknown
+    coerce?: (draft: unknown, row: Row, columnKey: string) => unknown
+    columnKey?: string
+    draft?: unknown
   } = $props()
 
   const core = useGridCore<Row>()
-  const rows = useGridRows(core, [{ id: 1, name: 'Ada' }], {
+  const rows = useGridRows(core, [{ id: 1, name: 'Ada', amount: 7 }], {
     onRowsChange: (transaction) => onRowsChange?.(transaction),
   })
   const editing = useGridEditing(core, {
     getRowKey: (row) => row.id,
+    // svelte-ignore state_referenced_locally — the harness passes the initial bridge options.
+    getValue,
+    // svelte-ignore state_referenced_locally — the harness passes the initial bridge options.
+    coerce,
     onStateChange: (state) => onStateChange?.(state),
     onCommit: (commit) => onCommit?.(commit),
     commitOptions: { meta: { source: 'svelte-test' } },
@@ -42,8 +54,8 @@
   type="button"
   data-state={$editingState.editing?.columnKey ?? 'idle'}
   onclick={() => {
-    editing.startCellEdit(1, 'name')
-    editing.setCellDraft('Grace')
+    editing.startCellEdit(1, columnKey)
+    editing.setCellDraft(draft)
     editing.commitCellEdit()
   }}
 >

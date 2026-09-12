@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, renderHook, waitFor } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
+import type { Store } from '@iris-ui-kit/core'
 import { describe, expect, it, afterEach, vi } from 'vitest'
 import {
   GRID_COLUMNS_CHANGE_EVENT,
@@ -7,10 +8,13 @@ import {
   GRID_PAGINATION_CHANGE_EVENT,
   GRID_SELECTION_CHANGE_EVENT,
   GRID_SORTING_CHANGE_EVENT,
+  GRID_VIRTUAL_RANGE_CHANGE_EVENT,
   type GridColumnsChange,
   type GridColumnsModel,
   type GridCore,
   type GridFilterValues,
+  type GridRowsModel,
+  type GridVirtualRangeChange,
   type SortState,
 } from '@iris-ui-kit/core/grid'
 import {
@@ -27,6 +31,368 @@ import {
 afterEach(cleanup)
 
 describe('Solid Grid Core bridge', () => {
+  it('commits numeric estimate changes as one final virtual window', async () => {
+    type Item = { id: number }
+    type RangeCallback = (change: GridVirtualRangeChange) => void
+    type Props = {
+      items: readonly Item[]
+      estimateSize: number
+      viewportSize: number
+      buffer: number
+      onRangeChange: RangeCallback
+    }
+    const items = Array.from({ length: 100 }, (_, id) => ({ id }))
+    const rangeChanges = vi.fn<RangeCallback>()
+    const eventChanges: GridVirtualRangeChange[] = []
+    let core!: GridCore<Item>
+    let virtual!: ReturnType<typeof useGridVirtual>
+    let setEstimate!: (estimate: number) => void
+
+    const Harness = (props: Props) => {
+      core = useGridCore<Item>()
+      virtual = useGridVirtual(core, props)
+      return (
+        <div data-testid="virtual-items">
+          {virtual.state().items.map((item) => (
+            <span data-index={item.index}>{item.index}</span>
+          ))}
+        </div>
+      )
+    }
+    const Parent = () => {
+      const [estimateSize, updateEstimate] = createSignal(20)
+      setEstimate = updateEstimate
+      return (
+        <Harness
+          items={items}
+          estimateSize={estimateSize()}
+          viewportSize={100}
+          buffer={0}
+          onRangeChange={rangeChanges}
+        />
+      )
+    }
+
+    const view = render(() => <Parent />)
+    const initialModel = virtual.model
+    core.on<GridVirtualRangeChange>(GRID_VIRTUAL_RANGE_CHANGE_EVENT, (change) =>
+      eventChanges.push(change),
+    )
+
+    setEstimate(30)
+    await waitFor(() =>
+      expect(virtual.state().items.map((item) => item.index)).toEqual([0, 1, 2, 3]),
+    )
+
+    expect(virtual.model).toBe(initialModel)
+    expect(rangeChanges).toHaveBeenCalledTimes(1)
+    expect(rangeChanges).toHaveBeenCalledWith({ start: 0, end: 4, totalSize: 3000 })
+    expect(eventChanges).toEqual([{ start: 0, end: 4, totalSize: 3000 }])
+    expect(initialModel.getState()).toMatchObject({
+      startIndex: 0,
+      endIndex: 3,
+      totalSize: 3000,
+    })
+    expect(
+      rangeChanges.mock.calls.some(([change]) => change.end === 5 && change.totalSize === 3000),
+    ).toBe(false)
+    expect(
+      [...view.getByTestId('virtual-items').querySelectorAll('[data-index]')].map((element) =>
+        Number(element.getAttribute('data-index')),
+      ),
+    ).toEqual([0, 1, 2, 3])
+    view.unmount()
+  })
+
+  it('preserves a batched uncontrolled selection across controlled handoff release', async () => {
+    const onChange = vi.fn()
+    const selectionEvent = vi.fn()
+    let setControlled!: (value: string[] | undefined) => void
+    let core!: GridCore
+    let selection!: ReturnType<typeof useGridSelection>
+
+    const Harness = (props: {
+      value?: string[]
+      defaultValue: string[]
+      onChange: (keys: string[]) => void
+    }) => {
+      core = useGridCore()
+      selection = useGridSelection(core, props)
+      return <output data-testid="selection">{JSON.stringify(selection.selection())}</output>
+    }
+    const Parent = () => {
+      const [value, updateValue] = createSignal<string[] | undefined>()
+      setControlled = updateValue
+      return <Harness value={value()} defaultValue={['a']} onChange={onChange} />
+    }
+
+    const view = render(() => <Parent />)
+    await waitFor(() => expect(selection.selection()).toEqual(['a']))
+    core.on(GRID_SELECTION_CHANGE_EVENT, selectionEvent)
+    const store = selection.model.store as unknown as Store<string[]>
+
+    store.batch(() => {
+      selection.model.set(['b'])
+      setControlled(['c'])
+    })
+
+    await waitFor(() => {
+      expect(selection.selection()).toEqual(['c'])
+      expect(selection.model.get()).toEqual(['c'])
+      expect(selection.model.store.getState()).toEqual(['c'])
+      expect(view.getByTestId('selection').textContent).toBe('["c"]')
+    })
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(['b'])
+    expect(selectionEvent).toHaveBeenCalledTimes(1)
+    expect(selectionEvent).toHaveBeenCalledWith({ selectedKeys: ['b'] })
+    const countsBeforeRelease = {
+      onChange: onChange.mock.calls.length,
+      selectionEvent: selectionEvent.mock.calls.length,
+    }
+
+    setControlled(undefined)
+    await waitFor(() => {
+      expect(selection.selection()).toEqual(['b'])
+      expect(selection.model.get()).toEqual(['b'])
+      expect(selection.model.store.getState()).toEqual(['b'])
+      expect(view.getByTestId('selection').textContent).toBe('["b"]')
+    })
+    expect(onChange).toHaveBeenCalledTimes(countsBeforeRelease.onChange)
+    expect(selectionEvent).toHaveBeenCalledTimes(countsBeforeRelease.selectionEvent)
+    view.unmount()
+  })
+
+  it('preserves batched uncontrolled sorting, filtering, and column snapshots', async () => {
+    const sortB: SortState = { key: 'age', direction: 'desc' }
+    const sortC: SortState = { key: 'status', direction: 'asc' }
+    const multiSortB: SortState[] = [{ key: 'age', direction: 'desc' }]
+    const multiSortC: SortState[] = [{ key: 'status', direction: 'asc' }]
+    const filtersB = { age: '30' }
+    const filtersC = { status: 'active' }
+    const filterValuesB: GridFilterValues = { age: ['30'] }
+    const filterValuesC: GridFilterValues = { status: ['active'] }
+    const visibilityB = { age: true }
+    const visibilityC = { age: false }
+    const orderB = ['age', 'name']
+    const orderC = ['name']
+    const widthsB = { name: 116 }
+    const widthsC = { name: 310 }
+    const pinnedB: Record<string, 'left' | 'right' | null> = { name: null }
+    const pinnedC: Record<string, 'left' | 'right' | null> = { name: 'right' }
+    const onSortChange = vi.fn()
+    const onMultiSortChange = vi.fn()
+    const onFiltersChange = vi.fn()
+    const onFilterValuesChange = vi.fn()
+    const onVisibilityChange = vi.fn()
+    const onOrderChange = vi.fn()
+    const onWidthsChange = vi.fn()
+    const onPinnedChange = vi.fn()
+    const sortingEvents = vi.fn()
+    const filteringEvents = vi.fn()
+    const columnEvents = vi.fn()
+    let setSort!: (value: SortState | undefined) => void
+    let setMultiSort!: (value: SortState[] | undefined) => void
+    let setFilters!: (value: Record<string, string> | undefined) => void
+    let setFilterValues!: (value: GridFilterValues | undefined) => void
+    let setVisibility!: (value: Record<string, boolean> | undefined) => void
+    let setOrder!: (value: string[] | undefined) => void
+    let setWidths!: (value: Record<string, number> | undefined) => void
+    let setPinned!: (value: Record<string, 'left' | 'right' | null> | undefined) => void
+    let core!: GridCore
+    let sorting!: ReturnType<typeof useGridSorting>
+    let filtering!: ReturnType<typeof useGridFiltering>
+    let columns!: ReturnType<typeof useGridColumns>
+
+    type Props = {
+      sort?: SortState
+      multiSortState?: SortState[]
+      filters?: Record<string, string>
+      filterValues?: GridFilterValues
+      visibility?: Record<string, boolean>
+      order?: string[]
+      widths?: Record<string, number>
+      pinned?: Record<string, 'left' | 'right' | null>
+      mode: 'multiple'
+      defaultSort: SortState
+      defaultMultiSort: SortState[]
+      defaultFilters: Record<string, string>
+      defaultFilterValues: GridFilterValues
+      defaultVisibility: Record<string, boolean>
+      defaultOrder: string[]
+      defaultWidths: Record<string, number>
+      defaultPinned: Record<string, 'left' | 'right' | null>
+      onSortChange: (sort: SortState | null) => void
+      onMultiSortChange: (sorts: SortState[]) => void
+      onFiltersChange: (filters: Record<string, string>) => void
+      onFilterValuesChange: (values: GridFilterValues) => void
+      onVisibilityChange: (value: Record<string, boolean>) => void
+      onOrderChange: (value: string[] | undefined) => void
+      onWidthsChange: (value: Record<string, number>) => void
+      onPinnedChange: (key: string, side: 'left' | 'right' | null) => void
+    }
+    const Harness = (props: Props) => {
+      core = useGridCore()
+      sorting = useGridSorting(core, props)
+      filtering = useGridFiltering(core, props)
+      columns = useGridColumns(core, props)
+      return <div />
+    }
+    const Parent = () => {
+      const [sort, updateSort] = createSignal<SortState | undefined>()
+      const [multiSortState, updateMultiSort] = createSignal<SortState[] | undefined>()
+      const [filters, updateFilters] = createSignal<Record<string, string> | undefined>()
+      const [filterValues, updateFilterValues] = createSignal<GridFilterValues | undefined>()
+      const [visibility, updateVisibility] = createSignal<Record<string, boolean> | undefined>()
+      const [order, updateOrder] = createSignal<string[] | undefined>()
+      const [widths, updateWidths] = createSignal<Record<string, number> | undefined>()
+      const [pinned, updatePinned] = createSignal<
+        Record<string, 'left' | 'right' | null> | undefined
+      >()
+      setSort = updateSort
+      setMultiSort = updateMultiSort
+      setFilters = updateFilters
+      setFilterValues = updateFilterValues
+      setVisibility = updateVisibility
+      setOrder = updateOrder
+      setWidths = updateWidths
+      setPinned = updatePinned
+      return (
+        <Harness
+          sort={sort()}
+          multiSortState={multiSortState()}
+          filters={filters()}
+          filterValues={filterValues()}
+          visibility={visibility()}
+          order={order()}
+          widths={widths()}
+          pinned={pinned()}
+          mode="multiple"
+          defaultSort={{ key: 'name', direction: 'asc' }}
+          defaultMultiSort={[{ key: 'name', direction: 'asc' }]}
+          defaultFilters={{ name: 'Ada' }}
+          defaultFilterValues={{ name: ['Ada'] }}
+          defaultVisibility={{ age: false }}
+          defaultOrder={['name']}
+          defaultWidths={{ name: 100 }}
+          defaultPinned={{ name: 'left' }}
+          onSortChange={onSortChange}
+          onMultiSortChange={onMultiSortChange}
+          onFiltersChange={onFiltersChange}
+          onFilterValuesChange={onFilterValuesChange}
+          onVisibilityChange={onVisibilityChange}
+          onOrderChange={onOrderChange}
+          onWidthsChange={onWidthsChange}
+          onPinnedChange={onPinnedChange}
+        />
+      )
+    }
+
+    const view = render(() => <Parent />)
+    core.on(GRID_SORTING_CHANGE_EVENT, sortingEvents)
+    core.on(GRID_FILTERING_CHANGE_EVENT, filteringEvents)
+    core.on(GRID_COLUMNS_CHANGE_EVENT, columnEvents)
+
+    sorting.model.store.batch(() => {
+      sorting.model.setSort(sortB)
+      sorting.model.setMultiSort(multiSortB)
+      setSort(sortC)
+      setMultiSort(multiSortC)
+    })
+    await waitFor(() => {
+      expect(sorting.sort()).toEqual(sortC)
+      expect(sorting.multiSort()).toEqual(multiSortC)
+      expect(sorting.model.get()).toEqual({ sort: sortC, multiSort: multiSortC })
+    })
+    const sortingCounts = {
+      sort: onSortChange.mock.calls.length,
+      multiSort: onMultiSortChange.mock.calls.length,
+      events: sortingEvents.mock.calls.length,
+    }
+
+    filtering.model.store.batch(() => {
+      filtering.model.setFilters(filtersB)
+      filtering.model.setFilterValues(filterValuesB)
+      setFilters(filtersC)
+      setFilterValues(filterValuesC)
+    })
+    await waitFor(() => {
+      expect(filtering.filters()).toEqual(filtersC)
+      expect(filtering.filterValues()).toEqual(filterValuesC)
+      expect(filtering.model.get()).toEqual({ filters: filtersC, filterValues: filterValuesC })
+    })
+    const filteringCounts = {
+      filters: onFiltersChange.mock.calls.length,
+      filterValues: onFilterValuesChange.mock.calls.length,
+      events: filteringEvents.mock.calls.length,
+    }
+
+    columns.model.store.batch(() => {
+      columns.model.setVisibility(visibilityB)
+      columns.model.setOrder(orderB)
+      columns.model.setWidths(widthsB)
+      columns.model.setPinned('name', pinnedB.name)
+      setVisibility(visibilityC)
+      setOrder(orderC)
+      setWidths(widthsC)
+      setPinned(pinnedC)
+    })
+    await waitFor(() => {
+      expect(columns.state()).toMatchObject({
+        visibility: visibilityC,
+        order: orderC,
+        widths: widthsC,
+        pinned: pinnedC,
+      })
+      expect(columns.model.get()).toMatchObject({
+        visibility: visibilityC,
+        order: orderC,
+        widths: widthsC,
+        pinned: pinnedC,
+      })
+    })
+    const columnCounts = {
+      visibility: onVisibilityChange.mock.calls.length,
+      order: onOrderChange.mock.calls.length,
+      widths: onWidthsChange.mock.calls.length,
+      pinned: onPinnedChange.mock.calls.length,
+      events: columnEvents.mock.calls.length,
+    }
+
+    setSort(undefined)
+    setMultiSort(undefined)
+    setFilters(undefined)
+    setFilterValues(undefined)
+    setVisibility(undefined)
+    setOrder(undefined)
+    setWidths(undefined)
+    setPinned(undefined)
+    await waitFor(() => {
+      expect(sorting.sort()).toEqual(sortB)
+      expect(sorting.multiSort()).toEqual(multiSortB)
+      expect(filtering.filters()).toEqual(filtersB)
+      expect(filtering.filterValues()).toEqual(filterValuesB)
+      expect(columns.state()).toMatchObject({
+        visibility: visibilityB,
+        order: orderB,
+        widths: widthsB,
+        pinned: pinnedB,
+      })
+    })
+    expect(onSortChange).toHaveBeenCalledTimes(sortingCounts.sort)
+    expect(onMultiSortChange).toHaveBeenCalledTimes(sortingCounts.multiSort)
+    expect(sortingEvents).toHaveBeenCalledTimes(sortingCounts.events)
+    expect(onFiltersChange).toHaveBeenCalledTimes(filteringCounts.filters)
+    expect(onFilterValuesChange).toHaveBeenCalledTimes(filteringCounts.filterValues)
+    expect(filteringEvents).toHaveBeenCalledTimes(filteringCounts.events)
+    expect(onVisibilityChange).toHaveBeenCalledTimes(columnCounts.visibility)
+    expect(onOrderChange).toHaveBeenCalledTimes(columnCounts.order)
+    expect(onWidthsChange).toHaveBeenCalledTimes(columnCounts.widths)
+    expect(onPinnedChange).toHaveBeenCalledTimes(columnCounts.pinned)
+    expect(columnEvents).toHaveBeenCalledTimes(columnCounts.events)
+    view.unmount()
+  })
+
   it('preserves initial controlled selection and single-sort baselines across a no-op handoff detour', async () => {
     const selectionA = ['a']
     const selectionB = ['b']
@@ -125,6 +491,128 @@ describe('Solid Grid Core bridge', () => {
     expect(result.virtual.state().totalSize).toBe(40)
     result.selection.model.toggle('b')
     expect(result.selection.selection()).toEqual(['a', 'b'])
+  })
+
+  it('re-seats keyed measurements when getItemKey changes at the same count', async () => {
+    type Item = { id: string }
+    type KeyOf = (item: Item, index: number) => string
+    type Props = {
+      items: readonly Item[]
+      estimateSize: number
+      viewportSize: number
+      getItemKey: KeyOf
+    }
+    const items: Item[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+    const oldKey: KeyOf = (item) => `old-${item.id}`
+    const newKey: KeyOf = (item) => `new-${item.id}`
+    let setKey!: (keyOf: KeyOf) => void
+    let virtual!: ReturnType<typeof useGridVirtual>
+
+    const Harness = (props: Props) => {
+      const core = useGridCore<Item>()
+      virtual = useGridVirtual(core, props)
+      return <div />
+    }
+    const Parent = () => {
+      const [getItemKey, updateKey] = createSignal<KeyOf>(oldKey)
+      setKey = (keyOf) => updateKey(() => keyOf)
+      return (
+        <Harness items={items} estimateSize={20} viewportSize={100} getItemKey={getItemKey()} />
+      )
+    }
+
+    const view = render(() => <Parent />)
+    const initialModel = virtual.model
+    const setCount = vi.spyOn(initialModel, 'setCount')
+    initialModel.measure(0, 50)
+    expect(setCount).not.toHaveBeenCalled()
+
+    expect(initialModel.getState().items).toEqual([
+      { index: 0, key: 'old-a', start: 0, size: 50 },
+      { index: 1, key: 'old-b', start: 50, size: 20 },
+      { index: 2, key: 'old-c', start: 70, size: 20 },
+    ])
+    expect(initialModel.totalSize()).toBe(90)
+
+    setKey(newKey)
+    await waitFor(() =>
+      expect(initialModel.getState().items.map((item) => item.key)).toEqual([
+        'new-a',
+        'new-b',
+        'new-c',
+      ]),
+    )
+
+    expect(setCount).toHaveBeenCalledWith(3)
+    expect(virtual.model).toBe(initialModel)
+    expect(initialModel.getState().items).toEqual([
+      { index: 0, key: 'new-a', start: 0, size: 20 },
+      { index: 1, key: 'new-b', start: 20, size: 20 },
+      { index: 2, key: 'new-c', start: 40, size: 20 },
+    ])
+    expect(initialModel.totalSize()).toBe(60)
+    view.unmount()
+  })
+
+  it('forwards replacement virtual range callbacks without recreating the model', async () => {
+    type Item = { id: number }
+    type RangeCallback = (change: GridVirtualRangeChange) => void
+    type Props = {
+      items: readonly Item[]
+      estimateSize: number
+      viewportSize: number
+      onRangeChange?: RangeCallback
+    }
+    const items = Array.from({ length: 10 }, (_, id) => ({ id }))
+    const oldCallback = vi.fn<RangeCallback>()
+    const newCallback = vi.fn<RangeCallback>()
+    let setCallback!: (callback: RangeCallback) => void
+    let core!: GridCore<Item>
+    let virtual!: ReturnType<typeof useGridVirtual>
+
+    const Harness = (props: Props) => {
+      core = useGridCore<Item>()
+      virtual = useGridVirtual(core, props)
+      return <div />
+    }
+    const Parent = () => {
+      const [onRangeChange, updateCallback] = createSignal<RangeCallback>(oldCallback)
+      setCallback = (callback) => updateCallback(() => callback)
+      return (
+        <Harness
+          items={items}
+          estimateSize={20}
+          viewportSize={40}
+          onRangeChange={onRangeChange()}
+        />
+      )
+    }
+
+    const view = render(() => <Parent />)
+    const initialModel = virtual.model
+
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).not.toHaveBeenCalled()
+
+    setCallback(newCallback)
+    await waitFor(() => {
+      expect(virtual.model).toBe(initialModel)
+      expect(oldCallback).not.toHaveBeenCalled()
+      expect(newCallback).not.toHaveBeenCalled()
+    })
+
+    expect(core.invoke('getVirtualModel')).toBe(initialModel)
+
+    initialModel.setScroll(20)
+    await waitFor(() => expect(newCallback).toHaveBeenCalledTimes(1))
+
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).toHaveBeenCalledWith({ start: 1, end: 3, totalSize: 200 })
+
+    initialModel.setScroll(20)
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).toHaveBeenCalledTimes(1)
+    view.unmount()
   })
 
   it('isolates virtual snapshots while preserving scroll windows', async () => {
@@ -1223,5 +1711,79 @@ describe('Solid Grid Core bridge', () => {
     expect(onWidthsChange).toHaveBeenLastCalledWith({})
     view.unmount()
     expect(core!.status).toBe('destroyed')
+  })
+
+  it('uses replacement tree callbacks without recreating the rows model', async () => {
+    type TreeRow = {
+      id: number
+      name: string
+      a?: TreeRow[]
+      b?: TreeRow[]
+    }
+    type TreeOptions = {
+      getChildren: (row: TreeRow) => readonly TreeRow[] | undefined
+      setChildren: (row: TreeRow, children: TreeRow[]) => TreeRow
+    }
+    const initialRows: TreeRow[] = [
+      {
+        id: 1,
+        name: 'Root',
+        a: [{ id: 2, name: 'A' }],
+        b: [{ id: 3, name: 'B' }],
+      },
+    ]
+    const getChildrenA = vi.fn((row: TreeRow) => row.a)
+    const getChildrenB = vi.fn((row: TreeRow) => row.b)
+    const setChildrenA = vi.fn((row: TreeRow, children: TreeRow[]) => ({ ...row, a: children }))
+    const setChildrenB = vi.fn((row: TreeRow, children: TreeRow[]) => ({ ...row, b: children }))
+    let setOptions!: (options: TreeOptions) => void
+    let bridge!: { model: GridRowsModel<TreeRow> }
+
+    const Harness = (props: TreeOptions) => {
+      const core = useGridCore<TreeRow>()
+      bridge = useGridRows(core, initialRows, props)
+      return <div />
+    }
+    const Parent = () => {
+      const [options, updateOptions] = createSignal<TreeOptions>({
+        getChildren: getChildrenA,
+        setChildren: setChildrenA,
+      })
+      setOptions = updateOptions
+      return <Harness {...options()} />
+    }
+
+    const view = render(() => <Parent />)
+    const model = bridge.model
+    getChildrenA.mockClear()
+    setChildrenA.mockClear()
+
+    setOptions({ getChildren: getChildrenB, setChildren: setChildrenA })
+    await waitFor(() => expect(bridge.model).toBe(model))
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'B' })
+    expect(model.find(2)).toBeUndefined()
+    expect(getChildrenA).not.toHaveBeenCalled()
+    getChildrenB.mockClear()
+    setChildrenA.mockClear()
+
+    setOptions({ getChildren: getChildrenB, setChildren: setChildrenB })
+    await waitFor(() => expect(bridge.model).toBe(model))
+
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'B' })
+    expect(model.find(2)).toBeUndefined()
+    expect(getChildrenA).not.toHaveBeenCalled()
+
+    expect(model.update(3, { name: 'Updated' })).toBe(true)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'Updated' })
+    expect(setChildrenB).toHaveBeenCalledOnce()
+    expect(setChildrenA).not.toHaveBeenCalled()
+
+    const replacement = [{ id: 4, name: 'Replacement' }]
+    expect(model.setChildren(1, replacement)).toBe(true)
+    expect(model.get()[0]?.b).toEqual(replacement)
+    expect(setChildrenB).toHaveBeenCalledTimes(2)
+    expect(setChildrenA).not.toHaveBeenCalled()
+    expect(getChildrenA).not.toHaveBeenCalled()
+    view.unmount()
   })
 })

@@ -1,7 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/vue'
+import { computed, ref } from 'vue'
+import {
+  IrisFormField,
+  IrisInput,
+  IrisSegmented,
+  IrisSwitch,
+  IrisButton,
+  IrisStack,
+} from '@iris-ui-kit/vue'
 import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
+
+const environmentOptions = [
+  { label: 'Live', value: 'live' },
+  { label: 'Maintenance', value: 'maintenance' },
+  { label: 'Read-only preview', value: 'preview', disabled: true },
+]
 
 const initial = readCmsSettings()
 const siteName = ref(initial.siteName)
@@ -9,6 +22,13 @@ const supportEmail = ref(initial.supportEmail)
 const notifications = ref(initial.notifications)
 const maintenance = ref(initial.maintenance)
 const status = ref('')
+const selectedEnvironment = computed({
+  get: () => (maintenance.value ? 'maintenance' : 'live'),
+  set: (value: string) => {
+    if (value === 'live') maintenance.value = false
+    if (value === 'maintenance') maintenance.value = true
+  },
+})
 
 function save() {
   if (!siteName.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail.value)) {
@@ -19,7 +39,7 @@ function save() {
     siteName: siteName.value.trim(),
     supportEmail: supportEmail.value.trim(),
     notifications: notifications.value,
-    maintenance: maintenance.value,
+    maintenance: selectedEnvironment.value === 'maintenance',
   } satisfies CmsSettings)
   status.value = saved ? 'Settings saved.' : 'Settings could not be saved in this browser.'
 }
@@ -44,7 +64,11 @@ function save() {
           <IrisSwitch v-model="notifications" />
         </IrisFormField>
         <IrisFormField label="Maintenance mode">
-          <IrisSwitch v-model="maintenance" />
+          <IrisSegmented
+            v-model="selectedEnvironment"
+            :options="environmentOptions"
+            ariaLabel="Environment"
+          />
         </IrisFormField>
         <div>
           <IrisButton type="submit" variant="solid">Save changes</IrisButton>

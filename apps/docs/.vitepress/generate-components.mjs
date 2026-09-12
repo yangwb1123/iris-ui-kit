@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global console, process */
 // Generate the component reference page from the committed manifest.json — the
 // same single source of truth the AI-native llms.txt is built from, so the docs
 // can never drift from what the packages actually export. Run before dev/build.
@@ -57,13 +58,13 @@ const DEMOS = {
 }
 
 // Curated components surfaced in the interactive <IrisExplorer> (R17). Each gets a
-// manifest-driven controls panel + live Vue preview + 4-framework code tabs. Order
-// here is the order they render in the components reference. Must stay a subset of
-// the live-preview-wired set in theme/explorer-preview.ts (preview is Vue-only;
-// the code tabs prove the 4-framework parity). Components not in this list keep the
-// existing static reference (table + optional <IrisDemo>).
+// manifest-driven controls panel + active-framework live preview + 4-framework code
+// tabs. Order here is the order they render in the components reference. Must stay a
+// subset of the live-preview-wired set in theme/explorer-preview.ts. Components not
+// in this list keep the existing static reference (table + optional <IrisDemo>).
 const EXPLORER_COMPONENTS = [
   'IrisButton',
+  'IrisCopyButton',
   'IrisBadge',
   'IrisChip',
   'IrisSwitch',
@@ -72,6 +73,9 @@ const EXPLORER_COMPONENTS = [
   'IrisAlert',
   'IrisSpinner',
   'IrisProgress',
+  'IrisRating',
+  'IrisProgressCircle',
+  'IrisGauge',
 ]
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -80,7 +84,6 @@ const manifestPath = join(repoRoot, 'packages', 'manifest', 'manifest.json')
 const outPath = join(here, '..', 'components.md')
 
 if (!existsSync(manifestPath)) {
-  // eslint-disable-next-line no-console
   console.error(
     `[docs] manifest.json not found at ${manifestPath} — run \`pnpm gen:manifest\` first.`,
   )
@@ -198,7 +201,6 @@ lines.push(`| radii | ${manifest.tokens.radii.map((t) => `\`${t}\``).join(', ')}
 lines.push('')
 
 writeFileSync(outPath, lines.join('\n'))
-// eslint-disable-next-line no-console
 console.log(`[docs] wrote components.md (${manifest.stats.total} components)`)
 
 // Static token stylesheet for the live demos — the real Iris light/dark CSS
@@ -211,7 +213,6 @@ const tokensCss =
   themeToCss(darkTheme, { selector: '.dark' }) +
   '\n'
 writeFileSync(join(here, 'theme', 'iris-tokens.css'), tokensCss)
-// eslint-disable-next-line no-console
 console.log('[docs] wrote theme/iris-tokens.css')
 
 // Slim, browser-shippable manifest slice for the interactive <IrisExplorer> (R17).
@@ -222,7 +223,6 @@ console.log('[docs] wrote theme/iris-tokens.css')
 const explorerData = EXPLORER_COMPONENTS.map((name) => {
   const c = manifest.components.find((x) => x.name === name)
   if (!c) {
-    // eslint-disable-next-line no-console
     console.error(`[docs] explorer component "${name}" not found in manifest.json`)
     process.exit(1)
   }
@@ -243,5 +243,4 @@ const explorerDataTs =
   "import type { ManifestComponent } from './explorer-codegen'\n\n" +
   `export const EXPLORER_MANIFEST: ManifestComponent[] = ${JSON.stringify(explorerData, null, 2)}\n`
 writeFileSync(join(here, 'theme', 'explorer-data.ts'), explorerDataTs)
-// eslint-disable-next-line no-console
 console.log(`[docs] wrote theme/explorer-data.ts (${explorerData.length} components)`)

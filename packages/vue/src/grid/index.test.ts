@@ -1,4 +1,5 @@
-import { defineComponent, h, nextTick, type PropType } from 'vue'
+import { defineComponent, h, nextTick, reactive, type PropType } from 'vue'
+import type { Store } from '@iris-ui-kit/core'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -8,6 +9,7 @@ import {
   GRID_ROWS_CHANGE_EVENT,
   GRID_SELECTION_CHANGE_EVENT,
   GRID_SORTING_CHANGE_EVENT,
+  GRID_VIRTUAL_RANGE_CHANGE_EVENT,
   type GridColumnsChange,
   type GridColumnsModel,
   type GridCore,
@@ -15,6 +17,7 @@ import {
   type GridFilteringModel,
   type GridRowsModel,
   type GridSortingModel,
+  type GridVirtualRangeChange,
   type SortState,
 } from '@iris-ui-kit/core/grid'
 import {
@@ -91,6 +94,60 @@ describe('Vue Grid Core bridge', () => {
     expect(onSortChange).not.toHaveBeenCalled()
     expect(selectionEvent).not.toHaveBeenCalled()
     expect(sortingEvent).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('preserves a batched uncontrolled selection across controlled handoff release', async () => {
+    const onChange = vi.fn()
+    const selectionEvent = vi.fn()
+    const options = reactive({
+      value: undefined as string[] | undefined,
+      defaultValue: ['a'],
+      onChange,
+    })
+    let core!: GridCore
+    let selection!: ReturnType<typeof useGridSelection>
+    const Harness = defineComponent({
+      setup() {
+        core = useGridCore()
+        selection = useGridSelection(core, options)
+        return () =>
+          h('output', { 'data-testid': 'selection' }, JSON.stringify(selection.selection.value))
+      },
+    })
+
+    const wrapper = mount(Harness)
+    core.on(GRID_SELECTION_CHANGE_EVENT, selectionEvent)
+    const store = selection.model.store as unknown as Store<string[]>
+
+    store.batch(() => {
+      selection.model.set(['b'])
+      options.value = ['c']
+    })
+    await nextTick()
+
+    expect(selection.selection.value).toEqual(['c'])
+    expect(selection.model.get()).toEqual(['c'])
+    expect(selection.model.store.getState()).toEqual(['c'])
+    expect(wrapper.get('[data-testid="selection"]').text()).toBe('["c"]')
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(['b'])
+    expect(selectionEvent).toHaveBeenCalledTimes(1)
+    expect(selectionEvent).toHaveBeenCalledWith({ selectedKeys: ['b'] })
+    const countsBeforeRelease = {
+      onChange: onChange.mock.calls.length,
+      selectionEvent: selectionEvent.mock.calls.length,
+    }
+
+    options.value = undefined
+    await nextTick()
+
+    expect(selection.selection.value).toEqual(['b'])
+    expect(selection.model.get()).toEqual(['b'])
+    expect(selection.model.store.getState()).toEqual(['b'])
+    expect(wrapper.get('[data-testid="selection"]').text()).toBe('["b"]')
+    expect(onChange).toHaveBeenCalledTimes(countsBeforeRelease.onChange)
+    expect(selectionEvent).toHaveBeenCalledTimes(countsBeforeRelease.selectionEvent)
     wrapper.unmount()
   })
 
@@ -1348,6 +1405,222 @@ describe('Vue Grid Core bridge', () => {
     wrapper.unmount()
   })
 
+  it('initializes the virtualizer without a global process', () => {
+    const processDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'process')
+    const items = Array.from({ length: 3 }, (_, id) => ({ id }))
+    let core: GridCore<{ id: number }> | undefined
+    let virtual: ReturnType<typeof useGridVirtual> | undefined
+    let wrapper: ReturnType<typeof mount> | undefined
+    const Harness = defineComponent({
+      setup() {
+        core = useGridCore<{ id: number }>()
+        virtual = useGridVirtual(core, {
+          items,
+          estimateSize: 20,
+          viewportSize: 40,
+        })
+        return () => h('div')
+      },
+    })
+
+    try {
+      expect(Reflect.deleteProperty(globalThis, 'process')).toBe(true)
+      expect(() => {
+        wrapper = mount(Harness)
+      }).not.toThrow()
+
+      expect(core?.hasFeature('virtual')).toBe(true)
+      expect(core?.invoke('getVirtualModel')).toBe(virtual?.model)
+      expect(virtual?.state.value).toMatchObject({
+        totalSize: 60,
+        startIndex: 0,
+        endIndex: 1,
+      })
+      expect(virtual?.state.value.items).toEqual([
+        { index: 0, key: 0, start: 0, size: 20 },
+        { index: 1, key: 1, start: 20, size: 20 },
+      ])
+    } finally {
+      try {
+        if (wrapper) wrapper.unmount()
+        else core?.destroy()
+      } finally {
+        if (processDescriptor) {
+          Object.defineProperty(globalThis, 'process', processDescriptor)
+        } else {
+          Reflect.deleteProperty(globalThis, 'process')
+        }
+      }
+    }
+  })
+
+  it('commits numeric estimate changes as one final virtual window', async () => {
+    type Item = { id: number }
+    type RangeCallback = (change: GridVirtualRangeChange) => void
+    const items = Array.from({ length: 100 }, (_, id) => ({ id }))
+    const rangeChanges = vi.fn<RangeCallback>()
+    const eventChanges: GridVirtualRangeChange[] = []
+    let core!: GridCore<Item>
+    let virtual!: ReturnType<typeof useGridVirtual>
+
+    const Harness = defineComponent({
+      props: {
+        items: { type: Array as PropType<Item[]>, required: true },
+        estimateSize: { type: Number, required: true },
+        viewportSize: { type: Number, required: true },
+        buffer: { type: Number, required: true },
+        onRangeChange: Function as PropType<RangeCallback>,
+      },
+      setup(props) {
+        core = useGridCore<Item>()
+        core.on<GridVirtualRangeChange>(GRID_VIRTUAL_RANGE_CHANGE_EVENT, (change) =>
+          eventChanges.push(change),
+        )
+        virtual = useGridVirtual(core, props)
+        return () =>
+          h(
+            'div',
+            { 'data-testid': 'virtual-items' },
+            virtual.state.value.items.map((item) =>
+              h('span', { 'data-index': item.index, key: item.index }, String(item.index)),
+            ),
+          )
+      },
+    })
+
+    const wrapper = mount(Harness, {
+      props: {
+        items,
+        estimateSize: 20,
+        viewportSize: 100,
+        buffer: 0,
+        onRangeChange: rangeChanges,
+      },
+    })
+    const initialModel = virtual.model
+
+    await wrapper.setProps({ estimateSize: 30 })
+    await nextTick()
+
+    expect(virtual.model).toBe(initialModel)
+    expect(rangeChanges).toHaveBeenCalledTimes(1)
+    expect(rangeChanges).toHaveBeenCalledWith({ start: 0, end: 4, totalSize: 3000 })
+    expect(eventChanges).toEqual([{ start: 0, end: 4, totalSize: 3000 }])
+    expect(initialModel.getState()).toMatchObject({
+      startIndex: 0,
+      endIndex: 3,
+      totalSize: 3000,
+    })
+    expect(initialModel.getState().items.map((item) => item.index)).toEqual([0, 1, 2, 3])
+    expect(
+      rangeChanges.mock.calls.some(([change]) => change.end === 5 && change.totalSize === 3000),
+    ).toBe(false)
+    expect(
+      [
+        ...wrapper.get('[data-testid="virtual-items"]').element.querySelectorAll('[data-index]'),
+      ].map((element) => Number(element.getAttribute('data-index'))),
+    ).toEqual([0, 1, 2, 3])
+    wrapper.unmount()
+  })
+
+  it('re-seats keyed measurements when getItemKey changes at the same count', async () => {
+    type Item = { id: string }
+    type KeyOf = (item: Item, index: number) => string
+    const items: Item[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+    const oldKey: KeyOf = (item) => `old-${item.id}`
+    const newKey: KeyOf = (item) => `new-${item.id}`
+    let virtual!: ReturnType<typeof useGridVirtual>
+    const Harness = defineComponent({
+      props: {
+        items: { type: Array as PropType<Item[]>, required: true },
+        estimateSize: { type: Number, required: true },
+        viewportSize: { type: Number, required: true },
+        getItemKey: { type: Function as PropType<KeyOf>, required: true },
+      },
+      setup(props) {
+        const core = useGridCore<Item>()
+        virtual = useGridVirtual(core, props)
+        return () => h('div')
+      },
+    })
+
+    const wrapper = mount(Harness, {
+      props: { items, estimateSize: 20, viewportSize: 100, getItemKey: oldKey },
+    })
+    const initialModel = virtual.model
+    initialModel.measure(0, 50)
+
+    expect(initialModel.getState().items).toEqual([
+      { index: 0, key: 'old-a', start: 0, size: 50 },
+      { index: 1, key: 'old-b', start: 50, size: 20 },
+      { index: 2, key: 'old-c', start: 70, size: 20 },
+    ])
+    expect(initialModel.totalSize()).toBe(90)
+
+    await wrapper.setProps({ getItemKey: newKey })
+    await nextTick()
+
+    expect(virtual.model).toBe(initialModel)
+    expect(initialModel.getState().items).toEqual([
+      { index: 0, key: 'new-a', start: 0, size: 20 },
+      { index: 1, key: 'new-b', start: 20, size: 20 },
+      { index: 2, key: 'new-c', start: 40, size: 20 },
+    ])
+    expect(initialModel.totalSize()).toBe(60)
+    wrapper.unmount()
+  })
+
+  it('forwards replacement virtual range callbacks without recreating the model', async () => {
+    type Item = { id: number }
+    type RangeCallback = (change: GridVirtualRangeChange) => void
+    const items = Array.from({ length: 10 }, (_, id) => ({ id }))
+    const oldCallback = vi.fn<RangeCallback>()
+    const newCallback = vi.fn<RangeCallback>()
+    let core!: GridCore<Item>
+    let virtual!: ReturnType<typeof useGridVirtual>
+
+    const Harness = defineComponent({
+      props: {
+        items: { type: Array as PropType<Item[]>, required: true },
+        estimateSize: { type: Number, required: true },
+        viewportSize: { type: Number, required: true },
+        onRangeChange: Function as PropType<RangeCallback>,
+      },
+      setup(props) {
+        core = useGridCore<Item>()
+        virtual = useGridVirtual(core, props)
+        return () => h('div')
+      },
+    })
+
+    const wrapper = mount(Harness, {
+      props: { items, estimateSize: 20, viewportSize: 40, onRangeChange: oldCallback },
+    })
+    const initialModel = virtual.model
+
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).not.toHaveBeenCalled()
+
+    await wrapper.setProps({ onRangeChange: newCallback })
+    await nextTick()
+
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).not.toHaveBeenCalled()
+    expect(virtual.model).toBe(initialModel)
+    expect(core.invoke('getVirtualModel')).toBe(initialModel)
+
+    initialModel.setScroll(20)
+
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).toHaveBeenCalledTimes(1)
+    expect(newCallback).toHaveBeenCalledWith({ start: 1, end: 3, totalSize: 200 })
+
+    initialModel.setScroll(20)
+    expect(oldCallback).not.toHaveBeenCalled()
+    expect(newCallback).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
   it('isolates virtual snapshots while preserving scroll windows', async () => {
     let core!: GridCore<{ id: string }>
     let virtual!: ReturnType<typeof useGridVirtual>
@@ -1488,6 +1761,80 @@ describe('Vue Grid Core bridge', () => {
     await wrapper.get('button:nth-of-type(2)').trigger('click')
     await nextTick()
     expect(wrapper.get('[data-testid="tree-child"]').text()).toBe('')
+    wrapper.unmount()
+  })
+
+  it('uses replacement tree callbacks without recreating the rows model', async () => {
+    type TreeRow = {
+      id: number
+      name: string
+      a?: TreeRow[]
+      b?: TreeRow[]
+    }
+    type TreeOptions = {
+      getChildren: (row: TreeRow) => readonly TreeRow[] | undefined
+      setChildren: (row: TreeRow, children: TreeRow[]) => TreeRow
+    }
+    const initialRows: TreeRow[] = [
+      {
+        id: 1,
+        name: 'Root',
+        a: [{ id: 2, name: 'A' }],
+        b: [{ id: 3, name: 'B' }],
+      },
+    ]
+    const getChildrenA = vi.fn((row: TreeRow) => row.a)
+    const getChildrenB = vi.fn((row: TreeRow) => row.b)
+    const setChildrenA = vi.fn((row: TreeRow, children: TreeRow[]) => ({ ...row, a: children }))
+    const setChildrenB = vi.fn((row: TreeRow, children: TreeRow[]) => ({ ...row, b: children }))
+    let bridge!: { model: GridRowsModel<TreeRow> }
+    const Harness = defineComponent({
+      props: {
+        getChildren: Function as PropType<TreeOptions['getChildren']>,
+        setChildren: Function as PropType<TreeOptions['setChildren']>,
+      },
+      setup(props) {
+        const core = useGridCore<TreeRow>()
+        bridge = useGridRows(core, initialRows, props)
+        return () => h('div')
+      },
+    })
+
+    const wrapper = mount(Harness, {
+      props: { getChildren: getChildrenA, setChildren: setChildrenA },
+    })
+    const model = bridge.model
+    getChildrenA.mockClear()
+    setChildrenA.mockClear()
+
+    await wrapper.setProps({ getChildren: getChildrenB, setChildren: setChildrenA })
+    await nextTick()
+    expect(bridge.model).toBe(model)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'B' })
+    expect(model.find(2)).toBeUndefined()
+    expect(getChildrenA).not.toHaveBeenCalled()
+    getChildrenB.mockClear()
+    setChildrenA.mockClear()
+
+    await wrapper.setProps({ getChildren: getChildrenB, setChildren: setChildrenB })
+    await nextTick()
+
+    expect(bridge.model).toBe(model)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'B' })
+    expect(model.find(2)).toBeUndefined()
+    expect(getChildrenA).not.toHaveBeenCalled()
+
+    expect(model.update(3, { name: 'Updated' })).toBe(true)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'Updated' })
+    expect(setChildrenB).toHaveBeenCalledOnce()
+    expect(setChildrenA).not.toHaveBeenCalled()
+
+    const replacement = [{ id: 4, name: 'Replacement' }]
+    expect(model.setChildren(1, replacement)).toBe(true)
+    expect(model.get()[0]?.b).toEqual(replacement)
+    expect(setChildrenB).toHaveBeenCalledTimes(2)
+    expect(setChildrenA).not.toHaveBeenCalled()
+    expect(getChildrenA).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 })

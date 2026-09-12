@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   IrisSlider,
   IrisRangeSlider,
@@ -7,7 +7,9 @@ import {
   IrisFileUpload,
   IrisSelect,
   IrisFormField,
+  IrisTransfer,
   type IrisFileUploadFile,
+  type IrisTransferItem,
   type IrisRangeSliderValue,
 } from '@iris-ui-kit/vue'
 
@@ -23,6 +25,18 @@ const fruitItems = [
   { value: 'durian', label: 'Durian', disabled: true },
   { value: 'elderberry', label: 'Elderberry' },
 ]
+const permissions: IrisTransferItem[] = [
+  { label: 'Read articles', value: 'read-articles' },
+  { label: 'Edit articles', value: 'edit-articles' },
+  { label: 'Publish articles', value: 'publish-articles' },
+  { label: 'Delete users', value: 'delete-users', disabled: true },
+]
+const assignedValues = ref<string[]>(['read-articles'])
+const assignedLabels = computed(() =>
+  permissions
+    .filter((permission) => assignedValues.value.includes(permission.value))
+    .map((permission) => permission.label),
+)
 </script>
 
 <template>
@@ -97,6 +111,30 @@ const fruitItems = [
         />
       </IrisFormField>
     </div>
+
+    <div class="transfer-scenario">
+      <h3 class="scenario-title">Permission assignment</h3>
+      <p class="scenario-description">
+        Search, select, and move permissions between available and assigned access. The assignment
+        summary is derived from the controlled selection. Delete users is intentionally disabled.
+      </p>
+      <IrisTransfer
+        v-model="assignedValues"
+        :options="permissions"
+        :titles="['Available permissions', 'Assigned permissions']"
+        searchable
+        aria-label="Permission assignment"
+      />
+      <p
+        class="transfer-summary"
+        data-testid="transfer-assignment-summary"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="summary-label">Assigned:</span>
+        {{ assignedLabels.length > 0 ? assignedLabels.join(', ') : 'None' }}
+      </p>
+    </div>
   </section>
 </template>
 
@@ -118,5 +156,32 @@ const fruitItems = [
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding-top: 8px;
+}
+.transfer-scenario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--iris-gap-sm);
+  margin-top: var(--iris-space-xl);
+  padding-top: var(--iris-gap-lg);
+  border-block-start: 1px solid var(--iris-border);
+  overflow-x: auto;
+}
+.scenario-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.scenario-description {
+  margin: 0;
+  color: var(--iris-muted);
+  font-size: 13px;
+  max-width: 720px;
+}
+.transfer-summary {
+  margin: 0;
+  font-size: 14px;
+}
+.summary-label {
+  font-weight: 600;
 }
 </style>

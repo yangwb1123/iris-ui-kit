@@ -1,6 +1,19 @@
 import { useState, type FormEvent } from 'react'
-import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/react'
+import {
+  IrisFormField,
+  IrisInput,
+  IrisSegmented,
+  IrisSwitch,
+  IrisButton,
+  IrisStack,
+} from '@iris-ui-kit/react'
 import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
+
+const environmentOptions = [
+  { label: 'Live', value: 'live' },
+  { label: 'Maintenance', value: 'maintenance' },
+  { label: 'Read-only preview', value: 'preview', disabled: true },
+]
 
 export function SettingsPage() {
   const initial = readCmsSettings()
@@ -9,6 +22,12 @@ export function SettingsPage() {
   const [notifications, setNotifications] = useState(initial.notifications)
   const [maintenance, setMaintenance] = useState(initial.maintenance)
   const [status, setStatus] = useState('')
+  const selectedEnvironment = maintenance ? 'maintenance' : 'live'
+
+  const selectEnvironment = (value: string) => {
+    if (value === 'live') setMaintenance(false)
+    if (value === 'maintenance') setMaintenance(true)
+  }
 
   const save = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -20,7 +39,7 @@ export function SettingsPage() {
       siteName: siteName.trim(),
       supportEmail: supportEmail.trim(),
       notifications,
-      maintenance,
+      maintenance: selectedEnvironment === 'maintenance',
     } satisfies CmsSettings)
     setStatus(saved ? 'Settings saved.' : 'Settings could not be saved in this browser.')
   }
@@ -49,7 +68,12 @@ export function SettingsPage() {
             <IrisSwitch checked={notifications} onChange={(next) => setNotifications(next)} />
           </IrisFormField>
           <IrisFormField label="Maintenance mode">
-            <IrisSwitch checked={maintenance} onChange={(next) => setMaintenance(next)} />
+            <IrisSegmented
+              options={environmentOptions}
+              value={selectedEnvironment}
+              onValueChange={selectEnvironment}
+              ariaLabel="Environment"
+            />
           </IrisFormField>
           <div>
             <IrisButton type="submit" variant="solid">

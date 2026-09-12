@@ -44,8 +44,10 @@ export function useGridRows<
       cloneDefaultRows: options.cloneDefaultRows,
       rowKeyField: options.rowKeyField,
       getRowKey: (row: Row, index: number) => latest.current.getRowKey?.(row, index),
-      getChildren: options.getChildren,
-      setChildren: options.setChildren,
+      getChildren: options.getChildren ? (row) => latest.current.getChildren?.(row) : undefined,
+      setChildren: options.setChildren
+        ? (row, children) => latest.current.setChildren?.(row, children) as Row
+        : undefined,
       onBeforeRowsChange: (transaction) => latest.current.onBeforeRowsChange?.(transaction),
       onRowsChange: (transaction) => latest.current.onRowsChange?.(transaction),
     }),

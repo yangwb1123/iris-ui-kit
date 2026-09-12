@@ -108,6 +108,7 @@ export {
   createVirtualizer,
   type Virtualizer,
   type VirtualizerConfig,
+  type VirtualizerEstimate,
   type VirtualizerState,
   type VirtualItem,
 } from './virtualizer'

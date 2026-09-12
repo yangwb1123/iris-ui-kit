@@ -17,9 +17,18 @@ describe('Svelte CMS workspace bridge', () => {
   it('covers every extended-menu leaf with a real page contract', () => {
     const leaves = collectCmsLeafKeys(menus)
     expect(
-      leaves.every((key) => key === 'form-builder' || key === 'vxe-example' || isCmsPageRoute(key)),
+      leaves.every(
+        (key) =>
+          key === 'form-builder' ||
+          key === 'vxe-example' ||
+          key === 'tree-example' ||
+          key === 'notifications' ||
+          isCmsPageRoute(key),
+      ),
     ).toBe(true)
     expect(leaves).toContain('audit-log')
+    expect(leaves).toContain('tree-example')
+    expect(leaves).toContain('notifications')
   })
 
   it('renders audit export and review actions through Svelte runes', async () => {

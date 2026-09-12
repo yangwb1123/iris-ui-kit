@@ -137,8 +137,8 @@ export function useGridExpansion<
     createGridExpansionFeature<Row, K>({
       mode: options.mode,
       defaultExpanded: options.defaultValue,
-      getKeys: options.getKeys,
-      onChange: options.onChange,
+      getKeys: () => options.getKeys?.() ?? [],
+      onChange: (keys) => options.onChange?.(keys),
     }),
   )
   return { model, expandedKeys: toStoreSnapshot(model.store, (keys) => [...keys]) }
@@ -169,11 +169,13 @@ export function useGridRows<
       defaultRows: initialRows,
       cloneDefaultRows: options.cloneDefaultRows,
       rowKeyField: options.rowKeyField,
-      getRowKey: options.getRowKey,
-      getChildren: options.getChildren,
-      setChildren: options.setChildren,
-      onBeforeRowsChange: options.onBeforeRowsChange,
-      onRowsChange: options.onRowsChange,
+      getRowKey: (row, index) => options.getRowKey?.(row, index),
+      getChildren: options.getChildren ? (row) => options.getChildren?.(row) : undefined,
+      setChildren: options.setChildren
+        ? (row, children) => options.setChildren?.(row, children) ?? row
+        : undefined,
+      onBeforeRowsChange: (transaction) => options.onBeforeRowsChange?.(transaction),
+      onRowsChange: (transaction) => options.onRowsChange?.(transaction),
     }),
   )
   return { model, rows: toStoreSnapshot(model.store, (rows) => [...rows]) }
@@ -206,20 +208,29 @@ export function useGridEditing<Row extends Record<string, unknown>>(
 ): UseGridEditingResult<Row> {
   const model = useGridFeature<Row, GridEditingModel>(core, 'editing', 'getEditingModel', () =>
     createGridEditingFeature<Row>({
-      getRowKey: options.getRowKey,
-      getRowIndex: options.getRowIndex,
-      getRules: options.getRules,
-      getValue: (row, columnKey) => options.getValue?.(row, columnKey) ?? row[columnKey],
+      getRowKey: (row, index) => options.getRowKey(row, index),
+      getRowIndex: (rowKey, row, rootRows) => options.getRowIndex?.(rowKey, row, rootRows),
+      getRules: (columnKey) => options.getRules?.(columnKey),
+      getValue: (row, columnKey) => {
+        const getValue = options.getValue
+        return getValue ? getValue(row, columnKey) : row[columnKey]
+      },
       setValue: (row, columnKey, value) =>
         options.setValue?.(row, columnKey, value) ?? { ...row, [columnKey]: value },
-      coerce: options.coerce,
-      validate: options.validate,
-      isEditable: options.isEditable,
+      coerce: (draft, row, columnKey) => {
+        const coerce = options.coerce
+        return coerce ? coerce(draft, row, columnKey) : draft
+      },
+      validate: (value, row, columnKey) => options.validate?.(value, row, columnKey) ?? null,
+      isEditable: (row, columnKey) => options.isEditable?.(row, columnKey) ?? true,
       missingRowMessage: options.missingRowMessage,
-      commitOptions: options.commitOptions,
-      onStateChange: options.onStateChange,
-      onValidation: options.onValidation,
-      onCommit: options.onCommit,
+      commitOptions: () => {
+        const configured = options.commitOptions
+        return typeof configured === 'function' ? configured() : (configured ?? {})
+      },
+      onStateChange: (state) => options.onStateChange?.(state),
+      onValidation: (validation) => options.onValidation?.(validation),
+      onCommit: (commit) => options.onCommit?.(commit),
     }),
   )
   return {
@@ -268,10 +279,10 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
       defaultOrder: options.order ?? options.defaultOrder,
       defaultWidths: options.widths ?? options.defaultWidths,
       defaultPinned: options.pinned ?? options.defaultPinned,
-      onVisibilityChange: options.onVisibilityChange,
-      onOrderChange: options.onOrderChange,
-      onWidthsChange: options.onWidthsChange,
-      onPinnedChange: options.onPinnedChange,
+      onVisibilityChange: (value) => options.onVisibilityChange?.(value),
+      onOrderChange: (value) => options.onOrderChange?.(value),
+      onWidthsChange: (value) => options.onWidthsChange?.(value),
+      onPinnedChange: (key, side) => options.onPinnedChange?.(key, side),
     }),
   )
   const state = toStoreSnapshot(model.store, cloneGridColumnsState)
@@ -482,7 +493,7 @@ export function useGridVirtual<
         const item = options.items[index]
         return item !== undefined && options.getItemKey ? options.getItemKey(item, index) : index
       },
-      onRangeChange: options.onRangeChange,
+      onRangeChange: (change) => options.onRangeChange?.(change),
     }),
   )
   syncGridVirtual(model, () => options)

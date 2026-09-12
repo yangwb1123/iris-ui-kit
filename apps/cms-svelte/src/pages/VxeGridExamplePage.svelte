@@ -2,6 +2,8 @@
   import {
     IrisTable,
     type IrisTableColumn,
+    type IrisTableColumnWidths,
+    type IrisTableProxyConfig,
     type IrisTableProxyQueryParams,
   } from '@iris-ui-kit/svelte'
 
@@ -50,6 +52,66 @@
     { key: 'sex', title: 'Sex' },
     { key: 'age', title: 'Age', sortable: true, align: 'right' },
     { key: 'address', title: 'Address' },
+  ]
+
+  const controlledColumnWidthsColumns: IrisTableColumn[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'age', title: 'Age' },
+  ]
+
+  const controlledColumnWidthsData: Array<Record<string, unknown>> = [
+    { id: '1', name: 'Charlie', age: 30 },
+    { id: '2', name: 'Alpha', age: 25 },
+    { id: '3', name: 'Bravo', age: 35 },
+  ]
+
+  interface GroupedSummaryRow extends Record<string, unknown> {
+    id: number
+    label: string
+    planned: number
+    actual: number
+  }
+
+  const groupedSummaryRows: GroupedSummaryRow[] = [
+    { id: 1, label: 'North', planned: 10, actual: 20 },
+    { id: 2, label: 'South', planned: 20, actual: 40 },
+  ]
+
+  const groupedSummaryColumns: IrisTableColumn[] = [
+    { key: 'label', title: 'Team' },
+    {
+      key: 'metrics',
+      title: 'Metrics',
+      children: [
+        { key: 'planned', title: 'Planned', summary: 'sum' },
+        { key: 'actual', title: 'Actual', summary: 'sum' },
+      ],
+    },
+  ]
+
+  interface FilterValuesRow extends Record<string, unknown> {
+    id: number
+    name: string
+    status: string
+  }
+
+  const filterValuesRows: FilterValuesRow[] = [
+    { id: 40001, name: 'Active row', status: 'active' },
+    { id: 40002, name: 'Paused row', status: 'paused' },
+    { id: 40003, name: 'Inactive row', status: 'inactive' },
+  ]
+
+  const filterValuesColumns: IrisTableColumn[] = [
+    { key: 'name', title: 'Name' },
+    {
+      key: 'status',
+      title: 'Status',
+      filterable: true,
+      filterOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+      ],
+    },
   ]
 
   /** 官方行编辑示例（editConfig + editRules，click 触发 + 必填）。 */
@@ -116,6 +178,43 @@
     })
   }
 
+  let retryAttempt = 0
+
+  /** Deliberately fails once so the built-in IrisTable proxy retry is visible. */
+  function retryQuery(
+    _params: IrisTableProxyQueryParams,
+  ): Promise<{ rows: GridRow[]; total: number }> {
+    const attempt = retryAttempt
+    retryAttempt += 1
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (attempt === 0) {
+          reject(new Error('Intentional proxy failure'))
+          return
+        }
+        resolve({
+          rows: [
+            {
+              id: 20001,
+              name: 'RetrySuccess',
+              role: 'Recovery',
+              sex: '—',
+              age: 1,
+              address: 'retry complete',
+            },
+          ],
+          total: 1,
+        })
+      }, 400)
+    })
+  }
+
+  const retryProxyConfig: IrisTableProxyConfig = {
+    query: retryQuery,
+    autoLoad: true,
+    pageSize: 10,
+  }
+
   // 行操作演示：本地响应式行列表 + toolbar 按钮直接增删（本框架无 React 专属
   // checkMethod，故以本地状态演示 insert/remove 语义）。
   let rowOpsData = $state<GridRow[]>([...tableData])
@@ -127,6 +226,18 @@
   }
   function removeRow() {
     rowOpsData = rowOpsData.filter((r) => r.id !== 9000)
+  }
+
+  let columnWidths = $state<IrisTableColumnWidths>({ name: 200 })
+
+  function handleControlledColumnWidthsChange(next: IrisTableColumnWidths): void {
+    columnWidths = next
+  }
+
+  let filterValues = $state<Record<string, string[]>>({})
+
+  function handleFilterValuesChange(next: Record<string, string[]>): void {
+    filterValues = next
   }
 </script>
 
@@ -145,6 +256,56 @@
       官方示例对照：border / showOverflow / resizable / keyField / seq / sortable
     </p>
     <IrisTable bordered resizableColumns rowKey="id" seq {columns} data={tableData} />
+  </section>
+
+  <section data-iris-vxe-section="controlled-column-widths">
+    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
+      受控列宽（Controlled column widths）
+    </h2>
+    <p
+      style="
+        margin: 0 0 12px;
+        font-size: var(--iris-font-size-sm, 13px);
+        color: var(--iris-muted);
+      "
+    >
+      父组件持有完整列宽映射；聚焦 Name 列右侧手柄并使用方向键，表格会用新宽度重新渲染。
+    </p>
+    <IrisTable
+      bordered
+      resizableColumns
+      rowKey="id"
+      columns={controlledColumnWidthsColumns}
+      data={controlledColumnWidthsData}
+      columnWidths={columnWidths}
+      onColumnWidthsChange={handleControlledColumnWidthsChange}
+    />
+    <output
+      data-iris-vxe-column-widths-readout
+      aria-live="polite"
+      style="display: block; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px)"
+    >{JSON.stringify(columnWidths)}</output>
+  </section>
+
+  <section data-iris-vxe-section="grouped-summary">
+    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
+      分组表头与汇总行（Grouped headers + summary row）
+    </h2>
+    <p
+      style="
+        margin: 0 0 12px;
+        font-size: var(--iris-font-size-sm, 13px);
+        color: var(--iris-muted);
+      "
+    >
+      Two fixed teams demonstrate a Metrics group with built-in Planned/Actual sums.
+    </p>
+    <IrisTable
+      bordered
+      rowKey="id"
+      columns={groupedSummaryColumns}
+      data={groupedSummaryRows}
+    />
   </section>
 
   <section>
@@ -206,6 +367,22 @@
 
   <section>
     <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
+      代理错误与重试（Proxy error + retry）
+    </h2>
+    <p
+      style="
+        margin: 0 0 12px;
+        font-size: var(--iris-font-size-sm, 13px);
+        color: var(--iris-muted);
+      "
+    >
+      首次请求固定延迟 400ms 后故意失败；点击内置 Retry 会再次请求并成功返回 1 条数据。
+    </p>
+    <IrisTable bordered rowKey="id" seq proxyConfig={retryProxyConfig} {columns} />
+  </section>
+
+  <section>
+    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
       搜索表单（Search form）
     </h2>
     <p
@@ -243,6 +420,36 @@
       proxyConfig={{ query: remoteQuery, remoteFilter: true, pageSize: 8 }}
       {columns}
     />
+  </section>
+
+  <section data-iris-vxe-section="filter-values">
+    <h2 style="margin: 0 0 4px; font-size: var(--iris-font-size-lg, 16px)">
+      受控列筛选值（Controlled filter values + OR matching）
+    </h2>
+    <p
+      style="
+        margin: 0 0 12px;
+        font-size: var(--iris-font-size-sm, 13px);
+        color: var(--iris-muted);
+      "
+    >
+      父组件控制 Status 的勾选值；同时选择 Active 与 Paused 时按 OR 匹配，清除后恢复全部行。
+    </p>
+    <IrisTable
+      bordered
+      rowKey="id"
+      columns={filterValuesColumns}
+      data={filterValuesRows}
+      filterValues={filterValues}
+      onFilterValuesChange={handleFilterValuesChange}
+    />
+    <output
+      data-iris-vxe-filter-values-readout
+      aria-live="polite"
+      style="display: block; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px)"
+    >
+      filterValues: {JSON.stringify(filterValues)}
+    </output>
   </section>
 
   <section>

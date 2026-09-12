@@ -1,5 +1,12 @@
 import { createSignal } from 'solid-js'
-import { IrisTable, type IrisTableColumn, type IrisTableProxyQueryParams } from '@iris-ui-kit/solid'
+import {
+  IrisTable,
+  type IrisTableColumn,
+  type IrisTableColumnWidths,
+  type IrisTableProxyConfig,
+  type IrisTableProxyQueryParams,
+  type IrisTableSortState,
+} from '@iris-ui-kit/solid'
 
 /**
  * vxe-grid 官方示例的 IrisTable 实现（与 apps/cms-react 同款对照页）。
@@ -46,6 +53,77 @@ const columns: IrisTableColumn<GridRow>[] = [
   { key: 'sex', title: 'Sex' },
   { key: 'age', title: 'Age', sortable: true, align: 'right' },
   { key: 'address', title: 'Address' },
+]
+
+const controlledColumnWidthsColumns: IrisTableColumn[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'age', title: 'Age' },
+]
+
+const controlledColumnWidthsData: Array<Record<string, unknown>> = [
+  { id: '1', name: 'Charlie', age: 30 },
+  { id: '2', name: 'Alpha', age: 25 },
+  { id: '3', name: 'Bravo', age: 35 },
+]
+
+interface GroupedSummaryRow extends Record<string, unknown> {
+  id: number
+  label: string
+  planned: number
+  actual: number
+}
+
+const groupedSummaryRows: GroupedSummaryRow[] = [
+  { id: 1, label: 'North', planned: 10, actual: 20 },
+  { id: 2, label: 'South', planned: 20, actual: 40 },
+]
+
+const groupedSummaryColumns: IrisTableColumn<GroupedSummaryRow>[] = [
+  { key: 'label', title: 'Team' },
+  {
+    key: 'metrics',
+    title: 'Metrics',
+    children: [
+      { key: 'planned', title: 'Planned', summary: 'sum' },
+      { key: 'actual', title: 'Actual', summary: 'sum' },
+    ],
+  },
+]
+
+interface FilterValuesRow extends Record<string, unknown> {
+  id: number
+  name: string
+  status: string
+}
+
+const filterValuesRows: FilterValuesRow[] = [
+  { id: 40001, name: 'Active row', status: 'active' },
+  { id: 40002, name: 'Paused row', status: 'paused' },
+  { id: 40003, name: 'Inactive row', status: 'inactive' },
+]
+
+const filterValuesColumns: IrisTableColumn<FilterValuesRow>[] = [
+  { key: 'name', title: 'Name' },
+  {
+    key: 'status',
+    title: 'Status',
+    filterable: true,
+    filterOptions: [
+      { value: 'active', label: 'Active' },
+      { value: 'paused', label: 'Paused' },
+    ],
+  },
+]
+
+const multiSortTableData: GridRow[] = [
+  { id: 20001, name: 'Bob', role: 'Developer', sex: 'Man', age: 30, address: 'New York' },
+  { id: 20002, name: 'Alice', role: 'Designer', sex: 'Women', age: 30, address: 'London' },
+  { id: 20003, name: 'Zoe', role: 'PM', sex: 'Women', age: 20, address: 'Berlin' },
+]
+
+const multiSortColumns: IrisTableColumn<GridRow>[] = [
+  { key: 'age', title: 'Age', sortable: true },
+  { key: 'name', title: 'Name', sortable: true },
 ]
 
 /** 官方行编辑示例（editConfig + editRules，click 触发 + 必填）。 */
@@ -125,6 +203,94 @@ const pStyle = {
   color: 'var(--iris-muted)',
 }
 
+function ControlledColumnWidthsDemo() {
+  const [columnWidths, setColumnWidths] = createSignal<IrisTableColumnWidths>({ name: 200 })
+  const handleControlledColumnWidthsChange = (next: IrisTableColumnWidths): void => {
+    setColumnWidths(next)
+  }
+
+  return (
+    <section data-iris-vxe-section="controlled-column-widths">
+      <h2 style={h2Style}>受控列宽（Controlled column widths）</h2>
+      <p style={pStyle}>
+        父组件持有完整列宽映射；聚焦 Name 列右侧手柄并使用方向键，表格会用新宽度重新渲染。
+      </p>
+      <IrisTable
+        bordered
+        resizableColumns
+        rowKey="id"
+        columns={controlledColumnWidthsColumns}
+        data={controlledColumnWidthsData}
+        columnWidths={columnWidths()}
+        onColumnWidthsChange={handleControlledColumnWidthsChange}
+      />
+      <output
+        data-iris-vxe-column-widths-readout
+        aria-live="polite"
+        style={{
+          display: 'block',
+          'margin-top': '12px',
+          padding: '8px 12px',
+          border: '1px solid var(--iris-border)',
+          'border-radius': 'var(--iris-radius-md, 6px)',
+          color: 'var(--iris-muted)',
+          'font-size': 'var(--iris-font-size-sm, 13px)',
+        }}
+      >
+        {JSON.stringify(columnWidths())}
+      </output>
+    </section>
+  )
+}
+
+function RetryProxyDemo() {
+  let retryAttempt = 0
+  function retryQuery(
+    _params: IrisTableProxyQueryParams,
+  ): Promise<{ rows: GridRow[]; total: number }> {
+    const attempt = retryAttempt
+    retryAttempt += 1
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (attempt === 0) {
+          reject(new Error('Intentional proxy failure'))
+          return
+        }
+        resolve({
+          rows: [
+            {
+              id: 20001,
+              name: 'RetrySuccess',
+              role: 'Recovery',
+              sex: '—',
+              age: 1,
+              address: 'retry complete',
+            },
+          ],
+          total: 1,
+        })
+      }, 400)
+    })
+  }
+
+  const retryProxyConfig: IrisTableProxyConfig<GridRow> = {
+    query: retryQuery,
+    autoLoad: true,
+    pageSize: 10,
+  }
+
+  return (
+    <section>
+      <h2 style={h2Style}>代理错误与重试（Proxy error + retry）</h2>
+      <p style={pStyle}>
+        首次请求固定延迟 400ms 后故意失败；点击内置 Retry 会再次请求；重试成功返回 1 条名为
+        RetrySuccess 的数据。
+      </p>
+      <IrisTable bordered rowKey="id" seq proxyConfig={retryProxyConfig} columns={columns} />
+    </section>
+  )
+}
+
 /** 行操作演示：本地响应式行列表 + toolbar 按钮直接增删（本框架无 React 专属
  * checkMethod，故以本地状态演示 insert/remove 语义）。 */
 function RowOpsDemo() {
@@ -171,6 +337,14 @@ function RowOpsDemo() {
 }
 
 export function VxeGridExamplePage() {
+  const [multiSortState, setMultiSortState] = createSignal<IrisTableSortState[]>([])
+  const [multiSortReadout, setMultiSortReadout] = createSignal('[]')
+  const handleMultiSortChange = (next: IrisTableSortState[]): void => {
+    setMultiSortState(next)
+    setMultiSortReadout(JSON.stringify(next))
+  }
+  const [filterValues, setFilterValues] = createSignal<Record<string, string[]>>({})
+
   return (
     <div style={sectionStyle}>
       <section>
@@ -179,6 +353,16 @@ export function VxeGridExamplePage() {
           官方示例对照：border / showOverflow / resizable / keyField / seq / sortable
         </p>
         <IrisTable bordered resizableColumns rowKey="id" seq columns={columns} data={tableData} />
+      </section>
+
+      <ControlledColumnWidthsDemo />
+
+      <section data-iris-vxe-section="grouped-summary">
+        <h2 style={h2Style}>分组表头与汇总行（Grouped headers + summary row）</h2>
+        <p style={pStyle}>
+          Two fixed teams demonstrate a Metrics group with built-in Planned/Actual sums.
+        </p>
+        <IrisTable bordered rowKey="id" columns={groupedSummaryColumns} data={groupedSummaryRows} />
       </section>
 
       <section>
@@ -222,6 +406,8 @@ export function VxeGridExamplePage() {
         />
       </section>
 
+      <RetryProxyDemo />
+
       <section>
         <h2 style={h2Style}>搜索表单（Search form）</h2>
         <p style={pStyle}>
@@ -255,6 +441,36 @@ export function VxeGridExamplePage() {
         />
       </section>
 
+      <section data-iris-vxe-section="filter-values">
+        <h2 style={h2Style}>受控列筛选值（Controlled filter values + OR matching）</h2>
+        <p style={pStyle}>
+          父组件控制 Status 的勾选值；同时选择 Active 与 Paused 时按 OR 匹配，清除后恢复全部行。
+        </p>
+        <IrisTable
+          bordered
+          rowKey="id"
+          columns={filterValuesColumns}
+          data={filterValuesRows}
+          filterValues={filterValues()}
+          onFilterValuesChange={setFilterValues}
+        />
+        <output
+          data-iris-vxe-filter-values-readout
+          aria-live="polite"
+          style={{
+            display: 'block',
+            margin: '12px 0 0',
+            padding: '8px 12px',
+            border: '1px solid var(--iris-border)',
+            'border-radius': 'var(--iris-radius-md, 6px)',
+            color: 'var(--iris-muted)',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
+          }}
+        >
+          {`filterValues: ${JSON.stringify(filterValues())}`}
+        </output>
+      </section>
+
       <section>
         <h2 style={h2Style}>行操作（Row ops）</h2>
         <p style={pStyle}>
@@ -262,6 +478,34 @@ export function VxeGridExamplePage() {
           checkMethod 为 React 专属 prop，本框架以本地状态实现行增删
         </p>
         <RowOpsDemo />
+      </section>
+
+      <section>
+        <h2 style={h2Style}>多列排序（Multi-column sorting）</h2>
+        <p style={pStyle}>
+          受控 multiSort：依次点击 Age、Name，再次点击 Name，观察点击顺序、次序标记与等龄行排序
+        </p>
+        <output
+          data-testid="vxe-grid-multi-sort-readout"
+          aria-live="polite"
+          style={{
+            display: 'block',
+            margin: '0 0 12px',
+            color: 'var(--iris-muted)',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
+          }}
+        >
+          {`onMultiSortChange: ${multiSortReadout()}`}
+        </output>
+        <IrisTable
+          bordered
+          rowKey="id"
+          multiSort
+          columns={multiSortColumns}
+          data={multiSortTableData}
+          multiSortState={multiSortState()}
+          onMultiSortChange={handleMultiSortChange}
+        />
       </section>
     </div>
   )

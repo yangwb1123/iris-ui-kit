@@ -86,6 +86,44 @@ describe('createVirtualizer — measurement feedback', () => {
     expect(v.totalSize()).toBe(60)
   })
 
+  it('updates estimates without discarding measured sizes', () => {
+    const v = createVirtualizer({ count: 3, estimateSize: 20, viewportSize: 1000 })
+    v.measure(0, 40)
+
+    v.setEstimateSize(30)
+
+    expect(v.getState().items.map((item) => item.size)).toEqual([40, 30, 30])
+    expect(v.totalSize()).toBe(100)
+  })
+
+  it('re-evaluates a stable estimate function while retaining measurements', () => {
+    let estimate = 20
+    const estimateSize = () => estimate
+    const v = createVirtualizer({
+      count: 3,
+      estimateSize,
+      viewportSize: 1000,
+    })
+    v.measure(0, 40)
+    estimate = 30
+
+    v.setEstimateSize(estimateSize)
+
+    // The function source is allowed to be stable while its closure changes;
+    // callers can pass the same source again to refresh unmeasured rows.
+    expect(v.getState().items.map((item) => item.size)).toEqual([40, 30, 30])
+  })
+
+  it('does not notify when estimate refresh produces the same window', () => {
+    const v = createVirtualizer({ count: 3, estimateSize: () => 20, viewportSize: 1000 })
+    const listener = vi.fn()
+
+    v.subscribe(listener)
+    v.setEstimateSize(() => 20)
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+
   it('keeps measured sizes attached to keys across a reorder (setCount rebuild)', () => {
     const order = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
     const v = createVirtualizer({
@@ -256,6 +294,32 @@ describe('createVirtualizer — growth + viewport', () => {
 
     expect(v.getState().items.map((item) => item.index)).toEqual([0, 1])
   })
+
+  it('uses measured offsets when a fixed-size row diverges from its estimate', () => {
+    const v = createVirtualizer({
+      count: 4,
+      estimateSize: 20,
+      fixedSize: 20,
+      viewportSize: 30,
+      buffer: 0,
+    })
+
+    v.measure(0, 40)
+    expect(v.getState().items.find((item) => item.index === 0)).toMatchObject({
+      start: 0,
+      size: 40,
+    })
+
+    v.setScroll(20)
+    expect(v.getState().items.map((item) => item.index)).toEqual(expect.arrayContaining([0, 1]))
+    expect(v.getState().items.find((item) => item.index === 0)).toMatchObject({
+      start: 0,
+      size: 40,
+    })
+
+    v.setScroll(40)
+    expect(v.getState().items.map((item) => item.index)).toEqual(expect.arrayContaining([1, 2]))
+  })
 })
 
 describe('createVirtualizer — replaceData', () => {
@@ -357,6 +421,65 @@ describe('createVirtualizer — cache skew', () => {
     expect(s.items[0]).toMatchObject({ key: 'a', size: 40 })
     // c now at index 1, but key 'c' → gets measured 28, not 32
     expect(s.items[1]).toMatchObject({ key: 'c', size: 28 })
+  })
+})
+
+describe('createVirtualizer — development diagnostics', () => {
+  it('keeps diagnostics guarded when process is unavailable or non-development', () => {
+    const processDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'process')
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const setProcess = (value: unknown): void => {
+      Object.defineProperty(globalThis, 'process', {
+        configurable: true,
+        enumerable: false,
+        writable: true,
+        value,
+      })
+    }
+    const create = () => createVirtualizer({ count: 1, estimateSize: 20 })
+
+    try {
+      expect(Reflect.deleteProperty(globalThis, 'process')).toBe(true)
+      expect(() => {
+        const virtualizer = create()
+        expect(virtualizer.detectCacheSkew).toBeUndefined()
+      }).not.toThrow()
+
+      for (const processLike of [
+        undefined,
+        {},
+        { env: undefined },
+        { env: { NODE_ENV: 'test' } },
+      ]) {
+        setProcess(processLike)
+        expect(() => {
+          const virtualizer = create()
+          expect(virtualizer.detectCacheSkew).toBeUndefined()
+        }).not.toThrow()
+      }
+      expect(warning).not.toHaveBeenCalled()
+
+      setProcess({ env: { NODE_ENV: 'development' } })
+      const virtualizer = create()
+      expect(warning).toHaveBeenCalledWith(
+        '[iris-ui] createVirtualizer: no getItemKey provided — using index as key. ' +
+          'Measured sizes will map to wrong items when data is inserted or deleted. ' +
+          'Provide a stable getItemKey for dynamic data lists.',
+      )
+      expect(virtualizer.detectCacheSkew).toBeTypeOf('function')
+      expect(virtualizer.detectCacheSkew?.()).toBe(
+        'Virtualizer is using index-as-key (no getItemKey provided). ' +
+          'Item insertion/deletion will cause measured sizes to map to wrong positions. ' +
+          'Provide a stable getItemKey for dynamic data.',
+      )
+    } finally {
+      warning.mockRestore()
+      if (processDescriptor) {
+        Object.defineProperty(globalThis, 'process', processDescriptor)
+      } else {
+        Reflect.deleteProperty(globalThis, 'process')
+      }
+    }
   })
 })
 

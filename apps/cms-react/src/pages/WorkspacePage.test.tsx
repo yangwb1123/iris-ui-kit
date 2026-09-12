@@ -25,9 +25,12 @@ describe('React CMS workspace bridge', () => {
       'pro-table',
       'documentation',
       'vxe-example',
+      'notifications',
+      'tree-example',
     ])
     expect(leaves.every((key) => dedicatedPluginRoutes.has(key) || isCmsPageRoute(key))).toBe(true)
     expect(leaves).toContain('audit-log')
+    expect(leaves).toContain('tree-example')
   })
 
   it('renders shared article actions and reflects filter state', () => {

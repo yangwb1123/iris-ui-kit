@@ -1,4 +1,6 @@
 import * as React from 'react'
+import * as core from '@iris-ui-kit/core'
+import type { Virtualizer } from '@iris-ui-kit/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisVirtualScroll, type IrisVirtualScrollHandle } from './VirtualScroll'
@@ -219,6 +221,126 @@ describe('@iris-ui-kit/react IrisVirtualScroll', () => {
     )
     const root = container.querySelector('[data-iris-virtual-scroll]') as HTMLDivElement
     expect(root.style.height).toBe('50vh')
+  })
+
+  it('updates a reused numeric virtualizer in one final range notification', () => {
+    const created: Virtualizer[] = []
+    const createVirtualizer = core.createVirtualizer
+    const create = vi.spyOn(core, 'createVirtualizer').mockImplementation((config) => {
+      const model = createVirtualizer(config)
+      created.push(model)
+      return model
+    })
+    const onRangeChange = vi.fn()
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100)
+
+    try {
+      const rows = Array.from({ length: 100 }, (_, index) => index)
+      const { container, rerender } = render(
+        <IrisVirtualScroll
+          items={rows}
+          itemHeight={20}
+          height={100}
+          buffer={0}
+          onRangeChange={onRangeChange}
+          renderItem={(item) => <span>{item}</span>}
+        />,
+      )
+      const model = created.at(-1)!
+      const states: Array<ReturnType<Virtualizer['getState']>> = []
+      const unsubscribe = model.subscribe((state) => states.push(state))
+      const setEstimateSize = vi.spyOn(model, 'setEstimateSize')
+      const setFixedSize = vi.spyOn(model, 'setFixedSize')
+      onRangeChange.mockClear()
+
+      rerender(
+        <IrisVirtualScroll
+          items={rows}
+          itemHeight={30}
+          height={100}
+          buffer={0}
+          onRangeChange={onRangeChange}
+          renderItem={(item) => <span>{item}</span>}
+        />,
+      )
+
+      expect(create).toHaveBeenCalled()
+      expect(model).toBe(created.at(-1))
+      expect(setEstimateSize).toHaveBeenCalledWith(expect.any(Function), 30)
+      expect(setFixedSize).not.toHaveBeenCalled()
+      expect(states).toHaveLength(1)
+      expect(states[0]).toMatchObject({ startIndex: 0, endIndex: 3, totalSize: 3000 })
+      expect(states).not.toContainEqual(expect.objectContaining({ endIndex: 4, totalSize: 3000 }))
+      expect(onRangeChange).toHaveBeenCalledOnce()
+      expect(onRangeChange).toHaveBeenCalledWith({ start: 0, end: 4 })
+      expect(
+        [...container.querySelectorAll('[data-iris-virtual-index]')].map((element) =>
+          Number(element.getAttribute('data-iris-virtual-index')),
+        ),
+      ).toEqual([0, 1, 2, 3])
+      expect(
+        (container.querySelector('[data-iris-virtual-spacer]') as HTMLElement).style.height,
+      ).toBe('3000px')
+      unsubscribe()
+    } finally {
+      clientHeight.mockRestore()
+      create.mockRestore()
+    }
+  })
+
+  it('updates a provided numeric virtualizer atomically without replacing it', () => {
+    const model = core.createVirtualizer({
+      count: 100,
+      estimateSize: 20,
+      fixedSize: 20,
+      viewportSize: 100,
+      buffer: 0,
+    })
+    const rows = Array.from({ length: 100 }, (_, index) => index)
+    const states: Array<ReturnType<Virtualizer['getState']>> = []
+    const onRangeChange = vi.fn()
+    const unsubscribe = model.subscribe((state) => states.push(state))
+    const setEstimateSize = vi.spyOn(model, 'setEstimateSize')
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100)
+
+    try {
+      const { rerender } = render(
+        <IrisVirtualScroll
+          items={rows}
+          itemHeight={20}
+          height={100}
+          buffer={0}
+          virtualizer={model}
+          onRangeChange={onRangeChange}
+          renderItem={(item) => <span>{item}</span>}
+        />,
+      )
+      states.length = 0
+      onRangeChange.mockClear()
+
+      rerender(
+        <IrisVirtualScroll
+          items={rows}
+          itemHeight={30}
+          height={100}
+          buffer={0}
+          virtualizer={model}
+          onRangeChange={onRangeChange}
+          renderItem={(item) => <span>{item}</span>}
+        />,
+      )
+
+      expect(setEstimateSize).toHaveBeenLastCalledWith(expect.any(Function), 30)
+      expect(states).toHaveLength(1)
+      expect(states[0]).toMatchObject({ startIndex: 0, endIndex: 3, totalSize: 3000 })
+      expect(states).not.toContainEqual(expect.objectContaining({ endIndex: 4, totalSize: 3000 }))
+      expect(onRangeChange).toHaveBeenCalledOnce()
+      expect(onRangeChange).toHaveBeenCalledWith({ start: 0, end: 4 })
+      expect(model.getState()).toMatchObject({ startIndex: 0, endIndex: 3, totalSize: 3000 })
+    } finally {
+      unsubscribe()
+      clientHeight.mockRestore()
+    }
   })
 })
 

@@ -109,6 +109,11 @@ function kindOf(p: ManifestProp): 'enum' | 'boolean' | 'number' | 'string' {
 
 // ---- Seed control values from manifest defaults ----------------------------
 function seed(p: ManifestProp): unknown {
+  const initialValues = spec.value?.initialValues
+  if (initialValues && Object.prototype.hasOwnProperty.call(initialValues, p.name)) {
+    return initialValues[p.name]
+  }
+
   const k = kindOf(p)
   if (p.default !== undefined) {
     if (k === 'boolean') return p.default === 'true'

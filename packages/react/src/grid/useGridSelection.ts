@@ -62,6 +62,12 @@ export function useGridSelection<
   // Capture only genuine uncontrolled state. A rejected controlled mutation may
   // have left the model ahead of the prop; never let that proposal become the
   // next uncontrolled snapshot during the handoff render.
+  if (controlled && !wasControlled.current) {
+    // Store.batch updates Core synchronously while React may still expose the
+    // previous external-store snapshot during this render.
+    uncontrolledSnapshot.current = [...model.store.getState()]
+    hasUncontrolledSnapshot.current = true
+  }
   if (!controlled && !leavingControlled) {
     uncontrolledSnapshot.current = [...internalSelection]
     hasUncontrolledSnapshot.current = true

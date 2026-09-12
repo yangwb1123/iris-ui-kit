@@ -1,4 +1,5 @@
-import { IrisDashboardGrid, IrisDashboardCard, IrisBadge } from '@iris-ui-kit/react'
+import { useState } from 'react'
+import { IrisDashboardGrid, IrisDashboardCard, IrisBadge, IrisCountdown } from '@iris-ui-kit/react'
 
 type Tone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
 const stats: { label: string; value: string; delta: string; tone: Tone }[] = [
@@ -9,6 +10,13 @@ const stats: { label: string; value: string; delta: string; tone: Tone }[] = [
 ]
 
 export function DashboardPage() {
+  const [base] = useState(() => Date.now())
+  const [expiredFinishCount, setExpiredFinishCount] = useState(0)
+
+  const handleExpiredFinish = (): void => {
+    setExpiredFinishCount((count) => count + 1)
+  }
+
   return (
     <section>
       <h1 className="page-title">Dashboard</h1>
@@ -34,6 +42,63 @@ export function DashboardPage() {
             — all driven by one nav-tree config and the framework-agnostic stores in{' '}
             <code>@iris-ui-kit/core</code> (shared with the Vue version).
           </p>
+        </IrisDashboardCard>
+
+        <IrisDashboardCard colSpan="full">
+          <section
+            data-iris-countdown-example="dashboard-release"
+            aria-labelledby="dashboard-release-heading"
+          >
+            <h2 id="dashboard-release-heading" style={{ margin: '0 0 var(--iris-space-xs, 8px)' }}>
+              Release countdown
+            </h2>
+            <p
+              style={{
+                margin: '0 0 var(--iris-space-md, 16px)',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
+            >
+              Live release windows cover day/time formatting, millisecond precision, terminal state,
+              and finish-event feedback.
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gap: 'var(--iris-space-md, 16px)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              }}
+            >
+              <IrisCountdown
+                value={base + 90_061_000}
+                format="DD HH:mm:ss"
+                title="Next release"
+                prefix="T-"
+                suffix="until launch"
+                size="sm"
+              />
+              <IrisCountdown
+                value={base + 12_345}
+                format="ss.SSS"
+                title="Millisecond precision"
+                size="md"
+              />
+              <IrisCountdown
+                value={base - 1_000}
+                format="HH:mm:ss"
+                title="Expired release"
+                size="lg"
+                onFinish={handleExpiredFinish}
+              />
+            </div>
+            <p
+              aria-live="polite"
+              style={{ margin: 'var(--iris-space-md, 16px) 0 0', color: 'var(--iris-muted)' }}
+            >
+              Expired finish callbacks:{' '}
+              <span data-iris-countdown-finish-count>{expiredFinishCount}</span>
+            </p>
+          </section>
         </IrisDashboardCard>
       </IrisDashboardGrid>
     </section>

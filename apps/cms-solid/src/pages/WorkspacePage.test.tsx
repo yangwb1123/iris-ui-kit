@@ -20,7 +20,14 @@ describe('Solid CMS workspace bridge', () => {
   it('covers every compact-menu leaf with a real page contract', () => {
     const leaves = collectCmsLeafKeys(menus)
     expect(
-      leaves.every((key) => key === 'form-builder' || key === 'vxe-example' || isCmsPageRoute(key)),
+      leaves.every(
+        (key) =>
+          key === 'form-builder' ||
+          key === 'vxe-example' ||
+          key === 'tree-example' ||
+          key === 'notifications' ||
+          isCmsPageRoute(key),
+      ),
     ).toBe(true)
     expect(leaves).not.toContain('audit-log')
   })

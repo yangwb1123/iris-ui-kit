@@ -72,7 +72,43 @@ test('admin login → users data → persisted settings', async ({ page }) => {
   const rows = page.getByRole('table').getByRole('row')
   await expect.poll(() => rows.count()).toBeGreaterThan(1)
 
+  await page.evaluate(() => window.localStorage.removeItem('iris-cms-settings'))
   await openSettings(page)
+
+  const environment = page.getByRole('radiogroup', { name: 'Environment', exact: true })
+  await expect(environment).toBeVisible()
+  const environmentOptions = environment.getByRole('radio')
+  await expect(environmentOptions).toHaveCount(3)
+  await expect(environmentOptions.nth(0)).toHaveAccessibleName('Live')
+  await expect(environmentOptions.nth(1)).toHaveAccessibleName('Maintenance')
+  await expect(environmentOptions.nth(2)).toHaveAccessibleName('Read-only preview')
+
+  const live = environment.getByRole('radio', { name: 'Live', exact: true })
+  const maintenance = environment.getByRole('radio', { name: 'Maintenance', exact: true })
+  const preview = environment.getByRole('radio', { name: 'Read-only preview', exact: true })
+  await expect(live).toHaveAttribute('aria-checked', 'true')
+  await expect(maintenance).toHaveAttribute('aria-checked', 'false')
+  await expect(preview).toHaveAttribute('aria-checked', 'false')
+  await expect(live).not.toBeDisabled()
+  await expect(maintenance).not.toBeDisabled()
+  await expect(preview).toBeDisabled()
+
+  await live.press('ArrowRight')
+  await expect(maintenance).toHaveAttribute('aria-checked', 'true')
+  await maintenance.press('Home')
+  await expect(live).toHaveAttribute('aria-checked', 'true')
+  await live.press('End')
+  await expect(maintenance).toHaveAttribute('aria-checked', 'true')
+  await expect(preview).toHaveAttribute('aria-checked', 'false')
+
+  await preview.click({ force: true })
+  await expect(maintenance).toHaveAttribute('aria-checked', 'true')
+
+  await maintenance.press('Home')
+  await expect(live).toHaveAttribute('aria-checked', 'true')
+  await maintenance.click()
+  await expect(maintenance).toHaveAttribute('aria-checked', 'true')
+
   const siteName = page.getByRole('textbox', { name: 'Site name' })
   await siteName.fill('Iris Cross-framework CMS')
   await page.getByRole('button', { name: 'Save changes' }).click()
@@ -81,6 +117,10 @@ test('admin login → users data → persisted settings', async ({ page }) => {
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await openSettings(page)
+  const persistedEnvironment = page.getByRole('radiogroup', { name: 'Environment', exact: true })
+  await expect(
+    persistedEnvironment.getByRole('radio', { name: 'Maintenance', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
   await expect(page.getByRole('textbox', { name: 'Site name' })).toHaveValue(
     'Iris Cross-framework CMS',
   )
@@ -200,4 +240,42 @@ test('viewer role comes from auth and cannot see privileged navigation', async (
   await page.getByRole('button', { name: 'Users', exact: true }).click()
   await expect(page.getByRole('button', { name: 'All users', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Roles & access', exact: true })).toHaveCount(0)
+})
+
+test('dashboard renders deterministic IrisCountdown release example across framework bundles', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const frozenNow = 1_700_000_000_000
+    Date.now = () => frozenNow
+  })
+  await login(page)
+
+  const example = page.locator('[data-iris-countdown-example="dashboard-release"]')
+  await expect(example).toHaveCount(1)
+  const countdowns = example.locator('[data-iris-countdown]')
+  await expect(countdowns).toHaveCount(3)
+
+  const release = countdowns.nth(0)
+  await expect(release.locator('[data-iris-countdown-time]')).toHaveText('01 01:01:01')
+  await expect(release.locator('[data-iris-countdown-title]')).toHaveText('Next release')
+  await expect(release).toContainText('T-')
+  await expect(release).toContainText('until launch')
+  await expect(release.locator('[data-iris-countdown-value]')).toHaveCSS('font-size', '18px')
+
+  const precision = countdowns.nth(1)
+  await expect(precision.locator('[data-iris-countdown-time]')).toHaveText('12.345')
+  await expect(precision.locator('[data-iris-countdown-title]')).toHaveText('Millisecond precision')
+  await expect(precision.locator('[data-iris-countdown-value]')).toHaveCSS('font-size', '24px')
+
+  const expired = countdowns.nth(2)
+  await expect(expired.locator('[data-iris-countdown-time]')).toHaveText('00:00:00')
+  await expect(expired.locator('[data-iris-countdown-title]')).toHaveText('Expired release')
+  await expect(expired.locator('[data-iris-countdown-value]')).toHaveCSS('font-size', '30px')
+  await expect(expired).toHaveAttribute('data-finished', 'true')
+
+  const finishCount = example.locator('[data-iris-countdown-finish-count]')
+  await expect(finishCount).toHaveText('1')
+  await page.waitForTimeout(1_100)
+  await expect(finishCount).toHaveText('1')
 })

@@ -107,6 +107,11 @@ export function useGridSelection<
     (value) => {
       const nextControlled = value !== undefined
       if (nextControlled) {
+        if (!wasControlled) {
+          // Store.batch updates Core before Vue's store mirror is notified.
+          uncontrolledSnapshot.value = [...model.store.getState()]
+          hasUncontrolledSnapshot = true
+        }
         lastControlledSnapshot.value = [...value]
         model.sync(value)
       } else if (wasControlled) {
@@ -199,8 +204,10 @@ export function useGridRows<
       cloneDefaultRows: options.cloneDefaultRows,
       rowKeyField: options.rowKeyField,
       getRowKey: (row, index) => latest.value.getRowKey?.(row, index),
-      getChildren: options.getChildren,
-      setChildren: options.setChildren,
+      getChildren: options.getChildren ? (row) => latest.value.getChildren?.(row) : undefined,
+      setChildren: options.setChildren
+        ? (row, children) => latest.value.setChildren?.(row, children) as Row
+        : undefined,
       onBeforeRowsChange: (tx) => latest.value.onBeforeRowsChange?.(tx),
       onRowsChange: (tx) => latest.value.onRowsChange?.(tx),
     }),
@@ -301,6 +308,10 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     (value) => {
       const wasControlled = visibilityPropControlled.value
       const controlled = value !== undefined
+      if (controlled && !wasControlled) {
+        // Capture the live Core state before synchronizing this channel.
+        uncontrolledVisibility.value = { ...model.store.getState().visibility }
+      }
       visibilityPropControlled.value = controlled
       if (controlled) model.syncVisibility(value)
       else if (wasControlled) model.syncVisibility(uncontrolledVisibility.value)
@@ -314,6 +325,9 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     }),
     ({ controlled, value }) => {
       const wasControlled = orderPropControlled.value
+      if (controlled && !wasControlled) {
+        uncontrolledOrder.value = [...model.store.getState().order]
+      }
       orderPropControlled.value = controlled
       if (controlled) model.syncOrder(value ?? [])
       else if (wasControlled) model.syncOrder(uncontrolledOrder.value)
@@ -324,7 +338,11 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     () => options.widths,
     (value) => {
       const wasControlled = widthsPropControlled.value
-      widthsPropControlled.value = value !== undefined
+      const controlled = value !== undefined
+      if (controlled && !wasControlled) {
+        uncontrolledWidths.value = { ...model.store.getState().widths }
+      }
+      widthsPropControlled.value = controlled
       if (value !== undefined) model.syncWidths(value)
       else if (wasControlled) model.syncWidths(uncontrolledWidths.value)
     },
@@ -334,7 +352,11 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     () => options.pinned,
     (value) => {
       const wasControlled = pinnedPropControlled.value
-      pinnedPropControlled.value = value !== undefined
+      const controlled = value !== undefined
+      if (controlled && !wasControlled) {
+        uncontrolledPinned.value = { ...model.store.getState().pinned }
+      }
+      pinnedPropControlled.value = controlled
       if (value !== undefined) model.syncPinned(value)
       else if (wasControlled) model.syncPinned(uncontrolledPinned.value)
     },
@@ -499,6 +521,11 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
     (value) => {
       const controlled = value !== undefined
       const wasControlled = wasSortControlled
+      if (controlled && !wasControlled) {
+        // Capture the live Core state before synchronizing the controlled sort.
+        uncontrolledSort.value = cloneSort(model.store.getState().sort)
+        hasUncontrolledSort = true
+      }
       wasSortControlled = controlled
       if (controlled) {
         lastControlledSort.value = cloneSort(value ?? null)
@@ -523,7 +550,7 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
       if (controlled) {
         // Preserve model updates batched with the transition into control.
         if (!wasControlled) {
-          uncontrolledMultiSort.value = cloneSorts(state.value.multiSort)
+          uncontrolledMultiSort.value = cloneSorts(model.store.getState().multiSort)
           hasUncontrolledMultiSort = true
         }
         lastControlledMultiSort.value = cloneSorts(value ?? [])
@@ -760,6 +787,10 @@ export function useGridVirtual<
   Row extends Record<string, unknown> = Record<string, unknown>,
   Item = Row,
 >(core: GridCore<Row>, options: UseGridVirtualOptions<Item>): UseGridVirtualResult {
+  const latest = shallowRef(options)
+  const onRangeChange = (change: GridVirtualRangeChange): void => {
+    latest.value.onRangeChange?.(change)
+  }
   const model = useGridFeature<Row, GridVirtualModel>(core, 'virtual', 'getVirtualModel', () =>
     createGridVirtualFeature<Row>({
       count: options.items.length,
@@ -775,12 +806,12 @@ export function useGridVirtual<
         const item = options.items[index]
         return item !== undefined && options.getItemKey ? options.getItemKey(item, index) : index
       },
-      onRangeChange: options.onRangeChange,
+      onRangeChange,
     }),
   )
   watch(
-    () => options.items,
-    (items) => model.setCount(items.length),
+    () => [options.items, options.getItemKey] as const,
+    ([items]) => model.setCount(items.length),
   )
   watch(
     () => options.buffer,
@@ -789,8 +820,7 @@ export function useGridVirtual<
   watch(
     () => options.estimateSize,
     (estimate) => {
-      model.setFixedSize(typeof estimate === 'number' ? estimate : null)
-      model.remeasure()
+      model.setEstimateSize(estimate, typeof estimate === 'number' ? estimate : null)
     },
   )
   watch(

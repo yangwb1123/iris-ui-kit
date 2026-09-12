@@ -1,6 +1,19 @@
 <script lang="ts">
-  import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/svelte'
+  import {
+    IrisFormField,
+    IrisInput,
+    IrisSegmented,
+    IrisSwitch,
+    IrisButton,
+    IrisStack,
+  } from '@iris-ui-kit/svelte'
   import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
+
+  const environmentOptions = [
+    { label: 'Live', value: 'live' },
+    { label: 'Maintenance', value: 'maintenance' },
+    { label: 'Read-only preview', value: 'preview', disabled: true },
+  ]
 
   const initial = readCmsSettings()
   let siteName = $state(initial.siteName)
@@ -8,6 +21,12 @@
   let notifications = $state(initial.notifications)
   let maintenance = $state(initial.maintenance)
   let status = $state('')
+  const selectedEnvironment = $derived(maintenance ? 'maintenance' : 'live')
+
+  function selectEnvironment(value: string) {
+    if (value === 'live') maintenance = false
+    if (value === 'maintenance') maintenance = true
+  }
 
   function save(event: SubmitEvent) {
     event.preventDefault()
@@ -19,7 +38,7 @@
       siteName: siteName.trim(),
       supportEmail: supportEmail.trim(),
       notifications,
-      maintenance,
+      maintenance: selectedEnvironment === 'maintenance',
     } satisfies CmsSettings)
     status = saved ? 'Settings saved.' : 'Settings could not be saved in this browser.'
   }
@@ -48,7 +67,12 @@
         <IrisSwitch checked={notifications} onChange={(next) => (notifications = next)} />
       </IrisFormField>
       <IrisFormField label="Maintenance mode">
-        <IrisSwitch checked={maintenance} onChange={(next) => (maintenance = next)} />
+        <IrisSegmented
+          options={environmentOptions}
+          value={selectedEnvironment}
+          onchange={selectEnvironment}
+          ariaLabel="Environment"
+        />
       </IrisFormField>
       <div>
         <IrisButton type="submit" variant="solid">Save changes</IrisButton>

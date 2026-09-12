@@ -6,11 +6,12 @@ export function syncGridVirtual<Item>(
   model: GridVirtualModel,
   read: () => Pick<
     UseGridVirtualOptions<Item>,
-    'items' | 'estimateSize' | 'viewportSize' | 'scrollOffset' | 'buffer'
+    'items' | 'estimateSize' | 'viewportSize' | 'scrollOffset' | 'buffer' | 'getItemKey'
   >,
 ): void {
   $effect(() => {
     const options = read()
+    void options.getItemKey
     model.setCount(options.items.length)
   })
   $effect(() => {
@@ -20,8 +21,7 @@ export function syncGridVirtual<Item>(
   $effect(() => {
     const options = read()
     const estimate = options.estimateSize
-    model.setFixedSize(typeof estimate === 'number' ? estimate : null)
-    model.remeasure()
+    model.setEstimateSize(estimate, typeof estimate === 'number' ? estimate : null)
   })
   $effect(() => {
     const options = read()

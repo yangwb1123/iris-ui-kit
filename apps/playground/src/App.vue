@@ -15,6 +15,8 @@ import SkinsShowcase from './sections/SkinsShowcase.vue'
 import ButtonShowcase from './sections/ButtonShowcase.vue'
 import FormShowcase from './sections/FormShowcase.vue'
 import DataShowcase from './sections/DataShowcase.vue'
+import TreeShowcase from './sections/TreeShowcase.vue'
+import TransferShowcase from './sections/TransferShowcase.vue'
 import LayoutShowcase from './sections/LayoutShowcase.vue'
 import PopoverShowcase from './sections/PopoverShowcase.vue'
 import TooltipShowcase from './sections/TooltipShowcase.vue'
@@ -42,6 +44,7 @@ const sections: SectionEntry[] = [
   { id: 'button', label: 'Buttons', group: 'Primitives', component: ButtonShowcase },
   { id: 'display', label: 'Display', group: 'Primitives', component: DisplayShowcase },
   { id: 'form', label: 'Form (basic)', group: 'Primitives', component: FormShowcase },
+  { id: 'transfer', label: 'Transfer', group: 'Primitives', component: TransferShowcase },
   {
     id: 'adv-form',
     label: 'Form (advanced)',
@@ -54,6 +57,7 @@ const sections: SectionEntry[] = [
   { id: 'popover', label: 'Popover', group: 'Components', component: PopoverShowcase },
   { id: 'tooltip', label: 'Tooltip', group: 'Components', component: TooltipShowcase },
   { id: 'data', label: 'Data', group: 'Components', component: DataShowcase },
+  { id: 'tree', label: 'Tree', group: 'Components', component: TreeShowcase },
   { id: 'behaviors', label: 'Behaviors', group: 'Components', component: BehaviorsShowcase },
   { id: 'layout', label: 'Layouts', group: 'Layouts', component: LayoutShowcase },
   { id: 'skeletons', label: 'System Skeletons', group: 'Layer 4', component: SkeletonsShowcase },

@@ -16,6 +16,16 @@ describe('createCellEdit', () => {
     expect(ce.isEditing('1', 'age')).toBe(false)
   })
 
+  it('preserves an explicitly supplied undefined draft', () => {
+    const ce = createCellEdit()
+
+    ce.startEdit('1', 'name')
+    expect(ce.getDraft()).toBe('')
+
+    ce.startEdit('1', 'name', undefined)
+    expect(ce.getDraft()).toBeUndefined()
+  })
+
   it('cancelEdit closes without committing', () => {
     const onCommit = vi.fn()
     const ce = createCellEdit({ onCommit })

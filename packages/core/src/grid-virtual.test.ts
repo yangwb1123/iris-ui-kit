@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Virtualizer } from './virtualizer'
+import type { Virtualizer, VirtualizerState } from './virtualizer'
 import { createGridCore } from './grid'
 import {
   createGridVirtualFeature,
@@ -27,6 +27,100 @@ describe('createGridVirtualFeature', () => {
 
     core.invoke('setVirtualBuffer', 3)
     expect(core.invoke('getVirtualState')).toMatchObject({ startIndex: 7, endIndex: 17 })
+  })
+
+  it('updates estimates through the capability without dropping measurements', () => {
+    const core = createGridCore({
+      features: [
+        createGridVirtualFeature({
+          count: 3,
+          estimateSize: 20,
+          viewportSize: 1000,
+        }),
+      ],
+    })
+
+    core.invoke('measureVirtualItem', 0, 40)
+    core.invoke('setVirtualEstimateSize', 30)
+
+    expect(core.invoke<VirtualizerState>('getVirtualState').items.map((item) => item.size)).toEqual(
+      [40, 30, 30],
+    )
+  })
+
+  it('commits numeric estimate and fixed-size range changes atomically', () => {
+    const onRangeChange = vi.fn()
+    const core = createGridCore({
+      features: [
+        createGridVirtualFeature({
+          count: 100,
+          estimateSize: 20,
+          fixedSize: 20,
+          viewportSize: 100,
+          buffer: 0,
+          onRangeChange,
+        }),
+      ],
+    })
+    const model = core.invoke<Virtualizer>('getVirtualModel')
+    const states: VirtualizerState[] = []
+    const ranges: GridVirtualRangeChange[] = []
+    const unsubscribe = model.subscribe((state) => states.push(state))
+    core.on<GridVirtualRangeChange>(GRID_VIRTUAL_RANGE_CHANGE_EVENT, (range) => ranges.push(range))
+
+    core.invoke('setVirtualEstimateSize', 30)
+
+    expect(states).toHaveLength(1)
+    expect(states[0]).toMatchObject({ startIndex: 0, endIndex: 3, totalSize: 3000 })
+    expect(states[0]?.items.map((item) => item.index)).toEqual([0, 1, 2, 3])
+    expect(onRangeChange).toHaveBeenCalledOnce()
+    expect(onRangeChange).toHaveBeenCalledWith({ start: 0, end: 4, totalSize: 3000 })
+    expect(ranges).toEqual([{ start: 0, end: 4, totalSize: 3000 }])
+    expect(states).not.toContainEqual(expect.objectContaining({ endIndex: 4, totalSize: 3000 }))
+
+    core.invoke('setVirtualEstimateSize', 30)
+    expect(states).toHaveLength(1)
+    expect(onRangeChange).toHaveBeenCalledOnce()
+    expect(ranges).toHaveLength(1)
+
+    unsubscribe()
+    core.destroy()
+  })
+
+  it('constructs and exposes state without a global process', () => {
+    const processDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'process')
+    let core: ReturnType<typeof createGridCore> | undefined
+    let state: VirtualizerState | undefined
+
+    try {
+      expect(Reflect.deleteProperty(globalThis, 'process')).toBe(true)
+      expect(() => {
+        const created = createGridCore({
+          features: [
+            createGridVirtualFeature({
+              count: 3,
+              estimateSize: 20,
+              viewportSize: 40,
+            }),
+          ],
+        })
+        core = created
+        state = created.invoke<VirtualizerState>('getVirtualState')
+      }).not.toThrow()
+
+      expect(state).toMatchObject({ startIndex: 0, endIndex: 1, totalSize: 60 })
+      expect(state?.items).toEqual([
+        { index: 0, key: 0, start: 0, size: 20 },
+        { index: 1, key: 1, start: 20, size: 20 },
+      ])
+    } finally {
+      core?.destroy()
+      if (processDescriptor) {
+        Object.defineProperty(globalThis, 'process', processDescriptor)
+      } else {
+        Reflect.deleteProperty(globalThis, 'process')
+      }
+    }
   })
 
   it('emits exclusive ranges only when the rendered window changes', () => {

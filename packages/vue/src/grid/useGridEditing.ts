@@ -53,10 +53,16 @@ export function useGridEditing<Row extends Record<string, unknown>>(
       getRowKey: (row, index) => latest.value.getRowKey(row, index),
       getRowIndex: (rowKey, row, rootRows) => latest.value.getRowIndex?.(rowKey, row, rootRows),
       getRules: (columnKey) => latest.value.getRules?.(columnKey),
-      getValue: (row, columnKey) => latest.value.getValue?.(row, columnKey) ?? row[columnKey],
+      getValue: (row, columnKey) => {
+        const getValue = latest.value.getValue
+        return getValue ? getValue(row, columnKey) : row[columnKey]
+      },
       setValue: (row, columnKey, value) =>
         latest.value.setValue?.(row, columnKey, value) ?? { ...row, [columnKey]: value },
-      coerce: (draft, row, columnKey) => latest.value.coerce?.(draft, row, columnKey) ?? draft,
+      coerce: (draft, row, columnKey) => {
+        const coerce = latest.value.coerce
+        return coerce ? coerce(draft, row, columnKey) : draft
+      },
       validate: (value, row, columnKey) => latest.value.validate?.(value, row, columnKey) ?? null,
       isEditable: (row, columnKey) => latest.value.isEditable?.(row, columnKey) ?? true,
       missingRowMessage: options.missingRowMessage,

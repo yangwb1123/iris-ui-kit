@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { act, fireEvent, render } from '@testing-library/react'
+import type { Store } from '@iris-ui-kit/core'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createGridFeature,
@@ -16,6 +17,7 @@ import {
   type SortState,
 } from '@iris-ui-kit/core/grid'
 import { useGridCore } from './useGridCore'
+import { useGridFeature } from './useGridFeature'
 import { useGridExpansion } from './useGridExpansion'
 import { useGridFiltering } from './useGridFiltering'
 import { useGridPagination } from './useGridPagination'
@@ -52,9 +54,23 @@ describe('useGridCore', () => {
   })
 
   it('survives the StrictMode effect replay without destroying the live core', async () => {
-    let core: GridCore | undefined
+    const instances: Array<{
+      core: GridCore
+      ready: ReturnType<typeof vi.fn>
+      dispose: ReturnType<typeof vi.fn>
+    }> = []
+    const feature = createGridFeature({
+      name: 'strict-lifecycle',
+      setup: ({ core }) => {
+        const ready = vi.fn()
+        const dispose = vi.fn()
+        instances.push({ core, ready, dispose })
+        return { onReady: ready, dispose }
+      },
+    })
+    let liveCore: GridCore | undefined
     function Harness() {
-      core = useGridCore()
+      liveCore = useGridCore({ features: [feature] })
       return null
     }
 
@@ -64,11 +80,61 @@ describe('useGridCore', () => {
       </React.StrictMode>,
     )
     await flushTeardown()
-    expect(core?.status).toBe('ready')
+    const live = instances.find((instance) => instance.core === liveCore)
+    expect(liveCore?.status).toBe('ready')
+    expect(live).toBeDefined()
+    expect(live!.ready).toHaveBeenCalledOnce()
+    expect(live!.dispose).not.toHaveBeenCalled()
+    for (const instance of instances) {
+      if (instance.core === liveCore) continue
+      expect(instance.core.status).toBe('destroyed')
+      expect(instance.dispose).toHaveBeenCalledOnce()
+    }
 
     view.unmount()
     await flushTeardown()
-    expect(core?.status).toBe('destroyed')
+    expect(liveCore?.status).toBe('destroyed')
+    expect(live!.dispose).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ['core options', 'options'],
+    ['render-time feature hook', 'hook'],
+  ] as const)('destroys a suspended render abandoned through %s', async (_label, path) => {
+    const dispose = vi.fn()
+    let capturedCore: GridCore | undefined
+    const feature = createGridFeature({
+      name: `abandoned-${path}`,
+      setup: ({ core }) => {
+        capturedCore = core
+        return { methods: { probe: () => true }, dispose }
+      },
+    })
+    const suspended = new Promise<void>(() => {})
+
+    function Harness() {
+      const core = useGridCore(path === 'options' ? { features: [feature] } : {})
+      if (path === 'hook') useGridFeature(core, feature.name, 'probe', () => feature)
+      throw suspended
+    }
+
+    const view = render(
+      <React.Suspense fallback={null}>
+        <Harness />
+      </React.Suspense>,
+    )
+    expect(capturedCore?.status).toBe('created')
+    expect(capturedCore?.hasFeature(feature.name)).toBe(true)
+    expect(capturedCore?.hasMethod('probe')).toBe(true)
+
+    view.unmount()
+    await flushTeardown()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(capturedCore?.status).toBe('destroyed')
+    expect(capturedCore?.features).toEqual([])
+    expect(capturedCore?.methodNames).toEqual([])
+    expect(capturedCore?.hasFeature(feature.name)).toBe(false)
+    expect(capturedCore?.hasMethod('probe')).toBe(false)
   })
 })
 
@@ -154,6 +220,56 @@ describe('useGridSelection', () => {
 
     act(() => setControlled(false))
     expect(view.getByRole('button').textContent).toBe('seed')
+    view.unmount()
+  })
+
+  it('preserves a batched uncontrolled selection across controlled handoff release', () => {
+    const onChange = vi.fn()
+    const selectionEvent = vi.fn()
+    let setControlled!: React.Dispatch<React.SetStateAction<string[] | undefined>>
+    let core!: GridCore
+    let selection!: ReturnType<typeof useGridSelection>
+
+    function Harness() {
+      const [value, updateValue] = React.useState<string[] | undefined>()
+      setControlled = updateValue
+      core = useGridCore()
+      selection = useGridSelection(core, { value, defaultValue: ['a'], onChange })
+      return <output data-testid="selection">{JSON.stringify(selection.selection)}</output>
+    }
+
+    const view = render(<Harness />)
+    core.on(GRID_SELECTION_CHANGE_EVENT, selectionEvent)
+    const store = selection.model.store as unknown as Store<string[]>
+
+    act(() => {
+      store.batch(() => {
+        selection.model.set(['b'])
+        setControlled(['c'])
+      })
+    })
+
+    expect(selection.selection).toEqual(['c'])
+    expect(selection.model.get()).toEqual(['c'])
+    expect(selection.model.store.getState()).toEqual(['c'])
+    expect(view.getByTestId('selection').textContent).toBe('["c"]')
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(['b'])
+    expect(selectionEvent).toHaveBeenCalledTimes(1)
+    expect(selectionEvent).toHaveBeenCalledWith({ selectedKeys: ['b'] })
+    const countsBeforeRelease = {
+      onChange: onChange.mock.calls.length,
+      selectionEvent: selectionEvent.mock.calls.length,
+    }
+
+    act(() => setControlled(undefined))
+
+    expect(selection.selection).toEqual(['b'])
+    expect(selection.model.get()).toEqual(['b'])
+    expect(selection.model.store.getState()).toEqual(['b'])
+    expect(view.getByTestId('selection').textContent).toBe('["b"]')
+    expect(onChange).toHaveBeenCalledTimes(countsBeforeRelease.onChange)
+    expect(selectionEvent).toHaveBeenCalledTimes(countsBeforeRelease.selectionEvent)
     view.unmount()
   })
 
@@ -1056,6 +1172,85 @@ describe('useGridRows', () => {
     expect(view.getByTestId('tree-child').textContent).toBe('Updated')
     fireEvent.click(view.getByRole('button', { name: 'remove nested' }))
     expect(view.getByTestId('tree-child').textContent).toBe('')
+    view.unmount()
+  })
+
+  it('uses replacement tree callbacks without recreating the rows model', () => {
+    type TreeRow = {
+      id: number
+      name: string
+      a?: TreeRow[]
+      b?: TreeRow[]
+    }
+    type TreeOptions = {
+      getChildren: (row: TreeRow) => readonly TreeRow[] | undefined
+      setChildren: (row: TreeRow, children: TreeRow[]) => TreeRow
+    }
+    const initialRows: TreeRow[] = [
+      {
+        id: 1,
+        name: 'Root',
+        a: [{ id: 2, name: 'A' }],
+        b: [{ id: 3, name: 'B' }],
+      },
+    ]
+    const getChildrenA = vi.fn((row: TreeRow) => row.a)
+    const getChildrenB = vi.fn((row: TreeRow) => row.b)
+    const setChildrenA = vi.fn((row: TreeRow, children: TreeRow[]) => ({ ...row, a: children }))
+    const setChildrenB = vi.fn((row: TreeRow, children: TreeRow[]) => ({ ...row, b: children }))
+    let setOptions!: React.Dispatch<React.SetStateAction<TreeOptions>>
+    let bridge!: { model: GridRowsModel<TreeRow> }
+
+    function Harness({ options }: { options: TreeOptions }) {
+      const core = useGridCore<TreeRow>()
+      bridge = useGridRows(core, initialRows, options)
+      return null
+    }
+    function Parent() {
+      const [options, updateOptions] = React.useState<TreeOptions>({
+        getChildren: getChildrenA,
+        setChildren: setChildrenA,
+      })
+      setOptions = updateOptions
+      return <Harness options={options} />
+    }
+
+    const view = render(<Parent />)
+    const model = bridge.model
+    getChildrenA.mockClear()
+    setChildrenA.mockClear()
+
+    act(() => setOptions({ getChildren: getChildrenB, setChildren: setChildrenA }))
+    expect(bridge.model).toBe(model)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'B' })
+    expect(model.find(2)).toBeUndefined()
+    expect(getChildrenA).not.toHaveBeenCalled()
+    getChildrenB.mockClear()
+    setChildrenA.mockClear()
+
+    act(() =>
+      setOptions({
+        getChildren: getChildrenB,
+        setChildren: setChildrenB,
+      }),
+    )
+
+    expect(bridge.model).toBe(model)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'B' })
+    expect(model.find(2)).toBeUndefined()
+    expect(getChildrenA).not.toHaveBeenCalled()
+
+    expect(model.update(3, { name: 'Updated' })).toBe(true)
+    expect(model.find(3)).toMatchObject({ id: 3, name: 'Updated' })
+    expect(setChildrenB).toHaveBeenCalledOnce()
+    expect(setChildrenA).not.toHaveBeenCalled()
+
+    const replacement = [{ id: 4, name: 'Replacement' }]
+    expect(model.setChildren(1, replacement)).toBe(true)
+    expect(model.get()[0]?.b).toEqual(replacement)
+    expect(setChildrenB).toHaveBeenCalledTimes(2)
+    expect(setChildrenA).not.toHaveBeenCalled()
+    expect(getChildrenA).not.toHaveBeenCalled()
     view.unmount()
   })
 })

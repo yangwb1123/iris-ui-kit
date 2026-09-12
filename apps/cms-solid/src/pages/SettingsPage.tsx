@@ -1,6 +1,19 @@
 import { createSignal, type JSX } from 'solid-js'
-import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/solid'
+import {
+  IrisFormField,
+  IrisInput,
+  IrisSegmented,
+  IrisSwitch,
+  IrisButton,
+  IrisStack,
+} from '@iris-ui-kit/solid'
 import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
+
+const environmentOptions = [
+  { label: 'Live', value: 'live' },
+  { label: 'Maintenance', value: 'maintenance' },
+  { label: 'Read-only preview', value: 'preview', disabled: true },
+]
 
 export function SettingsPage(): JSX.Element {
   const initial = readCmsSettings()
@@ -9,6 +22,12 @@ export function SettingsPage(): JSX.Element {
   const [notifications, setNotifications] = createSignal(initial.notifications)
   const [maintenance, setMaintenance] = createSignal(initial.maintenance)
   const [status, setStatus] = createSignal('')
+  const selectedEnvironment = () => (maintenance() ? 'maintenance' : 'live')
+
+  const selectEnvironment = (value: string): void => {
+    if (value === 'live') setMaintenance(false)
+    if (value === 'maintenance') setMaintenance(true)
+  }
 
   const save: JSX.EventHandler<HTMLFormElement, SubmitEvent> = (event) => {
     event.preventDefault()
@@ -20,7 +39,7 @@ export function SettingsPage(): JSX.Element {
       siteName: siteName().trim(),
       supportEmail: supportEmail().trim(),
       notifications: notifications(),
-      maintenance: maintenance(),
+      maintenance: selectedEnvironment() === 'maintenance',
     } satisfies CmsSettings)
     setStatus(saved ? 'Settings saved.' : 'Settings could not be saved in this browser.')
   }
@@ -53,7 +72,12 @@ export function SettingsPage(): JSX.Element {
             <IrisSwitch checked={notifications()} onChange={(next) => setNotifications(next)} />
           </IrisFormField>
           <IrisFormField label="Maintenance mode">
-            <IrisSwitch checked={maintenance()} onChange={(next) => setMaintenance(next)} />
+            <IrisSegmented
+              options={environmentOptions}
+              value={selectedEnvironment()}
+              onChange={selectEnvironment}
+              ariaLabel="Environment"
+            />
           </IrisFormField>
           <div>
             <IrisButton type="submit" variant="solid">

@@ -111,6 +111,26 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
   const wasOrderControlled = React.useRef(orderControlled)
   const wasWidthsControlled = React.useRef(widthsControlled)
   const wasPinnedControlled = React.useRef(pinnedControlled)
+  const enteringVisibilityControlled = visibilityControlled && !wasVisibilityControlled.current
+  const enteringOrderControlled = orderControlled && !wasOrderControlled.current
+  const enteringWidthsControlled = widthsControlled && !wasWidthsControlled.current
+  const enteringPinnedControlled = pinnedControlled && !wasPinnedControlled.current
+  if (
+    enteringVisibilityControlled ||
+    enteringOrderControlled ||
+    enteringWidthsControlled ||
+    enteringPinnedControlled
+  ) {
+    // Capture all entering channels from the live Core state before the
+    // controlled effects synchronize any of them.
+    const liveState = model.store.getState()
+    if (enteringVisibilityControlled) {
+      lastUncontrolledVisibility.current = { ...liveState.visibility }
+    }
+    if (enteringOrderControlled) lastUncontrolledOrder.current = [...liveState.order]
+    if (enteringWidthsControlled) lastUncontrolledWidths.current = { ...liveState.widths }
+    if (enteringPinnedControlled) lastUncontrolledPinned.current = { ...liveState.pinned }
+  }
   if (!visibilityControlled && !wasVisibilityControlled.current) {
     lastUncontrolledVisibility.current = { ...internal.visibility }
   }

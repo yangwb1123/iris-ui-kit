@@ -30,6 +30,8 @@ export interface GridVirtualMethods {
   setVirtualScroll(offset: number): void
   setVirtualViewportSize(size: number): void
   setVirtualBuffer(buffer: number): void
+  /** Update the estimate and its derived fixed-size mode in one commit. */
+  setVirtualEstimateSize(estimate: VirtualizerConfig['estimateSize']): void
   setVirtualFixedSize(size: number | null): void
   setVirtualCount(count: number): void
   replaceVirtualData(count: number): void
@@ -108,6 +110,8 @@ export function createGridVirtualFeature<
         setVirtualScroll: (offset) => model.setScroll(finiteNonNegative(offset, 0)),
         setVirtualViewportSize: (size) => model.setViewportSize(finiteNonNegative(size, 0)),
         setVirtualBuffer: (buffer) => model.setBuffer(finiteNonNegative(buffer, 0)),
+        setVirtualEstimateSize: (estimate) =>
+          model.setEstimateSize(estimate, typeof estimate === 'number' ? estimate : null),
         setVirtualFixedSize: (size) => model.setFixedSize(normalizeFixedSize(size)),
         setVirtualCount: (count) => model.setCount(finiteCount(count)),
         replaceVirtualData: (count) => model.replaceData(finiteCount(count)),

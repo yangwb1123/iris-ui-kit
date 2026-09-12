@@ -92,7 +92,11 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
   const fixedHeight = (): number => (typeof merged.itemHeight === 'number' ? merged.itemHeight : 0)
   // Variable when sizing comes from a user fn or `auto` measurement; for a plain
   // number the window uses the closed-form fixed formula below.
-  const variable = (): boolean => userFn() !== null || auto()
+  // Memoize the mode separately so changing one numeric estimate does not
+  // recreate the controller just because the raw itemHeight prop changed.
+  const variable = createMemo(
+    () => typeof merged.itemHeight === 'function' || merged.itemHeight === 'auto',
+  )
 
   // In auto mode the core virtualizer owns measured heights. Its cache is keyed
   // by `getItemKey`, so estimates must never retain measurements by index.
@@ -126,7 +130,7 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
 
   // One stateful controller, rebuilt only when count or sizing MODE changes.
   // Sizing CHANGES within a mode (a new user fn / a measurement) are pushed via
-  // remeasure below — recreating on every change would drop scroll state. The
+  // the estimate update below — recreating on every change would drop scroll state. The
   // memo tracks ONLY count / buffer / variable; everything else is read untracked
   // through the refs above.
   const virtualizer = createMemo<Virtualizer>(() => {
@@ -151,22 +155,36 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
   })
 
   // Re-seat keyed measurements when the data array changes, including a
-  // same-length reorder. The core controller owns the measurement cache.
+  // same-length reorder. The core controller owns the measurement cache. Keep
+  // the initial inputs as the synced baseline so a sizing-only effect rerun
+  // cannot rebuild the tree under the previous fixed-size mode.
+  let syncedItems = merged.items
+  let syncedKeyOf = merged.keyOf
+  let syncedCount = merged.items.length
   createEffect(() => {
-    const v = virtualizer()
     const nextItems = merged.items
-    v.setCount(nextItems.length)
+    const nextKeyOf = merged.keyOf
+    if (
+      nextItems === syncedItems &&
+      nextKeyOf === syncedKeyOf &&
+      nextItems.length === syncedCount
+    ) {
+      return
+    }
+    syncedItems = nextItems
+    syncedKeyOf = nextKeyOf
+    syncedCount = nextItems.length
+    virtualizer().setCount(nextItems.length)
   })
 
   // Push sizing configuration changes (new user fn or estimate change)
-  // into the controller without recreating it: update the fixed/variable path,
-  // then rebuild the tree from the current `estimateSize`.
+  // into the controller without recreating it. Measured rows remain
+  // authoritative until the caller explicitly invokes `remeasure()`.
   createEffect(() => {
     void merged.itemHeight
     void merged.estimatedItemHeight
     const v = virtualizer()
-    v.setFixedSize(variable() ? null : fixedHeight())
-    v.remeasure()
+    v.setEstimateSize(estimateRef, variable() ? null : fixedHeight())
   })
 
   // Drive the controller's scroll + viewport from local signals so its window,

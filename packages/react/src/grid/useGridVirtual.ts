@@ -58,15 +58,17 @@ export function useGridVirtual<
   // rebuilds the offset tree so keyed measurements are re-seated correctly.
   useIsomorphicLayoutEffect(() => {
     model.setCount(options.items.length)
-  }, [model, options.items])
+  }, [model, options.items, options.getItemKey])
 
   useIsomorphicLayoutEffect(() => {
     model.setBuffer(options.buffer ?? 0)
   }, [model, options.buffer])
 
   useIsomorphicLayoutEffect(() => {
-    model.setFixedSize(typeof options.estimateSize === 'number' ? options.estimateSize : null)
-    model.remeasure()
+    model.setEstimateSize(
+      options.estimateSize,
+      typeof options.estimateSize === 'number' ? options.estimateSize : null,
+    )
   }, [model, options.estimateSize])
 
   useIsomorphicLayoutEffect(() => {

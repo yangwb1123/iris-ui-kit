@@ -1,5 +1,6 @@
 import { createStore, type Store } from './store'
 import type { GridFeature, GridMethod } from './grid'
+import { createFlatRowIndex, resolveFlatRowRemovals, type FlatRowIndex } from './grid-rows-index'
 import {
   findTreeRow,
   removeTreeRows,
@@ -179,6 +180,13 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         setChildren: options.setChildren,
       }
     : null
+  let flatIndex: FlatRowIndex<Row> | undefined
+  const getFlatIndex = (rows: readonly Row[]): FlatRowIndex<Row> => {
+    if (!flatIndex || flatIndex.rows !== rows) {
+      flatIndex = createFlatRowIndex(rows, rowKeyField)
+    }
+    return flatIndex
+  }
   let observing = false
 
   const reasoned = (
@@ -250,6 +258,10 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
     find: (key) => {
       const rows = store.getState()
       if (treeOptions) return findTreeRow(rows, key, treeOptions)
+      if (!options.getRowKey) {
+        const index = getFlatIndex(rows)
+        if (index.usable) return index.get(key)?.row
+      }
       const index = rows.findIndex((row, rowIndex) => sameGridRowKey(keyOf(row, rowIndex), key))
       return index < 0 ? undefined : rows[index]
     },
@@ -291,6 +303,14 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         if (result.blocked || result.removed.size === 0 || !result.changed) return false
         return commit(result.rows, reasoned(commitOptions, 'remove'), true)
       }
+      if (!options.getRowKey) {
+        const index = getFlatIndex(rows)
+        if (index.usable) {
+          const entry = index.get(key)
+          if (!entry) return false
+          return commit(removeAt(rows, entry.index), reasoned(commitOptions, 'remove'), true)
+        }
+      }
       const index = rows.findIndex((row, rowIndex) => sameGridRowKey(keyOf(row, rowIndex), key))
       if (index < 0) return false
       return commit(
@@ -318,21 +338,8 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         })
         return removed
       }
-      const removedIndexes = new Set<number>()
-      const removedKeys: GridRowKey[] = []
-      // Resolve every key against the same pre-transaction snapshot. This is
-      // important for index-derived getRowKey functions: removing an earlier
-      // row must not renumber the later row before its requested key is
-      // resolved. Duplicate keys still remove one matching row at a time.
-      for (const key of keys) {
-        const index = current.findIndex(
-          (row, rowIndex) =>
-            !removedIndexes.has(rowIndex) && sameGridRowKey(keyOf(row, rowIndex), key),
-        )
-        if (index < 0) continue
-        removedIndexes.add(index)
-        removedKeys.push(key)
-      }
+      const indexed = !options.getRowKey ? getFlatIndex(current) : undefined
+      const { removedIndexes, removedKeys } = resolveFlatRowRemovals(current, keys, keyOf, indexed)
       if (removedKeys.length === 0) return []
       const next = current.filter((_, index) => !removedIndexes.has(index))
       if (!commit(next, reasoned(commitOptions, 'remove'), true)) return []
@@ -345,6 +352,14 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         const result = updateTreeRows(rows, key, patch, treeOptions)
         if (!result.matched || result.blocked || !result.changed) return false
         return commit(result.rows, reasoned(commitOptions, 'edit'), true)
+      }
+      if (!options.getRowKey) {
+        const index = getFlatIndex(rows)
+        if (index.usable) {
+          const entry = index.get(key)
+          if (!entry) return false
+          return commit(updateAt(rows, entry.index, patch), reasoned(commitOptions, 'edit'), true)
+        }
       }
       const index = rows.findIndex((row, rowIndex) => sameGridRowKey(keyOf(row, rowIndex), key))
       if (index < 0) return false

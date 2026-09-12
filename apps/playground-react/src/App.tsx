@@ -17,6 +17,8 @@ import { skinEngine } from './demo-skins'
 import { SkinsShowcase } from './sections/SkinsShowcase'
 import { DisplayShowcase } from './sections/DisplayShowcase'
 import { FormShowcase } from './sections/FormShowcase'
+import { TransferShowcase } from './sections/TransferShowcase'
+import { TreeShowcase } from './sections/TreeShowcase'
 import { DatesShowcase } from './sections/DatesShowcase'
 import { CompositeShowcase } from './sections/CompositeShowcase'
 import { OverlayShowcase } from './sections/OverlayShowcase'
@@ -52,6 +54,8 @@ const sections: SectionEntry[] = [
   },
   { id: 'display', label: 'Display', group: 'Primitives', component: DisplayShowcase },
   { id: 'form', label: 'Form', group: 'Primitives', component: FormShowcase },
+  { id: 'transfer', label: 'Transfer', group: 'Primitives', component: TransferShowcase },
+  { id: 'tree', label: 'Tree', group: 'Components', component: TreeShowcase },
   { id: 'dates', label: 'Dates & Time', group: 'Primitives', component: DatesShowcase },
   { id: 'composite', label: 'Composite', group: 'Components', component: CompositeShowcase },
   { id: 'overlay', label: 'Overlays', group: 'Components', component: OverlayShowcase },

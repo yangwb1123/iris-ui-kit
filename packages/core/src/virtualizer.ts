@@ -54,6 +54,8 @@ export interface VirtualizerState {
   endIndex: number
 }
 
+export type VirtualizerEstimate = number | ((index: number) => number)
+
 export interface VirtualizerConfig {
   /** Number of items. */
   count: number
@@ -61,7 +63,7 @@ export interface VirtualizerConfig {
    * Estimated px size for an item not yet measured — a constant (fixed-ish rows)
    * or a per-index function. A {@link Virtualizer.measure} call overrides it.
    */
-  estimateSize: number | ((index: number) => number)
+  estimateSize: VirtualizerEstimate
   /** Visible viewport size in px. Default `0` (set later via setViewportSize). */
   viewportSize?: number
   /** Initial scroll offset in px. Default `0`. */
@@ -94,6 +96,12 @@ export interface Virtualizer {
   setViewportSize(size: number): void
   /** Update the number of overscan items rendered on either side. */
   setBuffer(buffer: number): void
+  /**
+   * Update the estimate for unmeasured items without dropping measurements.
+   * A real measurement remains authoritative until `remeasure()` is called.
+   * When `fixedSize` is supplied, both sizing modes commit atomically.
+   */
+  setEstimateSize(estimate: VirtualizerEstimate, fixedSize?: number | null): void
   /** Switch between the fixed closed-form and variable offset-tree range paths. */
   setFixedSize(size: number | null): void
   /**
@@ -148,8 +156,11 @@ interface VirtualizerRuntime {
   fixedSize: number | null
   hasExplicitKey: boolean
   keyOf: (index: number) => string | number
+  estimateSource: VirtualizerEstimate
   estimate: (index: number) => number
   measured: Map<string | number, number>
+  /** Measured keys whose size cannot use the fixed-size range shortcut. */
+  fixedSizeDivergentKeys: Set<string | number>
   tree: SizeTree
   store: Store<VirtualizerState>
   computeWindow(): VirtualizerState
@@ -159,6 +170,15 @@ interface VirtualizerRuntime {
 
 function finiteNonNegative(value: number | undefined, fallback = 0): number {
   return value !== undefined && Number.isFinite(value) ? Math.max(0, value) : fallback
+}
+
+function isDevelopmentEnvironment(): boolean {
+  const processLike = (
+    globalThis as typeof globalThis & {
+      process?: { env?: { NODE_ENV?: string } }
+    }
+  ).process
+  return processLike?.env?.NODE_ENV === 'development'
 }
 
 // The size tree owns two JS arrays, so a merely safe integer can still cause a
@@ -222,6 +242,19 @@ function sameVirtualizerState(a: VirtualizerState, b: VirtualizerState): boolean
   return true
 }
 
+function rebuildFixedSizeDivergence(runtime: VirtualizerRuntime): void {
+  runtime.fixedSizeDivergentKeys.clear()
+  const fixedSize = runtime.fixedSize
+  if (fixedSize === null) return
+  for (let index = 0; index < runtime.count; index++) {
+    const key = runtime.keyOf(index)
+    const measuredSize = runtime.measured.get(key)
+    if (measuredSize !== undefined && measuredSize !== fixedSize) {
+      runtime.fixedSizeDivergentKeys.add(key)
+    }
+  }
+}
+
 function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState {
   const { count, tree, viewportSize, scrollOffset, buffer, fixedSize, keyOf } = runtime
   if (count <= 0) return { items: [], offsetBefore: 0, totalSize: 0, startIndex: 0, endIndex: -1 }
@@ -230,7 +263,9 @@ function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState
   const top = Math.max(0, Math.min(scrollOffset, maxScroll))
   let startIndex: number
   let endIndex: number
-  if (fixedSize !== null) {
+  // Numeric fixed arithmetic is safe only while all measured rows still match
+  // it; after a divergent measurement, the offset tree is authoritative.
+  if (fixedSize !== null && runtime.fixedSizeDivergentKeys.size === 0) {
     const size = Math.max(1, fixedSize)
     const first = Math.min(Math.floor(top / size), count - 1)
     const visibleCount = fixedSize <= 0 ? 0 : Math.ceil((top - first * size + viewportSize) / size)
@@ -260,26 +295,23 @@ function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime
   const count = normalizeCount(config.count)
   const keyOf = config.getItemKey ?? ((index: number) => index)
   const hasExplicitKey = config.getItemKey !== undefined
-  if (process.env.NODE_ENV === 'development' && !hasExplicitKey && count > 0) {
+  if (isDevelopmentEnvironment() && !hasExplicitKey && count > 0) {
     console.warn(
       '[iris-ui] createVirtualizer: no getItemKey provided — using index as key. ' +
         'Measured sizes will map to wrong items when data is inserted or deleted. ' +
         'Provide a stable getItemKey for dynamic data lists.',
     )
   }
-  const estimate =
-    typeof config.estimateSize === 'function'
-      ? config.estimateSize
-      : (_index: number) => config.estimateSize as number
   const measured = new Map<string | number, number>()
   const runtime = {} as VirtualizerRuntime
   runtime.count = count
+  runtime.estimateSource = config.estimateSize
+  const estimate = config.estimateSize
+  runtime.estimate = (index) =>
+    normalizeItemSize(typeof estimate === 'function' ? estimate(index) : estimate, runtime.count)
   const tree = createSizeTree(count, (index) => {
     const measuredSize = measured.get(keyOf(index))
-    return normalizeItemSize(
-      measuredSize !== undefined ? measuredSize : estimate(index),
-      runtime.count,
-    )
+    return measuredSize !== undefined ? measuredSize : runtime.estimate(index)
   })
   runtime.viewportSize = finiteNonNegative(config.viewportSize)
   runtime.scrollOffset = finiteNonNegative(config.scrollOffset)
@@ -287,12 +319,18 @@ function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime
   runtime.fixedSize = normalizeFixedSize(config.fixedSize)
   runtime.hasExplicitKey = hasExplicitKey
   runtime.keyOf = keyOf
-  runtime.estimate = (index) => normalizeItemSize(estimate(index), runtime.count)
   runtime.measured = measured
+  runtime.fixedSizeDivergentKeys = new Set()
   runtime.tree = tree
   runtime.computeWindow = () => computeVirtualizerWindow(runtime)
   runtime.store = createStore(runtime.computeWindow())
-  runtime.sync = () => runtime.store.setState(runtime.computeWindow())
+  runtime.sync = () => {
+    const next = runtime.computeWindow()
+    // Rebuilding estimates or re-seating keyed measurements is allowed to be
+    // idempotent. Match TanStack's change notification discipline and avoid a
+    // framework update when the projected window is byte-for-byte equivalent.
+    if (!sameVirtualizerState(runtime.store.getState(), next)) runtime.store.setState(next)
+  }
   runtime.clampScroll = (offset) => {
     const safeOffset = finiteNonNegative(offset)
     return Math.min(safeOffset, Math.max(0, runtime.tree.total() - runtime.viewportSize))
@@ -322,16 +360,49 @@ function setVirtualizerBuffer(runtime: VirtualizerRuntime, buffer: number): void
   runtime.sync()
 }
 
+function setVirtualizerEstimateSize(
+  runtime: VirtualizerRuntime,
+  estimate: VirtualizerEstimate,
+  fixedSize?: number | null,
+): void {
+  // A function may close over changing application state even when its
+  // identity is stable, so function sources intentionally rebuild the
+  // unmeasured portion. The measured map is retained in either case.
+  const estimateChanged =
+    typeof estimate === 'function' || !Object.is(estimate, runtime.estimateSource)
+  const nextFixedSize = fixedSize === undefined ? runtime.fixedSize : normalizeFixedSize(fixedSize)
+  const fixedSizeChanged = nextFixedSize !== runtime.fixedSize
+  if (!estimateChanged && !fixedSizeChanged) return
+
+  // Update every source used by computeWindow before the single sync. Grid
+  // bridges pass the derived fixed size here so no subscriber can observe a
+  // tree rebuilt with the previous fixed-size range mode.
+  if (estimateChanged) {
+    runtime.estimateSource = estimate
+    runtime.estimate = (index) =>
+      normalizeItemSize(typeof estimate === 'function' ? estimate(index) : estimate, runtime.count)
+    runtime.tree.reset(runtime.count)
+  }
+  if (fixedSizeChanged) {
+    runtime.fixedSize = nextFixedSize
+    rebuildFixedSizeDivergence(runtime)
+  }
+  runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
+  runtime.sync()
+}
+
 function setVirtualizerFixedSize(runtime: VirtualizerRuntime, size: number | null): void {
   const next = normalizeFixedSize(size)
   if (next === runtime.fixedSize) return
   runtime.fixedSize = next
+  rebuildFixedSizeDivergence(runtime)
   runtime.sync()
 }
 
 function setVirtualizerCount(runtime: VirtualizerRuntime, next: number): void {
   runtime.count = normalizeCount(next)
   runtime.tree.reset(runtime.count)
+  rebuildFixedSizeDivergence(runtime)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
 }
@@ -339,6 +410,7 @@ function setVirtualizerCount(runtime: VirtualizerRuntime, next: number): void {
 function replaceVirtualizerData(runtime: VirtualizerRuntime, next: number): void {
   runtime.count = normalizeCount(next)
   runtime.measured.clear()
+  runtime.fixedSizeDivergentKeys.clear()
   runtime.tree.reset(runtime.count)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
@@ -348,7 +420,13 @@ function measureVirtualizerItem(runtime: VirtualizerRuntime, index: number, size
   const safeIndex = normalizeIndex(index)
   if (safeIndex < 0 || safeIndex >= runtime.count || !Number.isFinite(size)) return
   const next = normalizeItemSize(size, runtime.count)
-  runtime.measured.set(runtime.keyOf(safeIndex), next)
+  const key = runtime.keyOf(safeIndex)
+  runtime.measured.set(key, next)
+  if (runtime.fixedSize !== null && next !== runtime.fixedSize) {
+    runtime.fixedSizeDivergentKeys.add(key)
+  } else {
+    runtime.fixedSizeDivergentKeys.delete(key)
+  }
   if (!runtime.tree.set(safeIndex, next)) return
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
@@ -356,6 +434,7 @@ function measureVirtualizerItem(runtime: VirtualizerRuntime, index: number, size
 
 function remeasureVirtualizer(runtime: VirtualizerRuntime): void {
   runtime.measured.clear()
+  runtime.fixedSizeDivergentKeys.clear()
   runtime.tree.reset(runtime.count)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
@@ -399,6 +478,7 @@ function createVirtualizerViewportApi(
   | 'setScroll'
   | 'setViewportSize'
   | 'setBuffer'
+  | 'setEstimateSize'
   | 'setFixedSize'
   | 'scrollToIndex'
   | 'scrollToOffset'
@@ -429,6 +509,8 @@ function createVirtualizerViewportApi(
     setScroll: (offset) => setVirtualizerScroll(runtime, offset),
     setViewportSize: (size) => setVirtualizerViewport(runtime, size),
     setBuffer: (buffer) => setVirtualizerBuffer(runtime, buffer),
+    setEstimateSize: (estimate, fixedSize) =>
+      setVirtualizerEstimateSize(runtime, estimate, fixedSize),
     setFixedSize: (size) => setVirtualizerFixedSize(runtime, size),
     scrollToIndex: (index, align = 'start') => scrollVirtualizerToIndex(runtime, index, align),
     scrollToOffset: (offset) => scrollVirtualizerToOffset(runtime, offset),
@@ -439,17 +521,16 @@ function createVirtualizerViewportApi(
 function createVirtualizerDataApi(
   runtime: VirtualizerRuntime,
 ): Pick<Virtualizer, 'setCount' | 'replaceData' | 'measure' | 'remeasure' | 'detectCacheSkew'> {
-  const diagnostics =
-    process.env.NODE_ENV === 'development'
-      ? {
-          detectCacheSkew: (): string | null =>
-            !runtime.hasExplicitKey && runtime.count > 0
-              ? 'Virtualizer is using index-as-key (no getItemKey provided). ' +
-                'Item insertion/deletion will cause measured sizes to map to wrong positions. ' +
-                'Provide a stable getItemKey for dynamic data.'
-              : null,
-        }
-      : {}
+  const diagnostics = isDevelopmentEnvironment()
+    ? {
+        detectCacheSkew: (): string | null =>
+          !runtime.hasExplicitKey && runtime.count > 0
+            ? 'Virtualizer is using index-as-key (no getItemKey provided). ' +
+              'Item insertion/deletion will cause measured sizes to map to wrong positions. ' +
+              'Provide a stable getItemKey for dynamic data.'
+            : null,
+      }
+    : {}
   return {
     setCount: (count) => setVirtualizerCount(runtime, count),
     replaceData: (count) => replaceVirtualizerData(runtime, count),

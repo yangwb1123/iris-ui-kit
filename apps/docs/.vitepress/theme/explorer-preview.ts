@@ -1,10 +1,8 @@
 // Live-preview wiring for the docs Component Explorer.
 //
-// SCOPING (intentional): full live preview in the React / Solid / Svelte runtimes
-// inside VitePress is OUT OF SCOPE — island isolation (mounting three other
-// framework runtimes in a Vue/VitePress page) is heavy and brittle. VitePress is
-// Vue, so the LIVE preview renders the real `@iris-ui-kit/vue` component; the
-// 4-framework CODE TABS (see explorer-codegen.ts) carry the parity story.
+// VitePress is Vue, so Vue previews render inline. React / Solid / Svelte previews
+// use the existing client-only islands, while the 4-framework CODE TABS (see
+// explorer-codegen.ts) carry the copyable parity snippets.
 //
 // This file declares which components are live-preview-wired and, for each, which
 // manifest props are surfaced as controls plus how a manifest prop name maps to
@@ -33,6 +31,8 @@ export interface PreviewSpec {
   reactBind?: Record<string, string>
   solidBind?: Record<string, string>
   svelteBind?: Record<string, string>
+  /** Preview-only control seeds, applied before manifest defaults. */
+  initialValues?: Record<string, unknown>
   /** Default child text rendered in the component's default slot, if it takes one. */
   childText?: string
   /** Whether the component accepts/needs default-slot child text (a control for it). */
@@ -45,6 +45,16 @@ export const PREVIEW_SPECS: Record<string, PreviewSpec> = {
   IrisButton: {
     controls: ['variant', 'size', 'disabled', 'loading'],
     childText: 'Button',
+    hasChildText: true,
+  },
+  IrisCopyButton: {
+    controls: ['text', 'copiedLabel', 'timeout', 'disabled', 'size'],
+    initialValues: {
+      text: 'Iris docs copy-button sample',
+      copiedLabel: 'Copied!',
+      timeout: 300,
+    },
+    childText: 'Copy sample',
     hasChildText: true,
   },
   IrisBadge: {
@@ -83,6 +93,22 @@ export const PREVIEW_SPECS: Record<string, PreviewSpec> = {
   },
   IrisProgress: {
     controls: ['value', 'max', 'indeterminate', 'tone', 'size'],
+  },
+  IrisRating: {
+    controls: ['value', 'max', 'allowHalf', 'readonly', 'disabled', 'clearable', 'size', 'invalid'],
+    vueBind: { value: 'modelValue' },
+    initialValues: {
+      value: 2.5,
+      allowHalf: true,
+    },
+  },
+  IrisProgressCircle: {
+    controls: ['value', 'max', 'size', 'strokeWidth', 'status', 'showLabel'],
+    initialValues: { value: 42 },
+  },
+  IrisGauge: {
+    controls: ['value', 'min', 'max', 'size', 'strokeWidth', 'status', 'showValue'],
+    initialValues: { value: 42 },
   },
 }
 

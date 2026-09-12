@@ -113,7 +113,7 @@ export const IrisVirtualScroll = defineComponent({
 
     // One stateful controller, rebuilt only when count or sizing MODE changes.
     // Sizing CHANGES within a mode (a new user fn / a measurement) are pushed via
-    // remeasure below — recreating on every change would drop scroll state.
+    // the estimate update below — recreating on every change would drop scroll state.
     // `estimateSize` / `getItemKey` read live `props`, so a fresh closure /
     // estimate / keyOf never busts this.
     const buildVirtualizer = (): Virtualizer =>
@@ -151,7 +151,7 @@ export const IrisVirtualScroll = defineComponent({
 
     // Rebuild only on count / buffer / sizing-mode change (mirrors the React memo
     // key `[items.length, buffer, variable]`). Sizing changes within a mode go
-    // through remeasure below, preserving scroll + cache.
+    // through the estimate update below, preserving scroll + cache.
     watch([() => props.items.length, () => props.buffer, variable], () => wire(buildVirtualizer()))
 
     // Re-seat keyed measurements when the data array changes, including a
@@ -163,13 +163,12 @@ export const IrisVirtualScroll = defineComponent({
     )
 
     // Push sizing configuration changes (new user fn or estimate change)
-    // into the controller without recreating it: update the fixed/variable path,
-    // then rebuild the tree from the current `estimateSize`.
+    // into the controller without recreating it. Measured rows remain
+    // authoritative until the caller explicitly invokes `remeasure()`.
     watch(
       [() => props.itemHeight, () => props.estimatedItemHeight],
       () => {
-        virtualizer.value.setFixedSize(variable.value ? null : fixedHeight.value)
-        virtualizer.value.remeasure()
+        virtualizer.value.setEstimateSize(estimateSize, variable.value ? null : fixedHeight.value)
       },
       { flush: 'post' },
     )

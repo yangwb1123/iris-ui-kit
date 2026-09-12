@@ -1,3 +1,5 @@
+import * as core from '@iris-ui-kit/core'
+import type { Virtualizer } from '@iris-ui-kit/core'
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { tick } from 'svelte'
@@ -33,6 +35,68 @@ describe('IrisVirtualScroll', () => {
     })
     const renderedItems = container.querySelectorAll('[data-iris-virtual-item]')
     expect(renderedItems.length).toBeLessThan(items.length)
+  })
+
+  it('updates a reused numeric virtualizer in one final range notification', async () => {
+    const created: Virtualizer[] = []
+    const createVirtualizer = core.createVirtualizer
+    const create = vi.spyOn(core, 'createVirtualizer').mockImplementation((config) => {
+      const model = createVirtualizer(config)
+      created.push(model)
+      return model
+    })
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100)
+    const onRangeChange = vi.fn()
+    const rows = Array.from({ length: 100 }, (_, index) => index)
+
+    try {
+      const view = render(IrisVirtualScroll, {
+        props: {
+          items: rows,
+          itemHeight: 20,
+          height: 100,
+          buffer: 0,
+          onRangeChange,
+        },
+      })
+      await tick()
+      const model = created.at(-1)!
+      const states: Array<ReturnType<Virtualizer['getState']>> = []
+      const unsubscribe = model.subscribe((state) => states.push(state))
+      const setEstimateSize = vi.spyOn(model, 'setEstimateSize')
+      const setFixedSize = vi.spyOn(model, 'setFixedSize')
+      onRangeChange.mockClear()
+
+      await view.rerender({
+        items: rows,
+        itemHeight: 30,
+        height: 100,
+        buffer: 0,
+        onRangeChange,
+      })
+      await tick()
+
+      expect(model).toBe(created.at(-1))
+      expect(setEstimateSize).toHaveBeenCalledWith(expect.any(Function), 30)
+      expect(setFixedSize).not.toHaveBeenCalled()
+      expect(states).toHaveLength(1)
+      expect(states[0]).toMatchObject({ startIndex: 0, endIndex: 3, totalSize: 3000 })
+      expect(states).not.toContainEqual(expect.objectContaining({ endIndex: 4, totalSize: 3000 }))
+      expect(onRangeChange).toHaveBeenCalledOnce()
+      expect(onRangeChange).toHaveBeenCalledWith({ start: 0, end: 4 })
+      expect(
+        [...view.container.querySelectorAll('[data-iris-virtual-index]')].map((element) =>
+          Number(element.getAttribute('data-iris-virtual-index')),
+        ),
+      ).toEqual([0, 1, 2, 3])
+      expect(
+        (view.container.querySelector('[data-iris-virtual-spacer]') as HTMLElement).style.height,
+      ).toBe('3000px')
+      unsubscribe()
+    } finally {
+      clientHeight.mockRestore()
+      create.mockRestore()
+    }
   })
 
   it('keeps both fixed rows mounted when scrolling through a row boundary', async () => {

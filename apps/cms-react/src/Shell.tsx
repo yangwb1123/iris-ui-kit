@@ -40,6 +40,8 @@ import { RealtimePage } from './pages/RealtimePage'
 import { ProTablePage } from './pages/ProTablePage'
 import { MarkdownPage } from './pages/MarkdownPage'
 import { VxeGridExamplePage } from './pages/VxeGridExamplePage'
+import { NotificationsPage } from './pages/NotificationsPage'
+import { TreeExamplePage } from './pages/TreeExamplePage'
 
 const pages: Record<string, ComponentType> = {
   dashboard: DashboardPage,
@@ -50,6 +52,8 @@ const pages: Record<string, ComponentType> = {
   'pro-table': ProTablePage,
   documentation: MarkdownPage,
   'vxe-example': VxeGridExamplePage,
+  notifications: NotificationsPage,
+  'tree-example': TreeExamplePage,
 }
 
 function PageHost({ routeKey }: { routeKey: string }) {

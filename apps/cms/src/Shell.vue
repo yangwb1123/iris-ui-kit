@@ -63,6 +63,10 @@ import SettingsPage from './pages/SettingsPage.vue'
 import WorkspacePage from './pages/WorkspacePage.vue'
 import FormBuilderPage from './pages/FormBuilderPage.vue'
 import VxeGridExamplePage from './pages/VxeGridExamplePage.vue'
+import TransferPage from './pages/TransferPage.vue'
+import TreeExamplePage from './pages/TreeExamplePage.vue'
+import NotificationsPage from './pages/NotificationsPage.vue'
+import CopyButtonPage from './pages/CopyButtonPage.vue'
 
 const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
 const t = useTabsNav(tabsNav)
@@ -90,6 +94,10 @@ const pages: Record<string, unknown> = {
   settings: SettingsPage,
   'form-builder': FormBuilderPage,
   'vxe-example': VxeGridExamplePage,
+  transfer: TransferPage,
+  'tree-example': TreeExamplePage,
+  notifications: NotificationsPage,
+  'copy-button': CopyButtonPage,
 }
 const pageComp = (key: string): unknown =>
   isCmsWorkspaceRoute(key) ? WorkspacePage : (pages[key] ?? DashboardPage)

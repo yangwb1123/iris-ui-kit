@@ -97,19 +97,28 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
   )
   const leavingSortControlled = wasSortControlled.current && !sortControlled
   const leavingMultiSortControlled = wasMultiSortControlled.current && !multiControlled
+  const enteringSortControlled = sortControlled && !wasSortControlled.current
+  const enteringMultiSortControlled = multiControlled && !wasMultiSortControlled.current
 
   // Capture only genuine uncontrolled state. A rejected controlled proposal may
   // be ahead of the prop in the model, so it must not become the handoff value.
+  if (enteringSortControlled || enteringMultiSortControlled) {
+    // Read once before either controlled effect can synchronize its channel.
+    const liveState = model.store.getState()
+    if (enteringSortControlled) {
+      uncontrolledSort.current = cloneSort(liveState.sort)
+      hasUncontrolledSort.current = true
+    }
+    if (enteringMultiSortControlled) {
+      uncontrolledMultiSort.current = cloneSorts(liveState.multiSort)
+      hasUncontrolledMultiSort.current = true
+    }
+  }
   if (!sortControlled && !leavingSortControlled) {
     uncontrolledSort.current = cloneSort(internalState.sort)
     hasUncontrolledSort.current = true
   }
   if (!multiControlled && !leavingMultiSortControlled) {
-    uncontrolledMultiSort.current = cloneSorts(internalState.multiSort)
-    hasUncontrolledMultiSort.current = true
-  }
-  // Capture a model update that was batched with the transition into control.
-  if (multiControlled && !wasMultiSortControlled.current) {
     uncontrolledMultiSort.current = cloneSorts(internalState.multiSort)
     hasUncontrolledMultiSort.current = true
   }

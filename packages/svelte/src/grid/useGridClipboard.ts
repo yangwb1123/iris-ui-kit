@@ -43,9 +43,14 @@ export function useGridClipboard<Row extends Record<string, unknown> = Record<st
         getColumns: () => options.getColumns(),
         rowKeyField: options.rowKeyField,
         overflowRows: (context) => options.overflowRows?.(context),
-        resolveValue: (row, column) =>
-          options.resolveValue?.(row, column) ?? defaultValue(row, column),
-        parseValue: (text, row, column) => options.parseValue?.(text, row, column) ?? text,
+        resolveValue: (row, column) => {
+          const resolve = options.resolveValue
+          return resolve ? resolve(row, column) : defaultValue(row, column)
+        },
+        parseValue: (text, row, column) => {
+          const parse = options.parseValue
+          return parse ? parse(text, row, column) : text
+        },
         setValue: (row, column, value) =>
           options.setValue?.(row, column, value) ?? defaultSetValue(row, column, value),
         isCellEditable: (row, column, rowIndex, columnIndex) =>

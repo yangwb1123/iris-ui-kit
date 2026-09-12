@@ -4,17 +4,20 @@ import { describe, expect, it, vi } from 'vitest'
 import { get, type Readable } from 'svelte/store'
 import {
   GRID_COLUMNS_CHANGE_EVENT,
+  GRID_VIRTUAL_RANGE_CHANGE_EVENT,
   type GridColumnsChange,
   type GridCore,
   type GridFilterValues,
   type GridFilteringModel,
   type GridSortingModel,
   type GridVirtualModel,
+  type GridVirtualRangeChange,
   type VirtualizerState,
   type SelectionModel,
   type SortState,
 } from '@iris-ui-kit/core/grid'
 import GridBridgeHarness from './GridBridgeHarness.svelte'
+import GridControlledBatchHandoffHarness from './GridControlledBatchHandoffHarness.svelte'
 import GridColumnsBridgeHarness from './GridColumnsBridgeHarness.svelte'
 import GridSelectionControlledHarness from './GridSelectionControlledHarness.svelte'
 import GridVirtualBridgeHarness from './GridVirtualBridgeHarness.svelte'
@@ -375,6 +378,97 @@ describe('Svelte Grid Core bridge', () => {
     expect(get(sort)).toEqual({ key: 'name', direction: 'asc' })
     expect(sortingModel.get().sort).toEqual({ key: 'name', direction: 'asc' })
     expectSilent()
+    view.unmount()
+  })
+
+  it('preserves a batched selection update across controlled handoff release', async () => {
+    let bridge!: {
+      selection: { model: SelectionModel<string>; value: Readable<string[]> }
+    }
+    const onChange = vi.fn()
+    const onSelectionEvent = vi.fn()
+    const view = render(GridControlledBatchHandoffHarness, {
+      props: {
+        onReady: (value) => (bridge = value),
+        onSelectionChange: onChange,
+        onSelectionEvent,
+      },
+    })
+    await tick()
+
+    expect(get(bridge.selection.value)).toEqual(['a'])
+    expect(bridge.selection.model.get()).toEqual(['a'])
+
+    await fireEvent.click(view.getByTestId('handoff-selection'))
+    await tick()
+
+    expect(get(bridge.selection.value)).toEqual(['c'])
+    expect(bridge.selection.model.get()).toEqual(['c'])
+    expect(view.getByTestId('selection').textContent).toBe('["c"]')
+    const countsBeforeRelease = {
+      onChange: onChange.mock.calls.length,
+      selectionEvent: onSelectionEvent.mock.calls.length,
+    }
+    expect(onChange).toHaveBeenCalledWith(['b'])
+    expect(onSelectionEvent).toHaveBeenCalledWith({ selectedKeys: ['b'] })
+
+    await fireEvent.click(view.getByTestId('release-selection'))
+    await tick()
+
+    expect(get(bridge.selection.value)).toEqual(['b'])
+    expect(bridge.selection.model.get()).toEqual(['b'])
+    expect(view.getByTestId('selection').textContent).toBe('["b"]')
+    expect({
+      onChange: onChange.mock.calls.length,
+      selectionEvent: onSelectionEvent.mock.calls.length,
+    }).toEqual(countsBeforeRelease)
+    view.unmount()
+  })
+
+  it('preserves a batched sort update across controlled handoff release', async () => {
+    let bridge!: {
+      sorting: { model: GridSortingModel; value: Readable<SortState | null> }
+    }
+    const onSortChange = vi.fn()
+    const onSortingEvent = vi.fn()
+    const view = render(GridControlledBatchHandoffHarness, {
+      props: {
+        onReady: (value) => (bridge = value),
+        onSortChange,
+        onSortingEvent,
+      },
+    })
+    await tick()
+
+    expect(get(bridge.sorting.value)).toEqual({ key: 'name', direction: 'asc' })
+    expect(bridge.sorting.model.get().sort).toEqual({ key: 'name', direction: 'asc' })
+
+    await fireEvent.click(view.getByTestId('handoff-sort'))
+    await tick()
+
+    expect(get(bridge.sorting.value)).toEqual({ key: 'status', direction: 'asc' })
+    expect(bridge.sorting.model.get().sort).toEqual({ key: 'status', direction: 'asc' })
+    expect(view.getByTestId('sort').textContent).toBe('{"key":"status","direction":"asc"}')
+    const countsBeforeRelease = {
+      onSortChange: onSortChange.mock.calls.length,
+      sortingEvent: onSortingEvent.mock.calls.length,
+    }
+    expect(onSortChange).toHaveBeenCalledWith({ key: 'age', direction: 'desc' })
+    expect(onSortingEvent).toHaveBeenCalledWith({
+      mode: 'single',
+      sort: { key: 'age', direction: 'desc' },
+    })
+
+    await fireEvent.click(view.getByTestId('release-sort'))
+    await tick()
+
+    expect(get(bridge.sorting.value)).toEqual({ key: 'age', direction: 'desc' })
+    expect(bridge.sorting.model.get().sort).toEqual({ key: 'age', direction: 'desc' })
+    expect(view.getByTestId('sort').textContent).toBe('{"key":"age","direction":"desc"}')
+    expect({
+      onSortChange: onSortChange.mock.calls.length,
+      sortingEvent: onSortingEvent.mock.calls.length,
+    }).toEqual(countsBeforeRelease)
     view.unmount()
   })
 
@@ -1123,6 +1217,91 @@ describe('Svelte Grid Core bridge', () => {
     expect(
       view.container.querySelector('[data-model-identity]')?.getAttribute('data-model-identity'),
     ).toBe('true')
+  })
+
+  it('re-seats keyed measurements when getItemKey changes at the same count', async () => {
+    type Item = { id: string }
+    type KeyOf = (item: Item, index: number) => string
+    const items: Item[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+    const oldKey: KeyOf = (item) => `old-${item.id}`
+    const newKey: KeyOf = (item) => `new-${item.id}`
+    let model!: GridVirtualModel
+    const view = render(GridVirtualBridgeHarness, {
+      props: {
+        items,
+        estimateSize: 20,
+        viewportSize: 100,
+        getItemKey: oldKey,
+        onModel: (value) => (model = value),
+      },
+    })
+    await tick()
+    const initialModel = model
+    const setCount = vi.spyOn(initialModel, 'setCount')
+    initialModel.measure(0, 50)
+    expect(setCount).not.toHaveBeenCalled()
+
+    expect(initialModel.getState().items).toEqual([
+      { index: 0, key: 'old-a', start: 0, size: 50 },
+      { index: 1, key: 'old-b', start: 50, size: 20 },
+      { index: 2, key: 'old-c', start: 70, size: 20 },
+    ])
+    expect(initialModel.totalSize()).toBe(90)
+
+    await view.rerender({ getItemKey: newKey })
+    await tick()
+
+    expect(setCount).toHaveBeenCalledWith(3)
+    expect(model).toBe(initialModel)
+    expect(initialModel.getState().items).toEqual([
+      { index: 0, key: 'new-a', start: 0, size: 20 },
+      { index: 1, key: 'new-b', start: 20, size: 20 },
+      { index: 2, key: 'new-c', start: 40, size: 20 },
+    ])
+    expect(initialModel.totalSize()).toBe(60)
+    view.unmount()
+  })
+
+  it('commits numeric estimate changes as one final virtual window', async () => {
+    const items = Array.from({ length: 100 }, (_, id) => ({ id: String(id) }))
+    const rangeChanges: GridVirtualRangeChange[] = []
+    const eventChanges: GridVirtualRangeChange[] = []
+    let core!: GridCore<{ id: string }>
+    let model!: GridVirtualModel
+    const view = render(GridVirtualBridgeHarness, {
+      props: {
+        items,
+        estimateSize: 20,
+        viewportSize: 100,
+        buffer: 0,
+        onRangeChange: (change) => rangeChanges.push(change),
+        onCore: (value) => (core = value),
+        onModel: (value) => (model = value),
+      },
+    })
+    await tick()
+    const initialModel = model
+    core.on<GridVirtualRangeChange>(GRID_VIRTUAL_RANGE_CHANGE_EVENT, (change) =>
+      eventChanges.push(change),
+    )
+
+    await view.rerender({ estimateSize: 30 })
+    await tick()
+
+    expect(model).toBe(initialModel)
+    expect(rangeChanges).toEqual([{ start: 0, end: 4, totalSize: 3000 }])
+    expect(eventChanges).toEqual([{ start: 0, end: 4, totalSize: 3000 }])
+    expect(initialModel.getState()).toMatchObject({
+      startIndex: 0,
+      endIndex: 3,
+      totalSize: 3000,
+    })
+    expect(initialModel.getState().items.map((item) => item.index)).toEqual([0, 1, 2, 3])
+    expect(rangeChanges.some((change) => change.end === 5 && change.totalSize === 3000)).toBe(false)
+    expect(JSON.parse(view.getByTestId('virtual-indexes').textContent ?? '[]')).toEqual([
+      0, 1, 2, 3,
+    ])
+    view.unmount()
   })
 
   it('syncs estimate, buffer, and scroll into the existing virtual model', async () => {

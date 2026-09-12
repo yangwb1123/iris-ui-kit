@@ -1,3 +1,5 @@
+import * as core from '@iris-ui-kit/core'
+import type { Virtualizer } from '@iris-ui-kit/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
@@ -202,6 +204,54 @@ describe('IrisVirtualScroll', () => {
     expect(rows[0]!.attributes('style')).toContain('height: 30px')
     expect(rows[1]!.attributes('style')).toContain('translateY(30px)')
     expect(rows[1]!.attributes('style')).toContain('height: 50px')
+  })
+
+  it('updates a reused numeric virtualizer in one final range notification', async () => {
+    const created: Virtualizer[] = []
+    const createVirtualizer = core.createVirtualizer
+    const create = vi.spyOn(core, 'createVirtualizer').mockImplementation((config) => {
+      const model = createVirtualizer(config)
+      created.push(model)
+      return model
+    })
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100)
+    const rows = Array.from({ length: 100 }, (_, index) => index)
+
+    try {
+      const wrapper = mount(IrisVirtualScroll, {
+        props: { items: rows, itemHeight: 20, height: 100, buffer: 0 },
+        slots: { item: ({ item }: { item: number }) => h('span', String(item)) },
+      })
+      await nextTick()
+      const model = created.at(-1)!
+      const states: Array<ReturnType<Virtualizer['getState']>> = []
+      const unsubscribe = model.subscribe((state) => states.push(state))
+      const setEstimateSize = vi.spyOn(model, 'setEstimateSize')
+      const setFixedSize = vi.spyOn(model, 'setFixedSize')
+
+      await wrapper.setProps({ itemHeight: 30 })
+      await nextTick()
+
+      expect(model).toBe(created.at(-1))
+      expect(setEstimateSize).toHaveBeenCalledWith(expect.any(Function), 30)
+      expect(setFixedSize).not.toHaveBeenCalled()
+      expect(states).toHaveLength(1)
+      expect(states[0]).toMatchObject({ startIndex: 0, endIndex: 3, totalSize: 3000 })
+      expect(states).not.toContainEqual(expect.objectContaining({ endIndex: 4, totalSize: 3000 }))
+      expect(wrapper.emitted('rangeChange')).toEqual([[{ start: 0, end: 4 }]])
+      expect(
+        wrapper
+          .findAll('[data-iris-virtual-index]')
+          .map((element) => Number(element.attributes('data-iris-virtual-index'))),
+      ).toEqual([0, 1, 2, 3])
+      expect(wrapper.find('[data-iris-virtual-spacer]').attributes('style')).toContain(
+        'height: 3000px',
+      )
+      unsubscribe()
+    } finally {
+      clientHeight.mockRestore()
+      create.mockRestore()
+    }
   })
 })
 

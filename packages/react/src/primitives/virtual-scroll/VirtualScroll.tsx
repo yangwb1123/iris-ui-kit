@@ -121,7 +121,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
 
   // One stateful controller, rebuilt only when count or sizing MODE changes.
   // Sizing CHANGES within a mode (a new user fn / a measurement) are pushed via
-  // remeasure below — recreating on every render would drop scroll state.
+  // the estimate update below — recreating on every render would drop scroll state.
   const internalVirtualizerRef = React.useRef<{
     model: Virtualizer
     count: number
@@ -165,16 +165,16 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   }, [virtualizer, items])
 
   // Push sizing configuration changes (new user fn or estimate change)
-  // into the controller without recreating it: update the fixed/variable path,
-  // then rebuild the tree from the current `estimateSize`.
+  // into the controller without recreating it. Like TanStack Virtual, a new
+  // estimate only affects unmeasured rows; real measurements remain authoritative
+  // until the caller explicitly invokes `remeasure()`.
   useIsomorphicLayoutEffect(() => {
-    if (providedVirtualizer === undefined) {
-      virtualizer.setFixedSize(variable ? null : fixedHeight)
-      virtualizer.remeasure()
-    } else if (variable) {
-      virtualizer.remeasure()
-    }
-  }, [virtualizer, providedVirtualizer, userFn, estimatedItemHeight, variable, fixedHeight])
+    // Both internal and supplied controllers receive the derived fixed-size
+    // mode in the same atomic update. This keeps a numeric itemHeight change
+    // from leaving a supplied controller on its previous range formula.
+    const fixedSize = variable ? null : fixedHeight
+    virtualizer.setEstimateSize(estimateSize, fixedSize)
+  }, [virtualizer, providedVirtualizer, estimateSize, variable, fixedHeight])
 
   // Drive the controller's scroll + viewport from local state so its window,
   // total size, and offsets reflect the live scroll position. Done in a layout

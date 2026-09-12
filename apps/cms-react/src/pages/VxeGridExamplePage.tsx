@@ -1,5 +1,13 @@
 import { useRef, useState, type MutableRefObject } from 'react'
-import { IrisTable, type IrisTableColumn, type IrisTableHandle } from '@iris-ui-kit/react'
+import {
+  downloadCsv,
+  IrisTable,
+  type IrisTableColumn,
+  type IrisTableColumnWidths,
+  type IrisTableHandle,
+  type IrisTableProps,
+  type IrisTableProxyQueryParams,
+} from '@iris-ui-kit/react'
 
 /**
  * The official vxe-grid "basic usage" example, implemented with IrisTable.
@@ -46,6 +54,131 @@ const columns: IrisTableColumn<GridRow>[] = [
   { key: 'sex', title: 'Sex' },
   { key: 'age', title: 'Age', sortable: true, align: 'right' },
   { key: 'address', title: 'Address' },
+]
+
+const controlledColumnWidthsColumns: IrisTableColumn[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'age', title: 'Age' },
+]
+
+const controlledColumnWidthsData: Array<Record<string, unknown>> = [
+  { id: '1', name: 'Charlie', age: 30 },
+  { id: '2', name: 'Alpha', age: 25 },
+  { id: '3', name: 'Bravo', age: 35 },
+]
+
+function ControlledColumnWidthsDemo() {
+  const [columnWidths, setColumnWidths] = useState<IrisTableColumnWidths>({ name: 200 })
+
+  return (
+    <section data-iris-vxe-section="controlled-column-widths">
+      <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+        受控列宽（Controlled column widths）
+      </h2>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          color: 'var(--iris-muted)',
+        }}
+      >
+        父组件持有完整列宽映射；聚焦 Name 列右侧手柄并使用方向键，表格会用新宽度重新渲染。
+      </p>
+      <IrisTable
+        bordered
+        resizableColumns
+        rowKey="id"
+        columns={controlledColumnWidthsColumns}
+        data={controlledColumnWidthsData}
+        columnWidths={columnWidths}
+        onColumnWidthsChange={(next) => setColumnWidths(next)}
+      />
+      <output
+        data-iris-vxe-column-widths-readout
+        aria-live="polite"
+        style={{
+          display: 'block',
+          marginTop: 12,
+          padding: '8px 12px',
+          border: '1px solid var(--iris-border)',
+          borderRadius: 'var(--iris-radius-md, 6px)',
+          color: 'var(--iris-muted)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+        }}
+      >
+        {JSON.stringify(columnWidths)}
+      </output>
+    </section>
+  )
+}
+
+interface GroupedSummaryRow extends Record<string, unknown> {
+  id: number
+  label: string
+  planned: number
+  actual: number
+}
+
+const groupedSummaryRows: GroupedSummaryRow[] = [
+  { id: 1, label: 'North', planned: 10, actual: 20 },
+  { id: 2, label: 'South', planned: 20, actual: 40 },
+]
+
+const groupedSummaryColumns: IrisTableColumn<GroupedSummaryRow>[] = [
+  { key: 'label', title: 'Team' },
+  {
+    key: 'metrics',
+    title: 'Metrics',
+    children: [
+      { key: 'planned', title: 'Planned', summary: 'sum' },
+      { key: 'actual', title: 'Actual', summary: 'sum' },
+    ],
+  },
+]
+
+interface FilterValuesRow extends Record<string, unknown> {
+  id: number
+  name: string
+  status: string
+}
+
+const filterValuesRows: FilterValuesRow[] = [
+  { id: 40001, name: 'Active row', status: 'active' },
+  { id: 40002, name: 'Paused row', status: 'paused' },
+  { id: 40003, name: 'Inactive row', status: 'inactive' },
+]
+
+const filterValuesColumns: IrisTableColumn<FilterValuesRow>[] = [
+  { key: 'name', title: 'Name' },
+  {
+    key: 'status',
+    title: 'Status',
+    filterable: true,
+    filterOptions: [
+      { value: 'active', label: 'Active' },
+      { value: 'paused', label: 'Paused' },
+    ],
+  },
+]
+
+type RetryProxyConfig = NonNullable<IrisTableProps<GridRow>['proxyConfig']>
+
+interface MaskedContactRow extends Record<string, unknown> {
+  id: number
+  name: string
+  phone: string
+  team: string
+}
+
+const maskedContactRows: MaskedContactRow[] = [
+  { id: 1, name: 'Alexandra', phone: '13812345678', team: 'Platform' },
+  { id: 2, name: 'Bob', phone: '13900001111', team: 'Design' },
+]
+
+const maskedContactColumns: IrisTableColumn<MaskedContactRow>[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'phone', title: 'Phone', mask: 'sensitive' },
+  { key: 'team', title: 'Team' },
 ]
 
 /** 官方行编辑示例（editConfig + editRules，click 触发 + 必填）。 */
@@ -115,6 +248,152 @@ function remoteQuery(params: {
   })
 }
 
+function RetryProxyDemo() {
+  const retryAttempt = useRef(0)
+  const retryQuery = (
+    _params: IrisTableProxyQueryParams,
+  ): Promise<{ rows: GridRow[]; total: number }> => {
+    const attempt = retryAttempt.current
+    retryAttempt.current += 1
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (attempt === 0) {
+          reject(new Error('Intentional proxy failure'))
+          return
+        }
+        resolve({
+          rows: [
+            {
+              id: 20001,
+              name: 'RetrySuccess',
+              role: 'Recovery',
+              sex: '—',
+              age: 1,
+              address: 'retry complete',
+            },
+          ],
+          total: 1,
+        })
+      }, 400)
+    })
+  }
+
+  const retryProxyConfig: RetryProxyConfig = {
+    query: retryQuery,
+    autoLoad: true,
+    pageSize: 10,
+  }
+
+  return (
+    <section>
+      <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+        代理错误与重试（Proxy error + retry）
+      </h2>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          color: 'var(--iris-muted)',
+        }}
+      >
+        首次请求固定延迟 400ms 后故意失败；点击内置 Retry 会再次请求；重试成功返回 1 条名为
+        RetrySuccess 的数据。
+      </p>
+      <IrisTable bordered rowKey="id" seq proxyConfig={retryProxyConfig} columns={columns} />
+    </section>
+  )
+}
+
+function CurrentRowColumnDemo() {
+  const [currentRowKey, setCurrentRowKey] = useState<string | number>(10001)
+  const [currentColumnKey, setCurrentColumnKey] = useState('name')
+
+  return (
+    <section data-iris-vxe-section="current-row-column">
+      <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+        受控当前行/列（Controlled current row/column）
+      </h2>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          color: 'var(--iris-muted)',
+        }}
+      >
+        点击数据行或列头会通过专用回调更新受控的当前行和当前列状态；两个高亮彼此独立。
+      </p>
+      <IrisTable
+        bordered
+        rowKey="id"
+        columns={columns}
+        data={tableData}
+        currentRowKey={currentRowKey}
+        currentColumnKey={currentColumnKey}
+        onCurrentRowChange={(key) => setCurrentRowKey(key)}
+        onCurrentColumnChange={(key) => setCurrentColumnKey(key)}
+      />
+      <div
+        data-iris-vxe-current-readout
+        aria-live="polite"
+        style={{
+          marginTop: 12,
+          padding: '8px 12px',
+          border: '1px solid var(--iris-border)',
+          borderRadius: 'var(--iris-radius-md, 6px)',
+          color: 'var(--iris-muted)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+        }}
+      >
+        currentRowKey: {currentRowKey}; currentColumnKey: {currentColumnKey}
+      </div>
+    </section>
+  )
+}
+
+function ControlledFilterValuesDemo() {
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({})
+
+  return (
+    <section data-iris-vxe-section="filter-values">
+      <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+        受控列筛选值（Controlled filter values + OR matching）
+      </h2>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          color: 'var(--iris-muted)',
+        }}
+      >
+        父组件控制 Status 的勾选值；同时选择 Active 与 Paused 时按 OR 匹配，清除后恢复全部行。
+      </p>
+      <IrisTable
+        bordered
+        rowKey="id"
+        columns={filterValuesColumns}
+        data={filterValuesRows}
+        filterValues={filterValues}
+        onFilterValuesChange={setFilterValues}
+      />
+      <output
+        data-iris-vxe-filter-values-readout
+        aria-live="polite"
+        style={{
+          display: 'block',
+          marginTop: 12,
+          padding: '8px 12px',
+          border: '1px solid var(--iris-border)',
+          borderRadius: 'var(--iris-radius-md, 6px)',
+          color: 'var(--iris-muted)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+        }}
+      >
+        filterValues: {JSON.stringify(filterValues)}
+      </output>
+    </section>
+  )
+}
+
 export function VxeGridExamplePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 960 }}>
@@ -132,6 +411,24 @@ export function VxeGridExamplePage() {
           官方示例对照：border / showOverflow / resizable / keyField / seq / sortable
         </p>
         <IrisTable bordered resizableColumns rowKey="id" seq columns={columns} data={tableData} />
+      </section>
+
+      <ControlledColumnWidthsDemo />
+
+      <section data-iris-vxe-section="grouped-summary">
+        <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+          分组表头与汇总行（Grouped headers + summary row）
+        </h2>
+        <p
+          style={{
+            margin: '0 0 12px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+            color: 'var(--iris-muted)',
+          }}
+        >
+          Two fixed teams demonstrate a Metrics group with built-in Planned/Actual sums.
+        </p>
+        <IrisTable bordered rowKey="id" columns={groupedSummaryColumns} data={groupedSummaryRows} />
       </section>
 
       <section>
@@ -156,6 +453,8 @@ export function VxeGridExamplePage() {
           data={tableData}
         />
       </section>
+
+      <CurrentRowColumnDemo />
 
       <section>
         <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
@@ -194,6 +493,8 @@ export function VxeGridExamplePage() {
           columns={columns}
         />
       </section>
+
+      <RetryProxyDemo />
 
       <section>
         <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
@@ -240,6 +541,8 @@ export function VxeGridExamplePage() {
         />
       </section>
 
+      <ControlledFilterValuesDemo />
+
       <section>
         <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
           行操作 + 勾选条件（Row ops + checkMethod）
@@ -274,6 +577,8 @@ export function VxeGridExamplePage() {
         </p>
         <AdaptiveHeightDemo />
       </section>
+
+      <MaskedExportDemo />
     </div>
   )
 }
@@ -363,5 +668,62 @@ function AdaptiveHeightDemo() {
         columns={adaptiveColumns}
       />
     </div>
+  )
+}
+
+function MaskedExportDemo() {
+  const tableRef = useRef<IrisTableHandle<MaskedContactRow> | null>(null)
+  const [downloadStatus, setDownloadStatus] = useState('尚未下载')
+
+  const handleDownload = () => {
+    if (!tableRef.current) {
+      setDownloadStatus('表格尚未就绪')
+      return
+    }
+    setDownloadStatus('下载中')
+    const csv = tableRef.current.exportCurrentViewCsv()
+    void downloadCsv('masked-contacts.csv', csv).then(
+      () => setDownloadStatus('已下载 masked-contacts.csv'),
+      () => setDownloadStatus('下载失败，请重试'),
+    )
+  }
+
+  return (
+    <section data-iris-vxe-section="masked-export">
+      <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+        敏感信息导出（Masked export）
+      </h2>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          color: 'var(--iris-muted)',
+        }}
+      >
+        Phone 列使用敏感信息脱敏；下载按钮通过表格 handle 导出当前视图，CSV 与表格显示保持一致。
+      </p>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <button type="button" onClick={handleDownload}>
+          下载脱敏 CSV
+        </button>
+        <span aria-live="polite" style={{ color: 'var(--iris-muted)' }}>
+          {downloadStatus}
+        </span>
+      </div>
+      <IrisTable
+        bordered
+        rowKey="id"
+        tableRef={tableRef}
+        columns={maskedContactColumns}
+        data={maskedContactRows}
+      />
+    </section>
   )
 }

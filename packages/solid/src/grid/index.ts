@@ -108,6 +108,12 @@ export function useGridSelection<
     // Read each key so reactive prop proxies also observe in-place changes.
     void JSON.stringify(value)
     if (controlled) {
+      if (!wasControlled) {
+        // Store.batch updates the Core state before notifying this bridge, so
+        // capture the live pre-sync value rather than the stale Solid mirror.
+        uncontrolledSnapshot = [...model.store.getState()]
+        hasUncontrolledSnapshot = true
+      }
       lastControlledSnapshot = [...value]
       model.sync(value)
     } else if (wasControlled) {
@@ -207,8 +213,10 @@ export function useGridRows<
       cloneDefaultRows: options.cloneDefaultRows,
       rowKeyField: options.rowKeyField,
       getRowKey: (row, index) => latest.getRowKey?.(row, index),
-      getChildren: options.getChildren,
-      setChildren: options.setChildren,
+      getChildren: options.getChildren ? (row) => latest.getChildren?.(row) : undefined,
+      setChildren: options.setChildren
+        ? (row, children) => latest.setChildren?.(row, children) as Row
+        : undefined,
       onBeforeRowsChange: (tx) => latest.onBeforeRowsChange?.(tx),
       onRowsChange: (tx) => latest.onRowsChange?.(tx),
     }),
@@ -247,10 +255,16 @@ export function useGridEditing<Row extends Record<string, unknown>>(
       getRowKey: (row, index) => latest.getRowKey(row, index),
       getRowIndex: (rowKey, row, rootRows) => latest.getRowIndex?.(rowKey, row, rootRows),
       getRules: (columnKey) => latest.getRules?.(columnKey),
-      getValue: (row, columnKey) => latest.getValue?.(row, columnKey) ?? row[columnKey],
+      getValue: (row, columnKey) => {
+        const getValue = latest.getValue
+        return getValue ? getValue(row, columnKey) : row[columnKey]
+      },
       setValue: (row, columnKey, value) =>
         latest.setValue?.(row, columnKey, value) ?? { ...row, [columnKey]: value },
-      coerce: (draft, row, columnKey) => latest.coerce?.(draft, row, columnKey) ?? draft,
+      coerce: (draft, row, columnKey) => {
+        const coerce = latest.coerce
+        return coerce ? coerce(draft, row, columnKey) : draft
+      },
       validate: (value, row, columnKey) => latest.validate?.(value, row, columnKey) ?? null,
       isEditable: (row, columnKey) => latest.isEditable?.(row, columnKey) ?? true,
       missingRowMessage: options.missingRowMessage,
@@ -348,12 +362,33 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     const controlledWidths = widths !== undefined
     const controlledPinned = pinned !== undefined
     // Touch entries as well as each map/array so reactive prop proxies observe
-    // in-place controlled updates. Do not read the model store here: callers
-    // may own a separate reactive sync for the same core feature.
+    // in-place controlled updates. Capture every entering channel before any
+    // controlled synchronization can change the shared model state.
     void (visibility ? JSON.stringify(Object.entries(visibility)) : '')
     void (order ? JSON.stringify(order) : '')
     void (widths ? JSON.stringify(Object.entries(widths)) : '')
     void (pinned ? JSON.stringify(Object.entries(pinned)) : '')
+
+    if (
+      (controlledVisibility && !wasVisibilityControlled) ||
+      (controlledOrder && !wasOrderControlled) ||
+      (controlledWidths && !wasWidthsControlled) ||
+      (controlledPinned && !wasPinnedControlled)
+    ) {
+      const current = model.store.getState()
+      if (controlledVisibility && !wasVisibilityControlled) {
+        uncontrolledVisibility = { ...current.visibility }
+      }
+      if (controlledOrder && !wasOrderControlled) {
+        uncontrolledOrder = [...current.order]
+      }
+      if (controlledWidths && !wasWidthsControlled) {
+        uncontrolledWidths = { ...current.widths }
+      }
+      if (controlledPinned && !wasPinnedControlled) {
+        uncontrolledPinned = { ...current.pinned }
+      }
+    }
 
     if (controlledVisibility) model.syncVisibility(visibility)
     else if (wasVisibilityControlled) model.syncVisibility(uncontrolledVisibility)
@@ -524,6 +559,23 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
     void JSON.stringify(sort)
     void JSON.stringify(multiSortState)
 
+    // Capture both sorting channels from the live Core state before either
+    // controlled sync runs; the Solid store mirror may still be pre-batch.
+    if (
+      (sortControlled && !wasSortControlled) ||
+      (multiSortControlled && !wasMultiSortControlled)
+    ) {
+      const current = model.store.getState()
+      if (sortControlled && !wasSortControlled) {
+        uncontrolledSort = cloneSort(current.sort)
+        hasUncontrolledSort = true
+      }
+      if (multiSortControlled && !wasMultiSortControlled) {
+        uncontrolledMultiSort = cloneSorts(current.multiSort)
+        hasUncontrolledMultiSort = true
+      }
+    }
+
     if (sortControlled) {
       lastControlledSort = cloneSort(sort ?? null)
       model.syncSort(sort)
@@ -657,6 +709,23 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
     void JSON.stringify(filters)
     void JSON.stringify(filterValues)
 
+    // Capture both filtering channels from the live Core state before either
+    // controlled sync runs; the Solid store mirror may still be pre-batch.
+    if (
+      (filtersControlled && !wasFiltersControlled) ||
+      (filterValuesControlled && !wasFilterValuesControlled)
+    ) {
+      const current = model.store.getState()
+      if (filtersControlled && !wasFiltersControlled) {
+        uncontrolledFilters = cloneFilters(current.filters)
+        hasUncontrolledFilters = true
+      }
+      if (filterValuesControlled && !wasFilterValuesControlled) {
+        uncontrolledFilterValues = cloneFilterValues(current.filterValues)
+        hasUncontrolledFilterValues = true
+      }
+    }
+
     if (filtersControlled) {
       lastControlledFilters = cloneFilters(filters)
       model.syncFilters(filters)
@@ -738,6 +807,10 @@ export function useGridVirtual<
   core: GridCore<Row>,
   options: UseGridVirtualOptions<Item>,
 ): { model: GridVirtualModel; state: Accessor<VirtualizerState> } {
+  const latest = options
+  const onRangeChange = (change: GridVirtualRangeChange): void => {
+    latest.onRangeChange?.(change)
+  }
   const model = useGridFeature<Row, GridVirtualModel>(core, 'virtual', 'getVirtualModel', () =>
     createGridVirtualFeature<Row>({
       count: options.items.length,
@@ -753,15 +826,18 @@ export function useGridVirtual<
         const item = options.items[index]
         return item !== undefined && options.getItemKey ? options.getItemKey(item, index) : index
       },
-      onRangeChange: options.onRangeChange,
+      onRangeChange,
     }),
   )
-  createEffect(() => model.setCount(options.items.length))
+  createEffect(() => {
+    const items = options.items
+    void options.getItemKey
+    model.setCount(items.length)
+  })
   createEffect(() => model.setBuffer(options.buffer ?? 0))
   createEffect(() => {
     const estimate = options.estimateSize
-    model.setFixedSize(typeof estimate === 'number' ? estimate : null)
-    model.remeasure()
+    model.setEstimateSize(estimate, typeof estimate === 'number' ? estimate : null)
   })
   createEffect(() => {
     const size = options.viewportSize

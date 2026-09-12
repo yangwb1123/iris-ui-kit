@@ -100,6 +100,13 @@ function syncControlledChannel<S, T>(channel: ControlledChannel<S, T>): Readable
     const controlled = channel.read()
     const isControlled = controlled !== undefined
     if (isControlled) {
+      if (!wasControlled) {
+        // Read the model at the handoff boundary, not from the last listener
+        // snapshot. Store.batch updates state before its deferred notification,
+        // so this preserves the final pre-control value before syncing the prop.
+        uncontrolledSnapshot = channel.clone(channel.select(channel.store.getState()))
+        hasUncontrolledSnapshot = true
+      }
       channel.track?.(controlled)
       const next = channel.clone(controlled)
       lastControlledSnapshot = channel.clone(next)

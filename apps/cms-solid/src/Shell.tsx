@@ -24,6 +24,8 @@ import { SettingsPage } from './pages/SettingsPage'
 import { WorkspacePage } from './pages/WorkspacePage'
 import { FormBuilderPage } from './pages/FormBuilderPage'
 import { VxeGridExamplePage } from './pages/VxeGridExamplePage'
+import { TreeExamplePage } from './pages/TreeExamplePage'
+import { NotificationsPage } from './pages/NotificationsPage'
 
 const pages: Record<string, Component> = {
   dashboard: DashboardPage,
@@ -31,6 +33,8 @@ const pages: Record<string, Component> = {
   settings: SettingsPage,
   'form-builder': FormBuilderPage,
   'vxe-example': VxeGridExamplePage,
+  'tree-example': TreeExamplePage,
+  notifications: NotificationsPage,
 }
 
 function PageHost(props: { routeKey: string }): JSX.Element {

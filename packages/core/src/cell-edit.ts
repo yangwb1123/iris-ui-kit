@@ -122,13 +122,17 @@ export function createCellEdit<Key extends string | number = string>(
     getError: () => store.getState().error,
     getValidated: () => store.getState().validated,
 
-    startEdit(rowKey, columnKey, initialDraft = '') {
+    startEdit(rowKey, columnKey, initialDraft?: unknown) {
       sessionGen++ // a new session supersedes any pending async commit
       const target = { rowKey, columnKey }
-      const err = validateDraft(initialDraft, target)
+      // Keep an explicitly supplied undefined distinct from an omitted draft.
+      // Grid editing passes the getter result as the third argument, including
+      // when that result is undefined.
+      const draft = arguments.length >= 3 ? initialDraft : ''
+      const err = validateDraft(draft, target)
       store.setState({
         editing: target,
-        draft: initialDraft,
+        draft,
         error:
           err && typeof (err as Promise<unknown>).then === 'function'
             ? null
@@ -165,10 +169,7 @@ export function createCellEdit<Key extends string | number = string>(
       if (!target) return false
       const draft = value !== undefined ? value : store.getState().draft
       const error = validateDraft(draft, target) as
-        | string
-        | null
-        | undefined
-        | Promise<string | null | undefined>
+        string | null | undefined | Promise<string | null | undefined>
       if (error && typeof (error as Promise<unknown>).then === 'function') {
         void commitAsync(draft, target, error)
         return false

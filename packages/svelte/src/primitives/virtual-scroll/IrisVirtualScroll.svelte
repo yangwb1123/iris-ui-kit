@@ -75,19 +75,28 @@
   let estimateRef: (index: number) => number = () => 40
   let keyOfRef: Props['keyOf'] = undefined
   let itemsRef: readonly unknown[] = []
+  let syncedItems = untrack(() => items)
+  let syncedKeyOf = untrack(() => keyOf)
+  let syncedCount = untrack(() => items.length)
   $effect(() => {
     estimateRef = estimateSize
     keyOfRef = keyOf
     itemsRef = items
     // Re-seat cached measurements against live item keys even when the item
     // count stays the same (reorder/filter is otherwise invisible to the memo
-    // key that intentionally preserves this controller).
-    virtualizer.setCount(items.length)
+    // key that intentionally preserves this controller). Do not repeat the
+    // initial same-count reset when another prop invalidates this effect.
+    const shouldReseat =
+      items !== syncedItems || keyOf !== syncedKeyOf || items.length !== syncedCount
+    syncedItems = items
+    syncedKeyOf = keyOf
+    syncedCount = items.length
+    if (shouldReseat) virtualizer.setCount(items.length)
   })
 
   // One stateful controller, rebuilt only when count or sizing MODE changes.
   // Sizing CHANGES within a mode (a new user fn / a measurement) are pushed via
-  // remeasure below; recreating on every render would drop scroll state. We track
+  // the estimate update below; recreating on every render would drop scroll state. We track
   // the memo key manually (Svelte $derived can't "rebuild only on key change").
   let virtualizer: Virtualizer
   let memoKey = ''
@@ -144,14 +153,13 @@
   })
 
   // Push sizing configuration changes (new user fn or estimate change)
-  // into the controller without recreating it: update the fixed/variable path,
-  // then rebuild the tree from the current `estimateSize`.
+  // into the controller without recreating it. Measured rows remain
+  // authoritative until the caller explicitly invokes `remeasure()`.
   $effect(() => {
     void itemHeight
     void userFn
     void estimatedItemHeight
-    virtualizer.setFixedSize(variable ? null : fixedHeight)
-    virtualizer.remeasure()
+    virtualizer.setEstimateSize(estimateSize, variable ? null : fixedHeight)
   })
 
   // Drive the controller's scroll + viewport from local state so its window,

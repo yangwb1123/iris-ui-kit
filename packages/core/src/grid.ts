@@ -482,4 +482,9 @@ export {
   type GridVirtualModel,
   type GridVirtualRangeChange,
 } from './grid-virtual'
-export type { Virtualizer, VirtualizerConfig, VirtualizerState } from './virtualizer'
+export type {
+  Virtualizer,
+  VirtualizerConfig,
+  VirtualizerEstimate,
+  VirtualizerState,
+} from './virtualizer'

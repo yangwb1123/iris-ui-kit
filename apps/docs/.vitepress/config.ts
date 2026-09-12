@@ -16,6 +16,9 @@ export default defineConfig({
       // only claims `.svelte` files, so it can't touch VitePress's Vue/markdown.
       svelte(),
     ],
+    // The Svelte island's browser-only dynamic import must resolve the client
+    // runtime; VitePress also builds an SSR graph for the same client-only module.
+    resolve: { conditions: ['browser'] },
     // The Svelte runtime + the .svelte island chain must be excluded from SSR
     // externalization so Vite transforms (compiles) them in the SSR build graph.
     ssr: {

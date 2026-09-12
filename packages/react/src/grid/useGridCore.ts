@@ -12,6 +12,10 @@ export interface UseGridCoreOptions<
   readonly features?: readonly GridFeature<Row>[]
 }
 
+interface RenderOwnership {
+  committed: boolean
+}
+
 /**
  * React lifecycle bridge for one framework-agnostic Grid Core. Features are
  * captured on the first render; use `core.use()` for an explicit late install.
@@ -20,9 +24,28 @@ export function useGridCore<Row extends Record<string, unknown> = Record<string,
   options: UseGridCoreOptions<Row> = {},
 ): GridCore<Row> {
   const coreRef = React.useRef<GridCore<Row> | null>(null)
-  if (coreRef.current === null) coreRef.current = createGridCore(options)
+  const ownershipRef = React.useRef<RenderOwnership | null>(null)
+  if (coreRef.current === null) {
+    const core = createGridCore(options)
+    const ownership: RenderOwnership = { committed: false }
+    coreRef.current = core
+    ownershipRef.current = ownership
+    // A render which never commits cannot receive an effect cleanup. A
+    // committed render claims this ticket in the commit phase before this
+    // microtask can run, while a discarded render is deterministically closed.
+    queueMicrotask(() => {
+      if (!ownership.committed) core.destroy()
+    })
+  }
   const core = coreRef.current
+  const ownership = ownershipRef.current
   const lifecycleGeneration = React.useRef(0)
+
+  // Insertion effects run during commit and are a safe commit marker for the
+  // render ticket. Unlike a layout effect, they are also silent in SSR.
+  React.useInsertionEffect(() => {
+    ownership!.committed = true
+  }, [core, ownership])
 
   React.useEffect(() => {
     const generation = ++lifecycleGeneration.current

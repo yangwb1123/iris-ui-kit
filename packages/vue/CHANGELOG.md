@@ -1,5 +1,11 @@
 # @iris-ui-kit/vue
 
+## 0.2.42
+
+### Patch Changes
+
+- Align the Vue adapter with `@iris-ui-kit/core@0.2.4` so virtualized table headers and pinned columns ship with a resolvable runtime dependency.
+
 ## 0.2.41
 
 ### Patch Changes

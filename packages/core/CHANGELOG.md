@@ -1,5 +1,11 @@
 # @iris-ui-kit/core
 
+## 0.2.4
+
+### Patch Changes
+
+- Publish the current grid entrypoint required by the Vue table adapter 0.2.42.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # desktop-os-vue
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [4220f70]
+- Updated dependencies [8579e0d]
+  - @iris-ui-kit/vue@0.2.41
+
 ## 0.0.4
 
 ### Patch Changes

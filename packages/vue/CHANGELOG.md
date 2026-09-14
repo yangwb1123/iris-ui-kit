@@ -1,11 +1,17 @@
 # @iris-ui-kit/vue
 
+## 0.2.41
+
+### Patch Changes
+
+- 4220f70: Render virtualized table headers inside the body scroll viewport so pinned headers and cells stay aligned without a second horizontal scrollbar.
+- 8579e0d: Fix Popover dismissal for teleported descendant Dialog and Popover surfaces.
+
 ## 0.2.29
 
 ### Patch Changes
 
 - dda2643: feat(cascader): 四框架 IrisCascader 新增 opt-in `virtual` prop
-
   - `virtual`（默认 `false`）开启后，每个打开的列经框架 `IrisVirtualScroll` 桥由 core `createVirtualizer` 窗口化渲染——10k 选项列只挂载 ≤ 20 行 DOM，spacer 高度 = count × 行高
   - 固定确定性尺寸（零旋钮）：视口 240px（即现有 maxHeight）、行高按 size（sm 28 / md 34 / lg 40，solid 无 size 恒 34）、buffer 4
   - react/solid 桥新增可透传 `role`（solid 补 `[key: string]: unknown` + rest 转发到滚动容器）；vue/svelte 桥经 attrs/rest 原样透传，零桥改动
@@ -13,7 +19,6 @@
   - 零新增导出、零 core 改动、零新依赖 ⇒ manifest/llms.txt 不变
 
 - dda2643: feat(transfer): 四框架 IrisTransfer 新增 opt-in `virtual` prop（双面板窗口化）
-
   - `virtual?: IrisTransferVirtualOptions { itemHeight; height?; buffer? }`（镜像 `IrisTableVirtualOptions`），开启后两个面板列表经各框架 `IrisVirtualScroll` 桥由 core `createVirtualizer` 窗口化渲染——10k 选项只挂载 ≤ 11 行 DOM，spacer 高度 = count × 行高
   - `height` 默认 200（svelte 240，即其面板现有 max-height）；滚动容器保持 `flex:1` + `maxHeight` + content-box，与现有 ul/div 面板布局一致
   - 行渲染共享：react/vue 虚拟路径行标签为 `div`（`li` 入 div 会破坏 HTML 合法性），solid 保留 `role="option"` + `aria-selected`（`li`/`div` 双拼），svelte 保留 `<label>` 行（`row` snippet 双路径复用）

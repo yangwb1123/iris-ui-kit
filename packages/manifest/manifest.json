@@ -116,7 +116,7 @@
     },
     {
       "group": "primitives",
-      "count": 115,
+      "count": 116,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -183,6 +183,7 @@
         "IrisMenuSeparator",
         "IrisMenuSub",
         "IrisMenuTrigger",
+        "IrisMonthPicker",
         "IrisNumberInput",
         "IrisOtpInput",
         "IrisPagination",
@@ -23188,6 +23189,446 @@
       }
     },
     {
+      "name": "IrisMonthPicker",
+      "group": "primitives",
+      "layer": "layer-1",
+      "module": "month-picker",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
+      },
+      "props": [
+        {
+          "name": "value",
+          "type": "Date | null",
+          "optional": true
+        },
+        {
+          "name": "defaultValue",
+          "type": "Date | null",
+          "optional": true
+        },
+        {
+          "name": "onValueChange",
+          "type": "(next: Date | null) => void",
+          "optional": true
+        },
+        {
+          "name": "defaultMonth",
+          "type": "Date | null",
+          "optional": true,
+          "description": "Initial visible year when no value is selected."
+        },
+        {
+          "name": "min",
+          "type": "Date",
+          "optional": true,
+          "description": "Inclusive month bounds; individual days are ignored."
+        },
+        {
+          "name": "max",
+          "type": "Date",
+          "optional": true
+        },
+        {
+          "name": "locale",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "optional": true,
+          "default": "false"
+        },
+        {
+          "name": "invalid",
+          "type": "boolean",
+          "optional": true,
+          "default": "false"
+        },
+        {
+          "name": "placement",
+          "type": "Placement",
+          "optional": true,
+          "default": "bottom-start"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "optional": true,
+          "description": "id forwarded to the trigger."
+        },
+        {
+          "name": "ariaDescribedby",
+          "type": "string",
+          "optional": true,
+          "description": "Forwarded as aria-describedby on the trigger."
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "frameworkContracts": {
+        "react": {
+          "source": "native",
+          "props": [
+            {
+              "name": "value",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "defaultValue",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "onValueChange",
+              "type": "(next: Date | null) => void",
+              "optional": true
+            },
+            {
+              "name": "defaultMonth",
+              "type": "Date | null",
+              "optional": true,
+              "description": "Initial visible year when no value is selected."
+            },
+            {
+              "name": "min",
+              "type": "Date",
+              "optional": true,
+              "description": "Inclusive month bounds; individual days are ignored."
+            },
+            {
+              "name": "max",
+              "type": "Date",
+              "optional": true
+            },
+            {
+              "name": "locale",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "placeholder",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "disabled",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "invalid",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "placement",
+              "type": "Placement",
+              "optional": true,
+              "default": "bottom-start"
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "optional": true,
+              "description": "id forwarded to the trigger."
+            },
+            {
+              "name": "ariaDescribedby",
+              "type": "string",
+              "optional": true,
+              "description": "Forwarded as aria-describedby on the trigger."
+            },
+            {
+              "name": "style",
+              "type": "React.CSSProperties",
+              "optional": true
+            },
+            {
+              "name": "className",
+              "type": "string",
+              "optional": true
+            }
+          ],
+          "events": [
+            "onValueChange"
+          ],
+          "slots": [],
+          "publicTypes": [
+            "IrisMonthPickerProps"
+          ]
+        },
+        "vue": {
+          "source": "native",
+          "props": [
+            {
+              "name": "modelValue",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "defaultMonth",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "min",
+              "type": "Date | undefined",
+              "optional": true
+            },
+            {
+              "name": "max",
+              "type": "Date | undefined",
+              "optional": true
+            },
+            {
+              "name": "locale",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "placeholder",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "disabled",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "invalid",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "placement",
+              "type": "Placement",
+              "optional": true,
+              "default": "bottom-start"
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "ariaDescribedby",
+              "type": "string",
+              "optional": true
+            }
+          ],
+          "events": [
+            "update:modelValue"
+          ],
+          "slots": [],
+          "publicTypes": [
+            "IrisMonthPickerProps"
+          ]
+        },
+        "solid": {
+          "source": "native",
+          "props": [
+            {
+              "name": "value",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "defaultValue",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "defaultMonth",
+              "type": "Date | null",
+              "optional": true,
+              "description": "Initial visible year when no value is selected."
+            },
+            {
+              "name": "min",
+              "type": "Date",
+              "optional": true,
+              "description": "Inclusive month bounds; individual days are ignored."
+            },
+            {
+              "name": "max",
+              "type": "Date",
+              "optional": true
+            },
+            {
+              "name": "locale",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "placeholder",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "disabled",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "invalid",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "ariaDescribedby",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "class",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "style",
+              "type": "JSX.CSSProperties",
+              "optional": true
+            },
+            {
+              "name": "onChange",
+              "type": "(date: Date | null) => void",
+              "optional": true
+            }
+          ],
+          "events": [
+            "onChange"
+          ],
+          "slots": [],
+          "publicTypes": [
+            "IrisMonthPickerProps"
+          ]
+        },
+        "svelte": {
+          "source": "native",
+          "props": [
+            {
+              "name": "value",
+              "type": "Date | null",
+              "optional": true
+            },
+            {
+              "name": "defaultMonth",
+              "type": "Date | null",
+              "optional": true,
+              "description": "Initial visible year when no value is selected."
+            },
+            {
+              "name": "min",
+              "type": "Date",
+              "optional": true,
+              "description": "Inclusive month bounds; individual days are ignored."
+            },
+            {
+              "name": "max",
+              "type": "Date",
+              "optional": true
+            },
+            {
+              "name": "locale",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "placeholder",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "disabled",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "invalid",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "ariaDescribedby",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "onValueChange",
+              "type": "(date: Date | null) => void",
+              "optional": true
+            },
+            {
+              "name": "style",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "class",
+              "type": "string",
+              "optional": true
+            }
+          ],
+          "events": [
+            "onValueChange"
+          ],
+          "slots": [],
+          "publicTypes": [
+            "IrisMonthPickerProps"
+          ]
+        }
+      },
+      "events": [
+        "onValueChange"
+      ],
+      "quality": {
+        "propCount": 15,
+        "eventCount": 1
+      }
+    },
+    {
       "name": "IrisMovable",
       "group": "behaviors",
       "layer": "behavior",
@@ -45529,6 +45970,8 @@
             "scroll"
           ],
           "slots": [
+            "footer",
+            "header",
             "item"
           ],
           "publicTypes": [
@@ -46267,13 +46710,13 @@
     ]
   },
   "stats": {
-    "total": 155,
-    "full": 155,
+    "total": 156,
+    "full": 156,
     "byFramework": {
-      "react": 155,
-      "vue": 155,
-      "solid": 155,
-      "svelte": 155
+      "react": 156,
+      "vue": 156,
+      "solid": 156,
+      "svelte": 156
     }
   }
 }

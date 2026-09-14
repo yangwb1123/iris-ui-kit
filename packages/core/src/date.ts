@@ -125,6 +125,27 @@ export function formatLocalISO(date: Date): string {
 }
 
 /**
+ * Local-time `YYYY-MM` for month-valued controls and query contracts.
+ * Unlike `toISOString()`, this never shifts the selected month across a UTC
+ * boundary.
+ */
+export function formatLocalYearMonth(date: Date): string {
+  if (!Number.isFinite(date.getTime())) return ''
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
+/** Whether a month-valued date falls outside an inclusive month range. */
+export function isOutOfMonthRange(date: Date, min?: Date, max?: Date): boolean {
+  if (!Number.isFinite(date.getTime())) return true
+  const month = startOfMonth(date)
+  if (min && Number.isFinite(min.getTime()) && month < startOfMonth(min)) return true
+  if (max && Number.isFinite(max.getTime()) && month > startOfMonth(max)) return true
+  return false
+}
+
+/**
  * Local-time 24h `HH:MM:SS` (zero-padded). Deterministic — deliberately not
  * `Intl.DateTimeFormat` (hour12 / rounding variance across locales), matching
  * the `formatLocalISO` mold: local time, padStart, no timezone surprises.

@@ -1,5 +1,13 @@
 # @iris-ui-kit/vue
 
+## 0.2.43
+
+### Patch Changes
+
+- Add a month-only picker with a localized twelve-month grid, year navigation, month-precision bounds, and normalized local-time Date values across all framework adapters.
+- Updated dependencies
+  - @iris-ui-kit/core@0.2.5
+
 ## 0.2.42
 
 ### Patch Changes

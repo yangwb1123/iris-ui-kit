@@ -338,9 +338,11 @@ export {
   formatMonthYear,
   getWeekdayNames,
   formatLocalISO,
+  formatLocalYearMonth,
   formatClock,
   clampDate,
   isOutOfRange,
+  isOutOfMonthRange,
 } from './date'
 export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
 export { resolveDataState, type DataState, type DataStateInput } from './data-state'

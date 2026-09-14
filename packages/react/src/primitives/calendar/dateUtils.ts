@@ -12,8 +12,10 @@ export {
   formatMonthYear,
   getWeekdayNames,
   formatLocalISO,
+  formatLocalYearMonth,
   clampDate,
   isOutOfRange,
+  isOutOfMonthRange,
 } from '@iris-ui-kit/core'
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/vue",
-  "version": "0.2.42",
+  "version": "0.2.43",
   "description": "Vue 3.5 adapter for Iris UI — full component set",
   "license": "MIT",
   "type": "module",
@@ -124,7 +124,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.6",
-    "@iris-ui-kit/core": "0.2.4",
+    "@iris-ui-kit/core": "0.2.5",
     "@iris-ui-kit/icons": "0.2.1",
     "@iris-ui-kit/skins": "0.1.1",
     "@iris-ui-kit/theme": "0.3.1",

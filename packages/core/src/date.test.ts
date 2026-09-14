@@ -9,9 +9,11 @@ import {
   endOfMonth,
   buildMonthMatrix,
   formatLocalISO,
+  formatLocalYearMonth,
   formatClock,
   clampDate,
   isOutOfRange,
+  isOutOfMonthRange,
   getWeekdayNames,
   formatMonthYear,
 } from './date'
@@ -89,6 +91,19 @@ describe('date helpers', () => {
     expect(formatLocalISO(new Date(2024, 0, 5))).toBe('2024-01-05')
   })
 
+  it('formatLocalYearMonth is local-time YYYY-MM', () => {
+    expect(formatLocalYearMonth(new Date(2024, 0, 5, 23, 59))).toBe('2024-01')
+  })
+
+  it('isOutOfMonthRange compares whole months, not individual days', () => {
+    const min = new Date(2024, 5, 15)
+    const max = new Date(2024, 7, 2)
+    expect(isOutOfMonthRange(new Date(2024, 5, 1), min, max)).toBe(false)
+    expect(isOutOfMonthRange(new Date(2024, 7, 31), min, max)).toBe(false)
+    expect(isOutOfMonthRange(new Date(2024, 4, 31), min, max)).toBe(true)
+    expect(isOutOfMonthRange(new Date(2024, 8, 1), min, max)).toBe(true)
+  })
+
   it('formatClock is 24h HH:MM:SS with midnight zero-padded', () => {
     expect(formatClock(new Date(2026, 0, 1, 0, 0, 0))).toBe('00:00:00')
     expect(formatClock(new Date(2026, 0, 1, 23, 59, 59))).toBe('23:59:59')
@@ -104,8 +119,10 @@ describe('date helpers', () => {
     expect(() => formatMonthYear(invalid, 'en-US')).not.toThrow()
     expect(formatMonthYear(invalid, 'en-US')).toBe('')
     expect(formatLocalISO(invalid)).toBe('')
+    expect(formatLocalYearMonth(invalid)).toBe('')
     expect(formatClock(invalid)).toBe('')
     expect(isOutOfRange(invalid, new Date(2024, 0, 1), new Date(2024, 0, 2))).toBe(true)
+    expect(isOutOfMonthRange(invalid, new Date(2024, 0, 1), new Date(2024, 0, 2))).toBe(true)
 
     const matrix = buildMonthMatrix(invalid, 0)
     expect(matrix).toHaveLength(6)

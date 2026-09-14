@@ -18,6 +18,7 @@
     "@iris-ui-kit/core": "workspace:*",
     "@iris-ui-kit/plugin-form-builder": "workspace:^",
     "@iris-ui-kit/plugin-notifications": "workspace:*",
+    "@iris-ui-kit/plugin-query-builder": "workspace:^",
     "@iris-ui-kit/svelte": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
     "svelte": "^5.16.0"

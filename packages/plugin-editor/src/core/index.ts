@@ -65,7 +65,14 @@ function baseExtensions(completions: boolean): Extension[] {
   ]
   if (completions) {
     exts.push(autocompletion(), closeBrackets())
-    exts.push(keymap.of([...closeBracketsKeymap, ...completionKeymap]))
+    // CM packages can resolve compatible but distinct copies of `@codemirror/view`.
+    // `KeyBinding.run` mentions `EditorView`, whose private state members make
+    // those otherwise-compatible declarations nominally incompatible.
+    const completionBindings = [
+      ...closeBracketsKeymap,
+      ...completionKeymap,
+    ] as unknown as Parameters<typeof keymap.of>[0]
+    exts.push(keymap.of(completionBindings))
   }
   return exts
 }

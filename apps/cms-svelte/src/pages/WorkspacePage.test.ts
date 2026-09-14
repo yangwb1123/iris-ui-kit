@@ -23,12 +23,14 @@ describe('Svelte CMS workspace bridge', () => {
           key === 'vxe-example' ||
           key === 'tree-example' ||
           key === 'notifications' ||
+          key === 'query-builder-example' ||
           isCmsPageRoute(key),
       ),
     ).toBe(true)
     expect(leaves).toContain('audit-log')
     expect(leaves).toContain('tree-example')
     expect(leaves).toContain('notifications')
+    expect(leaves).toContain('query-builder-example')
   })
 
   it('renders audit export and review actions through Svelte runes', async () => {

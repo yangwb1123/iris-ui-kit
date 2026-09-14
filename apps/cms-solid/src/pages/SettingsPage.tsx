@@ -5,6 +5,7 @@ import {
   IrisSegmented,
   IrisSwitch,
   IrisButton,
+  IrisFieldset,
   IrisStack,
 } from '@iris-ui-kit/solid'
 import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
@@ -22,6 +23,7 @@ export function SettingsPage(): JSX.Element {
   const [notifications, setNotifications] = createSignal(initial.notifications)
   const [maintenance, setMaintenance] = createSignal(initial.maintenance)
   const [status, setStatus] = createSignal('')
+  const [settingsLocked, setSettingsLocked] = createSignal(false)
   const selectedEnvironment = () => (maintenance() ? 'maintenance' : 'live')
 
   const selectEnvironment = (value: string): void => {
@@ -52,42 +54,57 @@ export function SettingsPage(): JSX.Element {
         preserved by the keep-alive content cache.
       </p>
       <form style={{ 'max-width': '480px' }} onSubmit={save}>
-        <IrisStack spacing={16}>
-          <IrisFormField label="Site name">
-            <IrisInput
-              required
-              value={siteName()}
-              onInput={(e) => setSiteName(e.currentTarget.value)}
-            />
-          </IrisFormField>
-          <IrisFormField label="Support email">
-            <IrisInput
-              required
-              type="email"
-              value={supportEmail()}
-              onInput={(e) => setSupportEmail(e.currentTarget.value)}
-            />
-          </IrisFormField>
-          <IrisFormField label="Email notifications">
-            <IrisSwitch checked={notifications()} onChange={(next) => setNotifications(next)} />
-          </IrisFormField>
-          <IrisFormField label="Maintenance mode">
-            <IrisSegmented
-              options={environmentOptions}
-              value={selectedEnvironment()}
-              onChange={selectEnvironment}
-              ariaLabel="Environment"
-            />
-          </IrisFormField>
-          <div>
-            <IrisButton type="submit" variant="solid">
-              Save changes
-            </IrisButton>
-          </div>
-          <span role="status" aria-live="polite">
-            {status()}
-          </span>
-        </IrisStack>
+        <div style={{ 'margin-block-end': 'var(--iris-space-md, 16px)' }}>
+          <IrisButton
+            type="button"
+            variant="outline"
+            onClick={() => setSettingsLocked((locked) => !locked)}
+          >
+            {settingsLocked() ? 'Unlock settings' : 'Lock settings'}
+          </IrisButton>
+        </div>
+        <IrisFieldset
+          legend="Site settings"
+          hint="These settings apply to the entire site."
+          disabled={settingsLocked()}
+        >
+          <IrisStack spacing={16}>
+            <IrisFormField label="Site name">
+              <IrisInput
+                required
+                value={siteName()}
+                onInput={(e) => setSiteName(e.currentTarget.value)}
+              />
+            </IrisFormField>
+            <IrisFormField label="Support email">
+              <IrisInput
+                required
+                type="email"
+                value={supportEmail()}
+                onInput={(e) => setSupportEmail(e.currentTarget.value)}
+              />
+            </IrisFormField>
+            <IrisFormField label="Email notifications">
+              <IrisSwitch checked={notifications()} onChange={(next) => setNotifications(next)} />
+            </IrisFormField>
+            <IrisFormField label="Maintenance mode">
+              <IrisSegmented
+                options={environmentOptions}
+                value={selectedEnvironment()}
+                onChange={selectEnvironment}
+                ariaLabel="Environment"
+              />
+            </IrisFormField>
+            <div>
+              <IrisButton type="submit" variant="solid">
+                Save changes
+              </IrisButton>
+            </div>
+            <span role="status" aria-live="polite">
+              {status()}
+            </span>
+          </IrisStack>
+        </IrisFieldset>
       </form>
     </section>
   )

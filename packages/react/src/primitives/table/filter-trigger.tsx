@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { IrisIcon } from '../icon'
 import type { IrisTableColumn } from './types'
 
 export interface TableFilterTriggerProps<Row extends Record<string, unknown>> {
@@ -26,20 +27,26 @@ export function TableFilterTrigger<Row extends Record<string, unknown>>({
       aria-haspopup="true"
       aria-expanded={expanded ? 'true' : undefined}
       data-iris-filter-active={active ? 'true' : undefined}
+      data-iris-filter-icon=""
       onClick={(event) => onOpen(event, column.key)}
       onKeyDown={(event) => event.stopPropagation()}
       style={{
-        border: 'none',
-        background: 'transparent',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: '0 0 auto',
+        width: 20,
+        height: 20,
+        border: '1px solid transparent',
+        borderRadius: 'var(--iris-radius-sm, 4px)',
+        background: active ? 'var(--iris-surface-selected, transparent)' : 'transparent',
         cursor: 'pointer',
         padding: 0,
         marginInlineStart: 'var(--iris-space-xxs, 4px)',
-        fontSize: 'var(--iris-font-size-xs, 12px)',
-        lineHeight: 1,
         color: active ? 'var(--iris-primary)' : 'var(--iris-muted)',
       }}
     >
-      ⏷
+      <IrisIcon name="filter" size={14} strokeWidth={1.75} />
     </button>
   )
 }

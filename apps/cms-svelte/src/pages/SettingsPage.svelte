@@ -5,6 +5,7 @@
     IrisSegmented,
     IrisSwitch,
     IrisButton,
+    IrisFieldset,
     IrisStack,
   } from '@iris-ui-kit/svelte'
   import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
@@ -21,11 +22,16 @@
   let notifications = $state(initial.notifications)
   let maintenance = $state(initial.maintenance)
   let status = $state('')
+  let settingsLocked = $state(false)
   const selectedEnvironment = $derived(maintenance ? 'maintenance' : 'live')
 
   function selectEnvironment(value: string) {
     if (value === 'live') maintenance = false
     if (value === 'maintenance') maintenance = true
+  }
+
+  function toggleSettingsLock() {
+    settingsLocked = !settingsLocked
   }
 
   function save(event: SubmitEvent) {
@@ -51,33 +57,48 @@
     preserved by the keep-alive content cache.
   </p>
   <form style="max-width: 480px" onsubmit={save}>
-    <IrisStack spacing={16}>
-      <IrisFormField label="Site name">
-        <IrisInput required value={siteName} oninput={(e) => (siteName = e.currentTarget.value)} />
-      </IrisFormField>
-      <IrisFormField label="Support email">
-        <IrisInput
-          required
-          type="email"
-          value={supportEmail}
-          oninput={(e) => (supportEmail = e.currentTarget.value)}
-        />
-      </IrisFormField>
-      <IrisFormField label="Email notifications">
-        <IrisSwitch checked={notifications} onChange={(next) => (notifications = next)} />
-      </IrisFormField>
-      <IrisFormField label="Maintenance mode">
-        <IrisSegmented
-          options={environmentOptions}
-          value={selectedEnvironment}
-          onchange={selectEnvironment}
-          ariaLabel="Environment"
-        />
-      </IrisFormField>
-      <div>
-        <IrisButton type="submit" variant="solid">Save changes</IrisButton>
-      </div>
-      <span role="status" aria-live="polite">{status}</span>
-    </IrisStack>
+    <div style="margin-block-end: var(--iris-space-md, 16px)">
+      <IrisButton type="button" variant="outline" onclick={toggleSettingsLock}>
+        {settingsLocked ? 'Unlock settings' : 'Lock settings'}
+      </IrisButton>
+    </div>
+    <IrisFieldset
+      legend="Site settings"
+      hint="These settings apply to the entire site."
+      disabled={settingsLocked}
+    >
+      <IrisStack spacing={16}>
+        <IrisFormField label="Site name">
+          <IrisInput
+            required
+            value={siteName}
+            oninput={(e) => (siteName = e.currentTarget.value)}
+          />
+        </IrisFormField>
+        <IrisFormField label="Support email">
+          <IrisInput
+            required
+            type="email"
+            value={supportEmail}
+            oninput={(e) => (supportEmail = e.currentTarget.value)}
+          />
+        </IrisFormField>
+        <IrisFormField label="Email notifications">
+          <IrisSwitch checked={notifications} onChange={(next) => (notifications = next)} />
+        </IrisFormField>
+        <IrisFormField label="Maintenance mode">
+          <IrisSegmented
+            options={environmentOptions}
+            value={selectedEnvironment}
+            onchange={selectEnvironment}
+            ariaLabel="Environment"
+          />
+        </IrisFormField>
+        <div>
+          <IrisButton type="submit" variant="solid">Save changes</IrisButton>
+        </div>
+        <span role="status" aria-live="polite">{status}</span>
+      </IrisStack>
+    </IrisFieldset>
   </form>
 </section>

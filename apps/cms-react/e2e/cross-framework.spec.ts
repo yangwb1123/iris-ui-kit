@@ -75,6 +75,48 @@ test('admin login → users data → persisted settings', async ({ page }) => {
   await page.evaluate(() => window.localStorage.removeItem('iris-cms-settings'))
   await openSettings(page)
 
+  const fieldset = page.locator('[data-iris-fieldset]')
+  await expect(fieldset).toHaveCount(1)
+  expect(await fieldset.evaluate((element) => element.tagName.toLowerCase())).toBe('fieldset')
+
+  const legend = fieldset.locator('[data-iris-fieldset-legend]')
+  await expect(legend).toBeVisible()
+  await expect(legend).toHaveText('Site settings')
+  const hint = fieldset.locator('[data-iris-fieldset-hint]')
+  await expect(hint).toBeVisible()
+  await expect(hint).toHaveText('These settings apply to the entire site.')
+
+  const siteNameInput = fieldset.getByRole('textbox', { name: 'Site name', exact: true })
+  const supportEmailInput = fieldset.getByRole('textbox', {
+    name: 'Support email',
+    exact: true,
+  })
+  await expect(fieldset).toHaveJSProperty('disabled', false)
+  await expect(siteNameInput).toBeEnabled()
+  await expect(supportEmailInput).toBeEnabled()
+
+  const lockSettings = page.getByRole('button', { name: 'Lock settings', exact: true })
+  await expect(lockSettings).toBeVisible()
+  await expect(lockSettings).toBeEnabled()
+  await expect(fieldset.getByRole('button', { name: 'Lock settings', exact: true })).toHaveCount(0)
+
+  await lockSettings.click()
+  await expect(fieldset).toHaveJSProperty('disabled', true)
+  await expect(siteNameInput).toBeDisabled()
+  await expect(supportEmailInput).toBeDisabled()
+
+  const unlockSettings = page.getByRole('button', { name: 'Unlock settings', exact: true })
+  await expect(unlockSettings).toBeVisible()
+  await expect(unlockSettings).toBeEnabled()
+  await expect(fieldset.getByRole('button', { name: 'Unlock settings', exact: true })).toHaveCount(
+    0,
+  )
+
+  await unlockSettings.click()
+  await expect(fieldset).toHaveJSProperty('disabled', false)
+  await expect(siteNameInput).toBeEnabled()
+  await expect(supportEmailInput).toBeEnabled()
+
   const environment = page.getByRole('radiogroup', { name: 'Environment', exact: true })
   await expect(environment).toBeVisible()
   const environmentOptions = environment.getByRole('radio')
@@ -433,4 +475,57 @@ test('dashboard renders deterministic IrisCountdown release example across frame
   await expect(finishCount).toHaveText('1')
   await page.waitForTimeout(1_100)
   await expect(finishCount).toHaveText('1')
+})
+
+test('IrisLongPress dashboard sample across framework bundles', async ({ page }) => {
+  await login(page)
+
+  const section = page.locator('[data-iris-dashboard-section="long-press"]')
+  const enabled = section.locator('[data-iris-long-press-target="enabled"]')
+  const disabled = section.locator('[data-iris-long-press-target="disabled"]')
+  const readout = section.locator('[data-iris-long-press-readout]')
+  const count = section.locator('[data-iris-long-press-count]')
+  const action = section.locator('[data-iris-long-press-action]')
+
+  await expect(section).toHaveCount(1)
+  await expect(enabled).toHaveCount(1)
+  await expect(disabled).toHaveCount(1)
+  await expect(readout).toHaveAttribute('aria-live', 'polite')
+  await expect(readout).toHaveText('Long-press count: 0; Last action: none')
+  await expect(count).toHaveText('0')
+  await expect(action).toHaveText('none')
+
+  await enabled.hover()
+  await page.mouse.down()
+  await page.waitForTimeout(5)
+  await page.mouse.up()
+  await page.waitForTimeout(160)
+  await expect(count).toHaveText('0')
+  await expect(action).toHaveText('none')
+
+  await enabled.hover()
+  await page.mouse.down()
+  await page.waitForTimeout(160)
+  await expect(count).toHaveText('1')
+  await expect(action).toHaveText('completed hold')
+  await page.waitForTimeout(160)
+  await expect(count).toHaveText('1')
+  await page.mouse.up()
+
+  await enabled.hover()
+  await page.mouse.down()
+  await page.waitForTimeout(160)
+  await expect(count).toHaveText('2')
+  await page.mouse.up()
+  await expect(action).toHaveText('completed hold')
+
+  await expect(disabled).toHaveAttribute('aria-disabled', 'true')
+  await expect(disabled).not.toHaveAttribute('disabled')
+  await disabled.hover()
+  await page.mouse.down()
+  await page.waitForTimeout(160)
+  await expect(count).toHaveText('2')
+  await expect(action).toHaveText('completed hold')
+  await page.mouse.up()
+  await expect(readout).toHaveText('Long-press count: 2; Last action: completed hold')
 })

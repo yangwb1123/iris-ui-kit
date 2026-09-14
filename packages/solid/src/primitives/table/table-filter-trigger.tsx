@@ -1,4 +1,5 @@
 import type { JSX } from 'solid-js'
+import { IrisIcon } from '../icon'
 import type { IrisTableColumn } from './types'
 
 export function TableFilterTrigger<Row extends Record<string, unknown>>(props: {
@@ -18,20 +19,26 @@ export function TableFilterTrigger<Row extends Record<string, unknown>>(props: {
       aria-haspopup="true"
       aria-expanded={props.open ? 'true' : undefined}
       data-iris-filter-active={props.active ? 'true' : undefined}
+      data-iris-filter-icon=""
       onClick={props.onOpen}
       onKeyDown={(event) => event.stopPropagation()}
       style={{
-        border: 'none',
-        background: 'transparent',
+        display: 'inline-flex',
+        'align-items': 'center',
+        'justify-content': 'center',
+        flex: '0 0 auto',
+        width: '20px',
+        height: '20px',
+        border: '1px solid transparent',
+        'border-radius': 'var(--iris-radius-sm, 4px)',
+        background: props.active ? 'var(--iris-surface-selected, transparent)' : 'transparent',
         cursor: 'pointer',
         padding: '0',
         'margin-inline-start': 'var(--iris-space-xxs, 4px)',
-        'font-size': 'var(--iris-font-size-xs, 12px)',
-        'line-height': '1',
         color: props.active ? 'var(--iris-primary)' : 'var(--iris-muted)',
       }}
     >
-      ⏷
+      <IrisIcon name="filter" size={14} strokeWidth={1.75} />
     </button>
   )
 }

@@ -48,6 +48,34 @@ describe('IrisTable', () => {
     expect(wrapper.findAll('[data-iris-table-row]').length).toBe(3)
   })
 
+  it('renders semantic SVG sort and filter icons in the header', () => {
+    const iconColumns: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        sortable: true,
+        filterable: true,
+        filterOptions: [{ value: 'Alice', label: 'Alice' }],
+      },
+    ]
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: iconColumns,
+        data: rows,
+        rowKey: 'id',
+        defaultSort: { key: 'name', direction: 'desc' },
+      },
+      attachTo: host,
+    })
+    expect(
+      wrapper.find('[data-iris-table-sort-indicator] [data-iris-icon="sort-desc"]').exists(),
+    ).toBe(true)
+    expect(
+      wrapper.find('[data-iris-filter-trigger="name"] [data-iris-icon="filter"]').exists(),
+    ).toBe(true)
+    expect(wrapper.find('[data-iris-filter-trigger="name"]').text()).toBe('')
+  })
+
   it('resolves string, number, missing/null, and numeric edge-case row keys', () => {
     const keyRows: Array<Record<string, unknown>> = [
       { key: 'alpha', label: 'Alpha' },

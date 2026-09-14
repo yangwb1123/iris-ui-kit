@@ -4,6 +4,7 @@ import {
   IrisDashboardCard,
   IrisBadge,
   IrisCountdown,
+  IrisLongPress,
   IrisMenu,
   IrisMenuTrigger,
   IrisMenuContent,
@@ -42,6 +43,13 @@ export function DashboardPage() {
   const [base] = useState(() => Date.now())
   const [expiredFinishCount, setExpiredFinishCount] = useState(0)
   const [lastAction, setLastAction] = useState('none')
+  const [longPressCount, setLongPressCount] = useState(0)
+  const [longPressLastAction, setLongPressLastAction] = useState('none')
+
+  const handleLongPress = (): void => {
+    setLongPressCount((count) => count + 1)
+    setLongPressLastAction('completed hold')
+  }
 
   const handleExpiredFinish = (): void => {
     setExpiredFinishCount((count) => count + 1)
@@ -140,6 +148,110 @@ export function DashboardPage() {
               Expired finish callbacks:{' '}
               <span data-iris-countdown-finish-count>{expiredFinishCount}</span>
             </p>
+          </section>
+        </IrisDashboardCard>
+
+        <IrisDashboardCard colSpan="full">
+          <section
+            data-iris-dashboard-section="long-press"
+            aria-labelledby="dashboard-long-press-heading"
+          >
+            <h2
+              id="dashboard-long-press-heading"
+              style={{
+                margin: '0 0 var(--iris-space-xs, 8px)',
+                fontSize: 'var(--iris-font-size-lg, 16px)',
+              }}
+            >
+              Long press
+            </h2>
+            <p
+              style={{
+                margin: '0 0 var(--iris-space-md, 16px)',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
+            >
+              Release before 100 ms to cancel the hold; each completed hold produces one callback.
+              The gesture is uncontrolled, so this readout reports callback results only.
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gap: 'var(--iris-space-md, 16px)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              }}
+            >
+              <IrisLongPress holdDelay={100} onLongPress={handleLongPress}>
+                <button
+                  type="button"
+                  data-iris-long-press-target="enabled"
+                  style={{
+                    display: 'grid',
+                    gap: 'var(--iris-space-xs, 8px)',
+                    padding: 'var(--iris-space-md, 16px)',
+                    border: '1px solid var(--iris-border)',
+                    borderRadius: 'var(--iris-radius-md, 6px)',
+                    background: 'var(--iris-surface, var(--iris-background))',
+                    color: 'var(--iris-foreground)',
+                    font: 'inherit',
+                    textAlign: 'start',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <strong>Enabled target</strong>
+                  <span
+                    style={{
+                      color: 'var(--iris-muted)',
+                      fontSize: 'var(--iris-font-size-sm, 13px)',
+                    }}
+                  >
+                    Hold for 100 ms to complete.
+                  </span>
+                </button>
+              </IrisLongPress>
+              <IrisLongPress holdDelay={100} onLongPress={handleLongPress} disabled>
+                <button
+                  type="button"
+                  data-iris-long-press-target="disabled"
+                  aria-disabled="true"
+                  style={{
+                    display: 'grid',
+                    gap: 'var(--iris-space-xs, 8px)',
+                    padding: 'var(--iris-space-md, 16px)',
+                    border: '1px dashed var(--iris-border)',
+                    borderRadius: 'var(--iris-radius-md, 6px)',
+                    background: 'var(--iris-background)',
+                    color: 'var(--iris-muted)',
+                    font: 'inherit',
+                    textAlign: 'start',
+                    cursor: 'not-allowed',
+                  }}
+                >
+                  <strong>Disabled target</strong>
+                  <span style={{ fontSize: 'var(--iris-font-size-sm, 13px)' }}>
+                    Holding does not call back.
+                  </span>
+                </button>
+              </IrisLongPress>
+            </div>
+            <output
+              data-iris-long-press-readout
+              aria-live="polite"
+              style={{
+                display: 'block',
+                margin: 'var(--iris-space-md, 16px) 0 0',
+                padding: 'var(--iris-space-sm, 12px) var(--iris-space-md, 16px)',
+                border: '1px solid var(--iris-border)',
+                borderRadius: 'var(--iris-radius-md, 6px)',
+                background: 'var(--iris-surface, var(--iris-background))',
+                color: 'var(--iris-foreground)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
+            >
+              Long-press count: <span data-iris-long-press-count>{longPressCount}</span>; Last
+              action: <span data-iris-long-press-action>{longPressLastAction}</span>
+            </output>
           </section>
         </IrisDashboardCard>
 

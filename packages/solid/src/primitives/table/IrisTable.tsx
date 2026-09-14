@@ -66,6 +66,7 @@ import {
 } from '../../grid'
 import { useI18n } from '../../i18n'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
+import { IrisIcon } from '../icon'
 import type { IrisTableProps } from './props'
 import type {
   IrisTableColumn,
@@ -1613,17 +1614,27 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       <>
         <span
           aria-hidden="true"
+          data-iris-table-sort-indicator=""
+          data-iris-table-sort-state={dir ?? 'none'}
           style={{
             display: 'inline-flex',
-            'flex-direction': 'column',
-            'margin-inline-start': '4px',
-            'line-height': '0.6',
-            'font-size': 'var(--iris-font-size-xs, 12px)',
+            'align-items': 'center',
+            'justify-content': 'center',
+            flex: '0 0 auto',
+            width: '20px',
+            height: '20px',
+            'margin-inline-start': 'var(--iris-space-xxs, 4px)',
+            'border-radius': 'var(--iris-radius-sm, 4px)',
             color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
+            background: isActive ? 'var(--iris-surface-selected, transparent)' : 'transparent',
           }}
         >
-          <span style={{ opacity: dir === 'asc' ? '1' : '0.45' }}>▲</span>
-          <span style={{ opacity: dir === 'desc' ? '1' : '0.45' }}>▼</span>
+          <IrisIcon
+            name={dir === 'desc' ? 'sort-desc' : 'sort-asc'}
+            size={14}
+            strokeWidth={1.75}
+            style={{ opacity: isActive ? '1' : '0.5' }}
+          />
         </span>
         {/* Multi mode: non-primary sort columns show their click-order
             sequence number (vxe sort-config sequence parity). */}

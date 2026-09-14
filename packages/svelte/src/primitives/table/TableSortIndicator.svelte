@@ -1,5 +1,6 @@
 <script lang="ts">
   import { resolveTableSortInfo } from '@iris-ui-kit/core'
+  import IrisIcon from '../icon/IrisIcon.svelte'
   import type { IrisTableColumn, IrisTableSortState } from './types'
 
   let {
@@ -29,12 +30,20 @@
 {#if column.sortable}
   <span
     aria-hidden="true"
-    style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {active
+    data-iris-table-sort-indicator=""
+    data-iris-table-sort-state={direction ?? 'none'}
+    style="display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 20px; height: 20px; margin-inline-start: var(--iris-space-xxs, 4px); border-radius: var(--iris-radius-sm, 4px); color: {active
       ? 'var(--iris-primary)'
-      : 'var(--iris-muted)'}"
+      : 'var(--iris-muted)'}; background: {active
+      ? 'var(--iris-surface-selected, transparent)'
+      : 'transparent'}"
   >
-    <span style="opacity: {direction === 'asc' ? '1' : '0.45'}">▲</span>
-    <span style="opacity: {direction === 'desc' ? '1' : '0.45'}">▼</span>
+    <IrisIcon
+      name={direction === 'desc' ? 'sort-desc' : 'sort-asc'}
+      size={14}
+      strokeWidth={1.75}
+      style="opacity: {active ? '1' : '0.5'}"
+    />
   </span>
   {#if multiSort && multiIndex > 0}
     <span

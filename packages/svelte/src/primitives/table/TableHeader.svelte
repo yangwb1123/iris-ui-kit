@@ -8,6 +8,7 @@
   } from '@iris-ui-kit/core'
   import type { Snippet } from 'svelte'
   import TableDragSpacer from './TableDragSpacer.svelte'
+  import IrisIcon from '../icon/IrisIcon.svelte'
   import PinnedDragHandle from './PinnedDragHandle.svelte'
   import { tableColumnDrag } from './table-drag-actions'
   import { TABLE_CONST } from './tableUtils'
@@ -113,16 +114,21 @@
       data-iris-filter-trigger={col.key}
       data-iris-filter-active={filterValues[col.key]?.length ? 'true' : undefined}
       aria-label={`${t('table.filter')}: ${col.title}`}
+      data-iris-filter-icon=""
       onclick={(event) => {
         event.stopPropagation()
         onFilterOpen(col.key)
       }}
-      style="margin-inline-start: var(--iris-space-xxs, 4px); border: 0; background: transparent; color: {filterValues[
+      style="display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 20px; height: 20px; margin-inline-start: var(--iris-space-xxs, 4px); border: 1px solid transparent; border-radius: var(--iris-radius-sm, 4px); background: {filterValues[
         col.key
       ]?.length
+        ? 'var(--iris-surface-selected, transparent)'
+        : 'transparent'}; color: {filterValues[col.key]?.length
         ? 'var(--iris-primary)'
-        : 'var(--iris-muted)'}; cursor: pointer; padding: 0; font: inherit">⌄</button
+        : 'var(--iris-muted)'}; cursor: pointer; padding: 0"
     >
+      <IrisIcon name="filter" size={14} strokeWidth={1.75} />
+    </button>
   {/if}
 {/snippet}
 

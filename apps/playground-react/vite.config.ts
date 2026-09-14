@@ -28,15 +28,30 @@ function subpathAliases(pkg: string, bare: string): Record<string, string> {
   const aliases: Record<string, string> = {}
   const srcDir = fileURLToPath(new URL(`../../packages/${pkg}/src`, import.meta.url))
   for (const dir of readdirSync(srcDir, { withFileTypes: true })) {
-    if (dir.isDirectory() && existsSync(join(srcDir, dir.name, 'index.ts'))) {
+    const entry = ['index.ts', 'index.tsx'].find((file) => existsSync(join(srcDir, dir.name, file)))
+    if (dir.isDirectory() && entry) {
       // Group dirs are directories (`src/provider/index.ts`), not bare files.
       aliases[`${bare}/${dir.name}`] = fileURLToPath(
-        new URL(`../../packages/${pkg}/src/${dir.name}/index.ts`, import.meta.url),
+        new URL(`../../packages/${pkg}/src/${dir.name}/${entry}`, import.meta.url),
       )
     }
   }
   return aliases
 }
+
+/**
+ * Plugin package exports point at generated `dist` files, which are intentionally
+ * ignored and may not exist in a fresh checkout. Keep the playground's dev
+ * promise (no package build required) by resolving every TS plugin subpath to
+ * its source entry as well.
+ */
+const pluginAliases = Object.fromEntries(
+  readdirSync(fileURLToPath(new URL('../../packages', import.meta.url)), {
+    withFileTypes: true,
+  })
+    .filter((dir) => dir.isDirectory() && dir.name.startsWith('plugin-'))
+    .flatMap((dir) => Object.entries(subpathAliases(dir.name, `@iris-ui-kit/${dir.name}`))),
+)
 
 // In `serve` (dev) we alias to source; in `build` (and the `preview` that
 // serves it) we leave the aliases off so the app bundles the real published
@@ -63,6 +78,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/theme': src('theme'),
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
+            ...pluginAliases,
             ...subpathAliases('react', '@iris-ui-kit/react'),
             '@iris-ui-kit/react': src('react'),
           },

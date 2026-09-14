@@ -67,6 +67,28 @@ describe('@iris-ui-kit/react IrisTable', () => {
     expect(headers().some((h) => h.textContent?.includes('Age'))).toBe(true)
   })
 
+  it('renders semantic SVG sort and filter icons in the header', () => {
+    const columns: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        sortable: true,
+        filterable: true,
+        filterOptions: [{ value: 'Alice', label: 'Alice' }],
+      },
+    ]
+    render(
+      <IrisTable columns={columns} data={rows} defaultSort={{ key: 'name', direction: 'desc' }} />,
+    )
+    expect(
+      document.querySelector('[data-iris-table-sort-indicator] [data-iris-icon="sort-desc"]'),
+    ).not.toBeNull()
+    expect(
+      document.querySelector('[data-iris-filter-trigger="name"] [data-iris-icon="filter"]'),
+    ).not.toBeNull()
+    expect(document.querySelector('[data-iris-filter-trigger="name"]')?.textContent).toBe('')
+  })
+
   it('clicking a sortable header cycles asc → desc → none', () => {
     const onSort = vi.fn()
     render(<IrisTable columns={baseColumns} data={rows} onSortChange={onSort} />)

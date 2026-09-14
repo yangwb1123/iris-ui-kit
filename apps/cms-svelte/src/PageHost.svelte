@@ -8,6 +8,7 @@
   import VxeGridExamplePage from './pages/VxeGridExamplePage.svelte'
   import TreeExamplePage from './pages/TreeExamplePage.svelte'
   import NotificationsPage from './pages/NotificationsPage.svelte'
+  import QueryBuilderPage from './pages/QueryBuilderPage.svelte'
 
   let { routeKey }: { routeKey: string } = $props()
 </script>
@@ -28,6 +29,8 @@
   <TreeExamplePage />
 {:else if routeKey === 'notifications'}
   <NotificationsPage />
+{:else if routeKey === 'query-builder-example'}
+  <QueryBuilderPage />
 {:else}
   <DashboardPage />
 {/if}

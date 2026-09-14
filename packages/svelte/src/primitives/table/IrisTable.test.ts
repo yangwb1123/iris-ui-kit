@@ -30,6 +30,32 @@ describe('IrisTable', () => {
     expect(headers[1].textContent?.trim()).toContain('Age')
   })
 
+  it('renders semantic SVG sort and filter icons in the header', () => {
+    const iconColumns = [
+      {
+        key: 'name',
+        title: 'Name',
+        sortable: true,
+        filterable: true,
+        filterOptions: [{ value: 'Alice', label: 'Alice' }],
+      },
+    ]
+    const { container } = render(IrisTable, {
+      props: {
+        columns: iconColumns,
+        data,
+        defaultSort: { key: 'name', direction: 'desc' },
+      },
+    })
+    expect(
+      container.querySelector('[data-iris-table-sort-indicator] [data-iris-icon="sort-desc"]'),
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-filter-trigger="name"] [data-iris-icon="filter"]'),
+    ).not.toBeNull()
+    expect(container.querySelector('[data-iris-filter-trigger="name"]')?.textContent).toBe('')
+  })
+
   it('renders data rows', () => {
     const { container } = render(IrisTable, { props: { columns, data } })
     const rows = container.querySelectorAll('[data-iris-table-row]')

@@ -5,6 +5,7 @@ import {
   IrisSegmented,
   IrisSwitch,
   IrisButton,
+  IrisFieldset,
   IrisStack,
 } from '@iris-ui-kit/react'
 import { readCmsSettings, saveCmsSettings, type CmsSettings } from '@iris-ui-kit/cms-shared'
@@ -22,6 +23,7 @@ export function SettingsPage() {
   const [notifications, setNotifications] = useState(initial.notifications)
   const [maintenance, setMaintenance] = useState(initial.maintenance)
   const [status, setStatus] = useState('')
+  const [settingsLocked, setSettingsLocked] = useState(false)
   const selectedEnvironment = maintenance ? 'maintenance' : 'live'
 
   const selectEnvironment = (value: string) => {
@@ -52,38 +54,53 @@ export function SettingsPage() {
         preserved by the keep-alive content cache.
       </p>
       <form style={{ maxWidth: 480 }} onSubmit={save}>
-        <IrisStack spacing={16}>
-          <IrisFormField label="Site name">
-            <IrisInput required value={siteName} onChange={(e) => setSiteName(e.target.value)} />
-          </IrisFormField>
-          <IrisFormField label="Support email">
-            <IrisInput
-              required
-              type="email"
-              value={supportEmail}
-              onChange={(e) => setSupportEmail(e.target.value)}
-            />
-          </IrisFormField>
-          <IrisFormField label="Email notifications">
-            <IrisSwitch checked={notifications} onChange={(next) => setNotifications(next)} />
-          </IrisFormField>
-          <IrisFormField label="Maintenance mode">
-            <IrisSegmented
-              options={environmentOptions}
-              value={selectedEnvironment}
-              onValueChange={selectEnvironment}
-              ariaLabel="Environment"
-            />
-          </IrisFormField>
-          <div>
-            <IrisButton type="submit" variant="solid">
-              Save changes
-            </IrisButton>
-          </div>
-          <span role="status" aria-live="polite">
-            {status}
-          </span>
-        </IrisStack>
+        <div style={{ marginBlockEnd: 'var(--iris-space-md, 16px)' }}>
+          <IrisButton
+            type="button"
+            variant="outline"
+            onClick={() => setSettingsLocked((locked) => !locked)}
+          >
+            {settingsLocked ? 'Unlock settings' : 'Lock settings'}
+          </IrisButton>
+        </div>
+        <IrisFieldset
+          legend="Site settings"
+          hint="These settings apply to the entire site."
+          disabled={settingsLocked}
+        >
+          <IrisStack spacing={16}>
+            <IrisFormField label="Site name">
+              <IrisInput required value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+            </IrisFormField>
+            <IrisFormField label="Support email">
+              <IrisInput
+                required
+                type="email"
+                value={supportEmail}
+                onChange={(e) => setSupportEmail(e.target.value)}
+              />
+            </IrisFormField>
+            <IrisFormField label="Email notifications">
+              <IrisSwitch checked={notifications} onChange={(next) => setNotifications(next)} />
+            </IrisFormField>
+            <IrisFormField label="Maintenance mode">
+              <IrisSegmented
+                options={environmentOptions}
+                value={selectedEnvironment}
+                onValueChange={selectEnvironment}
+                ariaLabel="Environment"
+              />
+            </IrisFormField>
+            <div>
+              <IrisButton type="submit" variant="solid">
+                Save changes
+              </IrisButton>
+            </div>
+            <span role="status" aria-live="polite">
+              {status}
+            </span>
+          </IrisStack>
+        </IrisFieldset>
       </form>
     </section>
   )

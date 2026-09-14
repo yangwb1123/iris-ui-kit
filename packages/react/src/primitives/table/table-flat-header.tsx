@@ -2,6 +2,7 @@ import * as React from 'react'
 import { columnLetter, DEFAULT_COLUMN_MIN_WIDTH, resolveTableSortInfo } from '@iris-ui-kit/core'
 import type { IrisTableSortDirection } from './types'
 import { IrisCheckbox } from '../checkbox/Checkbox'
+import { IrisIcon } from '../icon'
 import { TableFilterTrigger } from './filter-trigger'
 import { ColumnResizeHandle, PinnedDragHandle } from './column-layout'
 import { justifyFor } from './cell-helpers'
@@ -263,13 +264,26 @@ export function FlatTableHeader<Row extends Record<string, unknown>>(
               <span
                 aria-hidden="true"
                 data-iris-table-sort-indicator=""
+                data-iris-table-sort-state={dir ?? 'none'}
                 style={{
-                  marginInlineStart: 'var(--iris-space-xs, 8px)',
-                  fontSize: 'var(--iris-font-size-xs, 12px)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flex: '0 0 auto',
+                  width: 20,
+                  height: 20,
+                  marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
                   color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
+                  background: dir ? 'var(--iris-surface-selected, transparent)' : 'transparent',
                 }}
               >
-                {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
+                <IrisIcon
+                  name={dir === 'desc' ? 'sort-desc' : 'sort-asc'}
+                  size={14}
+                  strokeWidth={1.75}
+                  style={{ opacity: dir ? 1 : 0.5 }}
+                />
               </span>
             ) : null}
             {col.filterable ? (

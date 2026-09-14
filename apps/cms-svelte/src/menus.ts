@@ -11,4 +11,5 @@ export const menus: NavNode[] = [
   { key: 'vxe-example', title: 'VxeGrid Example', icon: 'table', order: 8 },
   { key: 'tree-example', title: 'Tree Example', icon: 'check-circle', order: 9 },
   { key: 'notifications', title: 'Notifications', icon: 'bell', order: 10 },
+  { key: 'query-builder-example', title: 'Query Builder Example', icon: 'filter', order: 11 },
 ]

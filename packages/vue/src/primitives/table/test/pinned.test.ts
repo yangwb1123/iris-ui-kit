@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisTable } from '../Table'
 import type { IrisTableColumn } from '../types'
@@ -48,5 +49,36 @@ describe('IrisTable pinned columns', () => {
     })
     const nameHeader = wrapper.find('[data-iris-table-header="name"]')
     expect((nameHeader.element as HTMLElement).style.left).toBe('40px')
+  })
+
+  it('keeps the virtualized header in the body horizontal scroll viewport', async () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: [
+          { key: 'name', title: 'Name', width: 100, pinned: 'left' },
+          { key: 'age', title: 'Age', width: 500 },
+          { key: 'status', title: 'Status', width: 500, pinned: 'right' },
+        ],
+        data: rows,
+        rowKey: 'id',
+        columnVirtualization: true,
+        virtualScroll: { itemHeight: 40, height: 100 },
+      },
+    })
+    const root = wrapper.find('[data-iris-table]').element as HTMLElement
+    const viewport = wrapper.find('[data-iris-virtual-scroll]').element as HTMLElement
+    const header = wrapper.find('[data-iris-table-header-row]').element
+    const cell = wrapper.find('[data-iris-table-cell="name"]').element
+
+    expect(header.closest('[data-iris-virtual-scroll]')).toBe(viewport)
+    expect(cell.closest('[data-iris-virtual-scroll]')).toBe(viewport)
+    expect(root.style.overflow).toBe('hidden')
+    expect(viewport.style.overflow).toBe('auto')
+
+    viewport.scrollLeft = 120
+    viewport.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    expect(root.scrollLeft).toBe(0)
+    expect((cell as HTMLElement).style.position).toBe('sticky')
   })
 })

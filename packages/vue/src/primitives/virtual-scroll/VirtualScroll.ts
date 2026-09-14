@@ -51,6 +51,9 @@ export interface IrisVirtualScrollExposed {
  *       Row #{{ index }} — {{ item.name }}
  *     </template>
  *   </IrisVirtualScroll>
+ *
+ * Use the optional `header` / `footer` slots when the scroll surface must also
+ * contain aligned chrome, such as a virtualized table header or summary row.
  */
 export const IrisVirtualScroll = defineComponent({
   name: 'IrisVirtualScroll',
@@ -351,6 +354,8 @@ export const IrisVirtualScroll = defineComponent({
         )
       }
 
+      const header = slots.header?.() ?? []
+      const footer = slots.footer?.() ?? []
       return h(
         'div',
         {
@@ -362,7 +367,11 @@ export const IrisVirtualScroll = defineComponent({
           onScroll,
           style: containerStyle.value,
         },
-        [h('div', { 'data-iris-virtual-spacer': '', style: spacerStyle.value }, visible)],
+        [
+          ...header,
+          h('div', { 'data-iris-virtual-spacer': '', style: spacerStyle.value }, visible),
+          ...footer,
+        ],
       )
     }
   },

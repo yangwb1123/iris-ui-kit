@@ -1662,6 +1662,45 @@ export const IrisTable = defineComponent({
     const viewportWidth = ref(0)
     const colTrack = (i: number): number => columnGridTrack(i, leadTrackCount())
 
+    // A virtualized table renders its header and body inside the same
+    // IrisVirtualScroll viewport. Listen to that viewport here so column
+    // virtualization still knows which columns are visible; the table root is
+    // deliberately not a second horizontal scroll owner in this mode.
+    let boundVirtualViewport: HTMLElement | null = null
+    const virtualViewportOf = (): HTMLElement | null =>
+      props.virtualScroll
+        ? (rootRef.value?.querySelector<HTMLElement>('[data-iris-virtual-scroll]') ?? null)
+        : null
+    const handleVirtualViewportScroll = (event: Event): void => {
+      const viewport = event.currentTarget as HTMLElement | null
+      if (!viewport || viewport !== boundVirtualViewport) return
+      if (scrollLeft.value !== viewport.scrollLeft) {
+        scrollLeft.value = viewport.scrollLeft
+      }
+    }
+    const handleTableScroll = (event: Event): void => {
+      const root = event.currentTarget as HTMLElement | null
+      if (!root) return
+      if (scrollLeft.value !== root.scrollLeft) scrollLeft.value = root.scrollLeft
+    }
+    const bindVirtualViewportScroll = (): void => {
+      const next = virtualViewportOf()
+      if (next === boundVirtualViewport) return
+      boundVirtualViewport?.removeEventListener('scroll', handleVirtualViewportScroll)
+      boundVirtualViewport = next
+      if (next) next.addEventListener('scroll', handleVirtualViewportScroll, { passive: true })
+    }
+    onMounted(bindVirtualViewportScroll)
+    watch(
+      [() => Boolean(props.virtualScroll), bodyData, tableLoading, tableError],
+      bindVirtualViewportScroll,
+      { flush: 'post' },
+    )
+    onBeforeUnmount(() => {
+      boundVirtualViewport?.removeEventListener('scroll', handleVirtualViewportScroll)
+      boundVirtualViewport = null
+    })
+
     if (typeof ResizeObserver !== 'undefined') {
       let ro: ResizeObserver | null = null
       onMounted(() => {
@@ -2427,10 +2466,11 @@ export const IrisTable = defineComponent({
         getHandleRef,
         setColumnWidths,
       })
-      const { bodyNode, summaryRow } = renderTableBodyContent({
+      const { bodyNode, summaryRow, headerInBody } = renderTableBodyContent({
         props,
         slots,
         t,
+        headerRow,
         showDrag,
         showSeq,
         showDetail,
@@ -2496,6 +2536,7 @@ export const IrisTable = defineComponent({
         effectiveDensity: effectiveDensity.value,
         responsiveOverflow: responsiveOverflow.value,
         scrollLeft,
+        handleTableScroll,
         handleRootKeyDown,
         handleRowDragPointerMove,
         handleColDragPointerMove,
@@ -2512,7 +2553,7 @@ export const IrisTable = defineComponent({
         t,
         onConfirmImportPreview: importController.confirmImportPreview,
         onCancelImportPreview: importController.cancelImportPreview,
-        headerRow,
+        headerRow: headerInBody ? null : headerRow,
         bodyNode,
         summaryRow,
         buildPagerSection,

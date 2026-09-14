@@ -17,6 +17,7 @@ export interface TablePresentationContext {
   effectiveDensity: IrisTableDensity
   responsiveOverflow: boolean
   scrollLeft: Ref<number>
+  handleTableScroll: (event: Event) => void
   handleRootKeyDown: (event: KeyboardEvent) => void
   handleRowDragPointerMove: (event: PointerEvent) => void
   handleColDragPointerMove: (event: PointerEvent) => void
@@ -33,7 +34,7 @@ export interface TablePresentationContext {
   t: Translate
   onConfirmImportPreview: () => void
   onCancelImportPreview: () => void
-  headerRow: VNode
+  headerRow: VNode | null
   bodyNode: VNode
   summaryRow: VNode | null
   buildPagerSection: () => VNode | null
@@ -46,6 +47,7 @@ export interface TablePresentationContext {
 
 /** Compose the table surface with its surrounding Vue adapter chrome. */
 export function renderTablePresentation(ctx: TablePresentationContext): VNode | VNode[] {
+  const virtualBodyOwnsHeader = ctx.headerRow === null && Boolean(ctx.props.virtualScroll)
   const rootNodes = [
     ctx.renderTabs(ctx.props.tableTabs),
     ctx.renderViews(),
@@ -82,11 +84,7 @@ export function renderTablePresentation(ctx: TablePresentationContext): VNode | 
           ctx.props.keyboardNavigation || ctx.props.cellRange || ctx.props.clipConfig
             ? (e: KeyboardEvent) => ctx.handleRootKeyDown(e)
             : undefined,
-        onScroll: ctx.props.columnVirtualization
-          ? (e: Event) => {
-              ctx.scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft
-            }
-          : undefined,
+        onScroll: ctx.props.columnVirtualization ? ctx.handleTableScroll : undefined,
         onPointermove:
           ctx.props.rowDrag || ctx.props.columnDrag
             ? (e: PointerEvent) => {
@@ -108,8 +106,15 @@ export function renderTablePresentation(ctx: TablePresentationContext): VNode | 
           fontSize: 'var(--iris-font-size-md, 14px)',
           border: ctx.props.bordered ? '1px solid var(--iris-border)' : 'none',
           borderRadius: 'var(--iris-radius-md)',
-          overflow: ctx.props.columnVirtualization || ctx.responsiveOverflow ? 'auto' : 'hidden',
-          ...(ctx.responsiveOverflow ? { overflowX: 'auto' } : {}),
+          // A virtualized body owns the only horizontal scrollbar and also
+          // contains the header. Keeping the root clipped avoids the nested
+          // root/body scrollbars that break pinned-column alignment.
+          overflow: virtualBodyOwnsHeader
+            ? 'hidden'
+            : ctx.props.columnVirtualization || ctx.responsiveOverflow
+              ? 'auto'
+              : 'hidden',
+          ...(ctx.responsiveOverflow && !virtualBodyOwnsHeader ? { overflowX: 'auto' } : {}),
           ...((ctx.attrs.style as Record<string, string> | undefined) ?? {}),
         },
       },

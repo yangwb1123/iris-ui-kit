@@ -17,6 +17,7 @@ export interface TableBodyContentContext extends TableBodyRowContext {
   props: TableRuntimeProps
   slots: Slots
   t: Translate
+  headerRow: VNode
   treeMode: boolean
   bodyData: TableRow[]
   leafColumns: TableColumn[]
@@ -30,6 +31,7 @@ export interface TableBodyContentContext extends TableBodyRowContext {
 export interface TableBodyContentResult {
   bodyNode: VNode
   summaryRow: VNode | null
+  headerInBody: boolean
 }
 
 function leadSummaryCells(ctx: TableBodyContentContext): VNode[] {
@@ -116,10 +118,31 @@ export function renderTableBodyContent(ctx: TableBodyContentContext): TableBodyC
     retryLabel: ctx.t('table.retry'),
   })
 
+  const summaryRow =
+    !ctx.tableError && !ctx.tableLoading
+      ? renderTableSummaryRow({
+          bodyData: ctx.bodyData,
+          leafColumns: ctx.leafColumns,
+          visibleColSet: ctx.visibleColSet,
+          gridTemplate: ctx.gridTemplate,
+          leadingCells: leadSummaryCells(ctx),
+          columnFadeAttr: ctx.columnFadeAttr,
+          columnFadeStyle: ctx.columnFadeStyle,
+          colTrack: ctx.colTrack,
+          getCellValue: ctx.getCellValue,
+          pinOf: ctx.pinOf,
+          pinnedStyle: ctx.pinnedStyle,
+        })
+      : null
+
   let bodyNode: VNode
+  let headerInBody = false
+  let summaryInBody = false
   if (stateNode) {
     bodyNode = stateNode
   } else if (ctx.props.virtualScroll && (!ctx.treeMode || !ctx.showDetail)) {
+    headerInBody = true
+    summaryInBody = summaryRow !== null
     bodyNode = h(
       IrisVirtualScroll,
       {
@@ -131,8 +154,26 @@ export function renderTableBodyContent(ctx: TableBodyContentContext): TableBodyC
         style: { width: '100%' },
       },
       {
+        header: () => [
+          h(
+            'div',
+            {
+              'data-iris-table-virtual-header': '',
+              style: {
+                position: 'sticky',
+                top: '0',
+                zIndex: '2',
+                width: 'max-content',
+                minWidth: '100%',
+                background: 'var(--iris-surface)',
+              },
+            },
+            [ctx.headerRow],
+          ),
+        ],
         item: ({ item, index }: { item: TableRow; index: number }) =>
           renderTableBodyRow(ctx, item, index, undefined, ctx.flatTree?.[index]),
+        footer: () => (summaryRow ? [summaryRow] : []),
       },
     )
   } else {
@@ -184,22 +225,9 @@ export function renderTableBodyContent(ctx: TableBodyContentContext): TableBodyC
     )
   }
 
-  const summaryRow =
-    !ctx.tableError && !ctx.tableLoading
-      ? renderTableSummaryRow({
-          bodyData: ctx.bodyData,
-          leafColumns: ctx.leafColumns,
-          visibleColSet: ctx.visibleColSet,
-          gridTemplate: ctx.gridTemplate,
-          leadingCells: leadSummaryCells(ctx),
-          columnFadeAttr: ctx.columnFadeAttr,
-          columnFadeStyle: ctx.columnFadeStyle,
-          colTrack: ctx.colTrack,
-          getCellValue: ctx.getCellValue,
-          pinOf: ctx.pinOf,
-          pinnedStyle: ctx.pinnedStyle,
-        })
-      : null
-
-  return { bodyNode, summaryRow }
+  return {
+    bodyNode,
+    summaryRow: summaryInBody ? null : summaryRow,
+    headerInBody,
+  }
 }

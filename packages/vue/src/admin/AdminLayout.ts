@@ -247,9 +247,10 @@ export const IrisAdminLayout = defineComponent({
               'data-iris-admin-tabs-region': '',
               'data-sticky': props.stickyTabs ? 'true' : undefined,
               style: {
-                // Tabs live in the scrollable main region, so their stickiness
-                // is independent from the header's stickiness. Previously a
-                // sticky header kept tabs fixed even when `stickyTabs=false`.
+                // Fixed tabs belong to the header chrome, outside the scrollable
+                // main region. Non-fixed tabs are rendered in that region below.
+                // This keeps the tab bar out of the main scrollbar's viewport
+                // while preserving independent stickyHeader/stickyTabs controls.
                 position: props.stickyTabs ? 'sticky' : 'relative',
                 top: '0',
                 zIndex: '49',
@@ -258,6 +259,11 @@ export const IrisAdminLayout = defineComponent({
             [h(IrisAdminTabs, { nav: props.tabs })],
           )
         : null
+
+    // Fixed tabs are a separate shell chrome row. The header layout keeps its
+    // main region scrollable even when the header itself is intentionally static,
+    // so the scrollbar starts below the tab bar and the header can scroll away.
+    const hasFixedTabs = computed(() => Boolean(props.tabs && props.showTabs && props.stickyTabs))
 
     return () => {
       if (props.mode === 'full-content') {
@@ -290,15 +296,19 @@ export const IrisAdminLayout = defineComponent({
             'data-iris-admin-layout': '',
             'data-mode': 'horizontal',
             style: {
-              height: props.contentHeight === 'viewport' ? '100vh' : 'auto',
-              minHeight: props.contentHeight === 'viewport' ? '100vh' : '0',
+              height: props.contentHeight === 'viewport' || hasFixedTabs.value ? '100vh' : 'auto',
+              minHeight: props.contentHeight === 'viewport' || hasFixedTabs.value ? '100vh' : '0',
               ...((attrs.style as Record<string, string> | undefined) ?? {}),
             },
           },
           [
             h(
               IrisHeaderLayout,
-              { sticky: props.stickyHeader },
+              {
+                sticky: props.stickyHeader,
+                scrollMain: props.stickyHeader || hasFixedTabs.value,
+                headerInMain: hasFixedTabs.value && !props.stickyHeader,
+              },
               {
                 header: () =>
                   h('div', { 'data-iris-admin-header': '' }, [
@@ -350,9 +360,10 @@ export const IrisAdminLayout = defineComponent({
                       ],
                     ),
                   ]),
-                // Keep the tab bar in the main scroll region. This lets
-                // stickyHeader and stickyTabs be configured independently.
-                default: () => [renderTabs(), renderContent(true)],
+                beforeMain: () => (hasFixedTabs.value ? [renderTabs()] : []),
+                // Non-fixed tabs remain in the main scroll region; fixed tabs
+                // are rendered outside it so the main scrollbar starts below.
+                default: () => [hasFixedTabs.value ? null : renderTabs(), renderContent(true)],
                 ...(slots.footer ? { footer: () => slots.footer!() } : {}),
               },
             ),
@@ -371,8 +382,8 @@ export const IrisAdminLayout = defineComponent({
           'data-iris-admin-layout': '',
           'data-mode': 'sidebar',
           style: {
-            height: props.contentHeight === 'viewport' ? '100vh' : 'auto',
-            minHeight: props.contentHeight === 'viewport' ? '100vh' : '0',
+            height: props.contentHeight === 'viewport' || hasFixedTabs.value ? '100vh' : 'auto',
+            minHeight: props.contentHeight === 'viewport' || hasFixedTabs.value ? '100vh' : '0',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
@@ -409,12 +420,17 @@ export const IrisAdminLayout = defineComponent({
           default: () =>
             h(
               IrisHeaderLayout,
-              { sticky: props.stickyHeader },
+              {
+                sticky: props.stickyHeader,
+                scrollMain: props.stickyHeader || hasFixedTabs.value,
+                headerInMain: hasFixedTabs.value && !props.stickyHeader,
+              },
               {
                 header: () => h('div', { 'data-iris-admin-header': '' }, [renderHeaderBar()]),
-                // Keep tabs outside the header so fixedHeader and fixedTabs do
-                // not force each other on or off.
-                default: () => [renderTabs(), renderContent()],
+                beforeMain: () => (hasFixedTabs.value ? [renderTabs()] : []),
+                // Non-fixed tabs remain in the main scroll region; fixed tabs
+                // are rendered outside it so the main scrollbar starts below.
+                default: () => [hasFixedTabs.value ? null : renderTabs(), renderContent()],
                 ...(slots.footer ? { footer: () => slots.footer!() } : {}),
               },
             ),

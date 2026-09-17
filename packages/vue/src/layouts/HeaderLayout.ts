@@ -4,10 +4,11 @@ import { defineComponent, h, type PropType } from 'vue'
  * Two-region vertical layout: a sticky header on top, scrollable main below.
  *
  * Slots:
- *   - `header` — fixed at top.
+ *   - `header` — header chrome, or the first child of main when `headerInMain` is true.
+ *   - `beforeMain` — optional chrome between the header and the scrolling main region.
  *   - `footer` — optional fixed at bottom.
- *   - `default` — main content. When `sticky` is true this region scrolls;
- *     otherwise the complete layout participates in the surrounding scroll.
+ *   - `default` — main content. `scrollMain` controls whether this region owns scrolling;
+ *     it defaults to `sticky` for backwards compatibility.
  */
 export const IrisHeaderLayout = defineComponent({
   name: 'IrisHeaderLayout',
@@ -17,13 +18,40 @@ export const IrisHeaderLayout = defineComponent({
     headerHeight: { type: [Number, String] as PropType<number | string>, default: 'auto' },
     /** Footer height (px or CSS length). Default `'auto'`. */
     footerHeight: { type: [Number, String] as PropType<number | string>, default: 'auto' },
-    /** When true, header sticks via `position: sticky` instead of static. */
+    /** When true, the header sticks via `position: sticky` instead of static. */
     sticky: { type: Boolean, default: true },
+    /** When true, the main region owns scrolling even if the header is static. */
+    scrollMain: { type: Boolean, default: undefined },
+    /** Render the header as the first child inside the scrolling main region. */
+    headerInMain: { type: Boolean, default: false },
   },
   setup(props, { slots, attrs }) {
     const asLen = (v: number | string) => (typeof v === 'number' ? `${v}px` : v)
-    return () =>
-      h(
+    return () => {
+      const scrollMain = props.scrollMain ?? props.sticky
+      const header = slots.header
+        ? h(
+            'header',
+            {
+              role: 'banner',
+              'data-iris-header': '',
+              style: {
+                flexShrink: '0',
+                height: asLen(props.headerHeight),
+                borderBottom: '1px solid var(--iris-border)',
+                background: 'var(--iris-surface)',
+                position: props.sticky ? 'sticky' : 'static',
+                top: '0',
+                zIndex: '50',
+              },
+            },
+            slots.header(),
+          )
+        : null
+      const beforeMain = slots.beforeMain?.() ?? []
+      const mainChildren = [props.headerInMain ? header : null, ...(slots.default?.() ?? [])]
+
+      return h(
         'div',
         {
           ...attrs,
@@ -32,36 +60,19 @@ export const IrisHeaderLayout = defineComponent({
             display: 'flex',
             flexDirection: 'column',
             width: '100%',
-            // A non-sticky header must scroll away with the content. Keeping
-            // the old fixed-height/scrollable-main combination made
-            // `sticky=false` visually indistinguishable from `sticky=true`.
-            height: props.sticky ? '100%' : 'auto',
-            minHeight: props.sticky ? '0' : 'auto',
+            // A scrollable main needs a bounded flex parent. `scrollMain` is
+            // independent from header stickiness so fixed tabs can keep their
+            // own chrome while a non-fixed header still scrolls away.
+            height: scrollMain ? '100%' : 'auto',
+            minHeight: scrollMain ? '0' : 'auto',
             background: 'var(--iris-background)',
             color: 'var(--iris-foreground)',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
         [
-          slots.header
-            ? h(
-                'header',
-                {
-                  role: 'banner',
-                  'data-iris-header': '',
-                  style: {
-                    flexShrink: '0',
-                    height: asLen(props.headerHeight),
-                    borderBottom: '1px solid var(--iris-border)',
-                    background: 'var(--iris-surface)',
-                    position: props.sticky ? 'sticky' : 'static',
-                    top: '0',
-                    zIndex: '50',
-                  },
-                },
-                slots.header(),
-              )
-            : null,
+          props.headerInMain ? null : header,
+          ...beforeMain,
           h(
             'main',
             {
@@ -69,11 +80,11 @@ export const IrisHeaderLayout = defineComponent({
               'data-iris-header-main': '',
               style: {
                 flex: '1',
-                minHeight: props.sticky ? '0' : 'auto',
-                overflow: props.sticky ? 'auto' : 'visible',
+                minHeight: scrollMain ? '0' : 'auto',
+                overflow: scrollMain ? 'auto' : 'visible',
               },
             },
-            slots.default?.(),
+            mainChildren,
           ),
           slots.footer
             ? h(
@@ -93,5 +104,6 @@ export const IrisHeaderLayout = defineComponent({
             : null,
         ],
       )
+    }
   },
 })

@@ -1,5 +1,17 @@
 # @iris-ui-kit/vue
 
+## 0.2.46
+
+### Patch Changes
+
+- Add an independent scrolling main region for fixed tabs so the tab chrome stays outside content while a non-fixed header can scroll away.
+
+## 0.2.45
+
+### Patch Changes
+
+- Render fixed admin tabs in the header chrome, outside the scrollable main region, while keeping non-fixed tabs in the content scroll region.
+
 ## 0.2.44
 
 ### Patch Changes

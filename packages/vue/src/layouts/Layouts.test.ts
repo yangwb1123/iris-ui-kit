@@ -116,6 +116,23 @@ describe('IrisHeaderLayout', () => {
     expect(wrapper.find('[data-iris-header]').attributes('style')).toContain('position: sticky')
   })
 
+  it('can scroll main independently while a static header lives inside it', () => {
+    const wrapper = mount(IrisHeaderLayout, {
+      props: { sticky: false, scrollMain: true, headerInMain: true },
+      slots: {
+        header: () => h('h1', { class: 'h' }, 'H'),
+        beforeMain: () => h('div', { class: 'before' }, 'B'),
+        default: () => h('div', { class: 'm' }, 'M'),
+      },
+    })
+
+    expect(wrapper.find('[data-iris-header-layout] > .before').exists()).toBe(true)
+    expect(wrapper.find('[data-iris-header-main] > [data-iris-header] .h').exists()).toBe(true)
+    expect(wrapper.find('[data-iris-header-main]').attributes('style')).toContain('overflow: auto')
+    expect(wrapper.find('[data-iris-header] [data-iris-admin-tabs-region]').exists()).toBe(false)
+    expect(wrapper.find('[data-iris-header]').attributes('style')).toContain('position: static')
+  })
+
   it('renders footer when slot is provided', () => {
     const wrapper = mount(IrisHeaderLayout, {
       slots: { footer: () => h('span', { class: 'foo' }, 'F') },

@@ -92,14 +92,38 @@ describe('IrisAdminLayout', () => {
     })
 
     expect(w.find('header[data-iris-header]').attributes('style')).toContain('position: static')
-    expect(w.find('[data-iris-header-layout]').attributes('style')).toContain('height: auto')
-    expect(w.find('[data-iris-header-main]').attributes('style')).toContain('overflow: visible')
+    expect(w.find('[data-iris-header-layout]').attributes('style')).toContain('height: 100%')
+    expect(w.find('[data-iris-header-main]').attributes('style')).toContain('overflow: auto')
+    expect(w.find('[data-iris-header] [data-iris-admin-tabs-region]').exists()).toBe(false)
+    expect(w.find('[data-iris-header-main] [data-iris-admin-tabs-region]').exists()).toBe(false)
+    expect(w.find('[data-iris-header-layout] > [data-iris-admin-tabs-region]').exists()).toBe(true)
     expect(w.find('[data-iris-admin-tabs-region]').attributes('style')).toContain(
       'position: sticky',
     )
     expect(
       w.find('[data-iris-admin-layout][data-mode="horizontal"]').attributes('style'),
-    ).toContain('min-height: 0')
+    ).toContain('min-height: 100vh')
+  })
+
+  it('keeps non-fixed tabs in the scrollable main region', () => {
+    const tabs = createTabsNav({ tabs: [{ key: 'dash', title: 'Dashboard', pinned: true }] })
+    const w = mount(IrisAdminLayout, {
+      props: {
+        menus,
+        activeKey: 'dash',
+        tabs,
+        mode: 'horizontal',
+        stickyHeader: true,
+        stickyTabs: false,
+      },
+      slots,
+    })
+
+    expect(w.find('[data-iris-header] [data-iris-admin-tabs-region]').exists()).toBe(false)
+    expect(w.find('[data-iris-header-main] [data-iris-admin-tabs-region]').exists()).toBe(true)
+    expect(w.find('[data-iris-admin-tabs-region]').attributes('style')).toContain(
+      'position: relative',
+    )
   })
 
   it('renders the tab bar and opens a tab when navigating', async () => {

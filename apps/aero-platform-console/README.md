@@ -80,9 +80,9 @@ aero-id 等上游的瞬时故障放大成前端容器重启。
 
 控制台按普通 npm consumer 使用已发布的 Iris UI 包，不允许通过 `workspace:`、Vite alias
 或相对路径直接读取 `packages/*/src`。依赖使用精确版本并在每次构建前核验实际安装路径与
-registry 元数据，防止退回 monorepo 隐式链接。当前锁定 `@iris-ui-kit/react@0.2.2`：
-`0.2.3` 的依赖错误保留了 `workspace:*`，`0.3.0` 则依赖尚未发布 `maskValue` 的
-`@iris-ui-kit/core@0.2.1`；升级必须等待 Core 与 React 联合发布兼容版本。
+registry 元数据，防止退回 monorepo 隐式链接。当前锁定已发布的
+`@iris-ui-kit/react@0.3.2` 与 `@iris-ui-kit/plugin-locale-zh@0.1.1`；升级前仍须先完成
+Core 与适配器的联合发布，并核验发布包不含 `workspace:` 依赖。
 
 ```bash
 pnpm --filter aero-platform-console dev

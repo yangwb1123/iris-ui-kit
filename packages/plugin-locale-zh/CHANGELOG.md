@@ -1,5 +1,15 @@
 # @iris-ui-kit/plugin-locale-zh
 
+## 0.1.1
+
+### Patch Changes
+
+- Add Simplified Chinese translations for table, admin shell, dashboard, login, and carousel accessibility defaults.
+
+### Updated dependencies
+
+- @iris-ui-kit/core@0.2.6
+
 ## 0.1.0
 
 ### Minor Changes

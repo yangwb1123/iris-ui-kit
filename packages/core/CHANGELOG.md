@@ -1,5 +1,11 @@
 # @iris-ui-kit/core
 
+## 0.2.6
+
+### Patch Changes
+
+- Localize table, admin shell, skeleton, tree, and carousel accessibility chrome while preserving explicit labels and reactive locale switching across framework adapters.
+
 ## 0.2.5
 
 ### Patch Changes

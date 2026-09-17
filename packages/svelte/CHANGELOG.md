@@ -1,5 +1,15 @@
 # @iris-ui-kit/svelte
 
+## 0.2.5
+
+### Patch Changes
+
+- Localize table, admin shell, skeleton, tree, and carousel accessibility chrome with reactive locale switching while preserving explicit labels and Svelte locale reactivity.
+
+### Updated dependencies
+
+- @iris-ui-kit/core@0.2.6
+
 ## 0.2.4
 
 ### Patch Changes

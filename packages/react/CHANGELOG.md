@@ -1,5 +1,15 @@
 # @iris-ui-kit/react
 
+## 0.3.2
+
+### Patch Changes
+
+- Localize table, admin shell, skeleton, tree, and carousel accessibility chrome with reactive locale switching while preserving explicit labels and keepSource behavior.
+
+### Updated dependencies
+
+- @iris-ui-kit/core@0.2.6
+
 ## 0.3.1
 
 ### Patch Changes

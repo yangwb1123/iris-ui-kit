@@ -1,5 +1,15 @@
 # @iris-ui-kit/vue
 
+## 0.2.44
+
+### Patch Changes
+
+- Localize table, admin shell, skeleton, tree, and carousel accessibility chrome with reactive locale switching while preserving explicit labels.
+
+### Updated dependencies
+
+- @iris-ui-kit/core@0.2.6
+
 ## 0.2.43
 
 ### Patch Changes

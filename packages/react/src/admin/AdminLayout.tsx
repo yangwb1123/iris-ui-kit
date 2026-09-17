@@ -90,7 +90,7 @@ export function IrisAdminLayout({
   defaultCollapsed = false,
   onCollapsedChange,
   mode = 'sidebar',
-  appTitle = 'Iris Admin',
+  appTitle,
   tabs,
   showTabs = true,
   showBreadcrumb = true,
@@ -108,6 +108,7 @@ export function IrisAdminLayout({
   children,
 }: IrisAdminLayoutProps): React.ReactElement {
   const { t } = useI18n()
+  const resolvedAppTitle = appTitle ?? t('admin.title')
   const {
     activeKey: currentActive,
     navigate,
@@ -171,7 +172,7 @@ export function IrisAdminLayout({
       >
         <IrisIcon name="menu" size={18} />
       </span>
-      {state.collapsed ? null : <span>{appTitle}</span>}
+      {state.collapsed ? null : <span>{resolvedAppTitle}</span>}
     </div>
   )
   const renderLogo = (state: { collapsed: boolean }): React.ReactNode =>

@@ -2,7 +2,15 @@
   import { mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type ScrollBehavior = 'auto' | 'instant' | 'smooth'
 
@@ -75,7 +83,7 @@
     type="button"
     {...rest}
     data-iris-back-top
-    aria-label={ariaLabel ?? t('backTop.label')}
+    aria-label={ariaLabel ?? reactiveT('backTop.label')}
     onclick={scrollToTop}
     style={mergeStyle(baseStyle, style)}
   >

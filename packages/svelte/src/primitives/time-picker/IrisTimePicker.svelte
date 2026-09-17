@@ -41,7 +41,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   function clamp(n: number, min: number, max: number): number {
     return Math.max(min, Math.min(max, n))
@@ -160,7 +168,7 @@
     max={format === '12h' ? 12 : 23}
     value={pad2(displayH)}
     {disabled}
-    aria-label={t('timePicker.hours')}
+    aria-label={reactiveT('timePicker.hours')}
     aria-describedby={ariaDescribedby}
     aria-invalid={invalid ? 'true' : undefined}
     data-iris-time-picker-hours
@@ -180,7 +188,7 @@
     step={minuteStep}
     value={pad2(current.minutes)}
     {disabled}
-    aria-label={t('timePicker.minutes')}
+    aria-label={reactiveT('timePicker.minutes')}
     data-iris-time-picker-minutes
     oninput={onMinutesInput}
     onkeydown={onMinutesKey}
@@ -190,7 +198,7 @@
     <button
       type="button"
       {disabled}
-      aria-label={t('timePicker.togglePeriod')}
+      aria-label={reactiveT('timePicker.togglePeriod')}
       data-iris-time-picker-meridiem={meridiem}
       onclick={toggleMeridiem}
       style="height:34px;padding:4px 8px;background:var(--iris-background);color:var(--iris-foreground);border:1px solid var(--iris-border);border-radius:var(--iris-radius-sm, 4px);cursor:{disabled

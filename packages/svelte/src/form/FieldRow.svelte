@@ -1,3 +1,4 @@
+<!-- Test fixture used only by useFieldArray.test.ts; this is not a public form component. -->
 <script lang="ts">
   import { untrack } from 'svelte'
   import { useField } from './useField'

@@ -3,7 +3,15 @@
   import { mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type SpinnerSize = 'sm' | 'md' | 'lg' | number
 
@@ -28,7 +36,7 @@
 
   const px = $derived(resolveSize(size))
   const sw = $derived(strokeWidth || Math.max(1.5, Math.round(px * 0.12)))
-  const resolvedLabel = $derived(label ?? t('spinner.loading'))
+  const resolvedLabel = $derived(label ?? reactiveT('spinner.loading'))
 
   $effect(() => {
     installSpinnerStyles()

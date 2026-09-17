@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     TABLE_VIEWS_SAVE_ITEM,
+    type I18n,
     type TableNamedView,
     type TableViewConfig,
   } from '@iris-ui-kit/core'
@@ -13,6 +14,7 @@
     onSelect,
     onSave,
     onDelete,
+    t,
   }: {
     config: TableViewConfig | undefined
     views: Array<TableNamedView<IrisTableViewSnapshot>>
@@ -20,6 +22,7 @@
     onSelect: (key: string) => void
     onSave: (name: string) => void
     onDelete: (key: string) => void
+    t: I18n['t']
   } = $props()
 
   let saveOpen = $state(false)
@@ -43,7 +46,7 @@
     <select
       data-iris-table-views
       value={saveOpen ? TABLE_VIEWS_SAVE_ITEM : (activeKey ?? '')}
-      aria-label="Table views"
+      aria-label={t('table.views.label')}
       onchange={(event) => {
         const value = (event.currentTarget as HTMLSelectElement).value
         if (value === TABLE_VIEWS_SAVE_ITEM) openSave()
@@ -51,19 +54,21 @@
       }}
       style="border: 1px solid var(--iris-border); border-radius: var(--iris-radius-sm, 4px); background: var(--iris-surface); color: var(--iris-foreground); font: inherit; font-size: var(--iris-font-size-sm, 13px); padding: 0 var(--iris-space-xxs, 4px); max-width: 180px"
     >
-      {#if activeKey === null && !saveOpen}<option value="" disabled>Select view</option>{/if}
+      {#if activeKey === null && !saveOpen}<option value="" disabled
+          >{t('table.views.placeholder')}</option
+        >{/if}
       {#each views as view}
         <option value={view.name}>{config.label?.(view.name) ?? view.name}</option>
       {/each}
-      <option value={TABLE_VIEWS_SAVE_ITEM}>＋ Save view</option>
+      <option value={TABLE_VIEWS_SAVE_ITEM}>＋ {t('table.views.save')}</option>
     </select>
     {#if saveOpen}
       <input
         data-iris-views-save
         type="text"
         bind:value={draft}
-        placeholder="View name"
-        aria-label="Save view"
+        placeholder={t('table.views.placeholder')}
+        aria-label={t('table.views.save')}
         onkeydown={(event) => {
           if (event.key === 'Enter') {
             event.preventDefault()
@@ -80,7 +85,8 @@
       <button
         type="button"
         data-iris-table-views-delete
-        aria-label="Delete view"
+        aria-label={t('table.views.delete')}
+        title={t('table.views.delete')}
         onclick={() => onDelete(activeKey!)}
         style="border: none; background: transparent; cursor: pointer; color: var(--iris-muted); font: inherit; padding: 0 var(--iris-space-xxs, 4px)"
         >×</button

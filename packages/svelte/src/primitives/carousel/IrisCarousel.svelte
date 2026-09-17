@@ -37,7 +37,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let hovered = $state(false)
   let focusedWithin = $state(false)
@@ -85,14 +93,14 @@
     }
     if (next !== value) {
       onValueChange?.(next)
-      liveText = t('carousel.slide', { index: next + 1, total: count })
+      liveText = reactiveT('carousel.slide', { index: next + 1, total: count })
     }
   }
 
   function goTo(idx: number) {
     if (idx !== value) {
       onValueChange?.(idx)
-      liveText = t('carousel.slide', { index: idx + 1, total: slideCount })
+      liveText = reactiveT('carousel.slide', { index: idx + 1, total: slideCount })
     }
   }
 
@@ -113,8 +121,8 @@
 <div
   data-iris-carousel
   role="region"
-  aria-roledescription="carousel"
-  aria-label={ariaLabel ?? t('carousel.label')}
+  aria-roledescription={reactiveT('carousel.roleDescription')}
+  aria-label={ariaLabel ?? reactiveT('carousel.label')}
   onkeydown={onKeyDown}
   onmouseenter={() => {
     hovered = true
@@ -149,7 +157,7 @@
   {#if showArrows}
     <button
       type="button"
-      aria-label={t('carousel.previous')}
+      aria-label={reactiveT('carousel.previous')}
       data-iris-carousel-prev
       disabled={!canPrev}
       onclick={() => advance(-1)}
@@ -174,7 +182,7 @@
 
     <button
       type="button"
-      aria-label={t('carousel.next')}
+      aria-label={reactiveT('carousel.next')}
       data-iris-carousel-next
       disabled={!canNext}
       onclick={() => advance(1)}
@@ -210,7 +218,7 @@
       {#each Array.from({ length: slideCount }, (_, i) => i) as i (i)}
         <button
           type="button"
-          aria-label={t('carousel.goTo', { index: i + 1 })}
+          aria-label={reactiveT('carousel.goTo', { index: i + 1 })}
           aria-current={i === value ? 'true' : undefined}
           data-state={i === value ? 'active' : 'idle'}
           onclick={() => goTo(i)}

@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   export interface IrisFileUploadFile {
     file: File
@@ -75,7 +83,7 @@
   let dragOver = $state(false)
   let dragCount = $state(0)
 
-  const resolvedLabel = $derived(label ?? t('fileUpload.label'))
+  const resolvedLabel = $derived(label ?? reactiveT('fileUpload.label'))
 
   function acceptMatches(file: File): boolean {
     if (!accept) return true
@@ -256,7 +264,7 @@
           >
           <button
             type="button"
-            aria-label={t('fileUpload.remove', { name: item.name })}
+            aria-label={reactiveT('fileUpload.remove', { name: item.name })}
             {disabled}
             onclick={(e) => {
               e.stopPropagation()

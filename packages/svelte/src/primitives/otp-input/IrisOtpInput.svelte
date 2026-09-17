@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type OtpSize = 'sm' | 'md' | 'lg'
   type OtpType = 'numeric' | 'alphanumeric'
@@ -172,7 +180,7 @@
       value={char}
       placeholder={placeholder || undefined}
       {disabled}
-      aria-label={t('otpInput.cell', { index: i + 1, total: length })}
+      aria-label={reactiveT('otpInput.cell', { index: i + 1, total: length })}
       aria-invalid={invalid ? 'true' : undefined}
       aria-describedby={ariaDescribedby}
       data-iris-otp-input-cell

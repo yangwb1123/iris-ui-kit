@@ -2,7 +2,15 @@
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   export interface IrisTourStep {
     target?: () => HTMLElement | null
@@ -125,7 +133,7 @@
         data-iris-tour-card
         role="dialog"
         aria-modal="true"
-        aria-label={data.title ?? t('tour.step', { current: current + 1, total })}
+        aria-label={data.title ?? reactiveT('tour.step', { current: current + 1, total })}
         style="position: fixed; z-index: 1002; max-width: 320px; padding: 16px; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: var(--iris-shadow-lg); {spotlit &&
         sl
           ? `top: ${sl.top + sl.height + 12}px; inset-inline-start: ${sl.left}px`
@@ -152,7 +160,7 @@
           >
           <div style="display: flex; gap: 8px">
             <button type="button" data-iris-tour-skip onclick={close} style={btnGhost}
-              >{t('tour.skip')}</button
+              >{reactiveT('tour.skip')}</button
             >
             {#if current > 0}
               <button
@@ -162,7 +170,7 @@
                   step = current - 1
                   onChange?.(current - 1)
                 }}
-                style={btnGhost}>{t('tour.prev')}</button
+                style={btnGhost}>{reactiveT('tour.prev')}</button
               >
             {/if}
             <button
@@ -179,7 +187,7 @@
               }}
               style={btnPrimary}
             >
-              {isLast ? t('tour.finish') : t('tour.next')}
+              {isLast ? reactiveT('tour.finish') : reactiveT('tour.next')}
             </button>
           </div>
         </div>

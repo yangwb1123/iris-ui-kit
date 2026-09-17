@@ -3,7 +3,15 @@
   import { startOfDay, safeLocale } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   interface DateRange {
     start: Date | null
@@ -107,7 +115,7 @@
   <button
     type="button"
     data-iris-date-range-picker-start
-    aria-label={t('dateRangePicker.start')}
+    aria-label={reactiveT('dateRangePicker.start')}
     {disabled}
     onclick={() => openPicker('start')}
     style:padding="var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)"
@@ -120,7 +128,7 @@
     style:font-family="inherit"
     style:min-height="var(--iris-control-height-md, 34px)"
     style:min-width="140px"
-    >{fmt(value.start) || (startPlaceholder ?? t('dateRangePicker.start'))}</button
+    >{fmt(value.start) || (startPlaceholder ?? reactiveT('dateRangePicker.start'))}</button
   >
 
   <span aria-hidden="true" style:color="var(--iris-muted)">–</span>
@@ -128,7 +136,7 @@
   <button
     type="button"
     data-iris-date-range-picker-end
-    aria-label={t('dateRangePicker.end')}
+    aria-label={reactiveT('dateRangePicker.end')}
     {disabled}
     onclick={() => openPicker('end')}
     style:padding="var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)"
@@ -140,7 +148,8 @@
     style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
     style:min-height="var(--iris-control-height-md, 34px)"
-    style:min-width="140px">{fmt(value.end) || (endPlaceholder ?? t('dateRangePicker.end'))}</button
+    style:min-width="140px"
+    >{fmt(value.end) || (endPlaceholder ?? reactiveT('dateRangePicker.end'))}</button
   >
 
   {#if open}

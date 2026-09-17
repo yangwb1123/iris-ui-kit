@@ -93,6 +93,7 @@ export function TableViews(props: {
   onSelect: (key: string) => void
   onSave: (name: string) => void
   onDelete: (key: string) => void
+  t: (key: string, params?: Record<string, string | number>) => string
 }): JSX.Element {
   const [saveOpen, setSaveOpen] = createSignal(false)
   const [draft, setDraft] = createSignal('')
@@ -118,7 +119,7 @@ export function TableViews(props: {
         <select
           data-iris-table-views=""
           value={saveOpen() ? TABLE_VIEWS_SAVE_ITEM : (props.activeKey() ?? '')}
-          aria-label="Table views"
+          aria-label={props.t('table.views.label')}
           onChange={(event) => {
             const value = event.currentTarget.value
             if (value === TABLE_VIEWS_SAVE_ITEM) openSave()
@@ -137,7 +138,7 @@ export function TableViews(props: {
         >
           <Show when={props.activeKey() === null && !saveOpen()}>
             <option value="" disabled>
-              Select view
+              {props.t('table.views.placeholder')}
             </option>
           </Show>
           <For each={props.views()}>
@@ -145,15 +146,15 @@ export function TableViews(props: {
               <option value={view.name}>{props.config?.label?.(view.name) ?? view.name}</option>
             )}
           </For>
-          <option value={TABLE_VIEWS_SAVE_ITEM}>＋ Save view</option>
+          <option value={TABLE_VIEWS_SAVE_ITEM}>＋ {props.t('table.views.save')}</option>
         </select>
         <Show when={saveOpen()}>
           <input
             data-iris-views-save=""
             type="text"
             value={draft()}
-            placeholder="View name"
-            aria-label="Save view"
+            placeholder={props.t('table.views.placeholder')}
+            aria-label={props.t('table.views.save')}
             onInput={(event) => setDraft(event.currentTarget.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -177,7 +178,8 @@ export function TableViews(props: {
           <button
             type="button"
             data-iris-table-views-delete=""
-            aria-label="Delete view"
+            aria-label={props.t('table.views.delete')}
+            title={props.t('table.views.delete')}
             onClick={() => props.onDelete(props.activeKey()!)}
             style={{
               border: 'none',

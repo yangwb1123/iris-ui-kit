@@ -4,6 +4,7 @@
   import IrisHeaderLayout from '../layouts/HeaderLayout.svelte'
   import IrisDashboardGrid from '../layouts/DashboardGrid.svelte'
   import IrisDashboardCard from '../layouts/DashboardCard.svelte'
+  import { useI18n } from '../i18n'
 
   export interface IrisDashboardNavItem {
     id: string
@@ -33,8 +34,18 @@
     class?: string
   }
 
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
+
   let {
-    title = 'Dashboard',
+    title,
     sidebarTitle = '',
     nav = [],
     activeId = '',
@@ -69,7 +80,7 @@
         {sidebarTitle}
       </div>
     {/if}
-    <nav>
+    <nav aria-label={reactiveT('dashboard.primaryNavigation')}>
       {#each nav as item (item.id)}
         <button
           type="button"
@@ -104,7 +115,7 @@
     style:font-weight="700"
     style:font-size="var(--iris-font-size-lg, 16px)"
   >
-    {title}
+    {title ?? reactiveT('dashboard.title')}
   </div>
 {/snippet}
 

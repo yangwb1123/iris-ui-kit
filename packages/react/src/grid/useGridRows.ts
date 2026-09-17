@@ -52,6 +52,9 @@ export function useGridRows<
       onRowsChange: (transaction) => latest.current.onRowsChange?.(transaction),
     }),
   )
+  // Keep the React bridge snapshot detached from Core state regardless of
+  // whether the feature owns the initial seed by reference. Callers may
+  // mutate the returned array without bypassing the transaction boundary.
   const rows = useStoreSelector(model.store, (current) => [...current])
   return { model, rows }
 }

@@ -50,7 +50,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const baseId = generateId()
   const listboxId = `${baseId}-listbox`
@@ -287,7 +295,7 @@
           data-iris-combobox-empty
           style="padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); color: var(--iris-muted); font-size: {sz.fontSize}"
         >
-          {emptyText ?? t('combobox.empty')}
+          {emptyText ?? reactiveT('combobox.empty')}
         </li>
       {:else if virtual && virtualizer}
         {@const list = filtered()}

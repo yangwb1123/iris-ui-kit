@@ -1,3 +1,4 @@
+<!-- Test fixture used only by useFieldArray.test.ts; not part of the public package API. -->
 <script lang="ts">
   import type { FormStore, FormValues } from '@iris-ui-kit/core'
   import { createFormStore } from '@iris-ui-kit/core'

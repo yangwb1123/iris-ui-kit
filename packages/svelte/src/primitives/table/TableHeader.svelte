@@ -251,6 +251,7 @@
               label={col.title}
               {resolvePinnedCount}
               {commitPinnedCount}
+              {t}
             />
           {/if}
         </div>
@@ -372,6 +373,7 @@
               label={col.title}
               {resolvePinnedCount}
               {commitPinnedCount}
+              {t}
             />
           {/if}
         </div>

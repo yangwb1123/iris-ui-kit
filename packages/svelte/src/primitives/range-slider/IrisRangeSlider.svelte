@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type RangeValue = [number, number]
 
@@ -182,7 +190,7 @@
     <div
       role="slider"
       tabindex={disabled ? -1 : 0}
-      aria-label={labelStart ?? t('rangeSlider.start')}
+      aria-label={labelStart ?? reactiveT('rangeSlider.start')}
       aria-valuemin={min}
       aria-valuemax={endVal}
       aria-valuenow={startVal}
@@ -199,7 +207,7 @@
     <div
       role="slider"
       tabindex={disabled ? -1 : 0}
-      aria-label={labelEnd ?? t('rangeSlider.end')}
+      aria-label={labelEnd ?? reactiveT('rangeSlider.end')}
       aria-valuemin={startVal}
       aria-valuemax={max}
       aria-valuenow={endVal}

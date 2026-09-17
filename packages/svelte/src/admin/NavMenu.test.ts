@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import IrisNavMenu from './NavMenu.svelte'
+import NavMenuI18nHarness from './NavMenuI18nHarness.svelte'
 import type { NavNode } from '@iris-ui-kit/core'
 
 afterEach(cleanup)
@@ -56,6 +57,38 @@ describe('@iris-ui-kit/svelte IrisNavMenu', () => {
     expect(tops[1]!.getAttribute('aria-label')).toBe('System (section)')
     await fireEvent.click(tops[1]!) // System → first leaf Users
     expect(onSelect).toHaveBeenCalledWith('users', items[1]!.children![0])
+  })
+
+  it('updates default navigation labels when the active locale changes', async () => {
+    const { container, rerender } = render(NavMenuI18nHarness, {
+      props: {
+        items,
+        collapsed: true,
+        locale: 'en-US',
+        messages: {
+          'admin.nav': 'Main navigation',
+          'admin.section': '{title} (section)',
+        },
+      },
+    })
+    expect(container.querySelector('[data-iris-nav-menu]')!.getAttribute('aria-label')).toBe(
+      'Main navigation',
+    )
+    expect(navItems(container)[1]!.getAttribute('aria-label')).toBe('System (section)')
+
+    await rerender({
+      items,
+      collapsed: true,
+      locale: 'zh-CN',
+      messages: {
+        'admin.nav': '主导航',
+        'admin.section': '{title}（分组）',
+      },
+    })
+    expect(container.querySelector('[data-iris-nav-menu]')!.getAttribute('aria-label')).toBe(
+      '主导航',
+    )
+    expect(navItems(container)[1]!.getAttribute('aria-label')).toBe('System（分组）')
   })
 
   it('arrow keys move focus + expand/collapse branches', async () => {

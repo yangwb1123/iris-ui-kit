@@ -2,7 +2,15 @@
   import { mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let {
     src,
@@ -71,7 +79,7 @@
     data-iris-image-preview
     role="dialog"
     aria-modal="true"
-    aria-label={alt || t('image.preview')}
+    aria-label={alt || reactiveT('image.preview')}
     tabindex="-1"
     onclick={handleClose}
     onkeydown={(e) => {
@@ -88,7 +96,7 @@
     <button
       type="button"
       data-iris-image-preview-close
-      aria-label={t('dialog.close')}
+      aria-label={reactiveT('dialog.close')}
       onclick={(e) => {
         e.stopPropagation()
         handleClose()

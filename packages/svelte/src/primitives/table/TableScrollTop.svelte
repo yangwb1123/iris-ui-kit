@@ -20,7 +20,15 @@
   const BACK_TOP_BUTTON_STYLE =
     'position: absolute; inset-block-end: 24px; inset-inline-end: 24px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--iris-border); background: var(--iris-surface, var(--iris-background)); color: var(--iris-foreground); cursor: pointer; box-shadow: var(--iris-shadow-md); display: inline-flex; align-items: center; justify-content: center; font-size: var(--iris-font-size-xl, 18px); pointer-events: auto;'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
   let { root, enabled, hasVirtual, rows, loading, error }: TableScrollTopProps = $props()
   let visible = $state(false)
 
@@ -93,8 +101,8 @@
     <button
       type="button"
       data-iris-back-top-table=""
-      aria-label={t('backTop.label')}
-      title={t('backTop.label')}
+      aria-label={reactiveT('backTop.label')}
+      title={reactiveT('backTop.label')}
       onclick={scrollToTop}
       style={BACK_TOP_BUTTON_STYLE}
     >

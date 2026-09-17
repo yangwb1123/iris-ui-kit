@@ -49,6 +49,7 @@ export interface IrisSelectProps<T = unknown> {
   placement?: Placement
   invalid?: boolean
   id?: string
+  ariaLabel?: string
   ariaDescribedby?: string
   portalTarget?: HTMLElement | false
   style?: JSX.CSSProperties
@@ -361,6 +362,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         aria-expanded={open()}
         aria-controls={listboxId}
         aria-invalid={merged.invalid ? 'true' : undefined}
+        aria-label={merged.ariaLabel}
         aria-describedby={props.ariaDescribedby}
         data-iris-select-trigger=""
         data-iris-select-size={merged.size}

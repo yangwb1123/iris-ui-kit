@@ -65,7 +65,7 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
     {
       defaultCollapsed: false,
       mode: 'sidebar' as IrisAdminLayoutMode,
-      appTitle: 'Iris Admin',
+      appTitle: undefined,
       showTabs: true,
       showBreadcrumb: true,
       stickyHeader: true,
@@ -157,7 +157,7 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
           <IrisIcon name="menu" size={18} />
         </span>
         <Show when={!state.collapsed}>
-          <span>{merged.appTitle}</span>
+          <span>{merged.appTitle ?? t('admin.title')}</span>
         </Show>
       </div>
     )

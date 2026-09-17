@@ -45,8 +45,8 @@ function flattenSlides(nodes: VNode[]): VNode[] {
 /**
  * Slide carousel: shows one default-slot child at a time with prev/next
  * controls, indicator dots, and keyboard (←/→) navigation. `v-model` binds the
- * active index. a11y: region with `aria-roledescription="carousel"`, per-slide
- * labelling, and a polite live region.
+ * active index. a11y: region and slides use localized role descriptions,
+ * per-slide labelling, and a polite live region.
  */
 export const IrisCarousel = defineComponent({
   name: 'IrisCarousel',
@@ -128,7 +128,7 @@ export const IrisCarousel = defineComponent({
           ...attrs,
           'data-iris-carousel': '',
           role: 'group',
-          'aria-roledescription': 'carousel',
+          'aria-roledescription': t('carousel.roleDescription'),
           'aria-label': props.ariaLabel ?? t('carousel.label'),
           tabindex: 0,
           onKeydown,
@@ -180,7 +180,7 @@ export const IrisCarousel = defineComponent({
                       'data-iris-carousel-slide': '',
                       'data-active': i === current ? 'true' : undefined,
                       role: 'group',
-                      'aria-roledescription': 'slide',
+                      'aria-roledescription': t('carousel.slideRoleDescription'),
                       'aria-label': t('carousel.slide', { index: i + 1, total: count }),
                       'aria-hidden': i !== current ? 'true' : undefined,
                       style: { flex: '0 0 100%', width: '100%', minWidth: '0' },

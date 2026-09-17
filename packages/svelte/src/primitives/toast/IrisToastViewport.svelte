@@ -12,7 +12,12 @@
   } from './toastStore'
 
   export type IrisToastPosition =
-    'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center'
+    | 'top-left'
+    | 'top-right'
+    | 'top-center'
+    | 'bottom-left'
+    | 'bottom-right'
+    | 'bottom-center'
 
   interface Props {
     position?: IrisToastPosition
@@ -25,7 +30,15 @@
 
   let { position = 'top-right', portalTarget = undefined, max = 5, ...rest }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const VARIANT_BORDER: Record<IrisToastVariant, string> = {
     default: 'var(--iris-border)',
@@ -258,7 +271,7 @@
       {/if}
       <button
         type="button"
-        aria-label={t('toast.dismiss')}
+        aria-label={reactiveT('toast.dismiss')}
         onclick={() => dismissToast(toast.id)}
         style="background: transparent; border: none; cursor: pointer; padding: var(--iris-space-xxs, 4px); color: var(--iris-muted); line-height: 1; font-family: inherit; font-size: var(--iris-font-size-lg, 16px)"
       >

@@ -50,7 +50,7 @@ export const IrisAdminLayout = defineComponent({
     defaultCollapsed: { type: Boolean, default: false },
     mode: { type: String as PropType<IrisAdminLayoutMode>, default: 'sidebar' },
     /** Brand text shown next to the logo when expanded. */
-    appTitle: { type: String, default: 'Iris Admin' },
+    appTitle: { type: String, default: undefined },
     /** Optional shared tabs store; when present the tab bar is rendered. */
     tabs: { type: Object as PropType<TabsNav>, default: undefined },
     showTabs: { type: Boolean, default: true },
@@ -152,7 +152,7 @@ export const IrisAdminLayout = defineComponent({
             },
             [h(IrisIcon, { name: 'menu', size: 18 })],
           ),
-          state.collapsed ? null : h('span', props.appTitle),
+          state.collapsed ? null : h('span', props.appTitle ?? t('admin.title')),
         ],
       )
     }
@@ -247,7 +247,10 @@ export const IrisAdminLayout = defineComponent({
               'data-iris-admin-tabs-region': '',
               'data-sticky': props.stickyTabs ? 'true' : undefined,
               style: {
-                position: props.stickyTabs && !props.stickyHeader ? 'sticky' : 'relative',
+                // Tabs live in the scrollable main region, so their stickiness
+                // is independent from the header's stickiness. Previously a
+                // sticky header kept tabs fixed even when `stickyTabs=false`.
+                position: props.stickyTabs ? 'sticky' : 'relative',
                 top: '0',
                 zIndex: '49',
               },
@@ -288,7 +291,7 @@ export const IrisAdminLayout = defineComponent({
             'data-mode': 'horizontal',
             style: {
               height: props.contentHeight === 'viewport' ? '100vh' : 'auto',
-              minHeight: '100vh',
+              minHeight: props.contentHeight === 'viewport' ? '100vh' : '0',
               ...((attrs.style as Record<string, string> | undefined) ?? {}),
             },
           },
@@ -346,9 +349,10 @@ export const IrisAdminLayout = defineComponent({
                           : null,
                       ],
                     ),
-                    renderTabs(),
                   ]),
-                default: () => renderContent(true),
+                // Keep the tab bar in the main scroll region. This lets
+                // stickyHeader and stickyTabs be configured independently.
+                default: () => [renderTabs(), renderContent(true)],
                 ...(slots.footer ? { footer: () => slots.footer!() } : {}),
               },
             ),
@@ -367,7 +371,8 @@ export const IrisAdminLayout = defineComponent({
           'data-iris-admin-layout': '',
           'data-mode': 'sidebar',
           style: {
-            height: '100vh',
+            height: props.contentHeight === 'viewport' ? '100vh' : 'auto',
+            minHeight: props.contentHeight === 'viewport' ? '100vh' : '0',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
@@ -406,9 +411,10 @@ export const IrisAdminLayout = defineComponent({
               IrisHeaderLayout,
               { sticky: props.stickyHeader },
               {
-                header: () =>
-                  h('div', { 'data-iris-admin-header': '' }, [renderHeaderBar(), renderTabs()]),
-                default: () => renderContent(),
+                header: () => h('div', { 'data-iris-admin-header': '' }, [renderHeaderBar()]),
+                // Keep tabs outside the header so fixedHeader and fixedTabs do
+                // not force each other on or off.
+                default: () => [renderTabs(), renderContent()],
                 ...(slots.footer ? { footer: () => slots.footer!() } : {}),
               },
             ),

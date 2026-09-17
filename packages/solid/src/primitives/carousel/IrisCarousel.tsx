@@ -125,7 +125,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
     <div
       data-iris-carousel=""
       role="region"
-      aria-roledescription="carousel"
+      aria-roledescription={t('carousel.roleDescription')}
       aria-label={local.ariaLabel ?? t('carousel.label')}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft') {
@@ -164,7 +164,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
             <div
               data-iris-carousel-slide={i()}
               role="group"
-              aria-roledescription="slide"
+              aria-roledescription={t('carousel.slideRoleDescription')}
               aria-label={t('carousel.slide', { index: i() + 1, total: count() })}
               aria-hidden={i() !== currentIndex()}
               style={{ width: `${100 / count()}%`, 'flex-shrink': '0' }}

@@ -6,7 +6,8 @@ import { defineComponent, h, type PropType } from 'vue'
  * Slots:
  *   - `header` — fixed at top.
  *   - `footer` — optional fixed at bottom.
- *   - `default` — scrollable main region.
+ *   - `default` — main content. When `sticky` is true this region scrolls;
+ *     otherwise the complete layout participates in the surrounding scroll.
  */
 export const IrisHeaderLayout = defineComponent({
   name: 'IrisHeaderLayout',
@@ -31,8 +32,11 @@ export const IrisHeaderLayout = defineComponent({
             display: 'flex',
             flexDirection: 'column',
             width: '100%',
-            height: '100%',
-            minHeight: '0',
+            // A non-sticky header must scroll away with the content. Keeping
+            // the old fixed-height/scrollable-main combination made
+            // `sticky=false` visually indistinguishable from `sticky=true`.
+            height: props.sticky ? '100%' : 'auto',
+            minHeight: props.sticky ? '0' : 'auto',
             background: 'var(--iris-background)',
             color: 'var(--iris-foreground)',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
@@ -63,7 +67,11 @@ export const IrisHeaderLayout = defineComponent({
             {
               role: 'main',
               'data-iris-header-main': '',
-              style: { flex: '1', minHeight: '0', overflow: 'auto' },
+              style: {
+                flex: '1',
+                minHeight: props.sticky ? '0' : 'auto',
+                overflow: props.sticky ? 'auto' : 'visible',
+              },
             },
             slots.default?.(),
           ),

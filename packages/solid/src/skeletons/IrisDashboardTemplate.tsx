@@ -3,6 +3,7 @@ import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { IrisDashboardGrid, IrisDashboardCard } from '../layouts/DashboardGrid'
 import { IrisStack } from '../layouts/Stack'
+import { useI18n } from '../i18n'
 
 export interface IrisDashboardNavItem {
   id: string
@@ -35,9 +36,10 @@ export interface IrisDashboardTemplateProps {
  * Solid port of the Vue IrisDashboardTemplate.
  */
 export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
-      title: 'Dashboard',
+      title: undefined as string | undefined,
       sidebarTitle: '',
       nav: [] as IrisDashboardNavItem[],
       activeId: '',
@@ -79,7 +81,7 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
         </div>
       </Show>
       <nav
-        aria-label="Primary"
+        aria-label={t('dashboard.primaryNavigation')}
         style={{ display: 'flex', 'flex-direction': 'column', gap: 'var(--iris-space-xxs, 4px)' }}
       >
         <For each={local.nav}>
@@ -144,7 +146,7 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
             'font-weight': '600',
           }}
         >
-          {local.title}
+          {local.title ?? t('dashboard.title')}
         </div>
       }
     >

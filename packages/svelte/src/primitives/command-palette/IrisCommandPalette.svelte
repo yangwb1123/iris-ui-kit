@@ -25,9 +25,17 @@
     onSelect,
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
-  const resolvedPlaceholder = $derived(placeholder ?? t('commandPalette.placeholder'))
+  const resolvedPlaceholder = $derived(placeholder ?? reactiveT('commandPalette.placeholder'))
 
   let query = $state('')
   let activeIndex = $state(0)
@@ -145,7 +153,7 @@
       data-iris-command-palette
       role="dialog"
       aria-modal="true"
-      aria-label={t('commandPalette.label')}
+      aria-label={reactiveT('commandPalette.label')}
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-lg, 8px)"
@@ -189,7 +197,7 @@
             style:color="var(--iris-muted)"
             style:font-size="var(--iris-font-size-md, 14px)"
           >
-            {emptyText ?? t('commandPalette.empty')}
+            {emptyText ?? reactiveT('commandPalette.empty')}
           </div>
         {:else}
           {#each rows as row, i (row.kind === 'item' ? row.item.id : `header-${i}`)}

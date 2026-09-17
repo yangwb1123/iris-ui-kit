@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   interface Props {
     value?: string[]
@@ -131,7 +139,7 @@
       <button
         type="button"
         data-iris-tag-input-remove
-        aria-label={t('tagInput.remove', { tag })}
+        aria-label={reactiveT('tagInput.remove', { tag })}
         {disabled}
         onclick={() => removeAt(i)}
         style="border: none; background: transparent; color: var(--iris-muted); cursor: {disabled

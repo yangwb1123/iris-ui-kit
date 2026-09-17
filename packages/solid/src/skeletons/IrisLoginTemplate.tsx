@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, splitProps, Show, type JSX } from 'solid-js'
+import { useI18n } from '../i18n'
 
 export interface IrisLoginSubmitPayload {
   email: string
@@ -21,13 +22,14 @@ export interface IrisLoginTemplateProps {
  * Solid port of the Vue IrisLoginTemplate.
  */
 export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
-      title: 'Sign in',
+      title: undefined as string | undefined,
       description: '',
       showRemember: true,
       error: '',
-      submitLabel: 'Sign in',
+      submitLabel: undefined as string | undefined,
       loading: false,
     },
     props,
@@ -95,7 +97,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
             'font-weight': '700',
           }}
         >
-          {local.title}
+          {local.title ?? t('login.title')}
         </h1>
         <Show when={local.description}>
           <p
@@ -138,13 +140,13 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                   'margin-bottom': '4px',
                 }}
               >
-                Email
+                {t('login.email')}
               </label>
               <input
                 id="iris-login-email"
                 type="email"
                 data-iris-login-template-email=""
-                placeholder="you@example.com"
+                placeholder={t('login.emailPlaceholder')}
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
                 required
@@ -162,13 +164,13 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                   'margin-bottom': '4px',
                 }}
               >
-                Password
+                {t('login.password')}
               </label>
               <input
                 id="iris-login-password"
                 type="password"
                 data-iris-login-template-password=""
-                placeholder="••••••••"
+                placeholder={t('login.passwordPlaceholder')}
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
                 required
@@ -193,7 +195,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                   onChange={(e) => setRemember(e.currentTarget.checked)}
                   disabled={local.loading || undefined}
                 />
-                Remember me
+                {t('login.remember')}
               </label>
             </Show>
             <button
@@ -214,7 +216,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                 opacity: local.loading ? '0.7' : '1',
               }}
             >
-              {local.loading ? 'Signing in…' : local.submitLabel}
+              {local.loading ? t('login.submitting') : (local.submitLabel ?? t('login.submit'))}
             </button>
           </div>
         </form>

@@ -80,7 +80,7 @@ export function TableViews({
       <select
         data-iris-table-views=""
         value={saveOpen ? SAVE_ITEM_VALUE : (activeKey ?? '')}
-        aria-label={t('table.views.placeholder')}
+        aria-label={t('table.views.label')}
         onChange={(e) => {
           const v = e.target.value
           if (v === SAVE_ITEM_VALUE) {

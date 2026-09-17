@@ -30,6 +30,7 @@ export function ColumnResizeHandle({
   onResize,
   onAutoFit,
   widthHint = false,
+  t,
 }: {
   colKey: string
   label: string
@@ -39,6 +40,7 @@ export function ColumnResizeHandle({
   onResize: (key: string, width: number) => void
   onAutoFit?: (key: string) => void
   widthHint?: boolean
+  t: (key: string, params?: Record<string, string | number>) => string
 }): React.ReactElement {
   const ref = React.useRef<HTMLSpanElement | null>(null)
   const startRef = React.useRef(0)
@@ -67,7 +69,7 @@ export function ColumnResizeHandle({
       ref={ref}
       role="separator"
       aria-orientation="vertical"
-      aria-label={`Resize ${label}`}
+      aria-label={t('table.resizeColumn', { column: label })}
       tabIndex={0}
       data-iris-table-resize-handle=""
       data-column-key={colKey}
@@ -141,10 +143,12 @@ export function PinnedDragHandle({
   label,
   resolve,
   commit,
+  t,
 }: {
   colKey: string
   label: string
   resolve: (dx: number) => number
+  t: (key: string, params?: Record<string, string | number>) => string
   commit: (count: number) => void
 }): React.ReactElement {
   const ref = React.useRef<HTMLSpanElement | null>(null)
@@ -166,7 +170,7 @@ export function PinnedDragHandle({
       ref={ref}
       role="separator"
       aria-orientation="vertical"
-      aria-label={`Adjust pinned column count at ${label}`}
+      aria-label={t('table.resizePinned', { column: label })}
       tabIndex={0}
       data-iris-pinned-drag-handle=""
       data-column-key={colKey}

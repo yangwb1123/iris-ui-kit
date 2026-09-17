@@ -4,7 +4,15 @@
   import type { IrisHsva } from './colorUtils'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   interface Props {
     value?: string
@@ -175,11 +183,11 @@
     bind:this={satValEl}
     role="slider"
     tabindex={disabled ? -1 : 0}
-    aria-label={t('colorPicker.saturationBrightness')}
+    aria-label={reactiveT('colorPicker.saturationBrightness')}
     aria-valuemin="0"
     aria-valuemax="100"
     aria-valuenow={Math.round(hsva.s * 100)}
-    aria-valuetext={t('colorPicker.saturationBrightnessValue', {
+    aria-valuetext={reactiveT('colorPicker.saturationBrightnessValue', {
       saturation: Math.round(hsva.s * 100),
       brightness: Math.round(hsva.v * 100),
     })}
@@ -226,7 +234,7 @@
     bind:this={hueEl}
     role="slider"
     tabindex={disabled ? -1 : 0}
-    aria-label={t('colorPicker.hue')}
+    aria-label={reactiveT('colorPicker.hue')}
     aria-valuemin="0"
     aria-valuemax="360"
     aria-valuenow={Math.round(hsva.h)}
@@ -270,7 +278,7 @@
       value={hexInput}
       oninput={onHexInput}
       data-iris-color-picker-hex
-      aria-label={t('colorPicker.hex')}
+      aria-label={reactiveT('colorPicker.hex')}
       spellcheck={false}
       {disabled}
       style:flex="1"

@@ -76,7 +76,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
   const popupId = `${generateId()}-popup`
 
   let open = $state(false)
@@ -202,7 +210,7 @@
     style:font-family="inherit"
   >
     <span style:flex="1" style:text-align="start"
-      >{display || (placeholder ?? t('select.placeholder'))}</span
+      >{display || (placeholder ?? reactiveT('select.placeholder'))}</span
     >
     <span aria-hidden="true" style:font-size="var(--iris-font-size-xs, 12px)"
       >{open ? '▲' : '▼'}</span
@@ -236,7 +244,7 @@
             buffer={CASCADER_VIRTUAL_BUFFER}
             keyOf={(item) => (item as IrisCascaderNode).value}
             role="listbox"
-            aria-label={t('cascader.level', { level: colIdx + 1 })}
+            aria-label={reactiveT('cascader.level', { level: colIdx + 1 })}
             style="min-width: 140px"
           >
             {#snippet item(slotData)}
@@ -247,7 +255,7 @@
         {:else}
           <ul
             role="listbox"
-            aria-label={t('cascader.level', { level: colIdx + 1 })}
+            aria-label={reactiveT('cascader.level', { level: colIdx + 1 })}
             style:min-width="140px"
             style:max-height="240px"
             style:overflow-y="auto"

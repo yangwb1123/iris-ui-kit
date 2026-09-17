@@ -1836,6 +1836,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         onSelect={tableViews.selectView}
         onSave={tableViews.saveView}
         onDelete={tableViews.deleteView}
+        t={t}
       />
       <TableForm
         config={merged.formConfig}

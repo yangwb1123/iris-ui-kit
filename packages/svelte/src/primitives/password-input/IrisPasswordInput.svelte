@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type Size = 'sm' | 'md' | 'lg'
 
@@ -129,7 +137,7 @@
     <button
       type="button"
       data-iris-password-input-toggle
-      aria-label={visible ? t('passwordInput.hide') : t('passwordInput.show')}
+      aria-label={visible ? reactiveT('passwordInput.hide') : reactiveT('passwordInput.show')}
       aria-pressed={visible ? 'true' : 'false'}
       onclick={toggle}
       style="background: transparent; border: none; cursor: {disabled

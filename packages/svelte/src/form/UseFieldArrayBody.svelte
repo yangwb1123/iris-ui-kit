@@ -1,3 +1,4 @@
+<!-- Test fixture used only by useFieldArray.test.ts; not part of the public package API. -->
 <script lang="ts">
   import type { UseFieldArrayReturn } from './useFieldArray'
   import { useFieldArray } from './useFieldArray'

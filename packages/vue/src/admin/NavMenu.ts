@@ -246,7 +246,7 @@ export const IrisNavMenu = defineComponent({
           title: props.collapsed ? node.title : undefined,
           'aria-label': props.collapsed
             ? branch
-              ? `${node.title} (section)`
+              ? t('admin.section', { title: node.title })
               : node.title
             : undefined,
           'aria-expanded': branch ? (shown ? 'true' : 'false') : undefined,

@@ -1,7 +1,15 @@
 <script lang="ts">
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type BannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
@@ -82,7 +90,7 @@
       <button
         type="button"
         data-iris-banner-close
-        aria-label={t('banner.close')}
+        aria-label={reactiveT('banner.close')}
         onclick={handleClose}
         style="background:transparent; border:none; cursor:pointer; color:var(--iris-muted); font-size:var(--iris-font-size-lg, 16px); padding:0 var(--iris-space-xxs, 4px); line-height:1; flex-shrink:0;"
         >✕</button

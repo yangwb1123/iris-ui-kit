@@ -7,7 +7,15 @@
   } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   interface MonthOption {
     date: Date
@@ -233,7 +241,7 @@
     style:min-width="180px"
     style:text-align="start"
   >
-    {display || placeholder || t('monthPicker.placeholder')}
+    {display || placeholder || reactiveT('monthPicker.placeholder')}
   </button>
 
   {#if open}
@@ -270,7 +278,7 @@
         >
           <button
             type="button"
-            aria-label={t('monthPicker.previousYear')}
+            aria-label={reactiveT('monthPicker.previousYear')}
             data-iris-month-picker-prev
             disabled={disabled || previousYearDisabled}
             onclick={() => moveYear(-1)}
@@ -288,7 +296,7 @@
           <strong data-iris-month-picker-year aria-live="polite">{visibleYear}</strong>
           <button
             type="button"
-            aria-label={t('monthPicker.nextYear')}
+            aria-label={reactiveT('monthPicker.nextYear')}
             data-iris-month-picker-next
             disabled={disabled || nextYearDisabled}
             onclick={() => moveYear(1)}
@@ -306,7 +314,7 @@
         </div>
         <div
           role="radiogroup"
-          aria-label={t('monthPicker.months', { year: visibleYear })}
+          aria-label={reactiveT('monthPicker.months', { year: visibleYear })}
           data-iris-month-picker-grid
           style:display="grid"
           style:grid-template-columns="repeat(3, minmax(0, 1fr))"

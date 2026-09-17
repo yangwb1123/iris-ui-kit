@@ -30,7 +30,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let containerEl = $state<HTMLElement | undefined>(undefined)
   let handleEl = $state<HTMLElement | undefined>(undefined)
@@ -126,7 +134,7 @@
     use:setHandle
     data-iris-splitter-handle
     role="slider"
-    aria-label={t('splitter.resize')}
+    aria-label={reactiveT('splitter.resize')}
     aria-orientation={orientation}
     aria-valuenow={Math.round(value * 100)}
     aria-valuemin={0}

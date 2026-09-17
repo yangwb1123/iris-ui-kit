@@ -68,7 +68,15 @@
     ...rest
   }: IrisSelectProps = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const baseId = generateId()
   const listboxId = `${baseId}-listbox`
@@ -99,11 +107,11 @@
           const sel = items.filter((it) => selectedValues.includes(it.value as string))
           return sel.length > 0
             ? sel.map((it) => it.label ?? String(it.value)).join(', ')
-            : (placeholder ?? t('select.placeholder'))
+            : (placeholder ?? reactiveT('select.placeholder'))
         })()
       : selectedItem
         ? (selectedItem.label ?? String(selectedItem.value))
-        : (placeholder ?? t('select.placeholder')),
+        : (placeholder ?? reactiveT('select.placeholder')),
   )
 
   const sz = $derived(SELECT_SIZE_MAP[size])
@@ -369,7 +377,7 @@
     bind:this={listboxEl}
     id={listboxId}
     role="listbox"
-    aria-label={t('select.options')}
+    aria-label={reactiveT('select.options')}
     data-iris-select-listbox
     onkeydown={handleListKeyDown}
     onscroll={(e) => {
@@ -387,7 +395,7 @@
       {vstate}
       rowHeight={SELECT_ROW_HEIGHT}
       fontSize={sz.fontSize}
-      emptyLabel={t('select.empty')}
+      emptyLabel={reactiveT('select.empty')}
       {selectItem}
     />
   </ul>

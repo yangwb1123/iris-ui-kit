@@ -15,7 +15,15 @@
   import { useI18n } from '../i18n'
   import type { IrisNavMenuProps } from './types'
 
-  const { t } = useI18n()
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let {
     items,
@@ -252,7 +260,7 @@
     data-branch={branch ? 'true' : undefined}
     disabled={node.disabled}
     title={node.title}
-    aria-label={branch ? `${node.title} (section)` : node.title}
+    aria-label={branch ? reactiveT('admin.section', { title: node.title }) : node.title}
     aria-current={active && !branch ? 'page' : undefined}
     style={itemStyle({
       depth: 0,
@@ -280,7 +288,7 @@
   data-iris-nav-menu
   data-collapsed={collapsed ? 'true' : undefined}
   data-orientation={orientation}
-  aria-label={ariaLabel ?? t('admin.nav')}
+  aria-label={ariaLabel ?? reactiveT('admin.nav')}
   onkeydown={onKeyDown}
   style:display="flex"
   style:flex-direction={orientation === 'horizontal' ? 'row' : 'column'}

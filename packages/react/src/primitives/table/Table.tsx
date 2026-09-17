@@ -1189,18 +1189,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
           ...row,
           children,
         })
-  const { rows: liveData, model: rowsModel } = useGridRows<Row, TableRowsCommitMeta>(
+  const { rows: liveDataSnapshot, model: rowsModel } = useGridRows<Row, TableRowsCommitMeta>(
     gridCore,
     legacyRows.initialRows,
     {
       ...legacyRows.options,
-      // Keep the legacy no-`keepSource` seed identity while the core feature
-      // defaults to defensive ownership for standalone consumers.
+      // keepSource copies the seed; without it, preserve the legacy adapter
+      // contract by reading Core's source-reference state during render.
       cloneDefaultRows: keepSource === true,
       getChildren: getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
       setChildren: writeLazyChildren,
     },
   )
+  // The hook always exposes a defensive snapshot. The table's historical
+  // no-keepSource mode intentionally observes in-place mutations to the
+  // caller's seed array, so read the model directly for that one contract.
+  const liveData = keepSource ? liveDataSnapshot : rowsModel.get()
   // The feature owns pagination methods/events; this thin bridge keeps proxy
   // requests and the legacy notification callback in the adapter.
   const { pagination, setPage, setPageSize } = useTablePagination(

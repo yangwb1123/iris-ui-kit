@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type Orientation = 'horizontal' | 'vertical'
 
@@ -219,7 +227,7 @@
       bind:this={thumbEl}
       data-iris-slider-thumb
       role="slider"
-      aria-label={label ?? t('slider.label')}
+      aria-label={label ?? reactiveT('slider.label')}
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={value}

@@ -230,7 +230,9 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
         <IrisDropdownMenu>
           <Show
             when={t.activeKey()}
-            fallback={<IrisDropdownItem disabled>No active tab</IrisDropdownItem>}
+            fallback={
+              <IrisDropdownItem disabled>{translate('admin.noActiveTab')}</IrisDropdownItem>
+            }
           >
             {(key) => (
               <>

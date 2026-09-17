@@ -621,6 +621,7 @@ export const IrisTable = defineComponent({
       capture: captureViewSnapshot,
       applySnapshot: applyViewSnapshot,
       onActiveViewChange: (key) => props.onActiveViewChange?.(key),
+      t,
     })
     // remoteSort parity: the server owns the ordering — never re-sort locally.
     const sortedData = computed(() => (remoteSort.value ? tableData.value : sortedRows.value))
@@ -1830,6 +1831,7 @@ export const IrisTable = defineComponent({
         } else props.onColumnPinnedChange?.(key, side)
       },
       onPinnedCountChange: (count) => props.onPinnedCountChange?.(count),
+      t,
     })
 
     const rowDragCtrl = createSortable()

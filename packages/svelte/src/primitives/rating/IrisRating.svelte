@@ -1,7 +1,15 @@
 <script lang="ts">
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type RatingSize = 'sm' | 'md' | 'lg'
 
@@ -110,11 +118,11 @@
   role="slider"
   {id}
   tabindex={interactive ? 0 : -1}
-  aria-label={label ?? t('rating.label')}
+  aria-label={label ?? reactiveT('rating.label')}
   aria-valuemin={0}
   aria-valuemax={max}
   aria-valuenow={value}
-  aria-valuetext={t('rating.value', { value, max })}
+  aria-valuetext={reactiveT('rating.value', { value, max })}
   aria-readonly={readonly ? 'true' : undefined}
   aria-disabled={disabled ? 'true' : undefined}
   aria-invalid={invalid ? 'true' : undefined}

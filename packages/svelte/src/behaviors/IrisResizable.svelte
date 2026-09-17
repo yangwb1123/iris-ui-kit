@@ -3,7 +3,14 @@
   import { useI18n } from '../i18n'
 
   export type IrisResizableHandle =
-    'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    | 'top'
+    | 'right'
+    | 'bottom'
+    | 'left'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-right'
   export interface IrisResizableSize {
     width: number
     height: number
@@ -50,7 +57,15 @@
     children,
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const isControlled = $derived(sizeProp !== undefined)
   // svelte-ignore state_referenced_locally
@@ -156,7 +171,7 @@
     <button
       type="button"
       disabled={disabled || undefined}
-      aria-label={t('resizer.handle', { handle })}
+      aria-label={reactiveT('resizer.handle', { handle })}
       data-iris-resizable-handle={handle}
       onmousedown={(e) => startResize(e, handle)}
       onkeydown={(e) => resizeByKeyboard(e, handle)}

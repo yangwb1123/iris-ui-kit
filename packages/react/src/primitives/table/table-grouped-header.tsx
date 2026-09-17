@@ -227,7 +227,10 @@ export function GroupedTableHeader<Row extends Record<string, unknown>>(
               {headerStats && isLeaf && headerStatsByKey[col.key] ? (
                 <span
                   data-iris-header-stats=""
-                  aria-label={`count ${headerStatsByKey[col.key]!.count}, average ${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                  aria-label={t('table.headerStats', {
+                    count: String(headerStatsByKey[col.key]!.count),
+                    average: headerStatsByKey[col.key]!.average.toFixed(2),
+                  })}
                   style={{
                     marginInlineStart: 'var(--iris-space-xxs, 4px)',
                     fontSize: 'var(--iris-font-size-xs, 12px)',
@@ -236,7 +239,10 @@ export function GroupedTableHeader<Row extends Record<string, unknown>>(
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {`n=${headerStatsByKey[col.key]!.count} · avg=${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                  {t('table.headerStatsShort', {
+                    count: String(headerStatsByKey[col.key]!.count),
+                    average: headerStatsByKey[col.key]!.average.toFixed(2),
+                  })}
                 </span>
               ) : null}
               {showCellRefs && isLeaf ? (
@@ -308,6 +314,7 @@ export function GroupedTableHeader<Row extends Record<string, unknown>>(
                   label={col.title}
                   resolve={resolvePinnedCount}
                   commit={commitPinnedCount}
+                  t={t}
                 />
               ) : null}
             </div>

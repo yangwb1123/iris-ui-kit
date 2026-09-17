@@ -55,7 +55,7 @@ function prefersReducedMotion(): boolean {
 /**
  * Slide carousel: shows one child slide at a time with prev/next controls,
  * indicator dots, and keyboard (←/→) navigation. Controlled or uncontrolled.
- * a11y: region with `aria-roledescription="carousel"`, per-slide labelling,
+ * a11y: region and slides use localized role descriptions, per-slide labelling,
  * and a polite live region announcing the active slide.
  *
  * React port of {@link import('@iris-ui-kit/vue').IrisCarousel}.
@@ -126,7 +126,7 @@ export function IrisCarousel({
     <div
       data-iris-carousel=""
       role="group"
-      aria-roledescription="carousel"
+      aria-roledescription={t('carousel.roleDescription')}
       aria-label={ariaLabel ?? t('carousel.label')}
       tabIndex={0}
       className={className}
@@ -160,7 +160,7 @@ export function IrisCarousel({
               data-iris-carousel-slide=""
               data-active={i === current ? 'true' : undefined}
               role="group"
-              aria-roledescription="slide"
+              aria-roledescription={t('carousel.slideRoleDescription')}
               aria-label={t('carousel.slide', { index: i + 1, total: count })}
               aria-hidden={i !== current ? 'true' : undefined}
               style={{ flex: '0 0 100%', width: '100%', minWidth: 0 }}

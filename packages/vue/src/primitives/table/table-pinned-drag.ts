@@ -6,7 +6,10 @@ import {
   pinnedCountFromDelta,
 } from '@iris-ui-kit/core'
 import { useDrag } from '../drag/useDrag'
+import type { UseI18nReturn } from '../../i18n'
 import type { IrisTableColumn } from './types'
+
+type Translate = UseI18nReturn['t']
 
 export function createTablePinnedDrag(options: {
   enabled: () => boolean
@@ -14,6 +17,7 @@ export function createTablePinnedDrag(options: {
   widthOf: (column: IrisTableColumn) => number
   pinOf: (column: IrisTableColumn) => 'left' | 'right' | null
   setPinned: (key: string, pinned: 'left' | null) => void
+  t: Translate
   onPinnedCountChange?: (count: number) => void
 }): (column: IrisTableColumn) => VNode | null {
   const firstRightPinnedIndex = computed(() =>
@@ -96,7 +100,9 @@ export function createTablePinnedDrag(options: {
         },
         role: 'separator',
         'aria-orientation': 'vertical',
-        'aria-label': `Adjust pinned column count at ${column.title}`,
+        'aria-label': options.t('table.resizePinned', {
+          column: String(column.title ?? column.key),
+        }),
         tabindex: 0,
         'data-iris-pinned-drag-handle': '',
         'data-column-key': column.key,

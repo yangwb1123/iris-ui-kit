@@ -52,7 +52,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   // Each panel's "checked" set is a core selection model (multiple mode). The
   // per-item toggle and select-all are single-sourced in the model; these sets
@@ -168,14 +176,14 @@
     >
       <input
         type="checkbox"
-        aria-label={t('transfer.selectAllSource')}
+        aria-label={reactiveT('transfer.selectAllSource')}
         checked={filteredSource.filter((o) => !o.disabled).length > 0 &&
           filteredSource.filter((o) => !o.disabled).every((o) => $sourceChecked.includes(o.value))}
         onchange={toggleAllSource}
         {disabled}
       />
       <span style:font-size="var(--iris-font-size-sm, 13px)" style:font-weight="600"
-        >{titles?.[0] ?? t('transfer.sourceTitle')}</span
+        >{titles?.[0] ?? reactiveT('transfer.sourceTitle')}</span
       >
       <span
         style:margin-left="auto"
@@ -190,7 +198,7 @@
       >
         <input
           type="text"
-          placeholder={t('transfer.search')}
+          placeholder={reactiveT('transfer.search')}
           bind:value={sourceQuery}
           style:width="100%"
           style:border="none"
@@ -226,7 +234,7 @@
             style:font-size="var(--iris-font-size-sm, 13px)"
             style:text-align="center"
           >
-            {t('transfer.empty')}
+            {reactiveT('transfer.empty')}
           </div>
         {/if}
       </div>
@@ -242,7 +250,7 @@
   >
     <button
       type="button"
-      aria-label={t('transfer.toTarget')}
+      aria-label={reactiveT('transfer.toTarget')}
       data-iris-transfer-move-right
       onclick={moveToTarget}
       disabled={disabled || $sourceChecked.length === 0}
@@ -257,7 +265,7 @@
     >
     <button
       type="button"
-      aria-label={t('transfer.toSource')}
+      aria-label={reactiveT('transfer.toSource')}
       data-iris-transfer-move-left
       onclick={moveToSource}
       disabled={disabled || $targetChecked.length === 0}
@@ -283,14 +291,14 @@
     >
       <input
         type="checkbox"
-        aria-label={t('transfer.selectAllTarget')}
+        aria-label={reactiveT('transfer.selectAllTarget')}
         checked={filteredTarget.filter((o) => !o.disabled).length > 0 &&
           filteredTarget.filter((o) => !o.disabled).every((o) => $targetChecked.includes(o.value))}
         onchange={toggleAllTarget}
         {disabled}
       />
       <span style:font-size="var(--iris-font-size-sm, 13px)" style:font-weight="600"
-        >{titles?.[1] ?? t('transfer.targetTitle')}</span
+        >{titles?.[1] ?? reactiveT('transfer.targetTitle')}</span
       >
       <span
         style:margin-left="auto"
@@ -305,7 +313,7 @@
       >
         <input
           type="text"
-          placeholder={t('transfer.search')}
+          placeholder={reactiveT('transfer.search')}
           bind:value={targetQuery}
           style:width="100%"
           style:border="none"
@@ -341,7 +349,7 @@
             style:font-size="var(--iris-font-size-sm, 13px)"
             style:text-align="center"
           >
-            {t('transfer.empty')}
+            {reactiveT('transfer.empty')}
           </div>
         {/if}
       </div>

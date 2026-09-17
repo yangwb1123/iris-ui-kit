@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
@@ -86,7 +94,7 @@
       <button
         type="button"
         data-iris-alert-close
-        aria-label={t('alert.close')}
+        aria-label={reactiveT('alert.close')}
         onclick={handleClose}
         style="background: transparent; border: none; cursor: pointer; color: var(--iris-muted); font-size: var(--iris-font-size-lg, 16px); padding: 0; line-height: 1; flex-shrink: 0"
       >

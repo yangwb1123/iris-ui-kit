@@ -39,7 +39,15 @@
     children,
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const isControlled = $derived(positionProp !== undefined)
 
@@ -114,7 +122,7 @@
 
 <div
   role="button"
-  aria-roledescription={t('movable.roleDescription')}
+  aria-roledescription={reactiveT('movable.roleDescription')}
   aria-label={ariaLabel}
   tabindex={disabled ? -1 : 0}
   data-iris-movable

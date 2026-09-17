@@ -29,7 +29,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
   const panelId = `${generateId()}-panel`
 
   let open = $state(false)
@@ -120,7 +128,7 @@
     style:font-family="inherit"
     style:text-align="start"
   >
-    <span style:flex="1">{display || (placeholder ?? t('select.placeholder'))}</span>
+    <span style:flex="1">{display || (placeholder ?? reactiveT('select.placeholder'))}</span>
     <span aria-hidden="true" style:font-size="var(--iris-font-size-xs, 12px)"
       >{open ? '▲' : '▼'}</span
     >

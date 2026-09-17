@@ -189,7 +189,7 @@ export function IrisNavMenu({
         data-branch={branch ? 'true' : undefined}
         disabled={node.disabled}
         title={node.title}
-        aria-label={branch ? `${node.title} (section)` : node.title}
+        aria-label={branch ? t('admin.section', { title: node.title }) : node.title}
         aria-current={active && !branch ? 'page' : undefined}
         style={itemStyle({
           depth: 0,

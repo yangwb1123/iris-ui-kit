@@ -28,7 +28,15 @@
     [key: string]: unknown
   } = $props()
 
-  const { t } = useI18n()
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const totalPages = $derived(Math.max(1, Math.ceil(total / Math.max(1, pageSize))))
   const current = $derived(Math.min(totalPages, Math.max(1, value)))
@@ -51,7 +59,7 @@
 
 <nav
   {...rest}
-  aria-label={t('pagination.label')}
+  aria-label={reactiveT('pagination.label')}
   data-iris-pagination
   data-iris-pagination-size={size}
   style="display:inline-flex; align-items:center; gap:4px;{style ? ' ' + style : ''}"
@@ -60,7 +68,7 @@
     <button
       type="button"
       data-iris-pagination-item="first"
-      aria-label={t('pagination.first')}
+      aria-label={reactiveT('pagination.first')}
       disabled={disabled || current <= 1 || undefined}
       onclick={() => go(1)}
       style={btnStyle(false, current <= 1)}>«</button
@@ -69,7 +77,7 @@
   <button
     type="button"
     data-iris-pagination-item="prev"
-    aria-label={t('pagination.previous')}
+    aria-label={reactiveT('pagination.previous')}
     disabled={disabled || current <= 1 || undefined}
     onclick={() => go(current - 1)}
     style={btnStyle(false, current <= 1)}>‹</button
@@ -86,7 +94,7 @@
         type="button"
         data-iris-pagination-item="page"
         data-iris-pagination-active={item === current ? 'true' : undefined}
-        aria-label={t('pagination.page', { page: item as number })}
+        aria-label={reactiveT('pagination.page', { page: item as number })}
         aria-current={item === current ? 'page' : undefined}
         disabled={disabled || undefined}
         onclick={() => go(item as number)}
@@ -97,7 +105,7 @@
   <button
     type="button"
     data-iris-pagination-item="next"
-    aria-label={t('pagination.next')}
+    aria-label={reactiveT('pagination.next')}
     disabled={disabled || current >= totalPages || undefined}
     onclick={() => go(current + 1)}
     style={btnStyle(false, current >= totalPages)}>›</button
@@ -106,7 +114,7 @@
     <button
       type="button"
       data-iris-pagination-item="last"
-      aria-label={t('pagination.last')}
+      aria-label={reactiveT('pagination.last')}
       disabled={disabled || current >= totalPages || undefined}
       onclick={() => go(totalPages)}
       style={btnStyle(false, current >= totalPages)}>»</button

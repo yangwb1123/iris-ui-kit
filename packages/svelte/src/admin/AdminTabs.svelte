@@ -12,7 +12,15 @@
   import { useI18n } from '../i18n'
   import type { IrisAdminTabsProps } from './types'
 
-  const { t: translate } = useI18n()
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let {
     nav,
@@ -117,7 +125,7 @@
     bind:this={tablistEl}
     data-iris-tabs-scroll
     role="tablist"
-    aria-label={translate('admin.openPages')}
+    aria-label={reactiveT('admin.openPages')}
     onkeydown={onKeyDown}
     style="overflow-x: auto; flex: 1"
   >
@@ -154,7 +162,7 @@
               type="button"
               tabindex={-1}
               data-iris-tab-close
-              aria-label={translate('admin.closeTab', { title: tab.title })}
+              aria-label={reactiveT('admin.closeTab', { title: tab.title })}
               style={CLOSE_STYLE}
               onclick={(e) => {
                 e.stopPropagation()
@@ -172,31 +180,31 @@
   </div>
 
   <IrisDropdown>
-    <IrisDropdownTrigger aria-label={translate('admin.tabActions')} style={TRIGGER_STYLE}>
+    <IrisDropdownTrigger aria-label={reactiveT('admin.tabActions')} style={TRIGGER_STYLE}>
       <IrisIcon name="more-horizontal" size={16} />
     </IrisDropdownTrigger>
     <IrisDropdownMenu>
       {#if $activeKey}
         {@const key = $activeKey}
         <IrisDropdownItem onSelect={() => refresh(key)}
-          >{translate('admin.refresh')}</IrisDropdownItem
+          >{reactiveT('admin.refresh')}</IrisDropdownItem
         >
-        <IrisDropdownItem onSelect={() => close(key)}>{translate('admin.close')}</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => close(key)}>{reactiveT('admin.close')}</IrisDropdownItem>
         <IrisDropdownSeparator />
         <IrisDropdownItem onSelect={() => nav.closeLeft(key)}
-          >{translate('admin.closeLeft')}</IrisDropdownItem
+          >{reactiveT('admin.closeLeft')}</IrisDropdownItem
         >
         <IrisDropdownItem onSelect={() => nav.closeRight(key)}
-          >{translate('admin.closeRight')}</IrisDropdownItem
+          >{reactiveT('admin.closeRight')}</IrisDropdownItem
         >
         <IrisDropdownItem onSelect={() => nav.closeOthers(key)}
-          >{translate('admin.closeOthers')}</IrisDropdownItem
+          >{reactiveT('admin.closeOthers')}</IrisDropdownItem
         >
         <IrisDropdownItem onSelect={() => nav.closeAll()}
-          >{translate('admin.closeAll')}</IrisDropdownItem
+          >{reactiveT('admin.closeAll')}</IrisDropdownItem
         >
       {:else}
-        <IrisDropdownItem disabled>No active tab</IrisDropdownItem>
+        <IrisDropdownItem disabled>{reactiveT('admin.noActiveTab')}</IrisDropdownItem>
       {/if}
     </IrisDropdownMenu>
   </IrisDropdown>

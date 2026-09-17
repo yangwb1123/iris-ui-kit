@@ -218,7 +218,7 @@ export const IrisAdminTabs = defineComponent({
           h(IrisDropdownMenu, null, {
             default: () => {
               const key = t.activeKey.value
-              if (!key) return [action('No active tab', () => {}, true)]
+              if (!key) return [action(tr('admin.noActiveTab'), () => {}, true)]
               return [
                 action(tr('admin.refresh'), () => refresh(key)),
                 action(tr('admin.close'), () => close(key)),

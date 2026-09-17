@@ -213,6 +213,7 @@ export function TableGroupedHeader<Row extends TableRow>(
                     label={col.title}
                     resolvePinnedCount={props.resolvePinnedCount}
                     commitPinnedCount={props.commitPinnedCount}
+                    t={props.t}
                   />
                 </Show>
               </div>
@@ -440,6 +441,7 @@ export function TableFlatHeader<Row extends TableRow>(props: FlatHeaderProps<Row
                       label={col.title}
                       resolvePinnedCount={props.resolvePinnedCount}
                       commitPinnedCount={props.commitPinnedCount}
+                      t={props.t}
                     />
                   </Show>
                 </div>

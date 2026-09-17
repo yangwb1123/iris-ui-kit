@@ -17,11 +17,19 @@
     [key: string]: unknown
   } = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   function messageOf(error: unknown): string {
     const m = error instanceof Error ? error.message : ''
-    return m && m.length > 0 ? m : t('errorBoundary.message')
+    return m && m.length > 0 ? m : reactiveT('errorBoundary.message')
   }
 </script>
 
@@ -42,7 +50,7 @@
           {messageOf(error)}
         </div>
         <button type="button" data-iris-error-boundary-retry onclick={reset}>
-          {t('errorBoundary.retry')}
+          {reactiveT('errorBoundary.retry')}
         </button>
       </div>
     {/if}

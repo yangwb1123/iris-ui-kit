@@ -2,7 +2,15 @@
   import { mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   export type IrisFloatButtonShape = 'circle' | 'square'
 
@@ -98,7 +106,7 @@
   <button
     type="button"
     data-iris-float-button
-    aria-label={ariaLabel ?? (hasActions ? t('floatButton.actions') : undefined)}
+    aria-label={ariaLabel ?? (hasActions ? reactiveT('floatButton.actions') : undefined)}
     aria-haspopup={hasActions ? 'menu' : undefined}
     aria-expanded={hasActions ? (open ? 'true' : 'false') : undefined}
     onclick={() => {

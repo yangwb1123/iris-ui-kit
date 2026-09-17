@@ -143,6 +143,11 @@
   const renderedRow = $derived(liveRowFor(row, index))
   const selected = $derived(isSelected(id))
   const rowEditing = $derived(rowMode && rowEdit.active?.key === id)
+  function matchesPattern(column: IrisTableColumn, value: unknown, editing: boolean): boolean {
+    if (!pattern && !patternFill) return false
+    if (rowMode || editing || editingColumnKey !== column.key || editingDraft === '') return false
+    return String(value ?? '') === editingDraft
+  }
 </script>
 
 <!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -241,13 +246,7 @@
       {@const editId = cellId(id, col.key)}
       {@const rowSession = rowMode ? rowEdit.session(editId) : undefined}
       {@const isEditing = rowSession !== undefined || (!rowMode && editingCellId === editId)}
-      {@const patternHint =
-        (pattern || patternFill) &&
-        !rowMode &&
-        editingColumnKey === col.key &&
-        !isEditing &&
-        editingDraft !== '' &&
-        String(getCellValue(renderedRow, col) ?? '') === editingDraft}
+      {@const patternHint = matchesPattern(col, getCellValue(renderedRow, col), isEditing)}
       {#if !spanCovered}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div

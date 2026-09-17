@@ -3,7 +3,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type SkeletonShape = 'rect' | 'circle' | 'text'
 
@@ -49,6 +57,6 @@
   data-iris-skeleton-animated={String(animated)}
   role="status"
   aria-busy="true"
-  aria-label={t('skeleton.loading')}
+  aria-label={reactiveT('skeleton.loading')}
   style={mergeStyle(computedStyle, style)}
 ></div>

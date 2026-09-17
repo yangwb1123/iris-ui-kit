@@ -355,7 +355,7 @@ export function TablePager<Row extends Record<string, unknown>>(
                 props.setParams({ pageSize: size, page: 1 })
                 props.onPageChange?.(1, size)
               }}
-              aria-label={props.t('table.pageSize')}
+              ariaLabel={props.t('table.pageSize')}
             />
           </Show>
           <IrisPagination

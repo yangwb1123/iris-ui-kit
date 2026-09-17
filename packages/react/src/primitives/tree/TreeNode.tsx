@@ -1,5 +1,6 @@
 import * as React from 'react'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
+import { useI18n } from '../../i18n'
 
 export interface IrisTreeFlatNode {
   node: IrisTreeNode
@@ -45,6 +46,7 @@ export function TreeNodeView({
   selectNode,
   toggleExpand,
 }: IrisTreeNodeProps): React.ReactElement {
+  const { t } = useI18n()
   const { node, depth, hasChildren } = flatNode
   const isExpanded = expanded.has(node.id)
   const isSelected = selected.has(node.id)
@@ -95,7 +97,7 @@ export function TreeNodeView({
       {hasChildren ? (
         <button
           type="button"
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          aria-label={isExpanded ? t('treeSelect.collapse') : t('treeSelect.expand')}
           data-iris-tree-toggle=""
           onClick={(event) => {
             event.stopPropagation()

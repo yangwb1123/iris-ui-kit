@@ -33,7 +33,15 @@
     onResizeEnd,
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let handleEl = $state<HTMLElement | undefined>(undefined)
   let startSize: IrisResizerSize = { width: 0, height: 0 }
@@ -100,7 +108,7 @@
   bind:this={handleEl}
   type="button"
   disabled={disabled || undefined}
-  aria-label={t('resizer.handle', { handle })}
+  aria-label={reactiveT('resizer.handle', { handle })}
   data-iris-resizer-handle={handle}
   onkeydown={handleKeyDown}
   style="{positionStyle}; touch-action: none; border: 0; padding: 0; background: transparent; z-index: 1"

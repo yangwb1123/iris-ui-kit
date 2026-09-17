@@ -106,6 +106,12 @@ export function useTableColumns<Row extends Record<string, unknown>>(
     [detectedColumns, options.columnOrder],
   )
 
+  const visibilitySignature = JSON.stringify(
+    Object.keys(options.columnVisibility ?? {}).map((key) => [
+      key,
+      options.columnVisibility?.[key],
+    ]),
+  )
   const displayColumns = React.useMemo(() => {
     let cols = orderedColumns
     cols = applyColumnVisibility(cols, options.columnVisibility)
@@ -113,7 +119,7 @@ export function useTableColumns<Row extends Record<string, unknown>>(
       cols = cols.filter((col) => (col.visibleMethod ? col.visibleMethod() !== false : true))
     }
     return cols
-  }, [orderedColumns, options.columnVisibility])
+  }, [orderedColumns, visibilitySignature])
 
   const responsiveLeadingWidth =
     (options.rowDrag ? DRAG_COL_WIDTH : 0) +

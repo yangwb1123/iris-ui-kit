@@ -3,6 +3,7 @@ import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { IrisDashboardGrid, IrisDashboardCard } from '../layouts/DashboardGrid'
 import { IrisStack } from '../layouts/Stack'
+import { useI18n } from '../i18n'
 
 export interface IrisDashboardNavItem {
   id: string
@@ -30,7 +31,7 @@ export const IrisDashboardTemplate = defineComponent({
   name: 'IrisDashboardTemplate',
   inheritAttrs: false,
   props: {
-    title: { type: String, default: 'Dashboard' },
+    title: { type: String, default: undefined },
     sidebarTitle: { type: String, default: '' },
     nav: { type: Array as PropType<IrisDashboardNavItem[]>, default: () => [] },
     /** Currently active nav item id. */
@@ -51,6 +52,7 @@ export const IrisDashboardTemplate = defineComponent({
     'update:collapsed': (_value: boolean) => true,
   },
   setup(props, { attrs, slots, emit }) {
+    const { t } = useI18n()
     const isControlled = computed(() => props.collapsed !== undefined)
     const internalCollapsed = ref(props.defaultCollapsed)
     const collapsed = computed(() =>
@@ -125,7 +127,7 @@ export const IrisDashboardTemplate = defineComponent({
                 h(
                   'nav',
                   {
-                    'aria-label': 'Primary',
+                    'aria-label': t('dashboard.primaryNavigation'),
                     style: {
                       display: 'flex',
                       flexDirection: 'column',
@@ -205,7 +207,7 @@ export const IrisDashboardTemplate = defineComponent({
                             fontWeight: '600',
                           },
                         },
-                        props.title,
+                        props.title ?? t('dashboard.title'),
                       ),
                 default: () =>
                   slots.default

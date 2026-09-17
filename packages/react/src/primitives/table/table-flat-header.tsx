@@ -234,7 +234,10 @@ export function FlatTableHeader<Row extends Record<string, unknown>>(
             {headerStats && headerStatsByKey[col.key] ? (
               <span
                 data-iris-header-stats=""
-                aria-label={`count ${headerStatsByKey[col.key]!.count}, average ${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                aria-label={t('table.headerStats', {
+                  count: String(headerStatsByKey[col.key]!.count),
+                  average: headerStatsByKey[col.key]!.average.toFixed(2),
+                })}
                 style={{
                   marginInlineStart: 'var(--iris-space-xxs, 4px)',
                   fontSize: 'var(--iris-font-size-xs, 12px)',
@@ -243,7 +246,10 @@ export function FlatTableHeader<Row extends Record<string, unknown>>(
                   whiteSpace: 'nowrap',
                 }}
               >
-                {`n=${headerStatsByKey[col.key]!.count} · avg=${headerStatsByKey[col.key]!.average.toFixed(2)}`}
+                {t('table.headerStatsShort', {
+                  count: String(headerStatsByKey[col.key]!.count),
+                  average: headerStatsByKey[col.key]!.average.toFixed(2),
+                })}
               </span>
             ) : null}
             {showCellRefs ? (
@@ -315,6 +321,7 @@ export function FlatTableHeader<Row extends Record<string, unknown>>(
                 label={col.title}
                 resolve={resolvePinnedCount}
                 commit={commitPinnedCount}
+                t={t}
               />
             ) : null}
             {resizableColumns && !(pinnedBoundaryCol && pinnedBoundaryCol.key === col.key) ? (
@@ -326,6 +333,7 @@ export function FlatTableHeader<Row extends Record<string, unknown>>(
                 maxWidth={col.maxWidth ?? Infinity}
                 onResize={setColumnWidth}
                 widthHint={widthHint}
+                t={t}
                 onAutoFit={autoResizeColumns ? () => onAutoFitColumn?.(col) : undefined}
               />
             ) : null}

@@ -184,7 +184,18 @@
   const getCellValue = (row: Record<string, unknown>, column: IrisTableColumn): unknown =>
     resolveTableCellValue(row, column, formulaTables)
 
-  const { t } = useI18n()
+  const { locale, t: translate } = useI18n()
+  // A Svelte store-backed translator is a stable function by default. Keep a
+  // locale-bound function identity so every table child that receives `t`
+  // rerenders when the provider changes locale (including teleported chrome).
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
   let densityState = $state<IrisTableDensity>('comfortable')
   const effectiveDensity = $derived(
     densityToggle
@@ -205,11 +216,21 @@
   const gridCore = useGridCore<Record<string, unknown>>()
   // svelte-ignore state_referenced_locally — columns options seed the stable Core feature;
   const columnsFeature = useGridColumns(gridCore, {
-    visibility: columnVisibility,
-    order: columnOrder,
-    widths: columnWidths,
-    defaultWidths: defaultColumnWidths,
-    pinned: pinnedColumns,
+    get visibility() {
+      return columnVisibility
+    },
+    get order() {
+      return columnOrder
+    },
+    get widths() {
+      return columnWidths
+    },
+    get defaultWidths() {
+      return defaultColumnWidths
+    },
+    get pinned() {
+      return pinnedColumns
+    },
     onOrderChange: (next) => onColumnOrderChange?.(next),
     onWidthsChange: (next) => onColumnWidthsChange?.(next),
     onPinnedChange: (key, side) => onColumnPinnedChange?.(key, side),
@@ -626,8 +647,12 @@
   }
 
   function clearFilter(): void {
+    const hadFilters = Object.keys(effectiveFilters).length > 0
+    const hadFilterValues = Object.keys(effectiveFilterValues).length > 0
     tableForm.clear()
     filteringModel.clear()
+    if (!hadFilters) onFiltersChange?.({})
+    if (!hadFilterValues) onFilterValuesChange?.({})
     if (proxyRef) {
       const changed = proxyRef.setParams({ filters: {}, page: 1 })
       if (changed === false) void proxyRef.refetch()
@@ -1140,7 +1165,23 @@
     _column: IrisTableColumn,
     _rowIndex: number,
   ): void {
-    cellEditing.commitCellEdit()
+    // The core editing model intentionally suppresses no-op commits. A user
+    // clearing a nullable number still needs to reach the adapter callback so
+    // controlled consumers can observe the explicit null assignment.
+    const reportsNullableClear =
+      _column.editor === 'number' &&
+      cellEditing.model.getDraft() === '' &&
+      getCellValue(_row, _column) === null
+    const committed = cellEditing.commitCellEdit()
+    if (committed && reportsNullableClear) {
+      onCellEdit?.({
+        row: _row,
+        column: _column,
+        oldValue: null,
+        newValue: null,
+        rowIndex: _rowIndex,
+      })
+    }
   }
 
   function cancelEdit(): void {
@@ -1529,5 +1570,5 @@
   setFocusedCell={(cell) => (focusedCell = cell)}
   {formulaTables}
   {editPreview}
-  {t}
+  t={reactiveT}
 />

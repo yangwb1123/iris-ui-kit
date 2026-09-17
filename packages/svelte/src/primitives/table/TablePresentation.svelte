@@ -231,6 +231,7 @@
   onSelect={tableViews.selectView}
   onSave={tableViews.saveView}
   onDelete={tableViews.deleteView}
+  {t}
 />
 
 <TableChrome

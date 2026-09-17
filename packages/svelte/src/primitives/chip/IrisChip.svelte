@@ -1,7 +1,15 @@
 <script lang="ts">
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type ChipVariant = 'solid' | 'outline' | 'subtle'
   type ChipTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
@@ -102,7 +110,7 @@
         role="button"
         tabindex={disabled ? -1 : 0}
         data-iris-chip-close
-        aria-label={t('chip.remove')}
+        aria-label={reactiveT('chip.remove')}
         aria-disabled={disabled ? 'true' : undefined}
         onclick={onCloseClick}
         onkeydown={(e) => {
@@ -139,7 +147,7 @@
       <button
         type="button"
         data-iris-chip-close
-        aria-label={t('chip.remove')}
+        aria-label={reactiveT('chip.remove')}
         {disabled}
         onclick={onCloseClick}
         style="background:transparent; border:none; cursor:{disabled

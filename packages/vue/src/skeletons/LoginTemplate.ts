@@ -8,6 +8,7 @@ import { IrisButton } from '../primitives/button/Button'
 import { IrisFormField } from '../primitives/form-field/FormField'
 import { IrisAlert } from '../primitives/alert/Alert'
 import { IrisDivider } from '../primitives/divider/Divider'
+import { useI18n } from '../i18n'
 
 export interface IrisLoginSubmitPayload {
   email: string
@@ -27,13 +28,13 @@ export const IrisLoginTemplate = defineComponent({
   name: 'IrisLoginTemplate',
   inheritAttrs: false,
   props: {
-    title: { type: String, default: 'Sign in' },
+    title: { type: String, default: undefined },
     description: { type: String, default: '' },
     /** Show "Remember me" checkbox. */
     showRemember: { type: Boolean, default: true },
     /** Error message shown above the form. */
     error: { type: String, default: '' },
-    submitLabel: { type: String, default: 'Sign in' },
+    submitLabel: { type: String, default: undefined },
     /** Disable the entire form (e.g. while a request is pending). */
     loading: { type: Boolean, default: false },
   },
@@ -41,6 +42,7 @@ export const IrisLoginTemplate = defineComponent({
     submit: (_payload: IrisLoginSubmitPayload) => true,
   },
   setup(props, { attrs, slots, emit }) {
+    const { t } = useI18n()
     const email = ref('')
     const password = ref('')
     const remember = ref(false)
@@ -99,7 +101,7 @@ export const IrisLoginTemplate = defineComponent({
                             fontWeight: '700',
                           },
                         },
-                        props.title,
+                        props.title ?? t('login.title'),
                       ),
                       props.description
                         ? h(
@@ -116,21 +118,21 @@ export const IrisLoginTemplate = defineComponent({
                         : null,
                     ]),
                 props.error ? h(IrisAlert, { tone: 'danger', title: props.error }) : null,
-                h(IrisFormField, { label: 'Email', required: true }, () =>
+                h(IrisFormField, { label: t('login.email'), required: true }, () =>
                   h(IrisInput, {
                     type: 'email',
                     modelValue: email.value,
                     'onUpdate:modelValue': (v: string) => (email.value = v),
-                    placeholder: 'you@example.com',
+                    placeholder: t('login.emailPlaceholder'),
                     disabled: props.loading,
                     autocomplete: 'email',
                   } as Record<string, unknown>),
                 ),
-                h(IrisFormField, { label: 'Password', required: true }, () =>
+                h(IrisFormField, { label: t('login.password'), required: true }, () =>
                   h(IrisPasswordInput, {
                     modelValue: password.value,
                     'onUpdate:modelValue': (v: string) => (password.value = v),
-                    placeholder: 'Enter your password',
+                    placeholder: t('login.passwordPlaceholder'),
                     disabled: props.loading,
                     autocomplete: 'current-password',
                   } as Record<string, unknown>),
@@ -155,7 +157,7 @@ export const IrisLoginTemplate = defineComponent({
                             },
                             disabled: props.loading,
                           } as Record<string, unknown>,
-                          () => 'Remember me',
+                          () => t('login.remember'),
                         ),
                         slots.forgot ? slots.forgot() : null,
                       ],
@@ -169,10 +171,13 @@ export const IrisLoginTemplate = defineComponent({
                     loading: props.loading,
                     style: { width: '100%' },
                   } as Record<string, unknown>,
-                  () => props.submitLabel,
+                  () => props.submitLabel ?? t('login.submit'),
                 ),
                 slots.footer
-                  ? h('div', null, [h(IrisDivider, { spacing: 'md', label: 'or' }), slots.footer()])
+                  ? h('div', null, [
+                      h(IrisDivider, { spacing: 'md', label: t('login.footerDivider') }),
+                      slots.footer(),
+                    ])
                   : null,
               ]),
             ],

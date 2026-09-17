@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import IrisContainer from '../layouts/IrisContainer.svelte'
+  import { useI18n } from '../i18n'
 
   export interface IrisLoginSubmitPayload {
     email: string
@@ -21,12 +22,22 @@
     class?: string
   }
 
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
+
   let {
-    title = 'Sign in',
+    title,
     description = '',
     showRemember = true,
     error = '',
-    submitLabel = 'Sign in',
+    submitLabel,
     loading = false,
     onSubmit,
     children,
@@ -71,7 +82,7 @@
         style:font-weight="700"
         style:color="var(--iris-foreground)"
       >
-        {title}
+        {title ?? reactiveT('login.title')}
       </h1>
       {#if description}
         <p
@@ -110,13 +121,14 @@
             style:font-size="var(--iris-font-size-md, 14px)"
             style:font-weight="500"
             style:margin-bottom="6px"
-            style:color="var(--iris-foreground)">Email</label
+            style:color="var(--iris-foreground)">{reactiveT('login.email')}</label
           >
           <input
             id="iris-login-email"
             type="email"
             bind:value={email}
             name="email"
+            placeholder={reactiveT('login.emailPlaceholder')}
             autocomplete="email"
             disabled={loading}
             required
@@ -141,13 +153,14 @@
             style:font-size="var(--iris-font-size-md, 14px)"
             style:font-weight="500"
             style:margin-bottom="6px"
-            style:color="var(--iris-foreground)">Password</label
+            style:color="var(--iris-foreground)">{reactiveT('login.password')}</label
           >
           <input
             id="iris-login-password"
             type="password"
             bind:value={password}
             name="password"
+            placeholder={reactiveT('login.passwordPlaceholder')}
             autocomplete="current-password"
             disabled={loading}
             required
@@ -181,7 +194,7 @@
             <label
               for="iris-login-remember"
               style:font-size="var(--iris-font-size-md, 14px)"
-              style:color="var(--iris-foreground)">Remember me</label
+              style:color="var(--iris-foreground)">{reactiveT('login.remember')}</label
             >
           </div>
         {/if}
@@ -201,7 +214,10 @@
           style:font-weight="600"
           style:font-family="inherit"
           style:cursor={loading ? 'not-allowed' : 'pointer'}
-          style:opacity={loading ? '0.7' : '1'}>{loading ? 'Signing in…' : submitLabel}</button
+          style:opacity={loading ? '0.7' : '1'}
+          >{loading
+            ? reactiveT('login.submitting')
+            : (submitLabel ?? reactiveT('login.submit'))}</button
         >
       </form>
 

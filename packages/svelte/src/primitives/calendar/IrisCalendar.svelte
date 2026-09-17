@@ -17,7 +17,15 @@
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   interface Props {
     value?: Date | null
@@ -149,7 +157,7 @@
   >
     <button
       type="button"
-      aria-label={t('calendar.previousMonth')}
+      aria-label={reactiveT('calendar.previousMonth')}
       data-iris-calendar-prev
       disabled={prevDisabled || undefined}
       onclick={goPrevMonth}
@@ -178,7 +186,7 @@
 
     <button
       type="button"
-      aria-label={t('calendar.nextMonth')}
+      aria-label={reactiveT('calendar.nextMonth')}
       data-iris-calendar-next
       disabled={nextDisabled || undefined}
       onclick={goNextMonth}

@@ -62,7 +62,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   const isExpandedControlled = $derived(expandedProp !== undefined)
   const isSelectedControlled = $derived(selectedProp !== undefined)
@@ -296,7 +304,7 @@
 
 <div
   role="tree"
-  aria-label={ariaLabel ?? t('tree.label')}
+  aria-label={ariaLabel ?? reactiveT('tree.label')}
   data-iris-tree
   style:display="flex"
   style:flex-direction="column"
@@ -311,7 +319,7 @@
       style:color="var(--iris-muted)"
       style:font-size="var(--iris-font-size-md, 14px)"
     >
-      {t('tree.loading')}
+      {reactiveT('tree.loading')}
     </div>
   {:else if error}
     <div
@@ -320,7 +328,7 @@
       style:color="var(--iris-danger)"
       style:font-size="var(--iris-font-size-md, 14px)"
     >
-      {t('tree.error')}
+      {reactiveT('tree.error')}
     </div>
   {:else if nodes.length === 0}
     <div
@@ -329,7 +337,7 @@
       style:color="var(--iris-muted)"
       style:font-size="var(--iris-font-size-md, 14px)"
     >
-      {t('tree.empty')}
+      {reactiveT('tree.empty')}
     </div>
   {:else}
     {#each flat as fn, idx (fn.node.id)}

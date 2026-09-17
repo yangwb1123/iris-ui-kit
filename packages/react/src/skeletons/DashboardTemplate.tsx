@@ -3,6 +3,7 @@ import { IrisSidebarLayout, type IrisSidebarLayoutSidebarState } from '../layout
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { IrisDashboardGrid, IrisDashboardCard } from '../layouts/DashboardGrid'
 import { IrisStack } from '../layouts/Stack'
+import { useI18n } from '../i18n'
 
 export interface IrisDashboardNavItem {
   id: string
@@ -45,7 +46,7 @@ export interface IrisDashboardTemplateProps {
  * `IrisDashboardGrid`.
  */
 export function IrisDashboardTemplate({
-  title = 'Dashboard',
+  title,
   sidebarTitle = '',
   nav = [],
   activeId = '',
@@ -60,6 +61,8 @@ export function IrisDashboardTemplate({
   style,
   className,
 }: IrisDashboardTemplateProps): React.ReactElement {
+  const { t } = useI18n()
+  const resolvedTitle = title ?? t('dashboard.title')
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed)
 
   const handleCollapsed = (next: boolean) => {
@@ -105,7 +108,7 @@ export function IrisDashboardTemplate({
               </div>
             ) : null}
             <nav
-              aria-label="Primary"
+              aria-label={t('dashboard.primaryNavigation')}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -173,7 +176,7 @@ export function IrisDashboardTemplate({
                   fontWeight: 600,
                 }}
               >
-                {title}
+                {resolvedTitle}
               </div>
             )
           }

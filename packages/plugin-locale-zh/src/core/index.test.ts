@@ -11,6 +11,8 @@ describe('localeZhPlugin', () => {
     const { messages } = runPlugins([localeZhPlugin])
     expect(messages['zh-CN']).toBeDefined()
     expect(messages['zh-CN']['pagination.next']).toBe('下一页')
+    expect(messages['zh-CN']['carousel.roleDescription']).toBe('轮播图')
+    expect(messages['zh-CN']['carousel.slideRoleDescription']).toBe('幻灯片')
   })
 
   it('covers a representative set of built-in keys', () => {

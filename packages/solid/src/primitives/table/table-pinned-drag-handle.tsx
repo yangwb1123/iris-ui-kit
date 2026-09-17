@@ -6,6 +6,7 @@ export function PinnedDragHandle(props: {
   label: string
   resolvePinnedCount: (dx: number) => number
   commitPinnedCount: (count: number) => void
+  t: (key: string, params?: Record<string, string>) => string
 }): JSX.Element {
   const [element, setElement] = createSignal<HTMLElement | null>(null)
   const [dx, setDx] = createSignal(0)
@@ -31,7 +32,7 @@ export function PinnedDragHandle(props: {
       ref={setElement}
       role="separator"
       aria-orientation="vertical"
-      aria-label={`Adjust pinned column count at ${props.label}`}
+      aria-label={props.t('table.resizePinned', { column: props.label })}
       tabIndex={0}
       data-iris-pinned-drag-handle=""
       data-column-key={props.colKey}

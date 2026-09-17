@@ -62,7 +62,15 @@
     ...rest
   }: Props = $props()
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   // List values are generic; the selection model is keyed by string|number and
   // compares keys by identity — bridge T <-> key at this edge, mirroring React.
@@ -218,12 +226,12 @@
       style="list-style: none; padding: 12px; text-align: center; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
     >
       {#if dataState === 'error'}
-        {#if errorState}{@render errorState()}{:else}{t('list.error')}{/if}
+        {#if errorState}{@render errorState()}{:else}{reactiveT('list.error')}{/if}
       {:else if dataState === 'loading'}
-        {#if loadingState}{@render loadingState()}{:else}{t('list.loading')}{/if}
+        {#if loadingState}{@render loadingState()}{:else}{reactiveT('list.loading')}{/if}
       {:else if emptyState}{@render emptyState()}
       {:else if children}{@render children()}
-      {:else}{t('list.empty')}{/if}
+      {:else}{reactiveT('list.empty')}{/if}
     </li>
   {:else}
     {#each items as item, index (String(item.value ?? index))}

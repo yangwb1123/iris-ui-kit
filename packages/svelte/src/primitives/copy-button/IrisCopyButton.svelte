@@ -2,7 +2,15 @@
   import { copyText } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type CopyButtonSize = 'sm' | 'md' | 'lg'
 
@@ -91,10 +99,10 @@
     : '1'}; transition:background-color 120ms ease,color 120ms ease;{style ? ' ' + style : ''}"
 >
   {#if copied}
-    {copiedLabel ?? t('copyButton.copied')}
+    {copiedLabel ?? reactiveT('copyButton.copied')}
   {:else if children}
     {@render children()}
   {:else}
-    {t('copyButton.copy')}
+    {reactiveT('copyButton.copy')}
   {/if}
 </button>

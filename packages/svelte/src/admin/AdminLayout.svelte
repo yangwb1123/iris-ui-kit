@@ -11,7 +11,15 @@
   import { useAdminShell } from './useAdminShell.svelte'
   import type { IrisAdminLayoutProps } from './types'
 
-  const { t } = useI18n()
+  const { locale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $locale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   let {
     menus,
@@ -22,7 +30,7 @@
     defaultCollapsed = false,
     onCollapsedChange,
     mode = 'sidebar',
-    appTitle = 'Iris Admin',
+    appTitle,
     tabs,
     showTabs = true,
     showBreadcrumb = true,
@@ -83,7 +91,7 @@
     >
       <IrisIcon name="menu" size={18} />
     </span>
-    {#if !state.collapsed}<span>{appTitle}</span>{/if}
+    {#if !state.collapsed}<span>{appTitle ?? reactiveT('admin.title')}</span>{/if}
   </div>
 {/snippet}
 
@@ -116,7 +124,9 @@
     <button
       type="button"
       data-iris-admin-collapse
-      aria-label={currentCollapsed ? t('admin.expandSidebar') : t('admin.collapseSidebar')}
+      aria-label={currentCollapsed
+        ? reactiveT('admin.expandSidebar')
+        : reactiveT('admin.collapseSidebar')}
       aria-pressed={currentCollapsed ? 'true' : 'false'}
       style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: var(--iris-radius-md, 6px); background: transparent; color: var(--iris-foreground); cursor: pointer; flex-shrink: 0"
       onclick={() => setCollapsed(!currentCollapsed)}

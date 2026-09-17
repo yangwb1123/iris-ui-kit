@@ -197,7 +197,9 @@ export function renderTableHeaderRow(ctx: TableHeaderRowContext): VNode {
             },
             role: 'separator',
             'aria-orientation': 'vertical',
-            'aria-label': `Resize ${col.title}`,
+            'aria-label': ctx.t('table.resizeColumn', {
+              column: String(col.title ?? col.key),
+            }),
             tabindex: 0,
             'data-iris-table-resize-handle': '',
             'data-column-key': col.key,

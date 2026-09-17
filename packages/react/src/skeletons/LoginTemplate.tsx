@@ -8,6 +8,7 @@ import { IrisButton } from '../primitives/button/Button'
 import { IrisFormField } from '../primitives/form-field/FormField'
 import { IrisAlert } from '../primitives/alert/Alert'
 import { IrisDivider } from '../primitives/divider/Divider'
+import { useI18n } from '../i18n'
 
 export interface IrisLoginSubmitPayload {
   email: string
@@ -37,11 +38,11 @@ export interface IrisLoginTemplateProps {
  * Layer 4 system skeleton: centered login page composed from Iris primitives.
  */
 export function IrisLoginTemplate({
-  title = 'Sign in',
+  title,
   description = '',
   showRemember = true,
   error = '',
-  submitLabel = 'Sign in',
+  submitLabel,
   loading = false,
   header,
   forgot,
@@ -50,6 +51,9 @@ export function IrisLoginTemplate({
   style,
   className,
 }: IrisLoginTemplateProps): React.ReactElement {
+  const { t } = useI18n()
+  const resolvedTitle = title ?? t('login.title')
+  const resolvedSubmitLabel = submitLabel ?? t('login.submit')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [remember, setRemember] = React.useState(false)
@@ -96,7 +100,7 @@ export function IrisLoginTemplate({
                     fontWeight: 700,
                   }}
                 >
-                  {title}
+                  {resolvedTitle}
                 </h1>
                 {description ? (
                   <p
@@ -112,21 +116,21 @@ export function IrisLoginTemplate({
               </div>
             )}
             {error ? <IrisAlert tone="danger" title={error} /> : null}
-            <IrisFormField label="Email" required>
+            <IrisFormField label={t('login.email')} required>
               <IrisInput
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t('login.emailPlaceholder')}
                 disabled={loading}
                 autoComplete="email"
               />
             </IrisFormField>
-            <IrisFormField label="Password" required>
+            <IrisFormField label={t('login.password')} required>
               <IrisPasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder={t('login.passwordPlaceholder')}
                 disabled={loading}
                 autoComplete="current-password"
               />
@@ -144,17 +148,17 @@ export function IrisLoginTemplate({
                   onChange={(next) => setRemember(next)}
                   disabled={loading}
                 >
-                  Remember me
+                  {t('login.remember')}
                 </IrisCheckbox>
                 {forgot ?? null}
               </div>
             ) : null}
             <IrisButton type="submit" variant="solid" loading={loading} style={{ width: '100%' }}>
-              {submitLabel}
+              {resolvedSubmitLabel}
             </IrisButton>
             {footer ? (
               <div>
-                <IrisDivider spacing="md" label="or" />
+                <IrisDivider spacing="md" label={t('login.footerDivider')} />
                 {footer}
               </div>
             ) : null}

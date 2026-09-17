@@ -3,6 +3,7 @@ import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useDrag } from '../drag/useDrag'
+import { useI18n } from '../../i18n'
 import { clampColumnWidth, COLUMN_RESIZE_STEP } from '@iris-ui-kit/core'
 import type {
   IrisTableContextMenuItem,
@@ -242,6 +243,7 @@ export function ColumnResizeHandle(props: {
   maxWidth: number
   onResize: (key: string, width: number) => void
 }): JSX.Element {
+  const { t } = useI18n()
   const [handle, setHandle] = createSignal<HTMLElement | null>(null)
   let startWidth = 0
   const clamp = (width: number): number => clampColumnWidth(width, props.minWidth, props.maxWidth)
@@ -257,7 +259,7 @@ export function ColumnResizeHandle(props: {
       ref={setHandle}
       role="separator"
       aria-orientation="vertical"
-      aria-label={`Resize ${props.label}`}
+      aria-label={t('table.resizeColumn', { column: props.label })}
       tabindex={0}
       data-iris-table-resize-handle=""
       data-column-key={props.colKey}

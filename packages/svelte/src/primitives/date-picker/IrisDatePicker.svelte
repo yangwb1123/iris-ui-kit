@@ -3,7 +3,15 @@
   import { safeLocale } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   interface Props {
     value?: Date | null
@@ -117,7 +125,7 @@
     style:text-align="start"
     {...rest}
   >
-    {display || (placeholder ?? t('datePicker.placeholder'))}
+    {display || (placeholder ?? reactiveT('datePicker.placeholder'))}
   </button>
 
   {#if open}

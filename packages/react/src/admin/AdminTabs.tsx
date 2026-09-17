@@ -261,7 +261,7 @@ export function IrisAdminTabs({
               </IrisDropdownItem>
             </>
           ) : (
-            <IrisDropdownItem disabled>No active tab</IrisDropdownItem>
+            <IrisDropdownItem disabled>{translate('admin.noActiveTab')}</IrisDropdownItem>
           )}
         </IrisDropdownMenu>
       </IrisDropdown>

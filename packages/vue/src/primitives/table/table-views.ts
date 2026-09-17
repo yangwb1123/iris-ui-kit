@@ -8,8 +8,10 @@ import {
   type TableTab,
   type TableViewConfig,
 } from '@iris-ui-kit/core'
+import type { UseI18nReturn } from '../../i18n'
 import type { IrisTableSortState, IrisTableViewSnapshot } from './types'
 
+type Translate = UseI18nReturn['t']
 type NamedView = TableNamedView<IrisTableViewSnapshot>
 
 export function createTableViewsController(options: {
@@ -19,6 +21,7 @@ export function createTableViewsController(options: {
   capture?: () => Omit<Partial<IrisTableViewSnapshot>, 'sort'>
   applySnapshot?: (snapshot: IrisTableViewSnapshot) => void
   onActiveViewChange: (key: string | null) => void
+  t: Translate
 }): {
   activeKey: Readonly<Ref<string | null>>
   views: Readonly<Ref<NamedView[]>>
@@ -101,6 +104,7 @@ export function createTableViewsController(options: {
         onSelect: select,
         onSave: save,
         onDelete: remove,
+        t: options.t,
       }),
   }
 }
@@ -114,6 +118,7 @@ export interface TableViewsRenderContext {
   onSelect: (key: string) => void
   onSave: (name: string) => void
   onDelete: (key: string) => void
+  t: Translate
 }
 
 export function renderTableViews(ctx: TableViewsRenderContext): VNode | null {
@@ -135,7 +140,7 @@ export function renderTableViews(ctx: TableViewsRenderContext): VNode | null {
         {
           'data-iris-table-views': '',
           value: ctx.saveOpen.value ? TABLE_VIEWS_SAVE_ITEM : (ctx.activeKey.value ?? ''),
-          'aria-label': 'Table views',
+          'aria-label': ctx.t('table.views.label'),
           onChange: (event: Event) => {
             const value = (event.target as HTMLSelectElement).value
             if (value === TABLE_VIEWS_SAVE_ITEM) {
@@ -158,7 +163,7 @@ export function renderTableViews(ctx: TableViewsRenderContext): VNode | null {
         },
         [
           ctx.activeKey.value === null && !ctx.saveOpen.value
-            ? h('option', { value: '', disabled: true }, 'Select view')
+            ? h('option', { value: '', disabled: true }, ctx.t('table.views.placeholder'))
             : null,
           ...ctx.views.value.map((view) =>
             h(
@@ -167,7 +172,7 @@ export function renderTableViews(ctx: TableViewsRenderContext): VNode | null {
               ctx.config?.label?.(view.name) ?? view.name,
             ),
           ),
-          h('option', { value: TABLE_VIEWS_SAVE_ITEM }, '＋ Save view'),
+          h('option', { value: TABLE_VIEWS_SAVE_ITEM }, `＋ ${ctx.t('table.views.save')}`),
         ],
       ),
       ctx.saveOpen.value
@@ -175,8 +180,8 @@ export function renderTableViews(ctx: TableViewsRenderContext): VNode | null {
             'data-iris-views-save': '',
             type: 'text',
             value: ctx.draft.value,
-            placeholder: 'View name',
-            'aria-label': 'Save view',
+            placeholder: ctx.t('table.views.placeholder'),
+            'aria-label': ctx.t('table.views.save'),
             onInput: (event: Event) => {
               ctx.draft.value = (event.target as HTMLInputElement).value
             },
@@ -207,7 +212,8 @@ export function renderTableViews(ctx: TableViewsRenderContext): VNode | null {
             {
               type: 'button',
               'data-iris-table-views-delete': '',
-              'aria-label': 'Delete view',
+              'aria-label': ctx.t('table.views.delete'),
+              title: ctx.t('table.views.delete'),
               onClick: () => ctx.onDelete(ctx.activeKey.value!),
               style: {
                 border: 'none',

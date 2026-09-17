@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { I18n } from '@iris-ui-kit/core'
   import { useDrag } from '../drag/useDrag.svelte'
 
   let {
@@ -6,11 +7,13 @@
     label,
     resolvePinnedCount,
     commitPinnedCount,
+    t,
   }: {
     colKey: string
     label: string
     resolvePinnedCount: (dx: number) => number
     commitPinnedCount: (count: number) => void
+    t: I18n['t']
   } = $props()
 
   let handle: HTMLElement | null = $state(null)
@@ -44,7 +47,7 @@
   bind:this={handle}
   role="separator"
   aria-orientation="vertical"
-  aria-label={`Adjust pinned column count at ${label}`}
+  aria-label={t('table.resizePinned', { column: label })}
   tabindex="0"
   data-iris-pinned-drag-handle=""
   data-column-key={colKey}

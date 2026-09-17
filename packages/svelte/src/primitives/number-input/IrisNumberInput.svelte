@@ -2,7 +2,15 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
-  const { t } = useI18n()
+  const { locale: i18nLocale, t: translate } = useI18n()
+  let reactiveT = $state(translate)
+  $effect(() => {
+    const activeLocale = $i18nLocale
+    reactiveT = (key, params) => {
+      void activeLocale
+      return translate(key, params)
+    }
+  })
 
   type Size = 'sm' | 'md' | 'lg'
 
@@ -203,7 +211,7 @@
     <button
       type="button"
       data-iris-number-input-dec
-      aria-label={t('numberInput.decrement')}
+      aria-label={reactiveT('numberInput.decrement')}
       disabled={disabled || atMin || undefined}
       onclick={() => increment(-1)}
       style="{ctrlBtnStyle}; margin-inline-end: 4px">−</button
@@ -236,7 +244,7 @@
     <button
       type="button"
       data-iris-number-input-inc
-      aria-label={t('numberInput.increment')}
+      aria-label={reactiveT('numberInput.increment')}
       disabled={disabled || atMax || undefined}
       onclick={() => increment(1)}
       style="{ctrlBtnStyle}; margin-inline-start: 4px">+</button

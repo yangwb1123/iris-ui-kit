@@ -316,13 +316,17 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
     const wrap = mount(host)
     const itemA = wrap.find('[data-iris-sortable-item="A"]').element as HTMLElement
     const itemB = wrap.find('[data-iris-sortable-item="B"]').element as HTMLElement
+    const transformedLeft = (element: HTMLElement, baseLeft: number): number => {
+      const match = element.style.transform.match(/translate3d\((-?[\d.]+)px/)
+      return baseLeft + (match ? Number(match[1]) : 0)
+    }
     Object.defineProperty(itemA, 'getBoundingClientRect', {
       configurable: true,
-      value: () => ({ left: 0, top: 0, width: 50, height: 28 }),
+      value: () => ({ left: transformedLeft(itemA, 0), top: 0, width: 50, height: 28 }),
     })
     Object.defineProperty(itemB, 'getBoundingClientRect', {
       configurable: true,
-      value: () => ({ left: 58, top: 0, width: 50, height: 28 }),
+      value: () => ({ left: transformedLeft(itemB, 58), top: 0, width: 50, height: 28 }),
     })
 
     const pointer = (type: string, target: HTMLElement, x: number): void => {
@@ -339,6 +343,15 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
     expect(itemA.style.transform).toBe('translate3d(70px, 0px, 0)')
     expect(itemB.style.transform).toBe('translate3d(-54px, 0, 0)')
     expect(itemB.style.transition).toBe('transform 150ms ease')
+
+    // Collision measurements must not include the transforms applied for the
+    // previous frame, otherwise a small pointer move can snap the drop target
+    // back to the active item and stop the sibling animation.
+    pointer('pointermove', itemA, 75)
+    await nextTick()
+
+    expect(itemA.style.transform).toBe('translate3d(75px, 0px, 0)')
+    expect(itemB.style.transform).toBe('translate3d(-54px, 0, 0)')
   })
 })
 

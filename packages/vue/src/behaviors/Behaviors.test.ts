@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { IrisResizable } from './Resizable'
 import { IrisMovable } from './Movable'
 import { IrisHotkey } from './Hotkey'
@@ -292,6 +292,53 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
     })
     const root = wrap.find('[data-iris-sortable]').element as HTMLElement
     expect(root.style.opacity).toBe('0.6')
+  })
+
+  it('animates the active item and displaced siblings during a reorder', async () => {
+    const items = ref(['A', 'B'])
+    const host = defineComponent({
+      setup() {
+        return () =>
+          h(
+            IrisSortable,
+            {
+              items: items.value,
+              onReorder: () => {},
+              getKey: (item: unknown) => String(item),
+              orientation: 'horizontal',
+            },
+            {
+              default: () => items.value.map((item) => h('div', { key: item }, item)),
+            },
+          )
+      },
+    })
+    const wrap = mount(host)
+    const itemA = wrap.find('[data-iris-sortable-item="A"]').element as HTMLElement
+    const itemB = wrap.find('[data-iris-sortable-item="B"]').element as HTMLElement
+    Object.defineProperty(itemA, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 50, height: 28 }),
+    })
+    Object.defineProperty(itemB, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 58, top: 0, width: 50, height: 28 }),
+    })
+
+    const pointer = (type: string, target: HTMLElement, x: number): void => {
+      const event = new Event(type, { bubbles: true }) as PointerEvent
+      Object.defineProperty(event, 'clientX', { configurable: true, value: x })
+      Object.defineProperty(event, 'clientY', { configurable: true, value: 10 })
+      target.dispatchEvent(event)
+    }
+
+    pointer('pointerdown', itemA, 0)
+    pointer('pointermove', itemA, 70)
+    await nextTick()
+
+    expect(itemA.style.transform).toBe('translate3d(70px, 0px, 0)')
+    expect(itemB.style.transform).toBe('translate3d(-54px, 0, 0)')
+    expect(itemB.style.transition).toBe('transform 150ms ease')
   })
 })
 

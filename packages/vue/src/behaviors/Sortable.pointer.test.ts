@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import { IrisSortable } from './Sortable'
 
 function pointer(type: string, pointerId: number, x: number): PointerEvent {
@@ -15,7 +15,7 @@ function pointer(type: string, pointerId: number, x: number): PointerEvent {
 }
 
 describe('@iris-ui-kit/vue IrisSortable pointer capture', () => {
-  it('preserves a child tap and captures only after drag starts', () => {
+  it('preserves a child tap, shows a drag cursor, and captures only after drag starts', async () => {
     const clicked = vi.fn()
     const wrapper = mount(IrisSortable, {
       props: { items: ['A'], getKey: (item: unknown) => String(item) },
@@ -23,6 +23,7 @@ describe('@iris-ui-kit/vue IrisSortable pointer capture', () => {
     })
     const root = wrapper.find('[data-iris-sortable]').element as HTMLElement
     const button = wrapper.find('button').element
+    expect(root.style.cursor).toBe('grab')
     const capture = vi.fn()
     Object.defineProperty(root, 'setPointerCapture', { value: capture })
 
@@ -34,7 +35,12 @@ describe('@iris-ui-kit/vue IrisSortable pointer capture', () => {
 
     button.dispatchEvent(pointer('pointerdown', 8, 0))
     button.dispatchEvent(pointer('pointermove', 8, 10))
+    await nextTick()
     expect(capture).toHaveBeenCalledWith(8)
+    expect(root.style.cursor).toBe('grabbing')
+    button.dispatchEvent(pointer('pointerup', 8, 10))
+    await nextTick()
+    expect(root.style.cursor).toBe('grab')
     wrapper.unmount()
   })
 })

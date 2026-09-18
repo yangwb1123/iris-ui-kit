@@ -134,6 +134,44 @@ describe('IrisAdminTabs', () => {
     w.unmount()
   })
 
+  it('supports nested tab actions and configurable keyboard shortcuts', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    const w = mount(IrisAdminTabs, {
+      props: {
+        nav,
+        shortcuts: { closeRight: 'Alt+R' },
+      },
+      attachTo: document.body,
+    })
+
+    await w.findAll('[data-iris-tab]')[0]!.trigger('contextmenu', {
+      clientX: 10,
+      clientY: 10,
+    })
+    await settle()
+    const group = document.querySelector(
+      '[data-iris-admin-tab-context-menu-group="close-group"]',
+    ) as HTMLButtonElement
+    const submenu = document.querySelector('[data-iris-admin-tab-context-submenu]') as HTMLElement
+    expect(submenu.getAttribute('aria-hidden')).toBe('true')
+    group.dispatchEvent(new Event('pointerenter', { bubbles: true }))
+    await nextTick()
+    expect(submenu.getAttribute('aria-hidden')).toBe('false')
+    expect(
+      document.querySelector(
+        '[data-iris-admin-tab-context-menu-item="closeRight"] [data-iris-admin-tab-context-menu-shortcut]',
+      )?.textContent,
+    ).toContain('Alt+R')
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', altKey: true, bubbles: true }))
+    await nextTick()
+    expect(nav.getState().tabs.map((tab) => tab.key)).toEqual(['a'])
+    expect(document.querySelector('[data-iris-admin-tab-context-menu]')).toBeNull()
+    w.unmount()
+  })
+
   it('dismisses the context menu on Escape and outside pointer-down', async () => {
     const nav = createTabsNav()
     nav.open({ key: 'a', title: 'A' })

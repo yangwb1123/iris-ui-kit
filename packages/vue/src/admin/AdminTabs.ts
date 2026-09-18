@@ -8,7 +8,7 @@ import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
 import { IrisSortable } from '../behaviors/Sortable'
 import { useI18n } from '../i18n'
-import { useAdminTabContextMenu, type TabAction } from './AdminTabContextMenu'
+import { useAdminTabContextMenu, type TabAction, type TabShortcutMap } from './AdminTabContextMenu'
 
 /**
  * Vben-style multi-tab bar over a shared {@link TabsNav} store. Each open page
@@ -28,6 +28,8 @@ export const IrisAdminTabs = defineComponent({
     /** Shared tabs store (from `createTabsNav`). */
     nav: { type: Object as PropType<TabsNav>, required: true },
     reorderable: { type: Boolean, default: true },
+    /** Keyboard bindings for context-menu actions; Mod means Ctrl on Windows/Linux and Cmd on macOS. */
+    shortcuts: { type: Object as PropType<TabShortcutMap>, default: undefined },
   },
   emits: {
     change: (_key: string) => true,
@@ -81,7 +83,9 @@ export const IrisAdminTabs = defineComponent({
 
     const tabContextMenu = useAdminTabContextMenu({
       tabs: t.tabs,
+      activeKey: t.activeKey,
       t: tr,
+      shortcuts: props.shortcuts,
       onAction: runTabAction,
     })
 

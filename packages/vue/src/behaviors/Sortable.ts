@@ -101,7 +101,6 @@ export const IrisSortable = defineComponent({
     let animationToken = 0
     let pendingFromRects: RectMap | null = null
     let pendingAnimation = false
-
     // Subscribe to sortable state changes to track the active drag key.
     const unsub = sortable.subscribe((state) => {
       activeKey.value = state.activeId
@@ -484,6 +483,7 @@ export const IrisSortable = defineComponent({
             flexDirection: props.orientation === 'horizontal' ? 'row' : 'column',
             gap: 'var(--iris-gap-sm, 4px)',
             opacity: props.disabled ? 0.6 : 1,
+            cursor: props.disabled ? 'not-allowed' : activeKey.value ? 'grabbing' : 'grab',
             userSelect: activeKey.value ? 'none' : undefined,
             ...((props.style as Record<string, string | number> | undefined) ?? {}),
           },

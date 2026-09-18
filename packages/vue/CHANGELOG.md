@@ -1,5 +1,11 @@
 # @iris-ui-kit/vue
 
+## 0.2.51
+
+### Patch Changes
+
+- Add nested admin-tab context actions with configurable keyboard shortcuts and show a grab/grabbing cursor for sortable lists.
+
 ## 0.2.50
 
 ### Patch Changes

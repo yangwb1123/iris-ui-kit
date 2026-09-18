@@ -8,6 +8,7 @@ import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
 import { IrisSortable } from '../behaviors/Sortable'
 import { useI18n } from '../i18n'
+import { useAdminTabContextMenu, type TabAction } from './AdminTabContextMenu'
 
 /**
  * Vben-style multi-tab bar over a shared {@link TabsNav} store. Each open page
@@ -54,6 +55,35 @@ export const IrisAdminTabs = defineComponent({
       tabs.forEach((tab, index) => props.nav.move(tab.key, index))
       emit('reorder', tabs)
     }
+
+    const runTabAction = (key: string, action: TabAction): void => {
+      switch (action) {
+        case 'refresh':
+          refresh(key)
+          break
+        case 'close':
+          close(key)
+          break
+        case 'closeLeft':
+          props.nav.closeLeft(key)
+          break
+        case 'closeRight':
+          props.nav.closeRight(key)
+          break
+        case 'closeOthers':
+          props.nav.closeOthers(key)
+          break
+        case 'closeAll':
+          props.nav.closeAll()
+          break
+      }
+    }
+
+    const tabContextMenu = useAdminTabContextMenu({
+      tabs: t.tabs,
+      t: tr,
+      onAction: runTabAction,
+    })
 
     const focusTab = (root: HTMLElement | null, key: string | undefined): void => {
       if (!root || !key) return
@@ -170,6 +200,7 @@ export const IrisAdminTabs = defineComponent({
           key: tab.key,
           'data-iris-tab': '',
           'data-active': active ? 'true' : undefined,
+          onContextmenu: (event: MouseEvent) => tabContextMenu.open(event, tab.key),
           style: {
             display: 'inline-flex',
             alignItems: 'center',
@@ -282,6 +313,7 @@ export const IrisAdminTabs = defineComponent({
             ],
           ),
           actionsMenu(),
+          tabContextMenu.render(),
         ],
       )
   },

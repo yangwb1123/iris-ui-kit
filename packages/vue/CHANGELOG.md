@@ -1,5 +1,11 @@
 # @iris-ui-kit/vue
 
+## 0.2.48
+
+### Patch Changes
+
+- Add a cursor-anchored, localized context menu to admin tabs with refresh and close actions.
+
 ## 0.2.46
 
 ### Patch Changes

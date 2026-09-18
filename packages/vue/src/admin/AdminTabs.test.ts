@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createTabsNav } from '@iris-ui-kit/core'
 import { IrisAdminTabs } from './AdminTabs'
+
+async function settle(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  await nextTick()
+}
 
 describe('IrisAdminTabs', () => {
   it('renders a chip per open tab and marks the active one', () => {
@@ -49,6 +55,143 @@ describe('IrisAdminTabs', () => {
     const w = mount(IrisAdminTabs, { props: { nav } })
     // only the closable 'a' tab has a close button
     expect(w.findAll('[data-iris-tab-close]')).toHaveLength(1)
+  })
+
+  it('opens a localized context menu at the tab under the pointer', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    const target = w.findAll('[data-iris-tab]')[0]!
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 120,
+      clientY: 80,
+    })
+
+    target.element.dispatchEvent(event)
+    await settle()
+
+    const menu = document.querySelector('[data-iris-admin-tab-context-menu]') as HTMLElement | null
+    expect(event.defaultPrevented).toBe(true)
+    expect(menu).not.toBeNull()
+    expect(menu?.parentElement).toBe(document.body)
+    expect(menu?.style.transform).toContain('translate3d(120px, 80px')
+    expect(menu?.textContent).toContain('Refresh')
+    expect(
+      menu?.querySelector('[data-iris-admin-tab-context-menu-item="closeLeft"]'),
+    ).not.toBeNull()
+    // A context gesture targets a tab without changing the active tab.
+    expect(nav.getState().activeKey).toBe('b')
+    w.unmount()
+  })
+
+  it('applies context actions to the tab that was right-clicked', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    const target = w.findAll('[data-iris-tab]')[0]!
+
+    target.element.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 80,
+      }),
+    )
+    await nextTick()
+    const refresh = document.querySelector(
+      '[data-iris-admin-tab-context-menu-item="refresh"]',
+    ) as HTMLButtonElement | null
+    expect(refresh).not.toBeNull()
+    refresh?.click()
+    await nextTick()
+
+    expect(nav.getState().versions).toEqual({ a: 1, b: 0 })
+    expect(document.querySelector('[data-iris-admin-tab-context-menu]')).toBeNull()
+
+    target.element.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 80,
+      }),
+    )
+    await nextTick()
+    const closeRight = document.querySelector(
+      '[data-iris-admin-tab-context-menu-item="closeRight"]',
+    ) as HTMLButtonElement | null
+    expect(closeRight).not.toBeNull()
+    closeRight?.click()
+    await nextTick()
+
+    expect(nav.getState().tabs.map((tab) => tab.key)).toEqual(['a'])
+    expect(nav.getState().activeKey).toBe('a')
+    w.unmount()
+  })
+
+  it('dismisses the context menu on Escape and outside pointer-down', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    const target = w.find('[data-iris-tab]')
+
+    await target.trigger('contextmenu', { clientX: 10, clientY: 10 })
+    await settle()
+    expect(document.querySelector('[data-iris-admin-tab-context-menu]')).not.toBeNull()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextTick()
+    expect(document.querySelector('[data-iris-admin-tab-context-menu]')).toBeNull()
+
+    await target.trigger('contextmenu', { clientX: 10, clientY: 10 })
+    await settle()
+    document.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(document.querySelector('[data-iris-admin-tab-context-menu]')).toBeNull()
+    w.unmount()
+  })
+
+  it('supports menu keyboard navigation and skips disabled actions', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+
+    await w.findAll('[data-iris-tab]')[0]!.trigger('contextmenu', {
+      clientX: 10,
+      clientY: 10,
+    })
+    await settle()
+    const menu = document.querySelector('[data-iris-admin-tab-context-menu]') as HTMLElement
+    const refresh = menu.querySelector('[data-iris-admin-tab-context-menu-item="refresh"]')!
+    const close = menu.querySelector('[data-iris-admin-tab-context-menu-item="close"]')!
+    const closeLeft = menu.querySelector('[data-iris-admin-tab-context-menu-item="closeLeft"]')!
+    expect(document.activeElement).toBe(refresh)
+    refresh.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(document.activeElement).toBe(close)
+    close.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(document.activeElement).not.toBe(closeLeft)
+    w.unmount()
+  })
+
+  it('disables destructive context actions when the tab cannot close', async () => {
+    const nav = createTabsNav({ tabs: [{ key: 'home', title: 'Home', pinned: true }] })
+    nav.open({ key: 'a', title: 'A' })
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    const pinned = w.findAll('[data-iris-tab]')[0]!
+
+    pinned.element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    await nextTick()
+    const close = document.querySelector(
+      '[data-iris-admin-tab-context-menu-item="close"]',
+    ) as HTMLButtonElement | null
+    expect(close?.disabled).toBe(true)
+    expect(nav.getState().tabs.map((tab) => tab.key)).toEqual(['home', 'a'])
+    w.unmount()
   })
 
   it('reacts to external store mutations', async () => {

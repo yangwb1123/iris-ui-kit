@@ -1,5 +1,11 @@
 # @iris-ui-kit/vue
 
+## 0.2.52
+
+### Patch Changes
+
+- Add visible hover feedback to admin-tab context-menu actions.
+
 ## 0.2.51
 
 ### Patch Changes

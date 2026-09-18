@@ -134,6 +134,29 @@ describe('IrisAdminTabs', () => {
     w.unmount()
   })
 
+  it('shows and clears hover feedback for context-menu actions', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+
+    await w.find('[data-iris-tab]').trigger('contextmenu', { clientX: 10, clientY: 10 })
+    await settle()
+    const refresh = document.querySelector(
+      '[data-iris-admin-tab-context-menu-item="refresh"]',
+    ) as HTMLButtonElement
+    // The menu focuses its first action on open; blur it so this assertion
+    // covers pointer hover rather than the focus surface.
+    refresh.blur()
+    refresh.dispatchEvent(new Event('pointerenter', { bubbles: true }))
+    await nextTick()
+    expect(refresh.style.background).toBe('var(--iris-surface-hover)')
+
+    refresh.dispatchEvent(new Event('pointerleave', { bubbles: true }))
+    await nextTick()
+    expect(refresh.style.background).toBe('transparent')
+    w.unmount()
+  })
+
   it('supports nested tab actions and configurable keyboard shortcuts', async () => {
     const nav = createTabsNav()
     nav.open({ key: 'a', title: 'A' })

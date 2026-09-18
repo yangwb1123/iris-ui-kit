@@ -75,9 +75,11 @@ export function useAdminTabContextMenu(options: AdminTabContextMenuOptions): Adm
   const menuRef = ref<HTMLElement | null>(null)
   const openPath = ref<string[]>([])
   const open = computed(() => state.value !== null)
+  const hoveredPath = ref<string | null>(null)
   const close = (): void => {
     state.value = null
     openPath.value = []
+    hoveredPath.value = null
   }
 
   const virtualCursorAnchor = (event: MouseEvent): HTMLElement =>
@@ -100,6 +102,7 @@ export function useAdminTabContextMenu(options: AdminTabContextMenuOptions): Adm
     event.stopPropagation()
     anchorRef.value = virtualCursorAnchor(event)
     openPath.value = []
+    hoveredPath.value = null
     state.value = { key }
   }
 
@@ -228,7 +231,14 @@ export function useAdminTabContextMenu(options: AdminTabContextMenuOptions): Adm
   const isGroupOpen = (path: readonly string[]): boolean =>
     path.every((key, index) => openPath.value[index] === key)
   const pathAttribute = (path: readonly string[]): string => path.join('/')
-
+  const activatePath = (path: string[], disabled: boolean): void => {
+    if (disabled) return
+    hoveredPath.value = pathAttribute(path)
+    openGroup(path)
+  }
+  const clearHovered = (path: string[]): void => {
+    if (hoveredPath.value === pathAttribute(path)) hoveredPath.value = null
+  }
   const shortcutNode = (shortcut: string | undefined): VNode | null =>
     shortcut
       ? h(
@@ -278,17 +288,13 @@ export function useAdminTabContextMenu(options: AdminTabContextMenuOptions): Adm
         'data-iris-admin-tab-context-menu-group': entry.key,
         'data-iris-admin-tab-context-menu-group-path': pathAttribute(path),
         disabled,
-        onPointerenter: () => {
-          if (!disabled) openGroup(path)
-        },
-        onFocus: () => {
-          if (!disabled) openGroup(path)
-        },
+        onPointerenter: () => activatePath(path, disabled),
+        onFocus: () => activatePath(path, disabled),
         onClick: (event: MouseEvent) => {
           event.preventDefault()
           if (!disabled) openGroup(expanded ? path.slice(0, -1) : path)
         },
-        style: itemStyle(expanded, disabled),
+        style: itemStyle(expanded || hoveredPath.value === pathAttribute(path), disabled),
       },
       [
         h(IrisIcon, { name: entry.icon, size: 15 }),
@@ -340,6 +346,8 @@ export function useAdminTabContextMenu(options: AdminTabContextMenuOptions): Adm
 
     const active =
       document.activeElement?.getAttribute('data-iris-admin-tab-context-menu-item') === entry.key
+    const disabled = Boolean(entry.disabled)
+    const itemPath = [...parentPath, entry.key]
     return h(
       'button',
       {
@@ -347,12 +355,13 @@ export function useAdminTabContextMenu(options: AdminTabContextMenuOptions): Adm
         type: 'button',
         role: 'menuitem',
         'data-iris-admin-tab-context-menu-item': entry.key,
-        disabled: entry.disabled,
-        'aria-disabled': entry.disabled ? 'true' : undefined,
+        disabled,
+        'aria-disabled': disabled ? 'true' : undefined,
         onClick: () => select(entry.key),
-        onPointerenter: () => openGroup(parentPath),
-        onFocus: () => openGroup(parentPath),
-        style: itemStyle(active, Boolean(entry.disabled)),
+        onPointerenter: () => activatePath(itemPath, disabled),
+        onPointerleave: () => clearHovered(itemPath),
+        onFocus: () => activatePath(itemPath, disabled),
+        style: itemStyle(active || hoveredPath.value === pathAttribute(itemPath), disabled),
       },
       [
         h(IrisIcon, { name: entry.icon, size: 15 }),

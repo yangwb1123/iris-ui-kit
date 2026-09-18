@@ -1,5 +1,11 @@
 # @iris-ui-kit/vue
 
+## 0.2.49
+
+### Patch Changes
+
+- Rework sortable drag feedback to use a SortableJS-style FLIP preview so variable-width tabs and interrupted drags animate from their current visual positions.
+
 ## 0.2.48
 
 ### Patch Changes

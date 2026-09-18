@@ -303,7 +303,9 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
             IrisSortable,
             {
               items: items.value,
-              onReorder: () => {},
+              onReorder: (next: unknown[]) => {
+                items.value = next as string[]
+              },
               getKey: (item: unknown) => String(item),
               orientation: 'horizontal',
             },
@@ -316,17 +318,19 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
     const wrap = mount(host)
     const itemA = wrap.find('[data-iris-sortable-item="A"]').element as HTMLElement
     const itemB = wrap.find('[data-iris-sortable-item="B"]').element as HTMLElement
-    const transformedLeft = (element: HTMLElement, baseLeft: number): number => {
+    const baseLeft = (element: HTMLElement): number =>
+      Array.from(wrap.find('[data-iris-sortable]').element.children).indexOf(element) * 58
+    const transformedLeft = (element: HTMLElement): number => {
       const match = element.style.transform.match(/translate3d\((-?[\d.]+)px/)
-      return baseLeft + (match ? Number(match[1]) : 0)
+      return baseLeft(element) + (match ? Number(match[1]) : 0)
     }
     Object.defineProperty(itemA, 'getBoundingClientRect', {
       configurable: true,
-      value: () => ({ left: transformedLeft(itemA, 0), top: 0, width: 50, height: 28 }),
+      value: () => ({ left: transformedLeft(itemA), top: 0, width: 50, height: 28 }),
     })
     Object.defineProperty(itemB, 'getBoundingClientRect', {
       configurable: true,
-      value: () => ({ left: transformedLeft(itemB, 58), top: 0, width: 50, height: 28 }),
+      value: () => ({ left: transformedLeft(itemB), top: 0, width: 50, height: 28 }),
     })
 
     const pointer = (type: string, target: HTMLElement, x: number): void => {
@@ -339,10 +343,15 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
     pointer('pointerdown', itemA, 0)
     pointer('pointermove', itemA, 70)
     await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 30))
 
-    expect(itemA.style.transform).toBe('translate3d(70px, 0px, 0)')
-    expect(itemB.style.transform).toBe('translate3d(-54px, 0, 0)')
+    // The active tab is now in the preview slot, so its transform is only the
+    // remaining pointer offset from that slot. The other tab is FLIP-animated
+    // back to the first slot instead of jumping by a fixed tab width.
+    expect(itemA.style.transform).toBe('translate3d(12px, 0px, 0)')
+    expect(itemB.style.transform).toBe('translate3d(0px, 0px, 0)')
     expect(itemB.style.transition).toBe('transform 150ms ease')
+    expect(Array.from(wrap.find('[data-iris-sortable]').element.children)).toEqual([itemB, itemA])
 
     // Collision measurements must not include the transforms applied for the
     // previous frame, otherwise a small pointer move can snap the drop target
@@ -350,8 +359,95 @@ describe('@iris-ui-kit/vue IrisSortable', () => {
     pointer('pointermove', itemA, 75)
     await nextTick()
 
-    expect(itemA.style.transform).toBe('translate3d(75px, 0px, 0)')
-    expect(itemB.style.transform).toBe('translate3d(-54px, 0, 0)')
+    expect(itemA.style.transform).toBe('translate3d(17px, 0px, 0)')
+    expect(itemB.style.transform).toBe('translate3d(0px, 0px, 0)')
+
+    pointer('pointerup', itemA, 75)
+    await nextTick()
+    expect(items.value).toEqual(['B', 'A'])
+    expect(itemA.style.transform).toBe('')
+    expect(itemB.style.transform).toBe('')
+  })
+
+  it('restarts FLIP from the current visual position during a fast reverse drag', async () => {
+    const items = ref(['A', 'B', 'C'])
+    const widths = { A: 40, B: 70, C: 50 }
+    const host = defineComponent({
+      setup() {
+        return () =>
+          h(
+            IrisSortable,
+            {
+              items: items.value,
+              onReorder: (next: unknown[]) => {
+                items.value = next as string[]
+              },
+              getKey: (item: unknown) => String(item),
+              orientation: 'horizontal',
+            },
+            {
+              default: () => items.value.map((item) => h('div', { key: item }, item)),
+            },
+          )
+      },
+    })
+    const wrap = mount(host)
+    const root = wrap.find('[data-iris-sortable]').element as HTMLElement
+    const item = (key: string): HTMLElement =>
+      wrap.find(`[data-iris-sortable-item="${key}"]`).element as HTMLElement
+    const baseLeft = (element: HTMLElement): number => {
+      let left = 0
+      for (const child of Array.from(root.children) as HTMLElement[]) {
+        if (child === element) return left
+        const key = child.getAttribute('data-iris-sortable-item') as keyof typeof widths
+        left += widths[key] + 8
+      }
+      return left
+    }
+    const transformedLeft = (element: HTMLElement): number => {
+      const match = element.style.transform.match(/translate3d\((-?[\d.]+)px/)
+      return baseLeft(element) + (match ? Number(match[1]) : 0)
+    }
+    for (const key of Object.keys(widths)) {
+      const element = item(key)
+      Object.defineProperty(element, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => ({
+          left: transformedLeft(element),
+          top: 0,
+          width: widths[key as keyof typeof widths],
+          height: 28,
+        }),
+      })
+    }
+
+    const pointer = (type: string, target: HTMLElement, x: number): void => {
+      const event = new Event(type, { bubbles: true }) as PointerEvent
+      Object.defineProperty(event, 'clientX', { configurable: true, value: x })
+      Object.defineProperty(event, 'clientY', { configurable: true, value: 10 })
+      target.dispatchEvent(event)
+    }
+
+    pointer('pointerdown', item('A'), 0)
+    pointer('pointermove', item('A'), 130)
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(
+      Array.from(root.children).map((el) => el.getAttribute('data-iris-sortable-item')),
+    ).toEqual(['B', 'C', 'A'])
+
+    // Move back before the first 150ms animation has completed. A second
+    // reorder must capture the in-flight visual position, not the stale slot.
+    pointer('pointermove', item('A'), 85)
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(
+      Array.from(root.children).map((el) => el.getAttribute('data-iris-sortable-item')),
+    ).toEqual(['B', 'A', 'C'])
+
+    pointer('pointerup', item('A'), 85)
+    await nextTick()
+    expect(items.value).toEqual(['B', 'A', 'C'])
   })
 })
 

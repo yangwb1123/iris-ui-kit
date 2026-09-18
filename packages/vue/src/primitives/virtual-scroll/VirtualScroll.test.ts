@@ -1,6 +1,16 @@
 import * as core from '@iris-ui-kit/core'
 import type { Virtualizer } from '@iris-ui-kit/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const virtualizerMock = vi.hoisted(() => ({
+  original: undefined as typeof import('@iris-ui-kit/core').createVirtualizer | undefined,
+}))
+
+vi.mock('@iris-ui-kit/core', async () => {
+  const actual = await vi.importActual<typeof import('@iris-ui-kit/core')>('@iris-ui-kit/core')
+  virtualizerMock.original = actual.createVirtualizer
+  return { ...actual, createVirtualizer: vi.fn(actual.createVirtualizer) }
+})
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisVirtualScroll } from './VirtualScroll'
@@ -208,8 +218,10 @@ describe('IrisVirtualScroll', () => {
 
   it('updates a reused numeric virtualizer in one final range notification', async () => {
     const created: Virtualizer[] = []
-    const createVirtualizer = core.createVirtualizer
-    const create = vi.spyOn(core, 'createVirtualizer').mockImplementation((config) => {
+    const create = vi.mocked(core.createVirtualizer)
+    const createVirtualizer = virtualizerMock.original
+    if (!createVirtualizer) throw new Error('virtualizer mock was not initialized')
+    create.mockImplementation((config) => {
       const model = createVirtualizer(config)
       created.push(model)
       return model
@@ -250,7 +262,7 @@ describe('IrisVirtualScroll', () => {
       unsubscribe()
     } finally {
       clientHeight.mockRestore()
-      create.mockRestore()
+      create.mockImplementation(createVirtualizer)
     }
   })
 })

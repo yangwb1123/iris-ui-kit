@@ -328,9 +328,10 @@ export const IrisSortable = defineComponent({
       clearItemMotion()
       dragMetrics.value = null
       previewEntries.value = null
-      if (pointerId.value !== null && typeof container.setPointerCapture === 'function') {
-        container.setPointerCapture(pointerId.value)
-      }
+      // Do not capture a pointer on press. Pointer capture retargets the
+      // browser's follow-up click to this wrapper, so a normal tab tap would
+      // never reach the button rendered inside the sortable item. Capture is
+      // acquired only after the movement threshold promotes a real drag.
       sortable.press(key, e.clientX, e.clientY)
     }
 
@@ -344,9 +345,19 @@ export const IrisSortable = defineComponent({
       }
       if (!sortable.isPending() && sortable.getState().activeId === null) return
       const rects = dragMetrics.value?.rects ?? readRects()
-      sortable.tryStart(e.clientX, e.clientY)
+      const started = sortable.tryStart(e.clientX, e.clientY)
       const activeId = sortable.getState().activeId
       if (activeId === null) return
+      if (started) {
+        const container = containerRef.value
+        if (
+          container &&
+          pointerId.value !== null &&
+          typeof container.setPointerCapture === 'function'
+        ) {
+          container.setPointerCapture(pointerId.value)
+        }
+      }
 
       if (!dragMetrics.value) {
         const activeRect = rects.find((rect) => rect.id === activeId)

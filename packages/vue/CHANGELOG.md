@@ -1,5 +1,11 @@
 # @iris-ui-kit/vue
 
+## 0.2.50
+
+### Patch Changes
+
+- Preserve admin-tab click navigation when sortable tabs are enabled by delaying pointer capture until a drag actually starts.
+
 ## 0.2.49
 
 ### Patch Changes

@@ -54,6 +54,39 @@ function sameRowKey(left: string | number, right: string | number): boolean {
   return left === right || (Number.isNaN(left) && Number.isNaN(right))
 }
 
+function sameValueZero(left: unknown, right: unknown): boolean {
+  return left === right || (Number.isNaN(left) && Number.isNaN(right))
+}
+
+function hasOwn(value: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+/**
+ * Shallow-merge `patch` onto `row`, returning the SAME row reference when the
+ * merge changes no own enumerable string-keyed value (own-key set +
+ * SameValueZero values). Callers treat identity as "nothing changed", which
+ * keeps value-identical patches event-free across the flat, field-key
+ * fallback, and tree update paths. Object/array cell values compare by
+ * reference, matching the row-identity guard used by the rows transaction
+ * throat.
+ */
+export function mergeRowPatch<Row extends Record<string, unknown>>(
+  row: Row,
+  patch: Partial<Row>,
+): Row {
+  const merged = { ...row, ...patch } as Row
+  const mergedKeys = Object.keys(merged)
+  if (mergedKeys.length !== Object.keys(row).length) return merged
+  for (const key of mergedKeys) {
+    if (!hasOwn(row, key)) return merged
+    const next = (merged as Record<string, unknown>)[key]
+    const current = (row as Record<string, unknown>)[key]
+    if (!sameValueZero(next, current)) return merged
+  }
+  return row
+}
+
 function insertionIndex(index: number | undefined, length: number): number | undefined {
   if (index === undefined) return length
   if (typeof index !== 'number' || Number.isNaN(index)) return undefined
@@ -255,7 +288,8 @@ export function reorderRowsInListAt<Row extends Record<string, unknown>>(
 /**
  * Replace the row with `key` by a shallow merge of `patch` (vxe-grid setRow
  * parity): `{ ...row, ...patch }`. Other rows keep object identity; returns
- * the ORIGINAL array reference when no row matches; never mutates inputs.
+ * the ORIGINAL array reference when no row matches OR the merge changes no
+ * own value (including an empty patch); never mutates inputs.
  */
 export function updateRowInList<Row extends Record<string, unknown>>(
   rows: readonly Row[],
@@ -268,5 +302,10 @@ export function updateRowInList<Row extends Record<string, unknown>>(
     sameRowKey((row as Record<string, unknown>)[rowKeyField] as string | number, key),
   )
   if (index < 0) return rows as Row[]
-  return rows.map((row, i) => (i === index ? { ...row, ...patch } : row))
+  const row = rows[index]
+  const merged = mergeRowPatch(row, patch)
+  if (merged === row) return rows as Row[]
+  const next = rows.slice()
+  next[index] = merged
+  return next
 }

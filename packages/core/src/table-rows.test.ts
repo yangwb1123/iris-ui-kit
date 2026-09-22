@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   cloneRowInList,
   insertRowInList,
+  mergeRowPatch,
   resolveTableRowKey,
   removeRowFromList,
   removeRowsFromList,
@@ -347,5 +348,47 @@ describe('updateRowInList', () => {
   it('returns the ORIGINAL reference when the key is not found', () => {
     const next = updateRowInList(rows, 'id', 99, { name: 'X' })
     expect(next).toBe(rows)
+  })
+
+  it('returns the ORIGINAL reference for a value-identical patch or an empty patch', () => {
+    expect(updateRowInList(rows, 'id', 2, { name: 'Bob' })).toBe(rows)
+    expect(updateRowInList(rows, 'id', 2, {})).toBe(rows)
+    expect(updateRowInList(rows, 'id', 2, { id: 2, name: 'Bob' })).toBe(rows)
+  })
+
+  it('treats NaN as equal to itself and 0 as equal to -0 (SameValueZero)', () => {
+    const nanRow = [{ id: 1, score: Number.NaN }]
+    expect(updateRowInList(nanRow, 'id', 1, { score: Number.NaN })).toBe(nanRow)
+    const zeroRow = [{ id: 1, n: -0 }]
+    expect(updateRowInList(zeroRow, 'id', 1, { n: 0 })).toBe(zeroRow)
+  })
+
+  it('replaces the row when a patch grows the own-key set or changes a reference', () => {
+    expect(updateRowInList(rows, 'id', 2, { extra: undefined } as never)).not.toBe(rows)
+    const nested: { id: number; meta: { deep: boolean } }[] = [{ id: 1, meta: { deep: true } }]
+    expect(updateRowInList(nested, 'id', 1, { meta: { deep: true } })).not.toBe(nested)
+    expect(updateRowInList(nested, 'id', 1, { meta: nested[0]!.meta })).toBe(nested)
+  })
+})
+
+describe('mergeRowPatch', () => {
+  it('returns the same row reference when every own value is identical', () => {
+    const row = { id: 1, name: 'Ada', score: Number.NaN }
+    expect(mergeRowPatch(row, { name: 'Ada' })).toBe(row)
+    expect(mergeRowPatch(row, {})).toBe(row)
+    expect(mergeRowPatch(row, { score: Number.NaN })).toBe(row)
+  })
+
+  it('returns a new merged row for a changed value, a grown key set, or a new reference', () => {
+    const row = { id: 1, name: 'Ada' }
+    expect(mergeRowPatch(row, { name: 'Grace' })).toEqual({ id: 1, name: 'Grace' })
+    expect(mergeRowPatch(row, { extra: undefined } as never)).toEqual({
+      id: 1,
+      name: 'Ada',
+      extra: undefined,
+    })
+    const nested = { id: 1, meta: { deep: true } }
+    expect(mergeRowPatch(nested, { meta: { deep: true } })).not.toBe(nested)
+    expect(mergeRowPatch(nested, { meta: nested.meta })).toBe(nested)
   })
 })

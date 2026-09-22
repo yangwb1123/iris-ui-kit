@@ -1,6 +1,6 @@
 import type { GridRowKey } from './grid-rows'
 import { hasMalformedTree, wasSeen } from './grid-tree-validation'
-import { reorderRowsInList } from './table-rows'
+import { mergeRowPatch, reorderRowsInList } from './table-rows'
 export { setTreeChildren } from './grid-tree-children'
 
 export interface GridTreeRowsOptions<Row extends Record<string, unknown>> {
@@ -329,9 +329,10 @@ function updateNodes<Row extends Record<string, unknown>>(
       continue
     }
     if (!matched && Object.is(rowKey, key)) {
-      next.push({ ...row, ...patch } as Row)
+      const merged = mergeRowPatch(row, patch)
       matched = true
-      changed = true
+      if (merged !== row) changed = true
+      next.push(merged)
       continue
     }
     const children = options.getChildren(row)
@@ -341,6 +342,10 @@ function updateNodes<Row extends Record<string, unknown>>(
         matched = true
         if (result.blocked) {
           blocked = true
+          next.push(row)
+        } else if (!result.changed) {
+          // Every patched value already matched: keep the ancestor chain
+          // reference-identical instead of rebuilding it around a no-op.
           next.push(row)
         } else {
           const replaced = replaceChildren(row, children, result.rows, options.setChildren)

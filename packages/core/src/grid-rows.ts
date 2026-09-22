@@ -10,6 +10,7 @@ import {
 } from './grid-tree-rows'
 import {
   insertRowInList,
+  mergeRowPatch,
   removeRowFromList,
   reorderRowsInList,
   updateRowInList,
@@ -95,7 +96,10 @@ export interface GridRowsModel<Row extends Record<string, unknown>, Meta = unkno
     keys: readonly GridRowKey[],
     options?: GridRowsCommitOptions<Meta>,
   ): readonly GridRowKey[]
-  /** Shallow-merge one row by key. Missing keys are silent no-ops. */
+  /**
+   * Shallow-merge one row by key. Missing keys and value-identical patches
+   * (own-key set + SameValueZero values, including `{}`) are silent no-ops.
+   */
   update(key: GridRowKey, patch: Partial<Row>, options?: GridRowsCommitOptions<Meta>): boolean
   /** Move two same-level rows through one observable transaction. */
   reorder(fromKey: GridRowKey, toKey: GridRowKey, options?: GridRowsReorderOptions<Meta>): boolean
@@ -200,8 +204,15 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
   const removeAt = (rows: readonly Row[], index: number): Row[] =>
     rows.filter((_, rowIndex) => rowIndex !== index)
 
-  const updateAt = (rows: readonly Row[], index: number, patch: Partial<Row>): Row[] =>
-    rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row))
+  const updateAt = (rows: readonly Row[], index: number, patch: Partial<Row>): Row[] => {
+    const row = rows[index]
+    if (row === undefined) return rows as Row[]
+    const merged = mergeRowPatch(row, patch)
+    if (merged === row) return rows as Row[]
+    const next = rows.slice()
+    next[index] = merged
+    return next
+  }
 
   const commit = (
     rows: readonly Row[],

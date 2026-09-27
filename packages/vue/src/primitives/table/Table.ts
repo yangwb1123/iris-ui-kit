@@ -8,6 +8,7 @@ import {
   onMounted,
   onScopeDispose,
   ref,
+  shallowReactive,
   shallowRef,
   watch,
   type VNode,
@@ -73,6 +74,7 @@ import {
   useGridRows,
   useGridSelection,
   useGridSorting,
+  type UseGridSelectionOptions,
 } from '../../grid'
 import { useDrag } from '../drag/useDrag'
 import { useDismiss } from '../floating/useDismiss'
@@ -772,15 +774,25 @@ export const IrisTable = defineComponent({
       gridRows.model.sync(rows)
     })
     const selControlled = computed(() => props.selection !== undefined)
+    // `useGridSelection` derives `controlled` and its projected `selection` from
+    // this options object, and Vue setup runs once. A plain object freezes both
+    // at the mount-time prop (React re-reads its options every render). Reactive
+    // getters keep the bridge following the current `selection` prop, so a
+    // controlled→uncontrolled handoff renders from the model store.
+    const selectionOptions = shallowReactive<UseGridSelectionOptions<string | number>>({
+      mode: 'multiple',
+      get value() {
+        return props.selection
+      },
+      get defaultValue() {
+        return props.defaultSelection
+      },
+      onChange: (keys) => emit('update:selection', keys),
+    })
     const { model: selectionModel, selection: selectedKeys } = useGridSelection<
       Record<string, unknown>,
       string | number
-    >(gridCore, {
-      mode: 'multiple',
-      value: props.selection,
-      defaultValue: props.defaultSelection,
-      onChange: (keys) => emit('update:selection', keys),
-    })
+    >(gridCore, selectionOptions)
     // The bridge is installed once in setup; keep its feature-owned model in
     // sync with later prop changes too. This preserves the latest controlled
     // value when a table switches back to uncontrolled mode.

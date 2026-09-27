@@ -54,11 +54,13 @@ export function useGridVirtual<
     }),
   )
 
-  // An item identity change can be a same-length reorder. setCount intentionally
-  // rebuilds the offset tree so keyed measurements are re-seated correctly.
+  // An item identity change can be a same-length reorder. An in-place
+  // push/splice keeps the array identity, so `items.length` is an explicit
+  // dependency. setCount intentionally rebuilds the offset tree so keyed
+  // measurements are re-seated correctly.
   useIsomorphicLayoutEffect(() => {
     model.setCount(options.items.length)
-  }, [model, options.items, options.getItemKey])
+  }, [model, options.items, options.items.length, options.getItemKey])
 
   useIsomorphicLayoutEffect(() => {
     model.setBuffer(options.buffer ?? 0)

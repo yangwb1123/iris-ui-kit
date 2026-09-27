@@ -696,7 +696,7 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
       if (controlled) {
         // Preserve model updates batched with the transition into control.
         if (!wasControlled) {
-          uncontrolledFilters.value = cloneFilters(state.value.filters)
+          uncontrolledFilters.value = cloneFilters(model.store.getState().filters)
           hasUncontrolledFilters = true
         }
         lastControlledFilters.value = cloneFilters(value)
@@ -723,7 +723,7 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
       if (controlled) {
         // Preserve model updates batched with the transition into control.
         if (!wasControlled) {
-          uncontrolledFilterValues.value = cloneFilterValues(state.value.filterValues)
+          uncontrolledFilterValues.value = cloneFilterValues(model.store.getState().filterValues)
           hasUncontrolledFilterValues = true
         }
         lastControlledFilterValues.value = cloneFilterValues(value)
@@ -810,7 +810,10 @@ export function useGridVirtual<
     }),
   )
   watch(
-    () => [options.items, options.getItemKey] as const,
+    // Element identity can change at an unchanged index/length (`items[i] = row`,
+    // `splice(i, 1, row)`). Read every slot so the watcher re-runs; core re-seats
+    // keyed measurements in `setCount` and no-ops when the key sequence is stable.
+    () => [options.items.slice(), options.items.length, options.getItemKey] as const,
     ([items]) => model.setCount(items.length),
   )
   watch(

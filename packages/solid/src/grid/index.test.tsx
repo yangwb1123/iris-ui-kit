@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, renderHook, waitFor } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import type { Store } from '@iris-ui-kit/core'
 import { describe, expect, it, afterEach, vi } from 'vitest'
 import {
@@ -393,6 +394,61 @@ describe('Solid Grid Core bridge', () => {
     view.unmount()
   })
 
+  it('reflects a plain controlled visibility/widths prop change synchronously', () => {
+    let setVisibility!: (value: Record<string, boolean> | undefined) => void
+    let setWidths!: (value: Record<string, number> | undefined) => void
+    let columns!: ReturnType<typeof useGridColumns>
+
+    type Props = {
+      visibility?: Record<string, boolean>
+      widths?: Record<string, number>
+      defaultVisibility: Record<string, boolean>
+      defaultWidths: Record<string, number>
+    }
+    const Harness = (props: Props) => {
+      const core = useGridCore()
+      columns = useGridColumns(core, props)
+      return (
+        <>
+          <output data-testid="visibility">{String(columns.state().visibility.age)}</output>
+          <output data-testid="widths">{String(columns.state().widths.name)}</output>
+        </>
+      )
+    }
+    const Parent = () => {
+      const [visibility, updateVisibility] = createSignal<Record<string, boolean> | undefined>({
+        age: false,
+      })
+      const [widths, updateWidths] = createSignal<Record<string, number> | undefined>({ name: 100 })
+      setVisibility = updateVisibility
+      setWidths = updateWidths
+      return (
+        <Harness
+          visibility={visibility()}
+          widths={widths()}
+          defaultVisibility={{ age: false }}
+          defaultWidths={{ name: 100 }}
+        />
+      )
+    }
+
+    const view = render(() => <Parent />)
+    expect(view.getByTestId('visibility').textContent).toBe('false')
+    expect(view.getByTestId('widths').textContent).toBe('100')
+
+    // A plain (non-batched) controlled prop change must land in the SAME
+    // synchronous turn — no `waitFor`, unlike the batched handoff path above.
+    setVisibility({ age: true })
+    expect(view.getByTestId('visibility').textContent).toBe('true')
+    setWidths({ name: 310 })
+    expect(view.getByTestId('widths').textContent).toBe('310')
+
+    // Dropping the controlled channel falls back to the uncontrolled snapshot.
+    setVisibility(undefined)
+    expect(view.getByTestId('visibility').textContent).toBe('false')
+    view.unmount()
+  })
+
   it('preserves initial controlled selection and single-sort baselines across a no-op handoff detour', async () => {
     const selectionA = ['a']
     const selectionB = ['b']
@@ -733,6 +789,131 @@ describe('Solid Grid Core bridge', () => {
     })
     expect(onChange).toHaveBeenCalledTimes(2)
     expect(paginationEvent).toHaveBeenCalledTimes(2)
+  })
+
+  it('captures a batched uncontrolled write when props take control inside the same core batch', () => {
+    type Props = {
+      page?: number
+      pageSize?: number
+      total?: number
+      onChange: (change: unknown) => void
+    }
+    const onChange = vi.fn()
+    let setPageProp!: (page: number | undefined) => void
+    let pagination!: ReturnType<typeof useGridPagination>
+
+    const Harness = (props: Props) => {
+      const core = useGridCore()
+      pagination = useGridPagination(core, props)
+      return <output data-testid="page">{pagination.pagination().page}</output>
+    }
+    const Parent = () => {
+      const [page, updatePage] = createSignal<number | undefined>(undefined)
+      setPageProp = updatePage
+      return <Harness page={page()} pageSize={25} total={101} onChange={onChange} />
+    }
+
+    const view = render(() => <Parent />)
+    expect(view.getByTestId('page').textContent).toBe('1')
+
+    // Uncontrolled write first; prop-driven control entry flushes the Solid
+    // `createEffect` synchronously — still inside the open core batch.
+    pagination.model.store.batch(() => {
+      pagination.model.setPage(5)
+      setPageProp(3)
+    })
+
+    // While controlled, the accepted prop wins and the model is rebased.
+    expect(pagination.model.get().page).toBe(3)
+    expect(pagination.pagination().page).toBe(3)
+    expect(view.getByTestId('page').textContent).toBe('3')
+    expect(onChange).toHaveBeenCalledOnce()
+    expect(onChange).toHaveBeenCalledWith({ page: 5, pageSize: 25, reason: 'page' })
+
+    // Releasing control restores the batched uncontrolled write, not the stale pre-batch snapshot.
+    setPageProp(undefined)
+
+    expect(pagination.model.get().page).toBe(5)
+    expect(pagination.pagination().page).toBe(5)
+    expect(view.getByTestId('page').textContent).toBe('5')
+    expect(onChange).toHaveBeenCalledOnce()
+  })
+
+  it('captures a batched uncontrolled pageSize write when props take control inside the same core batch', () => {
+    type Props = {
+      page?: number
+      pageSize?: number
+      total?: number
+      onChange: (change: unknown) => void
+    }
+    const onChange = vi.fn()
+    let setPageSizeProp!: (pageSize: number | undefined) => void
+    let pagination!: ReturnType<typeof useGridPagination>
+
+    const Harness = (props: Props) => {
+      const core = useGridCore()
+      pagination = useGridPagination(core, props)
+      return <output data-testid="pageSize">{pagination.pagination().pageSize}</output>
+    }
+    const Parent = () => {
+      const [pageSize, updatePageSize] = createSignal<number | undefined>(undefined)
+      setPageSizeProp = updatePageSize
+      return <Harness page={1} pageSize={pageSize()} total={101} onChange={onChange} />
+    }
+
+    const view = render(() => <Parent />)
+    expect(view.getByTestId('pageSize').textContent).toBe('10')
+
+    pagination.model.store.batch(() => {
+      pagination.model.setPageSize(50)
+      setPageSizeProp(2)
+    })
+
+    expect(pagination.model.get().pageSize).toBe(2)
+    expect(pagination.pagination().pageSize).toBe(2)
+
+    setPageSizeProp(undefined)
+
+    expect(pagination.model.get().pageSize).toBe(50)
+    expect(pagination.pagination().pageSize).toBe(50)
+    expect(view.getByTestId('pageSize').textContent).toBe('50')
+  })
+
+  it('does not capture a batched model write for a channel that is already controlled', () => {
+    type Props = {
+      page?: number
+      onChange: (change: unknown) => void
+    }
+    const onChange = vi.fn()
+    let setPageProp!: (page: number | undefined) => void
+    let pagination!: ReturnType<typeof useGridPagination>
+
+    const Harness = (props: Props) => {
+      const core = useGridCore()
+      pagination = useGridPagination(core, props)
+      return <output data-testid="page">{pagination.pagination().page}</output>
+    }
+    const Parent = () => {
+      const [page, updatePage] = createSignal<number | undefined>(3)
+      setPageProp = updatePage
+      return <Harness page={page()} onChange={onChange} />
+    }
+
+    const view = render(() => <Parent />)
+    expect(view.getByTestId('page').textContent).toBe('3')
+
+    pagination.model.store.batch(() => {
+      pagination.model.setPage(5) // rejected proposal: page is already controlled
+      setPageProp(4) // last accepted prop
+    })
+
+    expect(pagination.model.get().page).toBe(4)
+
+    setPageProp(undefined)
+
+    // Restores the last accepted controlled snapshot (4), never the rejected write (5).
+    expect(pagination.model.get().page).toBe(4)
+    expect(pagination.pagination().page).toBe(4)
   })
 
   it('silently syncs controlled selection, sorting, and filtering before model operations', async () => {
@@ -1713,6 +1894,164 @@ describe('Solid Grid Core bridge', () => {
     expect(core!.status).toBe('destroyed')
   })
 
+  it('rejects raw-model proposals on controlled column channels', () => {
+    let columns!: ReturnType<typeof useGridColumns>
+    const Harness = (props: {
+      visibility?: Record<string, boolean>
+      order?: string[]
+      widths?: Record<string, number>
+      pinned?: Record<string, 'left' | 'right' | null>
+    }) => {
+      const core = useGridCore()
+      columns = useGridColumns(core, props)
+      return (
+        <>
+          <output data-testid="visibility">{String(columns.state().visibility.age)}</output>
+          <output data-testid="order">{JSON.stringify(columns.state().order)}</output>
+          <output data-testid="widths">{String(columns.state().widths.name)}</output>
+          <output data-testid="pinned">{String(columns.state().pinned.name)}</output>
+        </>
+      )
+    }
+    const Parent = () => {
+      const [visibility] = createSignal<Record<string, boolean> | undefined>({ age: false })
+      const [order] = createSignal<string[] | undefined>(['name'])
+      const [widths] = createSignal<Record<string, number> | undefined>({ name: 100 })
+      const [pinned] = createSignal<Record<string, 'left' | 'right' | null> | undefined>({
+        name: 'left',
+      })
+      return (
+        <Harness visibility={visibility()} order={order()} widths={widths()} pinned={pinned()} />
+      )
+    }
+    const view = render(() => <Parent />)
+
+    columns.model.setVisibility({ age: true })
+    columns.model.setOrder(['age'])
+    columns.model.setWidth('name', 310)
+    columns.model.setPinned('name', 'right')
+
+    expect(columns.state().visibility.age).toBe(false)
+    expect(columns.state().order).toEqual(['name'])
+    expect(columns.state().widths).toEqual({ name: 100 })
+    expect(columns.state().pinned).toEqual({ name: 'left' })
+    // Store itself is rebased (optional, non-sole gate).
+    expect(columns.model.get()).toEqual({
+      visibility: { age: false },
+      order: ['name'],
+      widths: { name: 100 },
+      pinned: { name: 'left' },
+    })
+
+    // Rendered output is rejected synchronously — no waitFor.
+    expect(view.getByTestId('visibility').textContent).toBe('false')
+    expect(view.getByTestId('order').textContent).toBe('["name"]')
+    expect(view.getByTestId('widths').textContent).toBe('100')
+    expect(view.getByTestId('pinned').textContent).toBe('left')
+
+    view.unmount()
+  })
+
+  it('keeps raw-model writes visible while column channels are uncontrolled', () => {
+    let columns!: ReturnType<typeof useGridColumns>
+    const Harness = () => {
+      const core = useGridCore()
+      columns = useGridColumns(core)
+      return (
+        <>
+          <output data-testid="visibility">{String(columns.state().visibility.age)}</output>
+          <output data-testid="order">{JSON.stringify(columns.state().order)}</output>
+          <output data-testid="widths">{String(columns.state().widths.name)}</output>
+          <output data-testid="pinned">{String(columns.state().pinned.name)}</output>
+        </>
+      )
+    }
+    const view = render(() => <Harness />)
+
+    columns.model.setVisibility({ age: true })
+    columns.model.setOrder(['age'])
+    columns.model.setWidth('name', 310)
+    columns.model.setPinned('name', 'right')
+
+    expect(columns.state().visibility.age).toBe(true)
+    expect(columns.state().order).toEqual(['age'])
+    expect(columns.state().widths).toEqual({ name: 310 })
+    expect(columns.state().pinned).toEqual({ name: 'right' })
+    expect(view.getByTestId('visibility').textContent).toBe('true')
+    expect(view.getByTestId('order').textContent).toBe('["age"]')
+    expect(view.getByTestId('widths').textContent).toBe('310')
+    expect(view.getByTestId('pinned').textContent).toBe('right')
+
+    view.unmount()
+  })
+
+  it('preserves proposal callbacks and core events while rejecting controlled writes', () => {
+    const onVisibilityChange = vi.fn()
+    const onOrderChange = vi.fn()
+    const onWidthsChange = vi.fn()
+    const onPinnedChange = vi.fn()
+    const events: GridColumnsChange[] = []
+    let core!: GridCore
+    let columns!: ReturnType<typeof useGridColumns>
+    const Harness = () => {
+      core = useGridCore()
+      columns = useGridColumns(core, {
+        visibility: { age: false },
+        order: ['name'],
+        widths: { name: 100 },
+        pinned: { name: 'left' },
+        onVisibilityChange,
+        onOrderChange,
+        onWidthsChange,
+        onPinnedChange,
+      })
+      return <div />
+    }
+    const view = render(() => <Harness />)
+    core.on<GridColumnsChange>(GRID_COLUMNS_CHANGE_EVENT, (event) => events.push(event))
+
+    columns.model.setVisibility({ age: true })
+    columns.model.toggleVisibility('age')
+    columns.model.setOrder(['age'])
+    columns.model.setOrder(undefined)
+    columns.model.setWidths({ name: 310 })
+    columns.model.setWidth('name', 310)
+    columns.model.setWidths({})
+    columns.model.setPinned('name', 'right')
+
+    expect(onVisibilityChange).toHaveBeenNthCalledWith(1, { age: true })
+    expect(onVisibilityChange).toHaveBeenNthCalledWith(2, { age: true })
+    expect(onOrderChange).toHaveBeenNthCalledWith(1, ['age'])
+    expect(onOrderChange).toHaveBeenNthCalledWith(2, undefined)
+    expect(onWidthsChange).toHaveBeenNthCalledWith(1, { name: 310 })
+    expect(onWidthsChange).toHaveBeenNthCalledWith(2, { name: 310 })
+    expect(onWidthsChange).toHaveBeenNthCalledWith(3, {})
+    expect(onPinnedChange).toHaveBeenCalledWith('name', 'right')
+    expect(events.map((event) => event.channel)).toEqual([
+      'visibility',
+      'visibility',
+      'order',
+      'order',
+      'widths',
+      'widths',
+      'widths',
+      'pinned',
+    ])
+    expect(events[0]).toMatchObject({ channel: 'visibility', visibility: { age: true } })
+    expect(events[3]).toMatchObject({ channel: 'order', order: undefined })
+    expect(events[6]).toMatchObject({ channel: 'widths', widths: {} })
+    expect(events[7]).toMatchObject({ channel: 'pinned', key: 'name', side: 'right' })
+
+    // The store ends at the accepted props even though every proposal notified.
+    expect(columns.model.get()).toEqual({
+      visibility: { age: false },
+      order: ['name'],
+      widths: { name: 100 },
+      pinned: { name: 'left' },
+    })
+    view.unmount()
+  })
+
   it('uses replacement tree callbacks without recreating the rows model', async () => {
     type TreeRow = {
       id: number
@@ -1784,6 +2123,175 @@ describe('Solid Grid Core bridge', () => {
     expect(setChildrenB).toHaveBeenCalledTimes(2)
     expect(setChildrenA).not.toHaveBeenCalled()
     expect(getChildrenA).not.toHaveBeenCalled()
+    view.unmount()
+  })
+
+  it('keeps sorting and filtering accessors reactive after releasing controlled props', async () => {
+    const defaults = {
+      sort: { key: 'name', direction: 'asc' } as SortState,
+      multiSort: [{ key: 'name', direction: 'asc' }] as SortState[],
+      filters: { name: 'Ada' } as Record<string, string>,
+      filterValues: { name: ['Ada'] } as GridFilterValues,
+    }
+    const controlled = {
+      sort: { key: 'age', direction: 'desc' } as SortState,
+      multiSort: [{ key: 'age', direction: 'desc' }] as SortState[],
+      filters: { name: 'Grace' } as Record<string, string>,
+      filterValues: { name: ['Grace'] } as GridFilterValues,
+    }
+
+    type Props = {
+      sort?: SortState
+      multiSortState?: SortState[]
+      filters?: Record<string, string>
+      filterValues?: GridFilterValues
+      mode: 'multiple'
+      defaultSort: SortState
+      defaultMultiSort: SortState[]
+      defaultFilters: Record<string, string>
+      defaultFilterValues: GridFilterValues
+    }
+
+    let setSort!: (v: SortState | undefined) => void
+    let setMultiSort!: (v: SortState[] | undefined) => void
+    let setFilters!: (v: Record<string, string> | undefined) => void
+    let setFilterValues!: (v: GridFilterValues | undefined) => void
+    let sorting!: ReturnType<typeof useGridSorting>
+    let filtering!: ReturnType<typeof useGridFiltering>
+
+    const Harness = (props: Props) => {
+      const core = useGridCore()
+      // Pass the reactive props object directly: `{...props}` snapshots values
+      // and invalidates the test.
+      sorting = useGridSorting(core, props)
+      filtering = useGridFiltering(core, props)
+      return (
+        <div>
+          <output data-testid="sort">{JSON.stringify(sorting.sort())}</output>
+          <output data-testid="multiSort">{JSON.stringify(sorting.multiSort())}</output>
+          <output data-testid="filters">{JSON.stringify(filtering.filters())}</output>
+          <output data-testid="filterValues">{JSON.stringify(filtering.filterValues())}</output>
+        </div>
+      )
+    }
+
+    const Parent = () => {
+      const [sort, updateSort] = createSignal<SortState | undefined>()
+      const [multiSortState, updateMultiSort] = createSignal<SortState[] | undefined>()
+      const [filters, updateFilters] = createSignal<Record<string, string> | undefined>()
+      const [filterValues, updateFilterValues] = createSignal<GridFilterValues | undefined>()
+      setSort = updateSort
+      setMultiSort = updateMultiSort
+      setFilters = updateFilters
+      setFilterValues = updateFilterValues
+      return (
+        <Harness
+          sort={sort()}
+          multiSortState={multiSortState()}
+          filters={filters()}
+          filterValues={filterValues()}
+          mode="multiple"
+          defaultSort={defaults.sort}
+          defaultMultiSort={defaults.multiSort}
+          defaultFilters={defaults.filters}
+          defaultFilterValues={defaults.filterValues}
+        />
+      )
+    }
+
+    const view = render(() => <Parent />)
+
+    // A. uncontrolled defaults
+    await waitFor(() => {
+      expect(view.getByTestId('sort').textContent).toBe(JSON.stringify(defaults.sort))
+      expect(view.getByTestId('multiSort').textContent).toBe(JSON.stringify(defaults.multiSort))
+      expect(view.getByTestId('filters').textContent).toBe(JSON.stringify(defaults.filters))
+      expect(view.getByTestId('filterValues').textContent).toBe(
+        JSON.stringify(defaults.filterValues),
+      )
+    })
+
+    // B. controlled (acceptance 3, first half)
+    setSort(controlled.sort)
+    setMultiSort(controlled.multiSort)
+    setFilters(controlled.filters)
+    setFilterValues(controlled.filterValues)
+    await waitFor(() => {
+      expect(view.getByTestId('sort').textContent).toBe(JSON.stringify(controlled.sort))
+      expect(view.getByTestId('multiSort').textContent).toBe(JSON.stringify(controlled.multiSort))
+      expect(view.getByTestId('filters').textContent).toBe(JSON.stringify(controlled.filters))
+      expect(view.getByTestId('filterValues').textContent).toBe(
+        JSON.stringify(controlled.filterValues),
+      )
+    })
+
+    // C. release — DOM must show the restored snapshots (acceptance 3, second half)
+    setSort(undefined)
+    setMultiSort(undefined)
+    setFilters(undefined)
+    setFilterValues(undefined)
+    await waitFor(() => {
+      expect(view.getByTestId('sort').textContent).toBe(JSON.stringify(defaults.sort))
+      expect(view.getByTestId('multiSort').textContent).toBe(JSON.stringify(defaults.multiSort))
+      expect(view.getByTestId('filters').textContent).toBe(JSON.stringify(defaults.filters))
+      expect(view.getByTestId('filterValues').textContent).toBe(
+        JSON.stringify(defaults.filterValues),
+      )
+    })
+
+    // D. uncontrolled mutation after the handoff (acceptance 1 — RED today)
+    sorting.model.cycleSort('name') // name asc -> name desc
+    sorting.model.setMultiSort([{ key: 'age', direction: 'asc' }])
+    filtering.model.setFilters({ name: 'Zoe' })
+    filtering.model.setFilterValues({ name: ['Zoe'] })
+
+    // Guard: the core model really moved (the failure is rendering, not state).
+    expect(sorting.model.get().sort).toEqual({ key: 'name', direction: 'desc' })
+    expect(sorting.model.get().multiSort).toEqual([{ key: 'age', direction: 'asc' }])
+    expect(filtering.model.get().filters).toEqual({ name: 'Zoe' })
+    expect(filtering.model.get().filterValues).toEqual({ name: ['Zoe'] })
+
+    await waitFor(() => {
+      expect(view.getByTestId('sort').textContent).toBe(
+        JSON.stringify({ key: 'name', direction: 'desc' }),
+      )
+      expect(view.getByTestId('multiSort').textContent).toBe(
+        JSON.stringify([{ key: 'age', direction: 'asc' }]),
+      )
+      expect(view.getByTestId('filters').textContent).toBe(JSON.stringify({ name: 'Zoe' }))
+      expect(view.getByTestId('filterValues').textContent).toBe(JSON.stringify({ name: ['Zoe'] }))
+    })
+
+    view.unmount()
+  })
+})
+
+describe('Solid Grid Core bridge — virtual same-count item replacement', () => {
+  it('re-seats keyed measurements after a store index write at the same count', () => {
+    type Item = { id: string }
+    const [store, setStore] = createStore<{ items: Item[] }>({
+      items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+    })
+    let virtual!: ReturnType<typeof useGridVirtual>
+    const Harness = () => {
+      const core = useGridCore<Item>()
+      virtual = useGridVirtual(core, {
+        items: store.items,
+        estimateSize: 20,
+        viewportSize: 100,
+        getItemKey: (item) => item.id,
+      })
+      return <div />
+    }
+    const view = render(() => <Harness />)
+
+    virtual.model.measure(0, 100)
+    expect(virtual.model.totalSize()).toBe(140)
+
+    setStore('items', 0, { id: 'z' })
+
+    expect(virtual.model.getState().items[0]).toEqual({ index: 0, key: 'z', start: 0, size: 20 })
+    expect(virtual.model.totalSize()).toBe(60)
     view.unmount()
   })
 })

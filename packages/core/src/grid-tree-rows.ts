@@ -115,7 +115,8 @@ export function reconcileTreeRows<Row extends Record<string, unknown>>(
       const patched = rowKey === undefined ? undefined : patches.get(rowKey)
       let nextRow = patched ?? row
       let rowChanged = patched !== undefined && !Object.is(patched, row)
-      const children = options.getChildren(nextRow) ?? options.getChildren(row)
+      const patchedChildren = options.getChildren(nextRow)
+      const children = patchedChildren ?? options.getChildren(row)
       if (children?.length) {
         const childResult = reconcile(children)
         if (childResult.changed) {
@@ -134,6 +135,12 @@ export function reconcileTreeRows<Row extends Record<string, unknown>>(
             nextRow = replaced
             rowChanged = true
           }
+        } else if (patchedChildren == null && !Object.is(nextRow, row)) {
+          // Re-attach the source child array so an unchanged subtree survives a
+          // parent-only patch instead of being erased.
+          nextRow =
+            replaceChildren(nextRow, children, children as Row[], options.setChildren, row) ??
+            nextRow
         }
       }
       if (rowChanged) changed = true

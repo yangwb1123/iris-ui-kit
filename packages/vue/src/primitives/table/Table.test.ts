@@ -402,6 +402,49 @@ describe('IrisTable', () => {
     expect(emitted.at(-1)).toEqual([1, 2])
   })
 
+  it('renders the model selection after the controlled prop is removed', async () => {
+    const emitted: Array<Array<string | number>> = []
+    const value = ref<Array<string | number>>([1])
+    const controlled = ref(true)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns,
+            data: rows,
+            rowKey: 'id',
+            selectable: 'multi',
+            selection: controlled.value ? value.value : undefined,
+            'onUpdate:selection': (next: Array<string | number>) => emitted.push(next),
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+
+    controlled.value = false // controlled → uncontrolled handoff
+    await nextTick()
+
+    const checkboxFor = (id: number) =>
+      wrapper.find<HTMLInputElement>(
+        `[data-iris-table-row][data-iris-table-row-key="${id}"] [data-iris-checkbox] input`,
+      )
+    const rowFor = (id: number) =>
+      wrapper.find(`[data-iris-table-row][data-iris-table-row-key="${id}"]`)
+
+    // Release restores the last controlled snapshot (React parity).
+    expect(checkboxFor(1).element.checked).toBe(true)
+    expect(checkboxFor(2).element.checked).toBe(false)
+
+    await checkboxFor(2).trigger('change')
+    await nextTick()
+
+    expect(emitted.at(-1)).toEqual([1, 2])
+    expect(checkboxFor(1).element.checked).toBe(true)
+    expect(checkboxFor(2).element.checked).toBe(true)
+    expect(rowFor(2).attributes('data-state')).toBe('selected')
+    wrapper.unmount()
+  })
+
   it('select-all checkbox input carries a default aria-label of "Select all"', () => {
     const wrapper = mount(IrisTable, {
       props: { columns, data: rows, rowKey: 'id', selectable: 'multi' },

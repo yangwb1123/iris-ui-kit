@@ -572,6 +572,51 @@ describe('Vue Grid Core bridge', () => {
     wrapper.unmount()
   })
 
+  it('restores a batched uncontrolled filtering baseline when control enters inside a store batch', async () => {
+    const options = reactive({
+      filters: undefined as Record<string, string> | undefined,
+      filterValues: undefined as GridFilterValues | undefined,
+      defaultFilters: {} as Record<string, string>,
+      defaultFilterValues: {} as GridFilterValues,
+    })
+    let core!: GridCore
+    let filtering!: ReturnType<typeof useGridFiltering>
+    const Harness = defineComponent({
+      setup() {
+        core = useGridCore()
+        filtering = useGridFiltering(core, options)
+        return () => h('div')
+      },
+    })
+
+    const wrapper = mount(Harness)
+    filtering.model.setFilters({ status: 'active' })
+    filtering.model.setFilterValues({ status: ['active'] })
+    await nextTick()
+    expect(filtering.model.get().filters).toEqual({ status: 'active' })
+    expect(filtering.model.get().filterValues).toEqual({ status: ['active'] })
+
+    filtering.model.store.batch(() => {
+      filtering.model.setFilters({ status: 'paused' })
+      filtering.model.setFilterValues({ status: ['paused'] })
+      options.filters = { status: 'controlled' }
+      options.filterValues = { status: ['controlled'] }
+    })
+    await nextTick()
+    expect(filtering.model.get().filters).toEqual({ status: 'controlled' })
+    expect(filtering.model.get().filterValues).toEqual({ status: ['controlled'] })
+
+    options.filters = undefined
+    options.filterValues = undefined
+    await nextTick()
+
+    expect(filtering.model.get().filters).toEqual({ status: 'paused' })
+    expect(filtering.model.get().filterValues).toEqual({ status: ['paused'] })
+    expect(filtering.filters.value).toEqual(filtering.model.get().filters)
+    expect(filtering.filterValues.value).toEqual(filtering.model.get().filterValues)
+    wrapper.unmount()
+  })
+
   it('keeps controlled inputs isolated from mutable bridge snapshots', async () => {
     const filters = { status: 'active' }
     const filterValues = { status: ['active', 'pending'] }
@@ -1570,6 +1615,50 @@ describe('Vue Grid Core bridge', () => {
     wrapper.unmount()
   })
 
+  it('syncs the virtualizer count for in-place items growth and shrink', async () => {
+    type Item = { id: string }
+    const options = reactive<{
+      items: Item[]
+      estimateSize: number
+      viewportSize: number
+      buffer: number
+      getItemKey: (item: Item, index: number) => string
+    }>({
+      items: [{ id: 'a' }],
+      estimateSize: 20,
+      viewportSize: 40,
+      buffer: 0,
+      getItemKey: (item) => item.id,
+    })
+    let virtual!: ReturnType<typeof useGridVirtual>
+    const Harness = defineComponent({
+      setup() {
+        const core = useGridCore<Item>()
+        virtual = useGridVirtual(core, options)
+        return () => h('div')
+      },
+    })
+    const wrapper = mount(Harness)
+
+    expect(virtual.model.totalSize()).toBe(20)
+
+    options.items.push({ id: 'b' }, { id: 'c' })
+    await nextTick()
+    expect(virtual.model.totalSize()).toBe(60)
+
+    virtual.model.setScroll(40)
+    expect(virtual.model.getState().items.map((item) => item.key)).toEqual(['b', 'c'])
+
+    options.items.splice(0, 2)
+    await nextTick()
+    expect(virtual.model.totalSize()).toBe(20)
+    expect(virtual.model.scrollToOffset(40)).toBe(0)
+    expect(virtual.model.getState().startIndex).toBe(0)
+    expect(virtual.model.getState().items.map((item) => item.key)).toEqual(['c'])
+
+    wrapper.unmount()
+  })
+
   it('forwards replacement virtual range callbacks without recreating the model', async () => {
     type Item = { id: number }
     type RangeCallback = (change: GridVirtualRangeChange) => void
@@ -1835,6 +1924,112 @@ describe('Vue Grid Core bridge', () => {
     expect(setChildrenB).toHaveBeenCalledTimes(2)
     expect(setChildrenA).not.toHaveBeenCalled()
     expect(getChildrenA).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
+describe('Vue Grid Core bridge — virtual same-count item replacement', () => {
+  type Item = { id: string; label?: string }
+
+  const mountVirtual = () => {
+    const options = reactive<{
+      items: Item[]
+      estimateSize: number
+      viewportSize: number
+      getItemKey: (item: Item, index: number) => string
+    }>({
+      items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+      estimateSize: 20,
+      viewportSize: 100,
+      getItemKey: (item) => item.id,
+    })
+    let virtual!: ReturnType<typeof useGridVirtual>
+    const Harness = defineComponent({
+      setup() {
+        const core = useGridCore<Item>()
+        virtual = useGridVirtual(core, options)
+        return () => h('div')
+      },
+    })
+    const wrapper = mount(Harness)
+    return { options, virtual, wrapper }
+  }
+
+  it('re-seats keyed measurements when an item is replaced in place at the same count', async () => {
+    const { options, virtual, wrapper } = mountVirtual()
+    virtual.model.measure(0, 100)
+    expect(virtual.model.totalSize()).toBe(140)
+
+    options.items[0] = { id: 'z' }
+    await nextTick()
+
+    expect(virtual.model.getState().items[0]).toEqual({ index: 0, key: 'z', start: 0, size: 20 })
+    expect(virtual.model.totalSize()).toBe(60)
+    wrapper.unmount()
+  })
+
+  it('re-seats after a same-count splice replacement', async () => {
+    const { options, virtual, wrapper } = mountVirtual()
+    virtual.model.measure(0, 100)
+
+    options.items.splice(0, 1, { id: 'z' })
+    await nextTick()
+
+    expect(virtual.model.getState().items[0]).toEqual({ index: 0, key: 'z', start: 0, size: 20 })
+    expect(virtual.model.totalSize()).toBe(60)
+    wrapper.unmount()
+  })
+
+  it('does not fire the identity watcher for a non-key field mutation', async () => {
+    const { options, virtual, wrapper } = mountVirtual()
+    virtual.model.measure(0, 100)
+    const setCount = vi.spyOn(virtual.model, 'setCount')
+
+    options.items[0]!.label = 'x'
+    await nextTick()
+
+    expect(setCount).not.toHaveBeenCalled()
+    expect(virtual.model.getState().items[0]).toEqual({ index: 0, key: 'a', start: 0, size: 100 })
+    expect(virtual.model.totalSize()).toBe(140)
+    wrapper.unmount()
+  })
+
+  it('keeps a same-key identity change inert (no state move, no range event)', async () => {
+    const options = reactive<{
+      items: Item[]
+      estimateSize: number
+      viewportSize: number
+      getItemKey: (item: Item, index: number) => string
+    }>({
+      items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+      estimateSize: 20,
+      viewportSize: 100,
+      getItemKey: (item) => item.id,
+    })
+    let core!: GridCore<Item>
+    let virtual!: ReturnType<typeof useGridVirtual>
+    const Harness = defineComponent({
+      setup() {
+        core = useGridCore<Item>()
+        virtual = useGridVirtual(core, options)
+        return () => h('div')
+      },
+    })
+    const wrapper = mount(Harness)
+    virtual.model.measure(0, 100)
+    const events: GridVirtualRangeChange[] = []
+    core.on<GridVirtualRangeChange>(GRID_VIRTUAL_RANGE_CHANGE_EVENT, (change) =>
+      events.push(change),
+    )
+    const setCount = vi.spyOn(virtual.model, 'setCount')
+
+    options.items[0] = { id: 'a' } // new object, same key
+    await nextTick()
+
+    expect(setCount).toHaveBeenCalledTimes(1)
+    expect(virtual.model.getState().items[0]).toEqual({ index: 0, key: 'a', start: 0, size: 100 })
+    expect(virtual.model.totalSize()).toBe(140)
+    expect(events).toEqual([])
     wrapper.unmount()
   })
 })

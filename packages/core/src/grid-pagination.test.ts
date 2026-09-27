@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createGridCore,
   createGridPaginationFeature,
+  createGridPaginationModel,
   createGridPaginationProjection,
   GRID_PAGINATION_CHANGE_EVENT,
   type GridPaginationChange,
@@ -102,6 +103,29 @@ describe('createGridPaginationFeature', () => {
     expect(model.get().page).toBe(6)
     expect(onChange).toHaveBeenCalledTimes(6)
     expect(event).toHaveBeenCalledTimes(6)
+    projection.dispose()
+  })
+
+  it('captures a batched uncontrolled write when a channel enters control inside the same batch', () => {
+    const model = createGridPaginationModel({ defaultPage: 1, defaultPageSize: 10 })
+    const projection = createGridPaginationProjection(model, { pageSize: 25 })
+    projection.sync({ pageSize: 25 })
+
+    model.store.batch(() => {
+      model.setPage(5)
+      projection.sync({ page: 3, pageSize: 25 })
+    })
+
+    // While controlled the accepted prop is projected and the model is rebased.
+    expect(model.get().page).toBe(3)
+    expect(projection.project(model.get(), { page: 3, pageSize: 25 }).page).toBe(3)
+
+    projection.sync({ pageSize: 25 })
+
+    // The batched uncontrolled write survives control entry and is restored.
+    expect(model.get().page).toBe(5)
+    expect(projection.project(model.get(), { pageSize: 25 }).page).toBe(5)
+
     projection.dispose()
   })
 

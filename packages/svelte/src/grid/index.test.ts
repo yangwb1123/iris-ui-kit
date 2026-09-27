@@ -19,8 +19,10 @@ import {
 import GridBridgeHarness from './GridBridgeHarness.svelte'
 import GridControlledBatchHandoffHarness from './GridControlledBatchHandoffHarness.svelte'
 import GridColumnsBridgeHarness from './GridColumnsBridgeHarness.svelte'
+import GridColumnsControlledBatchHandoffHarness from './GridColumnsControlledBatchHandoffHarness.svelte'
 import GridSelectionControlledHarness from './GridSelectionControlledHarness.svelte'
 import GridVirtualBridgeHarness from './GridVirtualBridgeHarness.svelte'
+import GridVirtualReactiveItemsHarness from './GridVirtualReactiveItemsHarness.svelte'
 import { useGridColumns, useGridSelection } from './useGrid'
 
 describe('Svelte Grid Core bridge', () => {
@@ -1341,5 +1343,90 @@ describe('Svelte Grid Core bridge', () => {
     expect(readIndexes()).toEqual([1, 2, 3])
     expect(initialModel.getState().items.map((item) => item.index)).toEqual([1, 2, 3])
     expect(core.invoke<GridVirtualModel>('getVirtualModel')).toBe(initialModel)
+  })
+
+  it('captures a batched uncontrolled visibility write when control enters inside the same core batch', async () => {
+    let columns!: ReturnType<typeof useGridColumns>
+    const view = render(GridColumnsControlledBatchHandoffHarness, {
+      props: { onColumns: (value) => (columns = value) },
+    })
+    await tick()
+
+    expect(columns.model.get().visibility).toEqual({ hidden: false })
+    expect(get(columns.state).visibility).toEqual({ hidden: false })
+
+    await fireEvent.click(view.getByTestId('handoff-visibility'))
+    await tick()
+    expect(columns.model.get().visibility).toEqual({ hidden: false })
+    expect(get(columns.state).visibility).toEqual({ hidden: false })
+
+    await fireEvent.click(view.getByTestId('release-visibility'))
+    await tick()
+    expect(columns.model.get().visibility).toEqual({ hidden: true })
+    expect(get(columns.state).visibility).toEqual({ hidden: true })
+    view.unmount()
+  })
+
+  it('captures batched uncontrolled writes on all four column channels when control enters inside the same core batch', async () => {
+    let columns!: ReturnType<typeof useGridColumns>
+    const view = render(GridColumnsControlledBatchHandoffHarness, {
+      props: { onColumns: (value) => (columns = value) },
+    })
+    await tick()
+
+    await fireEvent.click(view.getByTestId('handoff-all'))
+    await tick()
+    expect(columns.model.get()).toEqual({
+      visibility: { hidden: false },
+      order: ['name'],
+      widths: { name: 310, age: 260 },
+      pinned: { name: 'right', age: 'left' },
+    })
+    expect(get(columns.state)).toEqual({
+      visibility: { hidden: false },
+      order: ['name'],
+      widths: { name: 310, age: 260 },
+      pinned: { name: 'right', age: 'left' },
+    })
+
+    await fireEvent.click(view.getByTestId('release-all'))
+    await tick()
+    expect(columns.model.get()).toEqual({
+      visibility: { hidden: true },
+      order: ['age', 'name'],
+      widths: { name: 116, age: 216 },
+      pinned: { name: null, age: 'right' },
+    })
+    expect(get(columns.state)).toEqual({
+      visibility: { hidden: true },
+      order: ['age', 'name'],
+      widths: { name: 116, age: 216 },
+      pinned: { name: null, age: 'right' },
+    })
+    view.unmount()
+  })
+})
+
+describe('Svelte Grid Core bridge — virtual same-count item replacement', () => {
+  it('re-seats keyed measurements when a $state item is replaced in place', async () => {
+    let model!: GridVirtualModel
+    let replaceFirst!: () => void
+    const view = render(GridVirtualReactiveItemsHarness, {
+      props: {
+        onModel: (value) => (model = value),
+        onItemsReady: (api) => (replaceFirst = api.replaceFirst),
+      },
+    })
+    await tick()
+
+    model.measure(0, 100)
+    expect(model.totalSize()).toBe(140)
+
+    replaceFirst()
+    await tick()
+
+    expect(model.getState().items[0]).toEqual({ index: 0, key: 'z', start: 0, size: 20 })
+    expect(model.totalSize()).toBe(60)
+    view.unmount()
   })
 })

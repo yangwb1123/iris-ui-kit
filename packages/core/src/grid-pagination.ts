@@ -133,6 +133,14 @@ export function createGridPaginationProjection(
     },
     sync(controlled) {
       attach()
+      // A bridge can re-enter `sync` while `model.store.batch` is still open
+      // (Solid `createEffect`, Vue `flush: 'sync'`). State inside the batch is
+      // already current, but `notify` is deferred, so the trailing observe
+      // would run only after the channel flips to controlled and could never
+      // record the batched uncontrolled write. Capture not-yet-controlled
+      // channels BEFORE the flip; already-controlled channels are skipped by
+      // `observe`, so rejected proposals are still not captured.
+      observe(model.get())
       const restore: { page?: number; pageSize?: number; total?: number } = {}
       const leaving: Array<{
         key: keyof GridPaginationState

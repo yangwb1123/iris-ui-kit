@@ -320,6 +320,119 @@ describe('createVirtualizer — growth + viewport', () => {
     v.setScroll(40)
     expect(v.getState().items.map((item) => item.index)).toEqual(expect.arrayContaining([1, 2]))
   })
+
+  // TC-A — acceptance 1: setFixedSize disagrees with the unmeasured estimate
+  it('keeps the offset-tree window when setFixedSize disagrees with the estimate', () => {
+    const v = createVirtualizer({ count: 10, estimateSize: 40, viewportSize: 100 })
+    v.setScroll(120)
+    v.setFixedSize(30)
+
+    const state = v.getState()
+    expect(state.offsetBefore).toBeLessThanOrEqual(120)
+    expect(state.items.some((item) => item.start <= 120 && item.start + item.size > 120)).toBe(true)
+    expect(state.totalSize).toBe(400)
+  })
+
+  // TC-B — acceptance 2: creation-time config mismatch
+  it('keeps the offset-tree window when creation-time fixedSize disagrees with the estimate', () => {
+    const v = createVirtualizer({
+      count: 10,
+      estimateSize: 40,
+      fixedSize: 30,
+      viewportSize: 100,
+    })
+    v.setScroll(120)
+
+    const state = v.getState()
+    expect(state.offsetBefore).toBeLessThanOrEqual(120)
+    expect(state.items.some((item) => item.start <= 120 && item.start + item.size > 120)).toBe(true)
+    expect(state.totalSize).toBe(400)
+  })
+
+  // TC-D — acceptance 4: matched config keeps the closed-form window
+  it('keeps the closed-form window when fixedSize matches the estimate', () => {
+    const v = createVirtualizer({ count: 10, estimateSize: 30, fixedSize: 30, viewportSize: 100 })
+    v.setScroll(120)
+
+    const state = v.getState()
+    expect(state.totalSize).toBe(300)
+    expect(state.startIndex).toBe(4)
+    expect(state.offsetBefore).toBe(120)
+  })
+
+  // TC-E — R2 function-estimate branch
+  it('falls back to the offset tree for a function estimate that disagrees with fixedSize', () => {
+    const v = createVirtualizer({
+      count: 10,
+      estimateSize: () => 40,
+      fixedSize: 30,
+      viewportSize: 100,
+    })
+    v.setScroll(120)
+
+    const state = v.getState()
+    expect(state.offsetBefore).toBeLessThanOrEqual(120)
+    expect(state.items.some((item) => item.start <= 120 && item.start + item.size > 120)).toBe(true)
+    expect(state.totalSize).toBe(400)
+  })
+
+  // TC-F1 — R4.4 count growth revalidates agreement
+  it('revalidates fixed-size agreement when setCount grows a divergent function estimate', () => {
+    const v = createVirtualizer({
+      count: 5,
+      estimateSize: (index) => (index < 5 ? 30 : 40),
+      fixedSize: 30,
+      viewportSize: 100,
+    })
+    expect(v.getState().totalSize).toBe(150) // estimates match: closed form is valid
+
+    v.setCount(10)
+    v.setScroll(250)
+
+    const state = v.getState()
+    expect(state.totalSize).toBe(350)
+    expect(state.offsetBefore).toBeLessThanOrEqual(250)
+    expect(state.items.some((item) => item.start <= 250 && item.start + item.size > 250)).toBe(true)
+  })
+
+  // TC-F2 — R4.5 replaceData revalidates agreement
+  it('revalidates fixed-size agreement when replaceData grows a divergent function estimate', () => {
+    const v = createVirtualizer({
+      count: 5,
+      estimateSize: (index) => (index < 5 ? 30 : 40),
+      fixedSize: 30,
+      viewportSize: 100,
+    })
+
+    v.replaceData(10)
+    v.setScroll(250)
+
+    const state = v.getState()
+    expect(state.totalSize).toBe(350)
+    expect(state.offsetBefore).toBeLessThanOrEqual(250)
+    expect(state.items.some((item) => item.start <= 250 && item.start + item.size > 250)).toBe(true)
+  })
+
+  // TC-G — R4.6 remeasure revalidates a stateful estimate
+  it('revalidates fixed-size agreement when remeasure drops a stale estimate', () => {
+    let estimate: 'match' | 'diverge' = 'match'
+    const v = createVirtualizer({
+      count: 10,
+      estimateSize: () => (estimate === 'match' ? 30 : 40),
+      fixedSize: 30,
+      viewportSize: 100,
+    })
+    expect(v.getState().totalSize).toBe(300)
+
+    estimate = 'diverge'
+    v.remeasure()
+    v.setScroll(120)
+
+    const state = v.getState()
+    expect(state.totalSize).toBe(400)
+    expect(state.offsetBefore).toBeLessThanOrEqual(120)
+    expect(state.items.some((item) => item.start <= 120 && item.start + item.size > 120)).toBe(true)
+  })
 })
 
 describe('createVirtualizer — replaceData', () => {

@@ -253,4 +253,19 @@ describe('createGridVirtualFeature', () => {
     model.measure(1, 40)
     expect(onRangeChange).toHaveBeenCalledTimes(1)
   })
+
+  // TC-C — acceptance 3: feature path forwards setVirtualFixedSize to core
+  it('keeps the offset-tree window when setVirtualFixedSize disagrees with the estimate', () => {
+    const core = createGridCore({
+      features: [createGridVirtualFeature({ count: 10, estimateSize: 40, viewportSize: 100 })],
+    })
+
+    core.invoke('setVirtualFixedSize', 30)
+    core.invoke('setVirtualScroll', 120)
+
+    const state = core.invoke<VirtualizerState>('getVirtualState')
+    expect(state.offsetBefore).toBeLessThanOrEqual(120)
+    expect(state.items.some((item) => item.start <= 120 && item.start + item.size > 120)).toBe(true)
+    expect(state.totalSize).toBe(400)
+  })
 })

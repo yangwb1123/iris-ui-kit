@@ -161,6 +161,14 @@ interface VirtualizerRuntime {
   measured: Map<string | number, number>
   /** Measured keys whose size cannot use the fixed-size range shortcut. */
   fixedSizeDivergentKeys: Set<string | number>
+  /**
+   * True when every *unmeasured* item's estimate equals `fixedSize` (vacuously
+   * true for an empty list). Together with an empty `fixedSizeDivergentKeys`
+   * this proves every effective size equals `fixedSize`, which is the only
+   * condition under which the closed-form range is allowed. Must be rebuilt
+   * whenever the size tree is rebuilt from `estimate` or `fixedSize` changes.
+   */
+  fixedSizeEstimateMatches: boolean
   tree: SizeTree
   store: Store<VirtualizerState>
   computeWindow(): VirtualizerState
@@ -245,14 +253,29 @@ function sameVirtualizerState(a: VirtualizerState, b: VirtualizerState): boolean
 function rebuildFixedSizeDivergence(runtime: VirtualizerRuntime): void {
   runtime.fixedSizeDivergentKeys.clear()
   const fixedSize = runtime.fixedSize
-  if (fixedSize === null) return
+  if (fixedSize === null) {
+    runtime.fixedSizeEstimateMatches = false
+    return
+  }
+  const estimateSource = runtime.estimateSource
+  // Constant estimates are one compare for the whole list; function estimates
+  // are folded into the key pass so no key is resolved twice.
+  let estimateMatches =
+    typeof estimateSource === 'number'
+      ? runtime.count === 0 || runtime.estimate(0) === fixedSize
+      : true
   for (let index = 0; index < runtime.count; index++) {
     const key = runtime.keyOf(index)
     const measuredSize = runtime.measured.get(key)
-    if (measuredSize !== undefined && measuredSize !== fixedSize) {
+    if (measuredSize === undefined) {
+      if (typeof estimateSource === 'function' && runtime.estimate(index) !== fixedSize) {
+        estimateMatches = false
+      }
+    } else if (measuredSize !== fixedSize) {
       runtime.fixedSizeDivergentKeys.add(key)
     }
   }
+  runtime.fixedSizeEstimateMatches = estimateMatches
 }
 
 function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState {
@@ -263,9 +286,14 @@ function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState
   const top = Math.max(0, Math.min(scrollOffset, maxScroll))
   let startIndex: number
   let endIndex: number
-  // Numeric fixed arithmetic is safe only while all measured rows still match
-  // it; after a divergent measurement, the offset tree is authoritative.
-  if (fixedSize !== null && runtime.fixedSizeDivergentKeys.size === 0) {
+  // Numeric fixed arithmetic is safe only while every effective size matches
+  // it — measured rows (divergence set) AND unmeasured estimates. Otherwise the
+  // offset tree is authoritative.
+  if (
+    fixedSize !== null &&
+    runtime.fixedSizeEstimateMatches &&
+    runtime.fixedSizeDivergentKeys.size === 0
+  ) {
     const size = Math.max(1, fixedSize)
     const first = Math.min(Math.floor(top / size), count - 1)
     const visibleCount = fixedSize <= 0 ? 0 : Math.ceil((top - first * size + viewportSize) / size)
@@ -321,6 +349,7 @@ function createVirtualizerRuntime(config: VirtualizerConfig): VirtualizerRuntime
   runtime.keyOf = keyOf
   runtime.measured = measured
   runtime.fixedSizeDivergentKeys = new Set()
+  rebuildFixedSizeDivergence(runtime)
   runtime.tree = tree
   runtime.computeWindow = () => computeVirtualizerWindow(runtime)
   runtime.store = createStore(runtime.computeWindow())
@@ -383,10 +412,8 @@ function setVirtualizerEstimateSize(
       normalizeItemSize(typeof estimate === 'function' ? estimate(index) : estimate, runtime.count)
     runtime.tree.reset(runtime.count)
   }
-  if (fixedSizeChanged) {
-    runtime.fixedSize = nextFixedSize
-    rebuildFixedSizeDivergence(runtime)
-  }
+  if (fixedSizeChanged) runtime.fixedSize = nextFixedSize
+  if (estimateChanged || fixedSizeChanged) rebuildFixedSizeDivergence(runtime)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
 }
@@ -410,8 +437,8 @@ function setVirtualizerCount(runtime: VirtualizerRuntime, next: number): void {
 function replaceVirtualizerData(runtime: VirtualizerRuntime, next: number): void {
   runtime.count = normalizeCount(next)
   runtime.measured.clear()
-  runtime.fixedSizeDivergentKeys.clear()
   runtime.tree.reset(runtime.count)
+  rebuildFixedSizeDivergence(runtime)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
 }
@@ -434,8 +461,8 @@ function measureVirtualizerItem(runtime: VirtualizerRuntime, index: number, size
 
 function remeasureVirtualizer(runtime: VirtualizerRuntime): void {
   runtime.measured.clear()
-  runtime.fixedSizeDivergentKeys.clear()
   runtime.tree.reset(runtime.count)
+  rebuildFixedSizeDivergence(runtime)
   runtime.scrollOffset = runtime.clampScroll(runtime.scrollOffset)
   runtime.sync()
 }

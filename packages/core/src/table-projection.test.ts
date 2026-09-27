@@ -48,6 +48,29 @@ describe('reconcileProjectedRows', () => {
     expect(result[0]!.children).not.toBe(root.children)
   })
 
+  it('preserves an untouched grandchild subtree when a projection patch omits children', () => {
+    const leaf: Row = { id: 3, name: 'leaf' }
+    const middle: Row = { id: 2, name: 'middle', children: [leaf] }
+    const root: Row = { id: 1, name: 'root', children: [middle] }
+    const source = [root]
+    const visible = [root, middle, leaf]
+    const projectedMiddle: Row = { id: 2, name: 'MIDDLE' }
+
+    const result = reconcileProjectedRows(source, visible, [root, projectedMiddle, leaf], {
+      visibleRows: visible,
+      getRowKey: (row) => row.id,
+      getChildren: (row) => row.children,
+    })
+
+    expect(result).not.toBe(source)
+    expect(result[0]).not.toBe(root)
+    expect(result[0]?.children?.[0]).not.toBe(middle)
+    expect(result[0]?.children?.[0]).not.toBe(projectedMiddle)
+    expect(result[0]?.children?.[0]).toMatchObject({ id: 2, name: 'MIDDLE' })
+    expect(result[0]?.children?.[0]?.children).toBe(middle.children)
+    expect(result[0]?.children?.[0]?.children?.[0]).toBe(leaf)
+  })
+
   it('fails closed for duplicate keys in a tree projection write-back', () => {
     const first: Row = { id: 2, name: 'first', children: [] }
     const second: Row = { id: 2, name: 'second', children: [] }

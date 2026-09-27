@@ -288,4 +288,55 @@ describe('useGridVirtual', () => {
     rerender(<Harness items={[{ id: 2 }, { id: 1 }]} />)
     expect(model?.totalSize()).toBe(20)
   })
+
+  it('syncs the virtualizer count for in-place items growth and shrink', () => {
+    type KeyedRow = { id: string }
+    const items: KeyedRow[] = [{ id: 'a' }]
+    const keyOf = (item: KeyedRow): string => item.id
+    let model: GridVirtualModel | undefined
+
+    function Harness({ version }: { version: number }): React.ReactElement {
+      const core = useGridCore<KeyedRow>()
+      model = useGridVirtual(core, {
+        items,
+        estimateSize: 20,
+        viewportSize: 40,
+        buffer: 0,
+        getItemKey: keyOf,
+      }).model
+      return <div data-testid="virtual-version">{version}</div>
+    }
+
+    const view = render(<Harness version={0} />)
+    const virtualModel = model!
+    expect(virtualModel.totalSize()).toBe(20)
+    const setCount = vi.spyOn(virtualModel, 'setCount')
+
+    items.push({ id: 'b' }, { id: 'c' })
+    act(() => {
+      view.rerender(<Harness version={1} />)
+    })
+
+    expect(model).toBe(virtualModel) // no controller recreation
+    expect(setCount).toHaveBeenNthCalledWith(1, 3)
+    expect(virtualModel.totalSize()).toBe(60)
+    expect(virtualModel.getState().items.map((item) => item.key)).toEqual(['a', 'b'])
+
+    act(() => {
+      virtualModel.setScroll(40)
+    })
+    expect(virtualModel.getState().items.map((item) => item.key)).toEqual(['b', 'c'])
+
+    items.splice(0, 2)
+    act(() => {
+      view.rerender(<Harness version={2} />)
+    })
+
+    expect(setCount).toHaveBeenNthCalledWith(2, 1)
+    expect(virtualModel.totalSize()).toBe(20)
+    expect(virtualModel.scrollToOffset(40)).toBe(0)
+    expect(virtualModel.getState().startIndex).toBe(0)
+    expect(virtualModel.getState().items.map((item) => item.key)).toEqual(['c'])
+    view.unmount()
+  })
 })

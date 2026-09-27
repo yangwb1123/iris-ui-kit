@@ -330,16 +330,29 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
   setPinned(key: string, side: GridColumnPin): void
 } {
   const latest = options
+  let rejectControlled: () => void = () => undefined
   const model = useGridFeature<Row, GridColumnsModel>(core, 'columns', 'getColumnsModel', () =>
     createGridColumnsFeature<Row>({
       defaultVisibility: options.visibility ?? options.defaultVisibility,
       defaultOrder: options.order ?? options.defaultOrder,
       defaultWidths: options.widths ?? options.defaultWidths,
       defaultPinned: options.pinned ?? options.defaultPinned,
-      onVisibilityChange: (v) => latest.onVisibilityChange?.(v),
-      onOrderChange: (v) => latest.onOrderChange?.(v),
-      onWidthsChange: (v) => latest.onWidthsChange?.(v),
-      onPinnedChange: (k, v) => latest.onPinnedChange?.(k, v),
+      onVisibilityChange: (v) => {
+        latest.onVisibilityChange?.(v)
+        rejectControlled()
+      },
+      onOrderChange: (v) => {
+        latest.onOrderChange?.(v)
+        rejectControlled()
+      },
+      onWidthsChange: (v) => {
+        latest.onWidthsChange?.(v)
+        rejectControlled()
+      },
+      onPinnedChange: (k, v) => {
+        latest.onPinnedChange?.(k, v)
+        rejectControlled()
+      },
     }),
   )
   const internal = useStore(model.store)
@@ -417,6 +430,7 @@ export function useGridColumns<Row extends Record<string, unknown> = Record<stri
     if (options.widths !== undefined) model.syncWidths(options.widths)
     if (options.pinned !== undefined) model.syncPinned(options.pinned)
   }
+  rejectControlled = rebase
   const apply = (write: () => void): void => {
     rebase()
     write()
@@ -615,6 +629,10 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
   return {
     model,
     sort: () => {
+      // Read the store unconditionally so every consumer computation keeps its
+      // subscription across a controlled -> uncontrolled handoff; the value is
+      // only used in the uncontrolled branch.
+      const current = state()
       const sort = options.sort
       if (sort !== undefined) return cloneSort(sort)
       return cloneSort(
@@ -622,10 +640,11 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
           ? hasUncontrolledSort
             ? uncontrolledSort
             : lastControlledSort
-          : state().sort,
+          : current.sort,
       )
     },
     multiSort: () => {
+      const current = state()
       const multiSortState = options.multiSortState
       if (multiSortState !== undefined) return cloneSorts(multiSortState)
       return cloneSorts(
@@ -633,7 +652,7 @@ export function useGridSorting<Row extends Record<string, unknown> = Record<stri
           ? hasUncontrolledMultiSort
             ? uncontrolledMultiSort
             : lastControlledMultiSort
-          : state().multiSort,
+          : current.multiSort,
       )
     },
     cycleSort: (key) => {
@@ -767,6 +786,7 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
   return {
     model,
     filters: () => {
+      const current = state()
       const filters = options.filters
       if (filters !== undefined) return cloneFilters(filters)
       return cloneFilters(
@@ -774,10 +794,11 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
           ? hasUncontrolledFilters
             ? uncontrolledFilters
             : lastControlledFilters
-          : state().filters,
+          : current.filters,
       )
     },
     filterValues: () => {
+      const current = state()
       const filterValues = options.filterValues
       if (filterValues !== undefined) return cloneFilterValues(filterValues)
       return cloneFilterValues(
@@ -785,7 +806,7 @@ export function useGridFiltering<Row extends Record<string, unknown> = Record<st
           ? hasUncontrolledFilterValues
             ? uncontrolledFilterValues
             : lastControlledFilterValues
-          : state().filterValues,
+          : current.filterValues,
       )
     },
   }

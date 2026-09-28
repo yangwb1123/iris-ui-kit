@@ -95,7 +95,7 @@
   const btnBase =
     'padding: var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px); font-size: var(--iris-font-size-sm, 13px); border-radius: var(--iris-radius-sm, 4px); cursor: pointer'
   const btnGhost = `${btnBase}; border: 1px solid var(--iris-border); background: transparent; color: var(--iris-foreground)`
-  const btnPrimary = `${btnBase}; border: none; background: var(--iris-primary); color: var(--iris-primary-foreground, #fff)`
+  const btnPrimary = `${btnBase}; border: none; background: var(--iris-primary); color: var(--iris-primary-foreground)`
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -115,7 +115,7 @@
         role="presentation"
         data-iris-tour-backdrop
         onpointerdown={close}
-        style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000"
+        style="position: fixed; inset: 0; background: var(--iris-backdrop, rgba(0, 0, 0, 0.5)); z-index: 1000"
       ></div>
 
       <!-- Spotlight -->
@@ -124,7 +124,7 @@
           data-iris-tour-spotlight
           style="position: fixed; top: {sl.top - 4}px; inset-inline-start: {sl.left -
             4}px; width: {sl.width + 8}px; height: {sl.height +
-            8}px; border: 2px solid var(--iris-primary); border-radius: var(--iris-radius-sm, 4px); box-shadow: 0 0 0 9999px var(--iris-mask, rgba(0,0,0,0.45)); z-index: 1001; pointer-events: none"
+            8}px; border: 2px solid var(--iris-primary); border-radius: var(--iris-radius-sm, 4px); box-shadow: 0 0 0 9999px var(--iris-backdrop, rgba(0, 0, 0, 0.5)); z-index: 1001; pointer-events: none"
         ></div>
       {/if}
 

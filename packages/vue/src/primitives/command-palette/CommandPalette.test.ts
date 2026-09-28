@@ -73,6 +73,10 @@ describe('@iris-ui-kit/vue IrisCommandPalette', () => {
     expect(document.querySelector('[data-iris-command-palette]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-input]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-list]')).not.toBeNull()
+    const backdrop = document.querySelector('[data-iris-command-palette-backdrop]')!
+    const style = backdrop.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba(0,0,0,0.4)')
     wrap.unmount()
   })
 
@@ -279,6 +283,19 @@ describe('@iris-ui-kit/vue IrisCommandPalette', () => {
     const shortcuts = document.querySelectorAll('[data-iris-command-palette-shortcut]')
     expect(shortcuts.length).toBe(2)
     expect(shortcuts[0]?.textContent).toBe('⌘O')
+    wrap.unmount()
+  })
+
+  it('group headers use the canonical letter-spacing token', async () => {
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
+    await nextTick()
+    const style =
+      document.querySelector('[data-iris-command-palette-group]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
     wrap.unmount()
   })
 })

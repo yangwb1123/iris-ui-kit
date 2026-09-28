@@ -1,0 +1,171 @@
+# pbatch 批次：token / RTL 纪律（第二批）
+#
+# 来源：docs/auto/reviews/token-discipline.md（pbatch 只读审查产出，15 条带
+# file:line 证据的 token/RTL/减动效缺陷）。本批只取其中**机械可验证、可用
+# audit:tokens 或定向测试守住**的 5 组；portal 主题传播（#1/#2）、菜单子项
+# RTL 键盘契约（#6）、Marquee 运行时 media query（#14）牵涉架构或跨端行为
+# 决策，留给后续批次/维护者判断。
+#
+# 串行执行：任务改同一棵树。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-token-rtl-batch2.yaml --dry-run
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-token-rtl-batch2.yaml --retries 1
+
+
+# ── 每个任务都带的通用硬约束（同样写进各任务 prompt）──────────────────────
+# 1. 只允许修改本任务点名的文件。禁止创建新脚本，禁止修改 ai-dev/**、
+#    scripts/**、docs/**、.changeset/**、CI 配置或其它组件。
+# 2. 不要"顺手"设计更大的工作流、调度脚本或无人值守循环；确有必要时把想法
+#    写在最终回复里交给人决定，不要落盘。
+# 3. 交付物就是最终回复里那段总结（改了什么、测试结果）；不要自己写文件。
+
+tasks:
+  # ── 1. Solid 进度条 indeterminate 引用了不存在的 keyframe（审查 P1-9）──
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、scripts/**、
+      docs/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Solid 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：`packages/solid/src/primitives/progress/IrisProgress.tsx:83`
+      引用 keyframe `iris-progress-slide`，而仓库里实际定义的是
+      `iris-progress-indeterminate`（react/vue/svelte 的 progress 源文件）。
+      结果：Solid 的 indeterminate 进度条**根本没有动画**——功能在 Solid 上
+      是坏的，不是风格差异。
+
+      任务：让 Solid 复用与其他三端同一套 progress 样式/keyframes：
+      - 如果 react/vue/svelte 共享一份样式常量或 keyframes 字符串，把它下沉到
+        core（或合适的共享位置）后四端共用；不要在 Solid 里再抄一份。
+      - indeterminate 与 determinate 的视觉/ARIA 语义保持不变。
+      - 补测试：断言 Solid indeterminate 时用到的 keyframe 名称与共享定义一致
+        （可对共享常量做快照断言），并断言渲染出的 style 引用该名称。
+
+      约束：只改 progress 相关文件；不顺手改 ProgressCircle/其它组件。
+      完成标准：`pnpm --filter @iris-ui-kit/solid test` 全绿、typecheck 无错，
+      `pnpm --filter @iris-ui-kit/core test` 全绿。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/token-batch2-solid-progress.md
+
+  # ── 2. Solid/Svelte 滑块 RTL 指针换算（审查 P1-3）────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、scripts/**、
+      docs/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Solid + Svelte 适配器维护者。仓库根 = 当前目录，
+      先读 AGENTS.md（RTL 必须用 CSS 逻辑属性，交互换算必须用方向感知逻辑）。
+
+      缺陷（已核实）：
+      `packages/solid/src/primitives/slider/IrisSlider.tsx:89-97`、
+      `packages/svelte/src/primitives/slider/IrisSlider.svelte:85-93`、
+      `packages/solid/src/primitives/range-slider/IrisRangeSlider.tsx:95-101`、
+      `packages/svelte/src/primitives/range-slider/IrisRangeSlider.svelte:85-91`
+      都按 LTR 做指针→比例换算，而 react/vue 已用 `getDirection` 感知方向。
+      结果：`dir="rtl"` 时，Solid/Svelte 的滑块往左拖数值反而变小——交互方向
+      与视觉方向相反，是实打实的 RTL 缺陷。
+
+      任务：在 Solid 与 Svelte 两端复用已有的方向感知逻辑（找 react/vue 用的
+      那个共享 helper，优先下沉到 core 供四端共用），使：
+      - 水平滑块/区间滑块在 RTL 下指针换算与 react/vue 完全一致；
+      - 垂直方向行为不变；键盘（方向键/Home/End）行为不变；
+      - 拖拽、点击轨道定位、边界夹取行为一致。
+
+      约束：只改 slider / range-slider 相关文件；补测试覆盖
+      (a) RTL 下从左端按下得到最小值、(b) RTL 下从右端按下得到最大值、
+      (c) LTR 行为不回归。测试里显式设置 dir（用 provider/props 的既有方式）。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/token-batch2-slider-rtl.md
+
+  # ── 3. Switch 拇指 / Select 箭头的物理 left-right（审查 P1-5、P1-4）────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、scripts/**、
+      docs/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的四适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实，RTL 下可见）：
+      - Switch 拇指物理左锚定：react `Switch.tsx:75-80`、vue `Switch.ts:63-68`、
+        solid `Switch.tsx:113-118`、svelte `Switch.svelte:72-77`；
+      - Select 的箭头与预留间距用物理 `right`/四边 padding：react
+        `SelectTrigger.tsx:67`、vue `Select.ts:317`、solid
+        `IrisSelect.tsx:400`、svelte `IrisSelect.svelte:359`。
+      AGENTS.md 明确要求方向相关一律用 CSS 逻辑属性。
+
+      任务：四端统一改成逻辑属性：
+      - Switch 拇指用 `inset-inline-start`（并让过渡属性跟着改，否则 RTL 下
+        开关动画不滑动），checked/unchecked 两态都要正确；
+      - Select 箭头用 `inset-inline-end`，padding 改成
+        `padding-inline-end`（或等价的逻辑写法），四端一致；
+      - 不要改变任何默认值、尺寸或交互语义。
+
+      约束：只改 switch / select 相关文件；补测试（四端各一条）断言 RTL 下
+      使用的是逻辑属性（例如断言内联样式里没有 `left:`/`right:` 定位箭头与
+      拇指，而是 `insetInlineEnd`/`inset-inline-end` 这类），并保留 LTR 断言。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/token-batch2-switch-select-rtl.md
+
+  # ── 4. 排版 token 名写错 + Solid/Svelte Tour 之外的硬编码（审查 P2-10）──
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、scripts/**、
+      docs/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的四适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：token 真相源是
+      `packages/tokens/src/tokens.ts:51` 的 `iris.font.letter.spacing.*`，经
+      `packages/theme/src/toCssVarName.ts` 变成 `--iris-font-letter-spacing-*`。
+      但四端 Divider 用了**不存在的** `--iris-letter-spacing-wide`
+      （react `Divider.tsx:84`，vue/solid/svelte 同处），所以那个 letter-spacing
+      从未生效；`scripts/audit-tokens.mjs:150-153` 还为它开了一个“已复核例外”，
+      于是没人发现。另有 solid/svelte 的 command palette 标题硬编码 `0.05em`。
+
+      任务：
+      - 把四端 Divider（以及其它使用该错误变量名的位置）迁移到规范变量
+        `--iris-font-letter-spacing-wide`；
+      - 删掉 `scripts/audit-tokens.mjs` 里那条 letter-spacing 例外；
+      - solid/svelte 的硬编码 `0.05em` 改用同一个 token；
+      - 补测试：断言渲染出的样式引用规范变量名，且 audit:tokens 不再需要
+        该例外（跑 `pnpm audit:tokens` 必须 clean）。
+
+      约束：不要顺手改别的 token；不要为了让审计通过而新增例外。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/token-batch2-typography-token.md
+
+  # ── 5. 深色主题下的硬编码 #fff 与 overlay 遮罩字面量（审查 P1-8、P1-7）──
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、scripts/**、
+      docs/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：
+      - `packages/solid/src/primitives/copy-button/IrisCopyButton.tsx:98` 与
+        `packages/vue/src/primitives/split-button/SplitButton.ts:83` 硬编码
+        `#fff`；split-button 的分隔线在多个适配器里用白色 rgba。深色主题的
+        foreground token 是深色，硬编码白字因此失去对比度控制。
+      - CommandPalette 的遮罩用裸 `rgba(...)`：react `CommandPalette.tsx:212`、
+        vue `CommandPalette.ts:173`、solid `IrisCommandPalette.tsx:172`、
+        svelte `IrisCommandPalette.svelte:149`；Image/Tour/Drawer 还有同类字面量。
+        Dialog/Drawer 已经用 `var(--iris-backdrop, …)`，overlay 之间因此不一致。
+
+      任务：
+      - 把这些硬编码白/浅色替换为语义 token（`--iris-primary-foreground` /
+        `--iris-success-foreground` / 相应的 divider token），四端一致；
+      - 把 overlay 遮罩统一到 `var(--iris-backdrop, …)`（若某处需要更深的
+        变体，用已声明的 token 而不是新字面量）；
+      - 补测试：断言渲染样式里不再出现这些字面量；深色主题下前景色来自 token。
+
+      约束：不要新增 token（除非要证明现有 token 集确实缺一个，并在最终回复里
+      说明理由）；不要改 overlay 的层级/交互语义。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/token-batch2-hardcoded-colors.md

@@ -20,6 +20,19 @@ describe('IrisCommandPalette', () => {
     // content is portalled to document.body
     expect(document.body.querySelector('[data-iris-command-palette]')).toBeTruthy()
     expect(document.body.querySelector('[data-iris-command-palette-item]')).toBeTruthy()
+    const style =
+      document.body.querySelector('[data-iris-command-palette-backdrop]')?.getAttribute('style') ??
+      ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba(0,0,0,0.4)')
+  })
+
+  it('group headers use the canonical letter-spacing token', () => {
+    render(IrisCommandPalette, { props: { open: true, items } })
+    const style =
+      document.body.querySelector('[data-iris-command-palette-group]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 
   it('filters items on query input', async () => {

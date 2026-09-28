@@ -185,7 +185,7 @@ export const IrisDrawerContent = defineComponent({
           style: {
             position: 'fixed',
             inset: '0',
-            background: 'rgba(0,0,0,.4)',
+            background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
             opacity: visible.value ? '1' : '0',
             transition: 'opacity 220ms ease',
           },

@@ -18,12 +18,15 @@ describe('@iris-ui-kit/react IrisDivider', () => {
     expect(el.getAttribute('aria-orientation')).toBe('vertical')
   })
 
-  it('label renders 3-column divider', () => {
+  it('label renders 3-column divider with the canonical letter-spacing token', () => {
     const { container } = render(<IrisDivider label="or" />)
     expect(container.querySelector('[data-iris-divider]')!.tagName).toBe('DIV')
     expect(container.querySelector('[data-iris-divider-label]')!.textContent).toBe('or')
     expect(container.querySelector('[data-iris-divider-line="before"]')).not.toBeNull()
     expect(container.querySelector('[data-iris-divider-line="after"]')).not.toBeNull()
+    const style = container.querySelector('[data-iris-divider]')!.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 
   it('children win over label prop', () => {

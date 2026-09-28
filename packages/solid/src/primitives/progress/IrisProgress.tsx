@@ -1,4 +1,6 @@
-import { mergeProps, splitProps, type JSX } from 'solid-js'
+import { PROGRESS_INDETERMINATE_ANIMATION } from '@iris-ui-kit/core'
+import { mergeProps, onMount, splitProps, type JSX } from 'solid-js'
+import { installProgressStyles } from './styles'
 
 export type IrisProgressTone = 'primary' | 'success' | 'warning' | 'danger'
 export type IrisProgressSize = 'sm' | 'md'
@@ -41,6 +43,8 @@ export function IrisProgress(props: IrisProgressProps): JSX.Element {
   )
   const [local, rest] = splitProps(merged, ['value', 'max', 'indeterminate', 'tone', 'size'])
 
+  onMount(installProgressStyles)
+
   const isIndeterminate = (): boolean =>
     local.indeterminate || local.value === null || local.value === undefined
 
@@ -79,9 +83,7 @@ export function IrisProgress(props: IrisProgressProps): JSX.Element {
           width: isIndeterminate() ? '50%' : `${percent()}%`,
           transition: isIndeterminate() ? undefined : 'width 200ms ease',
           'border-radius': '999px',
-          ...(isIndeterminate()
-            ? { animation: 'iris-progress-slide 1.4s ease-in-out infinite' }
-            : {}),
+          ...(isIndeterminate() ? { animation: PROGRESS_INDETERMINATE_ANIMATION } : {}),
         }}
       />
     </div>

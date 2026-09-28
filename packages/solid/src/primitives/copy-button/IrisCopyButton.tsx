@@ -95,7 +95,7 @@ export function IrisCopyButton(props: IrisCopyButtonProps): JSX.Element {
         background: copied()
           ? 'var(--iris-success, #10b981)'
           : 'var(--iris-surface, var(--iris-background))',
-        color: copied() ? '#fff' : 'var(--iris-foreground)',
+        color: copied() ? 'var(--iris-success-foreground)' : 'var(--iris-foreground)',
         cursor: local.disabled ? 'not-allowed' : 'pointer',
         opacity: local.disabled ? 0.6 : 1,
         transition: 'background-color 120ms ease, color 120ms ease',

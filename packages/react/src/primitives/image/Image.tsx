@@ -91,7 +91,7 @@ export function IrisImage({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
             cursor: 'zoom-out',
           }}
         >
@@ -117,8 +117,8 @@ export function IrisImage({
               height: 36,
               borderRadius: '50%',
               border: 'none',
-              background: 'rgba(0,0,0,0.5)',
-              color: 'var(--iris-primary-foreground, #fff)',
+              background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+              color: 'var(--iris-primary-foreground)',
               fontSize: 'var(--iris-font-size-2xl, 20px)',
               lineHeight: 1,
               cursor: 'pointer',

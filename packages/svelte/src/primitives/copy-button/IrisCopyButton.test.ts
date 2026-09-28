@@ -2,6 +2,8 @@ import { render, fireEvent } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { setClipboardHandler } from '@iris-ui-kit/core'
+import { darkTheme } from '@iris-ui-kit/tokens'
+import { applyTheme } from '@iris-ui-kit/theme'
 import IrisCopyButton from './IrisCopyButton.svelte'
 
 afterEach(() => {
@@ -23,6 +25,24 @@ describe('IrisCopyButton', () => {
     flushSync()
     expect(btn.getAttribute('data-copied')).toBe('true')
     expect(btn.textContent?.trim()).toBe('Copied')
+  })
+
+  it('uses the dark theme success foreground token for copied text', async () => {
+    const applied = applyTheme(darkTheme)
+    try {
+      const { container } = render(IrisCopyButton, { props: { text: 'hello' } })
+      const btn = container.querySelector('[data-iris-copy-button]')!
+      await fireEvent.click(btn)
+      flushSync()
+      const style = btn.getAttribute('style') ?? ''
+      expect(style).toContain('--iris-success-foreground')
+      expect(style).not.toContain('#fff')
+      expect(document.documentElement.style.getPropertyValue('--iris-success-foreground')).toBe(
+        darkTheme.colors['iris.success.foreground'],
+      )
+    } finally {
+      applied.revert()
+    }
   })
 
   it('calls oncopy when clicked', async () => {

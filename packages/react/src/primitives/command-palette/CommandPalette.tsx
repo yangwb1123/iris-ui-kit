@@ -209,7 +209,7 @@ export function IrisCommandPalette({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.4)',
+        background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
@@ -321,7 +321,7 @@ export function IrisCommandPalette({
             fontSize: 'var(--iris-font-size-xs, 12px)',
             fontWeight: 600,
             textTransform: 'uppercase',
-            letterSpacing: 'var(--iris-letter-spacing-wide, 0.04em)',
+            letterSpacing: 'var(--iris-font-letter-spacing-wide, 0.04em)',
             color: 'var(--iris-muted)',
           }}
         >

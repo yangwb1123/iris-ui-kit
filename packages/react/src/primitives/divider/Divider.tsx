@@ -81,7 +81,7 @@ export function IrisDivider({
         color: 'var(--iris-muted)',
         fontSize: 'var(--iris-font-size-xs, 12px)',
         textTransform: 'uppercase',
-        letterSpacing: 'var(--iris-letter-spacing-wide, 0.04em)',
+        letterSpacing: 'var(--iris-font-letter-spacing-wide, 0.04em)',
         ...style,
       }}
     >

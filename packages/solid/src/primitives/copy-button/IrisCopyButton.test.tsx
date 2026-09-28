@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
 import { setClipboardHandler } from '@iris-ui-kit/core'
+import { darkTheme } from '@iris-ui-kit/tokens'
+import { applyTheme } from '@iris-ui-kit/theme'
 import { IrisCopyButton } from './IrisCopyButton'
 
 afterEach(() => {
@@ -26,6 +28,24 @@ describe('IrisCopyButton', () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(btn.getAttribute('data-copied')).toBe('true')
     expect(btn.textContent).toBe('Copied')
+  })
+
+  it('uses the dark theme success foreground token for copied text', async () => {
+    const applied = applyTheme(darkTheme)
+    try {
+      const { container } = render(() => <IrisCopyButton text="hello" />)
+      const btn = container.querySelector('[data-iris-copy-button]') as HTMLButtonElement
+      fireEvent.click(btn)
+      await new Promise((r) => setTimeout(r, 0))
+      const style = btn.getAttribute('style') ?? ''
+      expect(style).toContain('--iris-success-foreground')
+      expect(style).not.toContain('#fff')
+      expect(document.documentElement.style.getPropertyValue('--iris-success-foreground')).toBe(
+        darkTheme.colors['iris.success.foreground'],
+      )
+    } finally {
+      applied.revert()
+    }
   })
 
   it('uses custom copiedLabel', async () => {

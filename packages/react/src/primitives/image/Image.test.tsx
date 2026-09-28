@@ -26,6 +26,14 @@ describe('@iris-ui-kit/react IrisImage', () => {
     fireEvent.click(img(container))
     expect(preview(container)).not.toBeNull()
     expect(preview(container)?.getAttribute('role')).toBe('dialog')
+    const overlayStyle = preview(container)?.getAttribute('style') ?? ''
+    const closeStyle =
+      container.querySelector('[data-iris-image-preview-close]')?.getAttribute('style') ?? ''
+    expect(overlayStyle).toContain('--iris-backdrop')
+    expect(overlayStyle).not.toContain('background: rgba')
+    expect(closeStyle).toContain('--iris-backdrop')
+    expect(closeStyle).toContain('--iris-primary-foreground')
+    expect(closeStyle).not.toContain('#fff')
   })
 
   it('preview=false disables click-to-open', () => {

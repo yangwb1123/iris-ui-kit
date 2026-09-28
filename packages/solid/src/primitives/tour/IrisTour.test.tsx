@@ -37,6 +37,14 @@ describe('IrisTour', () => {
     render(() => <IrisTour steps={steps} open={true} />)
     const card = document.body.querySelector('[data-iris-tour-card]')
     expect(card?.textContent).toContain('Welcome')
+    const backdropStyle =
+      document.body.querySelector('[data-iris-tour-backdrop]')?.getAttribute('style') ?? ''
+    const nextStyle =
+      document.body.querySelector('[data-iris-tour-next]')?.getAttribute('style') ?? ''
+    expect(backdropStyle).toContain('--iris-backdrop')
+    expect(backdropStyle).not.toContain('background: rgba')
+    expect(nextStyle).toContain('--iris-primary-foreground')
+    expect(nextStyle).not.toContain('#fff')
   })
 
   it('shows the step indicator in the default English locale', () => {

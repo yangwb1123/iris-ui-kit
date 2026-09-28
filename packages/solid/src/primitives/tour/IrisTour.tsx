@@ -40,7 +40,7 @@ const btnPrimary: JSX.CSSProperties = {
   ...btnBase,
   border: 'none',
   background: 'var(--iris-primary)',
-  color: 'var(--iris-primary-foreground, #fff)',
+  color: 'var(--iris-primary-foreground)',
 }
 
 export interface IrisTourProps {
@@ -157,7 +157,7 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
             style={{
               position: 'fixed',
               inset: '0',
-              background: 'rgba(0,0,0,0.45)',
+              background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
               'z-index': 1000,
             }}
           />
@@ -173,7 +173,7 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
                 height: `${sl()!.height + 8}px`,
                 border: '2px solid var(--iris-primary)',
                 'border-radius': 'var(--iris-radius-sm, 4px)',
-                'box-shadow': '0 0 0 9999px rgba(0,0,0,0.45)',
+                'box-shadow': '0 0 0 9999px var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
                 'z-index': 1001,
                 'pointer-events': 'none',
               }}

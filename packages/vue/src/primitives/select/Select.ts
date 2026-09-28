@@ -262,27 +262,38 @@ export const IrisSelect = defineComponent({
     }
 
     const sizeStyles = computed(() => {
-      const map: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> =
+      const map: Record<
+        IrisSelectSize,
         {
-          sm: {
-            padding:
-              'var(--iris-space-xxs, 4px) 24px var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-            fontSize: 'var(--iris-font-size-xs, 12px)',
-            minHeight: '28px',
-          },
-          md: {
-            padding:
-              'var(--iris-space-xs, 8px) var(--iris-space-xl, 24px) var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-            fontSize: 'var(--iris-font-size-md, 14px)',
-            minHeight: '34px',
-          },
-          lg: {
-            padding:
-              'var(--iris-space-xs, 8px) var(--iris-space-2xl, 32px) var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-            fontSize: 'var(--iris-font-size-lg, 16px)',
-            minHeight: '40px',
-          },
+          paddingBlock: string
+          paddingInlineStart: string
+          paddingInlineEnd: string
+          fontSize: string
+          minHeight: string
         }
+      > = {
+        sm: {
+          paddingBlock: 'var(--iris-space-xxs, 4px)',
+          paddingInlineStart: 'var(--iris-space-xs, 8px)',
+          paddingInlineEnd: '24px',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
+          minHeight: '28px',
+        },
+        md: {
+          paddingBlock: 'var(--iris-space-xs, 8px)',
+          paddingInlineStart: 'var(--iris-space-sm, 12px)',
+          paddingInlineEnd: 'var(--iris-space-xl, 24px)',
+          fontSize: 'var(--iris-font-size-md, 14px)',
+          minHeight: '34px',
+        },
+        lg: {
+          paddingBlock: 'var(--iris-space-xs, 8px)',
+          paddingInlineStart: 'var(--iris-space-sm, 12px)',
+          paddingInlineEnd: 'var(--iris-space-2xl, 32px)',
+          fontSize: 'var(--iris-font-size-lg, 16px)',
+          minHeight: '40px',
+        },
+      }
       return map[props.size]
     })
 
@@ -314,7 +325,7 @@ export const IrisSelect = defineComponent({
           height: '14',
           style: {
             position: 'absolute',
-            right: '8px',
+            insetInlineEnd: '8px',
             top: '50%',
             transform: 'translateY(-50%)',
             color: 'var(--iris-muted)',

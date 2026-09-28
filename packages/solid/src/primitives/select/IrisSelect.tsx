@@ -383,7 +383,9 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
           'font-family': 'inherit',
           position: 'relative',
           'min-width': '140px',
-          padding: sz().padding,
+          'padding-block': sz().paddingBlock,
+          'padding-inline-start': sz().paddingInlineStart,
+          'padding-inline-end': sz().paddingInlineEnd,
           'min-height': sz().minHeight,
           'font-size': sz().fontSize,
           ...(merged.style ?? {}),
@@ -397,7 +399,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
           height="14"
           style={{
             position: 'absolute',
-            right: '8px',
+            'inset-inline-end': '8px',
             top: '50%',
             transform: 'translateY(-50%)',
             color: 'var(--iris-muted)',

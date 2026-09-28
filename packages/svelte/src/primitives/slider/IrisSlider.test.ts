@@ -29,4 +29,47 @@ describe('IrisSlider', () => {
     expect(container.querySelector('[data-iris-slider-track]')).not.toBeNull()
     expect(container.querySelector('[data-iris-slider-fill]')).not.toBeNull()
   })
+
+  function mockTrackRect(container: HTMLElement): HTMLElement {
+    const track = container.querySelector('[data-iris-slider-track]') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ left: 0, right: 200, top: 0, bottom: 6, width: 200, height: 6 }) as DOMRect
+    return track
+  }
+
+  function pointerDownAt(track: HTMLElement, clientX: number): void {
+    const event = new Event('pointerdown', { bubbles: true, cancelable: true })
+    Object.assign(event, { clientX, clientY: 0, pointerId: 1 })
+    track.dispatchEvent(event)
+  }
+
+  it('maps RTL track endpoints from the right edge', () => {
+    const onchange = vi.fn()
+    const { container } = render(IrisSlider, {
+      props: { value: 50, dir: 'rtl', onchange },
+    })
+    const track = mockTrackRect(container)
+
+    pointerDownAt(track, 0)
+    flushSync()
+    expect(onchange).toHaveBeenLastCalledWith(100)
+    pointerDownAt(track, 200)
+    flushSync()
+    expect(onchange).toHaveBeenLastCalledWith(0)
+  })
+
+  it('keeps LTR track endpoints mapped from the left edge', () => {
+    const onchange = vi.fn()
+    const { container } = render(IrisSlider, {
+      props: { value: 50, dir: 'ltr', onchange },
+    })
+    const track = mockTrackRect(container)
+
+    pointerDownAt(track, 0)
+    flushSync()
+    expect(onchange).toHaveBeenLastCalledWith(0)
+    pointerDownAt(track, 200)
+    flushSync()
+    expect(onchange).toHaveBeenLastCalledWith(100)
+  })
 })

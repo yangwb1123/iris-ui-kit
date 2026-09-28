@@ -93,7 +93,7 @@ export const IrisCopyButton = defineComponent({
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
             background: copied.value ? 'var(--iris-success, #10b981)' : 'var(--iris-surface)',
-            color: copied.value ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
+            color: copied.value ? 'var(--iris-success-foreground)' : 'var(--iris-foreground)',
             cursor: props.disabled ? 'not-allowed' : 'pointer',
             opacity: props.disabled ? '0.6' : '1',
             transition: 'background-color 120ms ease, color 120ms ease',

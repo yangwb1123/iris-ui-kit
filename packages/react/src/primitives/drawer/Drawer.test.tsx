@@ -72,6 +72,9 @@ describe('@iris-ui-kit/react IrisDrawer', () => {
   it('defaultOpen mounts content immediately', () => {
     render(harness({ defaultOpen: true }))
     expect(dialog()).not.toBeNull()
+    const style = document.querySelector('[data-iris-drawer-backdrop]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba')
   })
 
   it('controlled open prop drives state', () => {

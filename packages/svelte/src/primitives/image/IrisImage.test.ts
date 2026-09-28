@@ -23,7 +23,16 @@ describe('@iris-ui-kit/svelte IrisImage', () => {
     const { container } = render(IrisImage, { props: { src: '/test.jpg', preview: true } })
     await fireEvent.click(container.querySelector('img')!)
     flushSync()
-    expect(container.querySelector('[data-iris-image-preview]')).not.toBeNull()
+    const overlay = container.querySelector('[data-iris-image-preview]')
+    expect(overlay).not.toBeNull()
+    const overlayStyle = overlay?.getAttribute('style') ?? ''
+    const closeStyle =
+      container.querySelector('[data-iris-image-preview-close]')?.getAttribute('style') ?? ''
+    expect(overlayStyle).toContain('--iris-backdrop')
+    expect(overlayStyle).not.toContain('background: rgba')
+    expect(closeStyle).toContain('--iris-backdrop')
+    expect(closeStyle).toContain('--iris-primary-foreground')
+    expect(closeStyle).not.toContain('#fff')
   })
 
   it('does not open preview when preview=false', async () => {

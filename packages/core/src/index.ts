@@ -179,6 +179,11 @@ export {
   type ValueDistributionEntry,
 } from './value-distribution'
 export { matchConditionalStyles, type ConditionalStyleRule } from './conditional-styles'
+export {
+  PROGRESS_INDETERMINATE_ANIMATION,
+  PROGRESS_INDETERMINATE_KEYFRAME,
+  PROGRESS_STYLES,
+} from './progress'
 export { maskValue, type MaskKind } from './mask'
 export {
   applyTableMask,

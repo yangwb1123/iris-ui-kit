@@ -86,7 +86,7 @@ export function IrisSplitButton({
     variant === 'primary'
       ? {
           background: 'var(--iris-primary)',
-          color: 'var(--iris-primary-foreground, #fff)',
+          color: 'var(--iris-primary-foreground)',
           border: '1px solid var(--iris-primary)',
         }
       : {
@@ -143,7 +143,7 @@ export function IrisSplitButton({
             ...colors,
             borderInlineStart:
               variant === 'primary'
-                ? '1px solid rgba(255,255,255,0.3)'
+                ? '1px solid var(--iris-border)'
                 : '1px solid var(--iris-border)',
             padding: '0 8px',
             minHeight: sz.height,

@@ -80,7 +80,7 @@ export const IrisSplitButton = defineComponent({
         props.variant === 'primary'
           ? {
               background: 'var(--iris-primary)',
-              color: '#fff',
+              color: 'var(--iris-primary-foreground)',
               border: '1px solid var(--iris-primary)',
             }
           : {
@@ -133,7 +133,7 @@ export const IrisSplitButton = defineComponent({
                 ...colors,
                 borderInlineStart:
                   props.variant === 'primary'
-                    ? '1px solid rgba(255,255,255,0.3)'
+                    ? '1px solid var(--iris-border)'
                     : '1px solid var(--iris-border)',
                 padding: '0 var(--iris-space-xs, 8px)',
                 minHeight: sz.height,

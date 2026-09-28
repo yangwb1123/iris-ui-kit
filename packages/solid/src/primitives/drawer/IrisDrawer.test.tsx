@@ -46,6 +46,10 @@ describe('IrisDrawer', () => {
     // Portal renders into document.body
     expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
     expect(document.body.querySelector('[data-iris-drawer-title]')).not.toBeNull()
+    const style =
+      document.body.querySelector('[data-iris-drawer-backdrop]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba')
   })
 
   it('close button is rendered inside drawer', () => {

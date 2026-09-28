@@ -1,7 +1,10 @@
-import { render, fireEvent } from '@testing-library/svelte'
+import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import IrisSwitch from './Switch.svelte'
+import IrisSelect from '../select/IrisSelect.svelte'
+
+afterEach(cleanup)
 
 describe('@iris-ui-kit/svelte IrisSwitch', () => {
   it('renders an input with role=switch', () => {
@@ -73,5 +76,50 @@ describe('@iris-ui-kit/svelte IrisSwitch', () => {
     expect(
       container.querySelector('[data-iris-switch]')!.getAttribute('data-iris-switch-size'),
     ).toBe('lg')
+  })
+
+  it('uses logical inline styles in RTL and LTR', async () => {
+    const previousDir = document.documentElement.getAttribute('dir')
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      const switchView = render(IrisSwitch, { props: { checked: false } })
+      const selectView = render(IrisSelect, {
+        props: { items: [{ value: 'a', label: 'Alpha' }] },
+      })
+
+      const assertStyles = (thumbOffset: string) => {
+        const thumb = switchView.container.querySelector(
+          '[data-iris-switch] > span > span',
+        ) as HTMLSpanElement
+        const trigger = selectView.container.querySelector(
+          '[data-iris-select-trigger]',
+        ) as HTMLButtonElement
+        const arrow = trigger.querySelector('svg') as SVGElement
+        expect(thumb.style.getPropertyValue('inset-inline-start')).toBe(thumbOffset)
+        expect(thumb.style.left).toBe('')
+        expect(thumb.style.transition).toContain('inset-inline-start')
+        expect(arrow.style.getPropertyValue('inset-inline-end')).toBe('8px')
+        expect(arrow.style.right).toBe('')
+        expect(trigger.style.getPropertyValue('padding-block')).toBe('var(--iris-padding-sm, 6px)')
+        expect(trigger.style.getPropertyValue('padding-inline-start')).toBe(
+          'var(--iris-padding-md, 12px)',
+        )
+        expect(trigger.style.getPropertyValue('padding-inline-end')).toBe(
+          'var(--iris-space-xl, 24px)',
+        )
+      }
+
+      assertStyles('2px')
+      await switchView.rerender({ checked: true })
+      flushSync()
+      assertStyles('calc(36px - 16px - 2px)')
+      document.documentElement.setAttribute('dir', 'ltr')
+      await switchView.rerender({ checked: false })
+      flushSync()
+      assertStyles('2px')
+    } finally {
+      if (previousDir === null) document.documentElement.removeAttribute('dir')
+      else document.documentElement.setAttribute('dir', previousDir)
+    }
   })
 })

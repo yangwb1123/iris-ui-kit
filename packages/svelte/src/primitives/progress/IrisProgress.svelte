@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { PROGRESS_INDETERMINATE_ANIMATION } from '@iris-ui-kit/core'
+  import { onMount } from 'svelte'
+  import { installProgressStyles } from './styles'
+
   type ProgressTone = 'primary' | 'success' | 'warning' | 'danger'
   type ProgressSize = 'sm' | 'md'
 
@@ -29,6 +33,8 @@
     [key: string]: unknown
   } = $props()
 
+  onMount(installProgressStyles)
+
   const isIndeterminate = $derived(indeterminate || value === null || value === undefined)
   const clamped = $derived(
     isIndeterminate || value === null ? 0 : Math.max(0, Math.min(max, value)),
@@ -41,31 +47,10 @@
 
   const barStyle = $derived(
     isIndeterminate
-      ? `background:var(${TONE_TO_VAR[tone]}); width:40%; animation:iris-progress-indeterminate 1.4s ease infinite; height:100%; border-radius:999px;`
+      ? `background:var(${TONE_TO_VAR[tone]}); width:40%; animation:${PROGRESS_INDETERMINATE_ANIMATION}; height:100%; border-radius:999px;`
       : `background:var(${TONE_TO_VAR[tone]}); width:${percent}%; height:100%; border-radius:999px; transition:width 200ms ease;`,
   )
 </script>
-
-<svelte:head>
-  <style>
-    @keyframes iris-progress-indeterminate {
-      0% {
-        transform: translateX(-100%);
-      }
-      100% {
-        transform: translateX(350%);
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      @keyframes iris-progress-indeterminate {
-        0%,
-        100% {
-          transform: translateX(0);
-        }
-      }
-    }
-  </style>
-</svelte:head>
 
 <div
   {...rest}

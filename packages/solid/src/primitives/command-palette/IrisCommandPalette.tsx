@@ -169,7 +169,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
           'align-items': 'flex-start',
           'justify-content': 'center',
           'padding-top': '15vh',
-          background: 'rgba(0,0,0,0.4)',
+          background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
           'z-index': '1000',
         }}
         onClick={(e) => {
@@ -252,7 +252,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                           'font-weight': '600',
                           color: 'var(--iris-muted)',
                           'text-transform': 'uppercase',
-                          'letter-spacing': '0.05em',
+                          'letter-spacing': 'var(--iris-font-letter-spacing-wide, 0.04em)',
                         }}
                       >
                         {group}
@@ -280,7 +280,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                               'border-radius': 'var(--iris-radius-sm, 4px)',
                               background: isActive() ? 'var(--iris-primary)' : 'transparent',
                               color: isActive()
-                                ? 'var(--iris-primary-foreground, #fff)'
+                                ? 'var(--iris-primary-foreground)'
                                 : item.disabled
                                   ? 'var(--iris-muted)'
                                   : 'var(--iris-foreground)',

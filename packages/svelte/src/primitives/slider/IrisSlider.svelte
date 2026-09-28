@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getDirection } from '@iris-ui-kit/theme'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
@@ -89,7 +90,8 @@
     let ratio: number
     if (isHorizontal) {
       if (rect.width <= 0) return value
-      ratio = (clientX - rect.left) / rect.width
+      const rtl = getDirection(track.closest<HTMLElement>('[data-iris-dir],[dir]')) === 'rtl'
+      ratio = (rtl ? rect.right - clientX : clientX - rect.left) / rect.width
     } else {
       if (rect.height <= 0) return value
       ratio = 1 - (clientY - rect.top) / rect.height

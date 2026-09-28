@@ -17,6 +17,13 @@ describe('@iris-ui-kit/react IrisTour', () => {
     const { container } = render(<IrisTour steps={STEPS} defaultOpen />)
     expect(container.querySelector('[data-iris-tour-title]')?.textContent).toBe('A')
     expect(container.querySelector('[data-iris-tour-indicator]')?.textContent).toBe('Step 1 of 3')
+    const backdropStyle =
+      container.querySelector('[data-iris-tour-backdrop]')?.getAttribute('style') ?? ''
+    const nextStyle = container.querySelector('[data-iris-tour-next]')?.getAttribute('style') ?? ''
+    expect(backdropStyle).toContain('--iris-backdrop')
+    expect(backdropStyle).not.toContain('background: rgba')
+    expect(nextStyle).toContain('--iris-primary-foreground')
+    expect(nextStyle).not.toContain('#fff')
   })
 
   it('Next advances and Prev goes back', () => {

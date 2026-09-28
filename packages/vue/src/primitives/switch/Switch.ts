@@ -60,12 +60,12 @@ export const IrisSwitch = defineComponent({
         position: 'absolute',
         top: '50%',
         transform: 'translateY(-50%)',
-        left: offset,
+        insetInlineStart: offset,
         width: dims.value.thumb,
         height: dims.value.thumb,
         background: 'var(--iris-background)',
         borderRadius: '999px',
-        transition: 'left var(--iris-transition-fast, 150ms) ease',
+        transition: 'inset-inline-start var(--iris-transition-fast, 150ms) ease',
         boxShadow: 'var(--iris-shadow-sm)',
       }
     })

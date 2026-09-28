@@ -18,7 +18,20 @@ describe('IrisCommandPalette', () => {
 
   it('renders when open=true', () => {
     const { container } = render(() => <IrisCommandPalette open items={items} />)
-    expect(container.querySelector('[data-iris-command-palette]')).not.toBeNull()
+    const palette = container.querySelector('[data-iris-command-palette]')
+    expect(palette).not.toBeNull()
+    const style = palette?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba(0,0,0,0.4)')
+  })
+
+  it('group headers use the canonical letter-spacing token', () => {
+    const { container } = render(() => <IrisCommandPalette open items={items} />)
+    const style =
+      container.querySelector('[data-iris-command-palette-group] > div')?.getAttribute('style') ??
+      ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 
   it('shows all items when open with no query', () => {

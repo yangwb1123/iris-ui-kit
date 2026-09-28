@@ -14,6 +14,12 @@ describe('IrisTour', () => {
     const w = mount(IrisTour, { props: { steps: STEPS, open: true } })
     expect(w.find('[data-iris-tour-title]').text()).toBe('A')
     expect(w.find('[data-iris-tour-indicator]').text()).toBe('Step 1 of 3')
+    const backdropStyle = w.find('[data-iris-tour-backdrop]').attributes('style') ?? ''
+    const nextStyle = w.find('[data-iris-tour-next]').attributes('style') ?? ''
+    expect(backdropStyle).toContain('--iris-backdrop')
+    expect(backdropStyle).not.toContain('background: rgba')
+    expect(nextStyle).toContain('--iris-primary-foreground')
+    expect(nextStyle).not.toContain('#fff')
   })
 
   it('Next advances and Prev goes back', async () => {

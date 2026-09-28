@@ -89,7 +89,7 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
     merged.variant === 'primary'
       ? {
           background: 'var(--iris-primary)',
-          color: 'var(--iris-primary-foreground, #fff)',
+          color: 'var(--iris-primary-foreground)',
           border: '1px solid var(--iris-primary)',
         }
       : {
@@ -147,7 +147,7 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
             ...colors(),
             'border-inline-start':
               merged.variant === 'primary'
-                ? '1px solid rgba(255,255,255,0.3)'
+                ? '1px solid var(--iris-border)'
                 : '1px solid var(--iris-border)',
             padding: '0 8px',
             'min-height': sz().height,

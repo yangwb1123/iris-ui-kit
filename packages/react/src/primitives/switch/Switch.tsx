@@ -72,12 +72,12 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
     position: 'absolute',
     top: '50%',
     transform: 'translateY(-50%)',
-    left: thumbOffset,
+    insetInlineStart: thumbOffset,
     width: dim.thumb,
     height: dim.thumb,
     background: 'var(--iris-background)',
     borderRadius: 999,
-    transition: 'left var(--iris-transition-fast, 150ms) ease',
+    transition: 'inset-inline-start var(--iris-transition-fast, 150ms) ease',
     boxShadow: 'var(--iris-shadow-sm)',
   }
 

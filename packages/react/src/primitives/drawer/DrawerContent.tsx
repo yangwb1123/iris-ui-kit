@@ -173,7 +173,7 @@ export const IrisDrawerContent = React.forwardRef<HTMLDivElement, IrisDrawerCont
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.4)',
+          background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
           opacity: visible ? 1 : 0,
           transition: `opacity ${EXIT_DURATION_MS}ms ease`,
           zIndex: 1200,

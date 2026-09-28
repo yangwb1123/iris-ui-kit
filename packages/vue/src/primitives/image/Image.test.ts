@@ -22,6 +22,13 @@ describe('IrisImage', () => {
     await w.find('[data-iris-image]').trigger('click')
     expect(w.find('[data-iris-image-preview]').exists()).toBe(true)
     expect(w.find('[data-iris-image-preview]').attributes('role')).toBe('dialog')
+    const overlayStyle = w.find('[data-iris-image-preview]').attributes('style') ?? ''
+    const closeStyle = w.find('[data-iris-image-preview-close]').attributes('style') ?? ''
+    expect(overlayStyle).toContain('--iris-backdrop')
+    expect(overlayStyle).not.toContain('background: rgba')
+    expect(closeStyle).toContain('--iris-backdrop')
+    expect(closeStyle).toContain('--iris-primary-foreground')
+    expect(closeStyle).not.toContain('#fff')
   })
 
   it('preview=false disables click-to-open', async () => {

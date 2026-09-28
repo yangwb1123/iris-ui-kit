@@ -34,4 +34,41 @@ describe('IrisSlider', () => {
     fireEvent.keyDown(thumb, { key: 'ArrowRight' })
     expect(onChange).toHaveBeenCalledWith(51)
   })
+
+  function mockTrackRect(): HTMLElement {
+    const track = document.querySelector('[data-iris-slider-track]') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ left: 0, right: 200, top: 0, bottom: 6, width: 200, height: 6 }) as DOMRect
+    return track
+  }
+
+  it('maps RTL track endpoints from the right edge', () => {
+    const onChange = vi.fn()
+    render(() => (
+      <div dir="rtl">
+        <IrisSlider defaultValue={50} onChange={onChange} />
+      </div>
+    ))
+    const track = mockTrackRect()
+
+    fireEvent.click(track, { clientX: 0 })
+    expect(onChange).toHaveBeenLastCalledWith(100)
+    fireEvent.click(track, { clientX: 200 })
+    expect(onChange).toHaveBeenLastCalledWith(0)
+  })
+
+  it('keeps LTR track endpoints mapped from the left edge', () => {
+    const onChange = vi.fn()
+    render(() => (
+      <div dir="ltr">
+        <IrisSlider defaultValue={50} onChange={onChange} />
+      </div>
+    ))
+    const track = mockTrackRect()
+
+    fireEvent.click(track, { clientX: 0 })
+    expect(onChange).toHaveBeenLastCalledWith(0)
+    fireEvent.click(track, { clientX: 200 })
+    expect(onChange).toHaveBeenLastCalledWith(100)
+  })
 })

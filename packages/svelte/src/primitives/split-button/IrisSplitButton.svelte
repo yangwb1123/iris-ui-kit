@@ -75,7 +75,7 @@
     isPrimary
       ? {
           background: 'var(--iris-primary)',
-          color: 'var(--iris-primary-foreground, #fff)',
+          color: 'var(--iris-primary-foreground)',
           border: '1px solid var(--iris-primary)',
         }
       : {
@@ -158,7 +158,7 @@
       disabled={disabled || undefined}
       onclick={handleChevronClick}
       style="background: {colors.background}; color: {colors.color}; border-inline-start: {isPrimary
-        ? '1px solid rgba(255,255,255,0.3)'
+        ? '1px solid var(--iris-border)'
         : '1px solid var(--iris-border)'}; border-top: {colors.border}; border-right: {colors.border}; border-bottom: {colors.border}; padding: 0 8px; min-height: {sz.height}; font-size: var(--iris-font-size-xs, 12px); border-start-end-radius: var(--iris-radius-md, 6px); border-end-end-radius: var(--iris-radius-md, 6px); cursor: {disabled
         ? 'not-allowed'
         : 'pointer'}; opacity: {disabled ? '0.6' : '1'}; display: inline-flex; align-items: center"

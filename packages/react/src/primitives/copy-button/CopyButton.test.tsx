@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { setClipboardHandler } from '@iris-ui-kit/core'
+import { darkTheme } from '@iris-ui-kit/tokens'
+import { applyTheme } from '@iris-ui-kit/theme'
 import { IrisCopyButton } from './CopyButton'
 
 afterEach(() => {
@@ -29,6 +31,23 @@ describe('@iris-ui-kit/react IrisCopyButton', () => {
     expect(onCopy).toHaveBeenCalledWith('hello')
     expect(btn(container).getAttribute('data-copied')).toBe('true')
     expect(btn(container).textContent).toBe('Copied')
+  })
+
+  it('uses the dark theme success foreground token for copied text', async () => {
+    const applied = applyTheme(darkTheme)
+    try {
+      const { container } = render(<IrisCopyButton text="hello" />)
+      fireEvent.click(btn(container))
+      await act(async () => {})
+      const style = btn(container).getAttribute('style') ?? ''
+      expect(style).toContain('--iris-success-foreground')
+      expect(style).not.toContain('#fff')
+      expect(document.documentElement.style.getPropertyValue('--iris-success-foreground')).toBe(
+        darkTheme.colors['iris.success.foreground'],
+      )
+    } finally {
+      applied.revert()
+    }
   })
 
   it('routes the copy through a host clipboard handler, skipping navigator.clipboard', async () => {

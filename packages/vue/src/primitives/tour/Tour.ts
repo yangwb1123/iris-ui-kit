@@ -30,7 +30,7 @@ const btnPrimary: Record<string, string> = {
   ...btnBase,
   border: 'none',
   background: 'var(--iris-primary)',
-  color: 'var(--iris-primary-foreground, #fff)',
+  color: 'var(--iris-primary-foreground)',
 }
 
 /**
@@ -126,7 +126,12 @@ export const IrisTour = defineComponent({
         h('div', {
           'data-iris-tour-backdrop': '',
           onClick: close,
-          style: { position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.45)', zIndex: '1000' },
+          style: {
+            position: 'fixed',
+            inset: '0',
+            background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+            zIndex: '1000',
+          },
         }),
         spotlit && sl
           ? h('div', {
@@ -139,8 +144,7 @@ export const IrisTour = defineComponent({
                 height: `${sl.height + 8}px`,
                 border: '2px solid var(--iris-primary)',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
-                boxShadow:
-                  '0 0 0 9999px color-mix(in srgb, var(--iris-foreground) 45%, transparent)',
+                boxShadow: '0 0 0 9999px var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
                 zIndex: '1001',
                 pointerEvents: 'none',
               },

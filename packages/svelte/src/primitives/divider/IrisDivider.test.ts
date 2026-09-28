@@ -19,9 +19,12 @@ describe('@iris-ui-kit/svelte IrisDivider', () => {
     expect(el!.getAttribute('role')).toBe('separator')
   })
 
-  it('renders label variant with three spans when label prop is set', () => {
+  it('renders label variant with the canonical letter-spacing token', () => {
     const { container } = render(IrisDivider, { props: { label: 'OR' } })
     expect(container.querySelector('[data-iris-divider-label]')).not.toBeNull()
     expect(container.querySelector('[data-iris-divider-has-label="true"]')).not.toBeNull()
+    const style = container.querySelector('[data-iris-divider]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 })

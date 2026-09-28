@@ -98,7 +98,7 @@ export function IrisCopyButton({
         border: '1px solid var(--iris-border)',
         borderRadius: 'var(--iris-radius-md, 6px)',
         background: copied ? 'var(--iris-success, #10b981)' : 'var(--iris-surface)',
-        color: copied ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
+        color: copied ? 'var(--iris-success-foreground)' : 'var(--iris-foreground)',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.6 : 1,
         transition: 'background-color 120ms ease, color 120ms ease',

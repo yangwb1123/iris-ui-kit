@@ -51,6 +51,9 @@ describe('IrisDrawer', () => {
     const backdrop = document.querySelector('[data-iris-drawer-backdrop]')
     expect(backdrop).not.toBeNull()
     expect(backdrop?.getAttribute('data-state')).toBe('open')
+    const style = backdrop?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba')
   })
 
   it('aria-expanded on trigger reflects open state', async () => {

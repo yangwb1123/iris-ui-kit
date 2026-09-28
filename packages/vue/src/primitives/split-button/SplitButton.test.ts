@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { darkTheme } from '@iris-ui-kit/tokens'
+import { applyTheme } from '@iris-ui-kit/theme'
 import { IrisSplitButton } from './SplitButton'
 
 describe('IrisSplitButton', () => {
@@ -8,6 +10,28 @@ describe('IrisSplitButton', () => {
     expect(w.find('[data-iris-split-button-main]').text()).toBe('Save')
     await w.find('[data-iris-split-button-main]').trigger('click')
     expect(w.emitted('click')).toBeTruthy()
+  })
+
+  it('uses dark-theme foreground and divider tokens for the primary variant', () => {
+    const applied = applyTheme(darkTheme)
+    try {
+      const w = mount(IrisSplitButton, {
+        props: { actions: [{ key: 'a', label: 'A' }] },
+        slots: { default: 'Save' },
+      })
+      const mainStyle = w.find('[data-iris-split-button-main]').attributes('style') ?? ''
+      const triggerStyle = w.find('[data-iris-split-button-trigger]').attributes('style') ?? ''
+      expect(mainStyle).toContain('--iris-primary-foreground')
+      expect(mainStyle).not.toContain('#fff')
+      expect(triggerStyle).toContain('--iris-border')
+      expect(triggerStyle).not.toContain('rgba(255,255,255,0.3)')
+      expect(document.documentElement.style.getPropertyValue('--iris-primary-foreground')).toBe(
+        darkTheme.colors['iris.primary.foreground'],
+      )
+      w.unmount()
+    } finally {
+      applied.revert()
+    }
   })
 
   it('renders a caret when actions are provided; click toggles the menu', async () => {

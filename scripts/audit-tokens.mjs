@@ -123,7 +123,6 @@ const KNOWN_EXCEPTIONS = {
 //   --iris-anim-*       floating entrance animations (floating/animations.ts)
 //   --iris-cell-bg      Table row hover/selected (--iris-cell-bg var)
 //   --iris-row-bg       Table row hover (solid/svelte)
-//   --iris-letter-spacing-wide  theme token (iris.font.letter.spacing.wide)
 // Cross-framework drift exemptions (reviewed 2026-08-07):
 //   --iris-anim-*     animation CSS vars: react consumes via ANIM_* constants
 //                     (defined in floating/animations.ts), vue/svelte inline —
@@ -150,7 +149,6 @@ const DRIFT_EXEMPT = new Set([
 const RUNTIME_INJECTED_VARS = new Set([
   '--iris-anim-dialog', '--iris-anim-popover', '--iris-anim-toast',
   '--iris-anim-tooltip', '--iris-cell-bg', '--iris-row-bg',
-  '--iris-letter-spacing-wide',
   // grid 批 CL: Table expand-animation keyframes (Table.tsx TABLE_ROW_CSS)
   '--iris-duration-md',
   '--iris-table-expand-max',

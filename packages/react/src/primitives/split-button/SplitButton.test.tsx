@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { darkTheme } from '@iris-ui-kit/tokens'
+import { applyTheme } from '@iris-ui-kit/theme'
 import { IrisSplitButton } from './SplitButton'
 
 afterEach(() => cleanup())
@@ -15,6 +17,26 @@ describe('@iris-ui-kit/react IrisSplitButton', () => {
     expect(main(container).textContent).toBe('Save')
     fireEvent.click(main(container))
     expect(onClick).toHaveBeenCalled()
+  })
+
+  it('uses dark-theme foreground and divider tokens for the primary variant', () => {
+    const applied = applyTheme(darkTheme)
+    try {
+      const { container } = render(
+        <IrisSplitButton actions={[{ key: 'a', label: 'A' }]}>Save</IrisSplitButton>,
+      )
+      const mainStyle = main(container).getAttribute('style') ?? ''
+      const triggerStyle = trigger(container)?.getAttribute('style') ?? ''
+      expect(mainStyle).toContain('--iris-primary-foreground')
+      expect(mainStyle).not.toContain('#fff')
+      expect(triggerStyle).toContain('--iris-border')
+      expect(triggerStyle).not.toContain('rgba(255,255,255,0.3)')
+      expect(document.documentElement.style.getPropertyValue('--iris-primary-foreground')).toBe(
+        darkTheme.colors['iris.primary.foreground'],
+      )
+    } finally {
+      applied.revert()
+    }
   })
 
   it('renders a caret when actions are provided; click toggles the menu', () => {

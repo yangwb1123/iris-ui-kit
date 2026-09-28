@@ -82,7 +82,7 @@ export function IrisImage(props: IrisImageProps): JSX.Element {
             display: 'flex',
             'align-items': 'center',
             'justify-content': 'center',
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
             cursor: 'zoom-out',
           }}
         >
@@ -108,8 +108,8 @@ export function IrisImage(props: IrisImageProps): JSX.Element {
               height: '36px',
               'border-radius': '50%',
               border: 'none',
-              background: 'rgba(0, 0, 0, 0.5)',
-              color: 'var(--iris-primary-foreground, #fff)',
+              background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+              color: 'var(--iris-primary-foreground)',
               'font-size': 'var(--iris-font-size-2xl, 20px)',
               'line-height': '1',
               cursor: 'pointer',

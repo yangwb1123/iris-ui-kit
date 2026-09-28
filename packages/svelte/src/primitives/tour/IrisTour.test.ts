@@ -20,6 +20,13 @@ describe('IrisTour', () => {
   it('renders tour when open', () => {
     render(IrisTour, { props: { steps, open: true } })
     expect(document.querySelector('[data-iris-tour-card]')).not.toBeNull()
+    const backdropStyle =
+      document.querySelector('[data-iris-tour-backdrop]')?.getAttribute('style') ?? ''
+    const nextStyle = document.querySelector('[data-iris-tour-next]')?.getAttribute('style') ?? ''
+    expect(backdropStyle).toContain('--iris-backdrop')
+    expect(backdropStyle).not.toContain('background: rgba')
+    expect(nextStyle).toContain('--iris-primary-foreground')
+    expect(nextStyle).not.toContain('#fff')
   })
 
   it('shows the first step title', () => {

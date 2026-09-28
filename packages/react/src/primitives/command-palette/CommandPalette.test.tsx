@@ -64,6 +64,10 @@ describe('@iris-ui-kit/react IrisCommandPalette', () => {
     expect(document.querySelector('[data-iris-command-palette]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-input]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-list]')).not.toBeNull()
+    const backdrop = document.querySelector('[data-iris-command-palette-backdrop]')!
+    const style = backdrop.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-backdrop')
+    expect(style).not.toContain('background: rgba(0,0,0,0.4)')
   })
 
   it('dialog/search/list aria-labels default to English and are localizable via i18n', () => {
@@ -197,6 +201,14 @@ describe('@iris-ui-kit/react IrisCommandPalette', () => {
     const shortcuts = document.querySelectorAll('[data-iris-command-palette-shortcut]')
     expect(shortcuts.length).toBe(2)
     expect(shortcuts[0]?.textContent).toBe('⌘O')
+  })
+
+  it('group headers use the canonical letter-spacing token', () => {
+    render(<IrisCommandPalette open items={items} />)
+    const style =
+      document.querySelector('[data-iris-command-palette-group]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 })
 

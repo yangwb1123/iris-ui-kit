@@ -16,12 +16,15 @@ describe('IrisDivider', () => {
     expect(w.attributes('aria-orientation')).toBe('vertical')
   })
 
-  it('label prop renders text + two lines', () => {
+  it('label prop renders text + two lines with the canonical letter-spacing token', () => {
     const w = mount(IrisDivider, { props: { label: 'or' } })
     expect(w.element.tagName).toBe('DIV')
     expect(w.find('[data-iris-divider-label]').text()).toBe('or')
     expect(w.find('[data-iris-divider-line="before"]').exists()).toBe(true)
     expect(w.find('[data-iris-divider-line="after"]').exists()).toBe(true)
+    const style = w.attributes('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 
   it('label slot wins over the label prop', () => {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getDirection } from '@iris-ui-kit/theme'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
@@ -86,7 +87,8 @@
     const track = trackEl
     if (!track) return startVal
     const rect = track.getBoundingClientRect()
-    const rel = (clientX - rect.left) / Math.max(1, rect.width)
+    const rtl = getDirection(track.closest<HTMLElement>('[data-iris-dir],[dir]')) === 'rtl'
+    const rel = (rtl ? rect.right - clientX : clientX - rect.left) / Math.max(1, rect.width)
     return min + Math.max(0, Math.min(1, rel)) * (max - min)
   }
 

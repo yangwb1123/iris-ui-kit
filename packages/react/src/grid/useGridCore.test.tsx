@@ -31,12 +31,20 @@ import { useGridSorting } from './useGridSorting'
  * a tick later, and the `dispose` assertion then fails for reasons that have
  * nothing to do with the code under test. Drain microtasks and let React
  * settle instead of assuming one tick.
+ *
+ * Pass `until` when the caller has an observable post-condition: we keep
+ * draining (bounded) until it holds, so a slow machine costs iterations rather
+ * than a red test. A fixed number of ticks is a guess; a condition is not.
  */
-async function flushTeardown(): Promise<void> {
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
+async function flushTeardown(until?: () => boolean): Promise<void> {
+  const maxTurns = 50
+  for (let turn = 0; turn < maxTurns; turn += 1) {
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    if (!until || until()) return
+  }
 }
 
 describe('useGridCore', () => {
@@ -89,7 +97,11 @@ describe('useGridCore', () => {
         <Harness />
       </React.StrictMode>,
     )
-    await flushTeardown()
+    await flushTeardown(() =>
+      instances.every(
+        (instance) => instance.core === liveCore || instance.core.status === 'destroyed',
+      ),
+    )
     const live = instances.find((instance) => instance.core === liveCore)
     expect(liveCore?.status).toBe('ready')
     expect(live).toBeDefined()
@@ -102,7 +114,7 @@ describe('useGridCore', () => {
     }
 
     view.unmount()
-    await flushTeardown()
+    await flushTeardown(() => liveCore?.status === 'destroyed')
     expect(liveCore?.status).toBe('destroyed')
     expect(live!.dispose).toHaveBeenCalledOnce()
   })

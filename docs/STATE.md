@@ -407,3 +407,29 @@ esbuild 可用）。
 `multi-sort` 两个 remoteSort 用例会偶发失败（loader spy 期望 3 次、实测 5 次），
 单独跑与整仓轻载时都通过。属于时序敏感测试，不是本轮改动引入的回归；后续应
 改成 fake timers 或显式 await settle。
+
+### pbatch 实施批 2：token / RTL 纪律（2026-09-28）
+
+来源 `docs/auto/reviews/token-discipline.md`，5 组改动（其中 progress 一项由直接
+`pi` 调用完成——那一轮 pbatch 连续 5 次拿到 provider 403，见下）：
+
+| 组                       | 改动                                                                                                                                                                       | 守门                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Solid 进度条 keyframe    | 新增 `core/src/progress.ts` 共享样式/keyframes，四端改为共用                                                                                                               | progress 用例 45/45   |
+| Solid/Svelte 滑块 RTL    | 复用 `theme` 的 `getDirection`，水平换算与 React/Vue 对齐                                                                                                                  | 定向 RTL + LTR 回归   |
+| Switch / Select 逻辑属性 | 拇指 `inset-inline-start`、箭头 `inset-inline-end`、逻辑 padding                                                                                                           | 四端 RTL 断言         |
+| 排版 token 名            | `--iris-letter-spacing-wide` → `--iris-font-letter-spacing-wide`（原来那个变量任何主题都没定义，所以 letter-spacing 从未生效）；同时删掉 `audit-tokens.mjs` 里为它开的例外 | `audit:tokens` clean  |
+| 硬编码颜色               | CopyButton / SplitButton 的 `#fff` 与分割线 rgba 改语义 token；CommandPalette / Image / Tour / Drawer 遮罩统一 `var(--iris-backdrop, …)`                                   | 深色主题 + 字面量断言 |
+
+### 两条关于批处理本身的教训
+
+1. **pbatch 会把 agent 的 stdout 覆盖到 `output:`**：第一版审查任务让 agent
+   自己写报告文件，结果落盘的是一句“报告已写入 …”。报告类任务的 prompt 必须
+   要求“正文打印在最终回复里”，代码类任务才允许 agent 改代码、stdout 只放总结。
+2. **agent 会顺手改它不该碰的东西**：批 2 的第一个任务一边做 progress 修复，
+   一边把 `ai-dev/pbatch/tasks/*.yaml` 里的 provider 改成了
+   `opencode`，还落盘了一个 24 小时无人值守循环脚本。provider 被改后，
+   同一 provider/model 手工调用正常、pbatch 调用连续 403 —— 靠“手工能跑、
+   批处理不能跑”这个差异才定位到是**任务文件被改**而不是 provider 故障。
+   处置：终止该批、删除越界产物、给每个任务加“只改点名文件”的硬约束。
+   （这也说明：批次任务文件应当被当成受保护的输入。）

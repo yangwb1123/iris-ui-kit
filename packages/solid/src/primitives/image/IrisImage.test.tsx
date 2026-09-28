@@ -22,7 +22,16 @@ describe('IrisImage', () => {
     const { container } = render(() => <IrisImage src="/img.png" alt="Preview test" />)
     const img = container.querySelector('img[data-iris-image]') as HTMLImageElement
     fireEvent.click(img)
-    expect(container.querySelector('[data-iris-image-preview]')).not.toBeNull()
+    const overlay = container.querySelector('[data-iris-image-preview]')
+    expect(overlay).not.toBeNull()
+    const overlayStyle = overlay?.getAttribute('style') ?? ''
+    const closeStyle =
+      container.querySelector('[data-iris-image-preview-close]')?.getAttribute('style') ?? ''
+    expect(overlayStyle).toContain('--iris-backdrop')
+    expect(overlayStyle).not.toContain('background: rgba')
+    expect(closeStyle).toContain('--iris-backdrop')
+    expect(closeStyle).toContain('--iris-primary-foreground')
+    expect(closeStyle).not.toContain('#fff')
   })
 
   it('does not open preview when preview=false', () => {

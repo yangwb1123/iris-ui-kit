@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSignal } from 'solid-js'
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { IrisSwitch } from './Switch'
+import { IrisSelect } from '../select/IrisSelect'
 
 afterEach(cleanup)
 
@@ -81,5 +82,41 @@ describe('@iris-ui-kit/solid IrisSwitch', () => {
     expect(container.querySelector('[data-iris-switch]')!.getAttribute('data-state')).toBe(
       'checked',
     )
+  })
+
+  it('uses logical inline styles in RTL and LTR', () => {
+    const [checked, setChecked] = createSignal(false)
+    const [dir, setDir] = createSignal<'rtl' | 'ltr'>('rtl')
+    const { container } = render(() => (
+      <div dir={dir()}>
+        <IrisSwitch checked={checked()} />
+        <IrisSelect items={[{ value: 'a', label: 'Alpha' }]} portalTarget={false} />
+      </div>
+    ))
+
+    const assertStyles = (thumbOffset: string) => {
+      const thumb = container.querySelector('[data-iris-switch] > span > span') as HTMLSpanElement
+      const trigger = container.querySelector('[data-iris-select-trigger]') as HTMLButtonElement
+      const arrow = trigger.querySelector('svg') as SVGElement
+      expect(thumb.style.getPropertyValue('inset-inline-start')).toBe(thumbOffset)
+      expect(thumb.style.left).toBe('')
+      expect(thumb.style.transition).toContain('inset-inline-start')
+      expect(arrow.style.getPropertyValue('inset-inline-end')).toBe('8px')
+      expect(arrow.style.right).toBe('')
+      expect(trigger.style.getPropertyValue('padding-block')).toBe('var(--iris-padding-sm, 6px)')
+      expect(trigger.style.getPropertyValue('padding-inline-start')).toBe(
+        'var(--iris-padding-md, 12px)',
+      )
+      expect(trigger.style.getPropertyValue('padding-inline-end')).toBe(
+        'var(--iris-space-xl, 24px)',
+      )
+    }
+
+    assertStyles('2px')
+    setChecked(true)
+    assertStyles('calc(36px - 16px - 2px)')
+    setDir('ltr')
+    setChecked(false)
+    assertStyles('2px')
   })
 })

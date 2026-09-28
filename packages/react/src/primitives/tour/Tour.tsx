@@ -42,7 +42,7 @@ const btnPrimary: React.CSSProperties = {
   ...btnBase,
   border: 'none',
   background: 'var(--iris-primary)',
-  color: 'var(--iris-primary-foreground, #fff)',
+  color: 'var(--iris-primary-foreground)',
 }
 
 /**
@@ -139,7 +139,12 @@ export function IrisTour({
       <div
         data-iris-tour-backdrop=""
         onClick={close}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000 }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+          zIndex: 1000,
+        }}
       />
       {spotlit ? (
         <div
@@ -152,7 +157,7 @@ export function IrisTour({
             height: spotlight.height + 8,
             border: '2px solid var(--iris-primary)',
             borderRadius: 'var(--iris-radius-sm, 4px)',
-            boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
+            boxShadow: '0 0 0 9999px var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
             zIndex: 1001,
             pointerEvents: 'none',
           }}

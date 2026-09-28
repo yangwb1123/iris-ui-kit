@@ -16,10 +16,13 @@ describe('IrisDivider', () => {
     expect(el?.getAttribute('role')).toBe('separator')
   })
 
-  it('renders a label when provided', () => {
+  it('renders a label with the canonical letter-spacing token', () => {
     const { getByText, container } = render(() => <IrisDivider label="OR" />)
     expect(getByText('OR')).toBeTruthy()
     expect(container.querySelector('[data-iris-divider-has-label]')).not.toBeNull()
+    const style = container.querySelector('[data-iris-divider]')?.getAttribute('style') ?? ''
+    expect(style).toContain('--iris-font-letter-spacing-wide')
+    expect(style).not.toContain('--iris-letter-spacing-wide')
   })
 
   it('renders children as label', () => {

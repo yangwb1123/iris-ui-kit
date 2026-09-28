@@ -346,7 +346,7 @@
     ? 'not-allowed'
     : 'pointer'}; opacity: {disabled
     ? '0.6'
-    : '1'}; text-align: start; font-family: inherit; position: relative; min-width: 140px; padding: {sz.padding}; font-size: {sz.fontSize}; min-height: {sz.minHeight};{style
+    : '1'}; text-align: start; font-family: inherit; position: relative; min-width: 140px; padding-block: {sz.paddingBlock}; padding-inline-start: {sz.paddingInlineStart}; padding-inline-end: {sz.paddingInlineEnd}; font-size: {sz.fontSize}; min-height: {sz.minHeight};{style
     ? ' ' + style
     : ''}"
 >
@@ -356,7 +356,7 @@
     viewBox="0 0 16 16"
     width="14"
     height="14"
-    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--iris-muted); pointer-events: none"
+    style="position: absolute; inset-inline-end: 8px; top: 50%; transform: translateY(-50%); color: var(--iris-muted); pointer-events: none"
   >
     <path
       d="M4 6l4 4 4-4"

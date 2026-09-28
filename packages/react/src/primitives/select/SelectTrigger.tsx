@@ -64,7 +64,7 @@ export function renderIrisSelectTrigger<T>({
         height="14"
         style={{
           position: 'absolute',
-          right: 8,
+          insetInlineEnd: 8,
           top: '50%',
           transform: 'translateY(-50%)',
           color: 'var(--iris-muted)',

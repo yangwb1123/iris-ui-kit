@@ -1,6 +1,7 @@
 import { createSignal, mergeProps, Show, splitProps, useContext, type JSX } from 'solid-js'
 import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui-kit/core'
 import { TabsCtx, type IrisTabsOrientation } from './context'
+import { IrisSlot } from '../slot/IrisSlot'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,8 @@ export function IrisTabsList(props: IrisTabsListProps): JSX.Element {
 export interface IrisTabsTriggerProps {
   value: string
   disabled?: boolean
+  /** Render the single child as the tab control instead of a `<button>`. */
+  asChild?: boolean
   children?: JSX.Element
   style?: JSX.CSSProperties | string
   class?: string
@@ -160,7 +163,7 @@ export interface IrisTabsTriggerProps {
 }
 
 export function IrisTabsTrigger(props: IrisTabsTriggerProps): JSX.Element {
-  const [local, rest] = splitProps(props, ['value', 'disabled', 'children', 'style'])
+  const [local, rest] = splitProps(props, ['value', 'disabled', 'asChild', 'children', 'style'])
   const ctx = useContext(TabsCtx)
   if (!ctx) throw new Error('IrisTabsTrigger must be used inside <IrisTabs>')
 
@@ -205,6 +208,42 @@ export function IrisTabsTrigger(props: IrisTabsTriggerProps): JSX.Element {
     }
   }
 
+  const triggerProps = {
+    role: 'tab' as const,
+    id: `iris-tabs-trigger-${local.value}`,
+    'aria-controls': `iris-tabs-content-${local.value}`,
+    'data-iris-tabs-trigger': '',
+    'data-value': local.value,
+    get 'data-state'() {
+      return isActive() ? ('active' as const) : ('inactive' as const)
+    },
+    get 'aria-selected'() {
+      return isActive() ? ('true' as const) : ('false' as const)
+    },
+    get 'aria-disabled'() {
+      return isDisabled() ? ('true' as const) : undefined
+    },
+    get disabled() {
+      return isDisabled() || undefined
+    },
+    get tabIndex() {
+      return isActive() ? 0 : -1
+    },
+    onClick,
+    onKeyDown,
+  }
+
+  if (local.asChild) {
+    return (
+      <IrisSlot {...rest} {...triggerProps}>
+        {local.children}
+      </IrisSlot>
+    )
+  }
+
+  // The default branch keeps inline reactive expressions: reading
+  // `triggerProps['aria-selected']` here would evaluate the getter once and
+  // freeze the tab's ARIA state after first render.
   return (
     <button
       {...rest}

@@ -1,7 +1,5 @@
 import * as React from 'react'
-import { composeEventHandlers } from '@iris-ui-kit/core'
-
-type AnyProps = Record<string, unknown>
+import { mergeSlotProps, type SlotProps } from '@iris-ui-kit/core'
 
 export interface IrisSlotProps {
   children?: React.ReactNode
@@ -18,53 +16,32 @@ function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined | null>): React.Re
   }
 }
 
-function isEventHandlerName(key: string): boolean {
-  return /^on[A-Z]/.test(key)
-}
-
-function mergeSlotProps(slot: AnyProps, child: AnyProps): AnyProps {
-  const merged: AnyProps = { ...slot }
-  for (const key of Object.keys(child)) {
-    const slotValue = slot[key]
-    const childValue = child[key]
-    if (key === 'style') {
-      merged.style = {
-        ...((slotValue as React.CSSProperties | undefined) ?? {}),
-        ...((childValue as React.CSSProperties | undefined) ?? {}),
-      }
-    } else if (key === 'className') {
-      merged.className = [slotValue, childValue].filter(Boolean).join(' ').trim() || undefined
-    } else if (
-      isEventHandlerName(key) &&
-      typeof slotValue === 'function' &&
-      typeof childValue === 'function'
-    ) {
-      merged[key] = composeEventHandlers(
-        slotValue as (e: React.SyntheticEvent) => void,
-        childValue as (e: React.SyntheticEvent) => void,
-      )
-    } else if (childValue !== undefined) {
-      merged[key] = childValue
-    }
-  }
-  return merged
-}
-
 /**
  * asChild composition primitive: clones the single React element child and
- * merges the Slot's own props into it. `style` shallow-merges, `className`
- * concatenates, event handlers compose (Slot's first, then child's), and any
- * other prop on the child wins over Slot's. Used as a building block for
- * trigger primitives that want to render-as the consumer's chosen element.
+ * merges the Slot's own props into it.
+ *
+ * The merge rules are owned by `@iris-ui-kit/core` so React, Vue, Solid and
+ * Svelte cannot drift apart: `className` concatenates parent-first, `style`
+ * shallow-merges with the child last, handlers compose parent-first (a parent
+ * `preventDefault()` skips the child), and every other prop on the child wins.
+ * React's two adaptations are passed as options — it spells classes
+ * `className` and assigns a style *object* to the element.
+ *
+ * Ref fan-out stays here because React refs are callback functions or mutable
+ * objects, which core deliberately does not model.
  */
 export const IrisSlot = React.forwardRef<unknown, IrisSlotProps>(function IrisSlot(
   { children, ...slotProps },
   forwardedRef,
 ) {
   if (!React.isValidElement(children)) return null
-  const child = children as React.ReactElement<AnyProps>
-  const childProps = (child.props ?? {}) as AnyProps
-  const merged = mergeSlotProps(slotProps as AnyProps, childProps)
+  const child = children as React.ReactElement<SlotProps>
+  const childProps = (child.props ?? {}) as SlotProps
+  const merged = mergeSlotProps(slotProps as SlotProps, childProps, {
+    classKey: 'className',
+    styleAsObject: true,
+    preserveRef: true,
+  })
 
   const childRef = (child as unknown as { ref?: React.Ref<unknown> }).ref ?? null
   if (forwardedRef || childRef) {
@@ -74,5 +51,5 @@ export const IrisSlot = React.forwardRef<unknown, IrisSlotProps>(function IrisSl
     )
   }
 
-  return React.cloneElement(child, merged as Partial<AnyProps> & React.Attributes)
+  return React.cloneElement(child, merged as Partial<SlotProps> & React.Attributes)
 })

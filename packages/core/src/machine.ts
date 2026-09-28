@@ -350,8 +350,7 @@ function createMachineSender<TState extends string, TContext, TEvent extends Mac
     const parent = deps.nodeOf(deps.active.value.parent)
     const childTransition = child?.on?.[event.type as TEvent['type']]
     const transition = (childTransition ?? parent?.on?.[event.type as TEvent['type']]) as
-      | Transition<TState, TContext, TEvent>
-      | undefined
+      Transition<TState, TContext, TEvent> | undefined
     if (!transition || (transition.guard && !transition.guard(current.context, event))) return
     const targetScope =
       childTransition && transition.target !== undefined && !deps.isChildTarget(transition.target)

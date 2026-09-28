@@ -41,7 +41,29 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - `@iris-ui-kit/plugin-markdown` — Markdown editor (CodeMirror) and rendered preview with syntax highlighting.
 - `@iris-ui-kit/plugin-query-builder` — Visual query/filter builder with rule groups, operators, and value inputs.
 
-## Components (156 total — 156 in all 4 frameworks; react 156, vue 156, solid 156, svelte 156)
+## Cross-framework parity (READ BEFORE generating code)
+Visibility metric, NOT a parity guarantee. Per-framework contracts are intentionally idiomatic (Vue modelValue/update:modelValue, Solid onChange, Svelte callback props), so a low nameIntersection can mean "named differently" rather than "missing". A high surfaceAsymmetry is the stronger signal: naming idiom cannot explain a wide prop-count gap. Always read the target framework's own contract before generating code.
+- Of 152 comparable components: 5 have identical prop names in all 4 frameworks, 8 are near-identical, 139 diverge.
+- 5 components are excluded from those counts because at least one adapter forwards its whole HTML attribute set (contract `propsSource: "intrinsic-spread"`), so its prop list is not enumerable. An empty `props` array there does NOT mean the component accepts no attributes — read `intrinsicAttributes`.
+- Mean shared prop names: 44% (lowest 0%).
+- Prop declarations per framework: react 1264, vue 845, solid 1173, svelte 1205.
+- Prop names declared by exactly one framework (capability that exists on one adapter only): react 221, vue 69, solid 115, svelte 124.
+- Widest surface gap: `IrisPopoverContent` — 5x (react 4, vue 1, solid 4, svelte 5 props).
+- Most divergent components (shared/union prop names):
+  - `IrisDialogContent` 0% shared — react 2, vue 1, solid 2, svelte 3
+  - `IrisDrawerContent` 0% shared — react 2, vue 1, solid 2, svelte 3
+  - `IrisDropdownMenu` 0% shared — react 2, vue 1, solid 2, svelte 1
+  - `IrisMenuContent` 0% shared — react 2, vue 1, solid 2, svelte 4
+  - `IrisPopoverContent` 0% shared — react 4, vue 1, solid 4, svelte 5
+  - `IrisSlot` 0% shared — react 1, vue 0, solid 2, svelte 3
+  - `IrisColorPicker` 10% shared — react 5, vue 3, solid 5, svelte 6
+  - `IrisFormBuilder` 11% shared — react 3, vue 6, solid 3, svelte 3; react-only: className
+  - `IrisProTable` 11% shared — react 2, vue 7, solid 2, svelte 2; react-only: className
+  - `IrisPasswordInput` 13% shared — react 7, vue 8, solid 15, svelte 14; react-only: prefix, suffix, type
+  - `IrisDragger` 17% shared — react 8, vue 3, solid 10, svelte 10
+  - `IrisMenuItem` 17% shared — react 3, vue 1, solid 3, svelte 3; react-only: keepOpen, onSelect
+
+## Components (157 total — 157 in all 4 frameworks; react 157, vue 157, solid 157, svelte 157)
 
 ### behaviors (7)
 - IrisClickOutside [react/solid/svelte/vue] — behavior
@@ -134,7 +156,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   react: props headerHeight?, footerHeight?, sticky?, header?, footer?, children?; slots default, footer, header; types IrisHeaderLayoutProps
   solid: props headerHeight?, footerHeight?, sticky?, header?, footer?, class?, style?, children?; slots default, footer, header; types IrisHeaderLayoutProps
   svelte: props headerHeight?, footerHeight?, sticky?, header?, footer?, class?, style?, children?; slots default, footer, header; types IrisHeaderLayoutProps
-  vue: props headerHeight?, footerHeight?, sticky?; slots default, footer, header
+  vue: props headerHeight?, footerHeight?, sticky?, scrollMain?, headerInMain?; slots beforeMain, default, footer, header
   quality: 6 props, 0 events
 - IrisSidebarLayout [react/solid/svelte/vue] — layer-3
   Two-column layout with a collapsible sidebar. The sidebar is kept mounted across collapses (only its width animates) so component state survives.
@@ -171,7 +193,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   react: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
   solid: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
   svelte: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
-  vue: props nav, reorderable?; events change, close, refresh, reorder
+  vue: props nav, reorderable?, shortcuts?; events change, close, refresh, reorder
   quality: 6 props, 4 events
 - IrisErrorBoundary [react/solid/svelte/vue] — layer-1
   Catches errors thrown while rendering its subtree and switches to a fallback UI instead of crashing the whole React tree. Exposes `reset()` (passed to the fallback) that clears the error and re-attempts rendering the children.
@@ -316,7 +338,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   vue: props series, categories?, width?, height?, direction?, layout?, nice?, categoryGap?, seriesGap?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?; events datumFocus
   quality: 5 props, 0 events
 
-### primitives (116)
+### primitives (117)
 - IrisAccordion [react/solid/svelte/vue] — layer-2
   Container for collapsible sections.
   react: props value?, defaultValue?, onValueChange?, multiple?, collapsible?; events onValueChange; types IrisAccordionItemProps, IrisAccordionProps, IrisAccordionValue
@@ -423,7 +445,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   vue: props variant?, padding?, hover?; slots default, footer, header; types IrisCardPadding, IrisCardVariant
   quality: 6 props, 0 events
 - IrisCarousel [react/solid/svelte/vue] — layer-2
-  Slide carousel: shows one child slide at a time with prev/next controls, indicator dots, and keyboard (←/→) navigation. Controlled or uncontrolled. a11y: region with `aria-roledescription="carousel"`, per-slide labelling, and a polite live region announcing the active slide.
+  Slide carousel: shows one child slide at a time with prev/next controls, indicator dots, and keyboard (←/→) navigation. Controlled or uncontrolled. a11y: region and slides use localized role descriptions, per-slide labelling, and a polite live region announcing the active slide.
   react: props children, index?, defaultIndex?, onIndexChange?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, style?, className?; events onIndexChange; slots default; types IrisCarouselProps
   solid: props index?, defaultIndex?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, onChange?, children?; events onChange; slots default; types IrisCarouselProps
   svelte: props value?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, onValueChange?, slides?, children?, style?, class?, slideCount?; events onValueChange; slots default, slides
@@ -516,7 +538,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisDialogClose [react/solid/svelte/vue] — layer-2
   Close button. Renders a `<button type="button">` or, with `asChild`, wraps the provided child.
   react: props asChild?, children?; slots default; types IrisDialogCloseProps
-  solid: props children?; slots default; types IrisDialogCloseProps
+  solid: props asChild?, children?, ref?; slots default; types IrisDialogCloseProps
   svelte: props asChild?, onclick?, children?; events onclick; slots default
   vue: props asChild?; slots default
   quality: 2 props, 0 events
@@ -544,7 +566,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisDialogTrigger [react/solid/svelte/vue] — layer-2
   The element the user clicks to open the dialog. Renders a `<button type="button">` by default; pass `asChild` to attach behavior to any single element.
   react: props asChild?, children?; slots default; types IrisDialogTriggerProps
-  solid: props children?; slots default; types IrisDialogTriggerProps
+  solid: props asChild?, children?, ref?; slots default; types IrisDialogTriggerProps
   svelte: props asChild?, onclick?, children?; events onclick; slots default
   vue: props asChild?; slots default
   quality: 2 props, 0 events
@@ -572,7 +594,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisDrawerClose [react/solid/svelte/vue] — layer-2
   A button that closes the drawer when clicked. Supports `asChild` for custom trigger elements. Emits `onClick` then calls `setOpen(false)`.
   react: props asChild?, children?; slots default; types IrisDrawerCloseProps
-  solid: props children?; slots default; types IrisDrawerCloseProps
+  solid: props asChild?, children?, ref?; slots default; types IrisDrawerCloseProps
   svelte: props asChild?, onclick?, children?; events onclick; slots default
   vue: props asChild?; slots default
   quality: 2 props, 0 events
@@ -585,7 +607,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 2 props, 0 events
 - IrisDrawerTitle [react/solid/svelte/vue] — layer-2
   The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming.
-  react: types IrisDrawerTitleProps
+  react: props (all of React.HTMLAttributes<HTMLHeadingElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisDrawerTitleProps
   solid: props children?; slots default; types IrisDrawerTitleProps
   svelte: props as?, children?; slots default
   vue: slots default
@@ -593,7 +615,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisDrawerTrigger [react/solid/svelte/vue] — layer-2
   The trigger that opens the drawer when clicked. Renders as a `<button>` (or as custom children when `asChild`). Injects `aria-haspopup="dialog"` and `aria-expanded` for screen-reader awareness.
   react: props asChild?, children?; slots default; types IrisDrawerTriggerProps
-  solid: props children?; slots default; types IrisDrawerTriggerProps
+  solid: props asChild?, children?, ref?; slots default; types IrisDrawerTriggerProps
   svelte: props asChild?, onclick?, children?; events onclick; slots default
   vue: props asChild?; slots default
   quality: 2 props, 0 events
@@ -620,9 +642,9 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 2 props, 0 events
 - IrisDropdownSeparator [react/solid/svelte/vue] — layer-1
   A visual separator (horizontal rule) within a dropdown menu. Renders a `role="separator"` `<div>` styled with the theme's border colour.
-  react: types IrisDropdownSeparatorProps
-  solid: types IrisDropdownSeparatorProps
-  svelte: types IrisDropdownSeparatorProps
+  react: props (all of React.HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisDropdownSeparatorProps
+  solid: props (all of JSX.HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisDropdownSeparatorProps
+  svelte: props (all of HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisDropdownSeparatorProps
   quality: 0 props, 0 events
 - IrisDropdownTrigger [react/solid/svelte/vue] — layer-1
   The trigger element that toggles the dropdown open/closed on click or ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via `asChild`) with `aria-haspopup="menu"` and `aria-expanded`.
@@ -675,11 +697,18 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 11 props, 0 events
 - IrisIcon [react/solid/svelte/vue] — layer-1
   Renders a registered icon as inline SVG. Resolves `name` through an `@iris-ui-kit/icons` registry and renders the icon's structured nodes as real SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so the surrounding CSS `color` themes it. Renders nothing for an unresolved name.
-  react: props name, size?, strokeWidth?, fill?, title?, registry?; types IrisIconNode, IrisIconProps, IrisIconRegistry, IrisIconResolver, IrisIconSet
-  solid: props name, size?, strokeWidth?, fill?, title?, registry?, class?, style?; types IrisIconProps
-  svelte: props name, size?, strokeWidth?, fill?, title?, registry?, class?, style?; types IrisIconProps
-  vue: props name, size?, strokeWidth?, fill?, title?, registry?; types IrisIconNode, IrisIconRegistry, IrisIconResolver, IrisIconSet
+  react: props name, size?, strokeWidth?, fill?, title?, registry?; types IrisIconNode, IrisIconPickerProps, IrisIconProps, IrisIconRegistry, IrisIconResolver, IrisIconSet
+  solid: props name, size?, strokeWidth?, fill?, title?, registry?, class?, style?; types IrisIconPickerProps, IrisIconProps
+  svelte: props name, size?, strokeWidth?, fill?, title?, registry?, class?, style?; types IrisIconPickerProps, IrisIconProps
+  vue: props name, size?, strokeWidth?, fill?, title?, registry?; types IrisIconNode, IrisIconPickerProps, IrisIconRegistry, IrisIconResolver, IrisIconSet
   quality: 6 props, 0 events
+- IrisIconPicker [react/solid/svelte/vue] — layer-1
+  Searchable, categorized semantic icon picker with roving keyboard navigation.
+  react: props value?, defaultValue?, onValueChange?, registry?, iconNames?, categories?, columns?, disabled?, label?, searchLabel?, placeholder?, emptyText?; events onValueChange; types IrisIconPickerProps
+  solid: props value?, defaultValue?, onValueChange?, registry?, iconNames?, categories?, columns?, disabled?, label?, searchLabel?, placeholder?, emptyText?; events onValueChange; types IrisIconPickerProps
+  svelte: props value?, defaultValue?, onValueChange?, registry?, iconNames?, categories?, columns?, disabled?, label?, searchLabel?, placeholder?, emptyText?, class?, style?; events onValueChange; types IrisIconPickerProps
+  vue: props modelValue?, defaultValue?, registry?, iconNames?, categories?, columns?, disabled?, label?, searchLabel?, placeholder?, emptyText?; events update:modelValue, valueChange; types IrisIconPickerProps
+  quality: 12 props, 1 events
 - IrisImage [react/solid/svelte/vue] — layer-1
   Image with a graceful error `fallback` and an optional click-to-zoom preview overlay (a `role="dialog"` lightbox dismissed by backdrop, close button, or Escape). Lazy-loaded by default.
   react: props src, alt?, width?, height?, fallback?, preview?, style?, className?; types IrisImageProps
@@ -752,8 +781,8 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 3 props, 1 events
 - IrisMenuSeparator [react/solid/svelte/vue] — layer-2
   A visual separator within a menu — renders a `role="separator"` `<div>`.
-  react: types IrisMenuSeparatorProps
-  solid: types IrisMenuSeparatorProps
+  react: props (all of React.HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisMenuSeparatorProps
+  solid: props (all of JSX.HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisMenuSeparatorProps
   quality: 0 props, 0 events
 - IrisMenuSub [react/solid/svelte/vue] — layer-2
   Nested submenu. Renders its own trigger (a `[role="menuitem"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on ArrowRight / Enter; closes on ArrowLeft.
@@ -765,8 +794,8 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisMenuTrigger [react/solid/svelte/vue] — layer-2
   The trigger that toggles the menu open/closed. Renders as a `<button>` (or custom via `asChild`) with `aria-haspopup="menu"`. Opens on click, ArrowDown, Enter, or Space.
   react: props asChild?, children?; slots default; types IrisMenuTriggerProps
-  solid: props children?; slots default; types IrisMenuTriggerProps
-  svelte: props onclick?, onkeydown?, children?; events onclick, onkeydown; slots default
+  solid: props asChild?, children?, ref?; slots default; types IrisMenuTriggerProps
+  svelte: props asChild?, onclick?, onkeydown?, children?; events onclick, onkeydown; slots default
   vue: props asChild?; slots default
   quality: 2 props, 0 events
 - IrisMonthPicker [react/solid/svelte/vue] — layer-1
@@ -820,8 +849,8 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisPopoverTrigger [react/solid/svelte/vue] — layer-2
   The element the user interacts with to toggle the Popover. Renders a `<button type="button">` by default; pass `asChild` to attach behavior to any single element (e.g. `<IrisButton>` or `<a>`).
   react: props asChild?, children?; slots default; types IrisPopoverTriggerProps
-  solid: props children?; slots default; types IrisPopoverTriggerProps
-  svelte: props onclick?, children?; events onclick; slots default
+  solid: props asChild?, children?, ref?; slots default; types IrisPopoverTriggerProps
+  svelte: props asChild?, onclick?, children?; events onclick; slots default
   vue: props asChild?; slots default
   quality: 2 props, 0 events
 - IrisProgress [react/solid/svelte/vue] — layer-1
@@ -904,7 +933,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisSelect [react/solid/svelte/vue] — layer-2
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
   react: props items, value?, defaultValue?, onValueChange?, multiple?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?, virtual?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
-  solid: props items, multiple?, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  solid: props items, multiple?, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaLabel?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
   svelte: props items, value?, defaultValue?, multiple?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?, virtual?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
   vue: props items, modelValue?, multiple?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?, virtual?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
   quality: 16 props, 1 events
@@ -923,7 +952,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   vue: props modelValue?, min?, max?, step?, disabled?, orientation?, label?; events change, update:modelValue; types IrisSliderOrientation
   quality: 9 props, 1 events
 - IrisSlot [react/solid/svelte/vue] — layer-1
-  asChild composition primitive: clones the single React element child and merges the Slot's own props into it. `style` shallow-merges, `className` concatenates, event handlers compose (Slot's first, then child's), and any other prop on the child wins over Slot's. Used as a building block for trigger primitives that want to render-as the consumer's chosen element.
+  asChild composition primitive: clones the single React element child and merges the Slot's own props into it.
   react: props children?; slots default; types IrisSlotProps
   solid: props children?, ref?; slots default; types IrisSlotProps
   svelte: props asChild?, ref?, children?; slots default; types IrisSlotChildProps, IrisSlotMergedProps, IrisSlotRef
@@ -1001,7 +1030,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 3 props, 0 events
 - IrisTabsList [react/solid/svelte/vue] — layer-2
   Container for `IrisTabsTrigger`s. Renders `<div role="tablist">`.
-  react: types IrisTabsListProps
+  react: props (all of React.HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisTabsListProps
   solid: props children?, style?, class?; slots default; types IrisTabsListProps
   svelte: props style?, children?; slots default
   vue: slots default
@@ -1009,8 +1038,8 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - IrisTabsTrigger [react/solid/svelte/vue] — layer-2
   A single tab button. Registers with the parent `IrisTabs` so arrow keys can navigate among triggers in registration order. Sets `aria-selected` and `aria-controls`; uses roving tabindex.
   react: props value, asChild?, children?; slots default; types IrisTabsTriggerProps
-  solid: props value, disabled?, children?, style?, class?; slots default; types IrisTabsTriggerProps
-  svelte: props value, disabled?, style?, children?; slots default
+  solid: props value, disabled?, asChild?, children?, style?, class?; slots default; types IrisTabsTriggerProps
+  svelte: props value, disabled?, asChild?, style?, children?; slots default
   vue: props value, disabled?, asChild?; slots default
   quality: 3 props, 0 events
 - IrisTagInput [react/solid/svelte/vue] — layer-1
@@ -1113,7 +1142,7 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 15 props, 3 events
 - IrisVisuallyHidden [react/solid/svelte/vue] — layer-1
   Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`.
-  react: types IrisVisuallyHiddenProps
+  react: props (all of React.HTMLAttributes<HTMLSpanElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisVisuallyHiddenProps
   solid: props children?; slots default; types IrisVisuallyHiddenProps
   svelte: props style?, children?
   vue: slots default
@@ -1142,10 +1171,10 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   vue: props title?, description?, showRemember?, error?, submitLabel?, loading?; events submit; slots footer, forgot, header
   quality: 12 props, 1 events
 
-## Design tokens (86)
+## Design tokens (87)
 - colors: iris.background, iris.foreground, iris.surface, iris.surface.hover, iris.border, iris.muted, iris.primary, iris.primary.foreground, iris.accent, iris.danger, iris.danger.foreground, iris.danger.subtle, iris.success, iris.success.foreground, iris.warning, iris.warning.foreground, iris.info, iris.info.foreground, iris.on.color, iris.muted.subtle, iris.surface.selected, iris.surface.floating, iris.primary.ghost, iris.backdrop, iris.font.family, iris.font.mono, iris.font.size.xs, iris.font.size.sm, iris.font.size.md, iris.font.size.base, iris.font.size.lg, iris.font.size.xl, iris.font.size.2xl, iris.font.size.3xl, iris.font.size.4xl, iris.font.weight.regular, iris.font.weight.medium, iris.font.weight.semibold, iris.font.weight.bold, iris.font.line.height.sm, iris.font.line.height.md, iris.font.line.height.lg, iris.font.letter.spacing.tight, iris.font.letter.spacing.normal, iris.font.letter.spacing.wide
 - spacing: iris.gap.sm, iris.gap.md, iris.gap.lg, iris.padding.sm, iris.padding.md, iris.padding.lg, iris.masonry.gap, iris.breadcrumb.gap, iris.space.xxs, iris.space.xs, iris.space.sm, iris.space.md, iris.space.lg, iris.space.xl, iris.space.2xl, iris.space.3xl, iris.space.4xl, iris.space.5xl, iris.control.height.sm, iris.control.height.md, iris.control.height.lg
-- radii: iris.radius.sm, iris.radius.md, iris.radius.lg
+- radii: iris.radius.sm, iris.radius.md, iris.radius.lg, iris.radius.full
 - shadows: iris.shadow.sm, iris.shadow.md, iris.shadow.lg, iris.shadow.xl
 - z-index: iris.z.dropdown, iris.z.sticky, iris.z.fixed, iris.z.modalBackdrop, iris.z.modal, iris.z.popover, iris.z.tooltip, iris.z.toast
 - transitions: iris.transition.fast, iris.transition.normal, iris.transition.slow, iris.transition.ease, iris.transition.spring

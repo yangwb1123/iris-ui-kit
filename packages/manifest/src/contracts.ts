@@ -5,6 +5,7 @@ import { ALL_FRAMEWORKS } from './schema'
 import {
   classifyProps,
   extractInterfaceComponentProps,
+  extractIntrinsicPropsAliases,
   extractTypeAliases,
   interfaceBody,
   literalDefault,
@@ -96,6 +97,7 @@ function nativeContract(
   name: string,
   extraEvents: string[] = [],
   extraSlots: string[] = [],
+  intrinsicAttributes?: string,
 ): ManifestFrameworkContract {
   const classified = classifyProps(props)
   return {
@@ -104,6 +106,34 @@ function nativeContract(
     events: mergeUnique(classified.events, extraEvents),
     slots: mergeUnique(classified.slots, extraSlots),
     publicTypes: typesFor(name, exported),
+    // An empty `props` list is ambiguous on its own. When the props type is a
+    // bare reference to the framework's attribute set, record that explicitly
+    // so consumers do not read "nothing extractable" as "accepts nothing".
+    ...(props.length === 0 && intrinsicAttributes
+      ? { propsSource: 'intrinsic-spread' as const, intrinsicAttributes }
+      : {}),
+  }
+}
+
+/**
+ * Mark contracts whose props are a bare intrinsic attribute spread.
+ *
+ * Mutates in place only where extraction produced no props, so a component with
+ * a real (even if empty) declared interface is left alone.
+ */
+function markIntrinsicProps(
+  result: ContractMap,
+  repoRoot: string,
+  framework: Extract<Framework, 'react' | 'solid' | 'svelte'>,
+): void {
+  for (const [propsType, intrinsic] of extractIntrinsicPropsAliases(repoRoot, framework)) {
+    // Aliases are keyed by props *type* (`IrisButtonProps`); contracts are keyed
+    // by component name (`IrisButton`).
+    const name = propsType.replace(/Props$/, '')
+    const contract = result.get(name)?.[framework]
+    if (!contract || contract.props.length > 0) continue
+    contract.propsSource = 'intrinsic-spread'
+    contract.intrinsicAttributes = intrinsic
   }
 }
 
@@ -383,6 +413,9 @@ export function extractFrameworkContracts(repoRoot: string): ContractMap {
   extractInterfaceContracts(repoRoot, result)
   extractVueContracts(repoRoot, result)
   extractSvelteContracts(repoRoot, result)
+  markIntrinsicProps(result, repoRoot, 'react')
+  markIntrinsicProps(result, repoRoot, 'solid')
+  markIntrinsicProps(result, repoRoot, 'svelte')
 
   // Deterministic framework key insertion for stable JSON.
   for (const [name, contracts] of result) {

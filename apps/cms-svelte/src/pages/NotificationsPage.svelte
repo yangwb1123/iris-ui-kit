@@ -34,7 +34,7 @@
 
   <div class="notifications-panel">
     <IrisNotificationCenter
-      center={center}
+      {center}
       title="Notifications"
       emptyText="No notifications"
       dismissLabel="Dismiss"

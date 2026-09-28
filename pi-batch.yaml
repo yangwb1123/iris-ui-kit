@@ -1,0 +1,132 @@
+# pi-batch (ai-batch-runner / pbatch) project config for iris-ui.
+#
+# Purpose: drive AI-SDLC batches against this monorepo with iris's own
+# engineering gates as fail-closed validators. Truth source for thresholds
+# remains `iris.yaml`; nothing here duplicates it.
+#
+# Verify after editing:
+#   python3 -m pbatch config check
+#   python3 -m pbatch config explain
+config_version: 1
+
+agent:
+  bin: pi
+  # Batch tasks are deep code review / implementation work: pin the model so a
+  # run is reproducible and not at the mercy of pi's own default. NOTE: pbatch
+  # has no global provider default (only per-task `provider:`), so every task
+  # must name its provider explicitly — see ai-dev/pbatch/tasks/*.yaml.
+  # Provider status on this machine (2026-09-28): `openai-codex` works;
+  # `opencode-go` (account pool) is quota-exhausted and `opencode` reports
+  # insufficient funds, so both trip the runner's provider breaker.
+  default_model: "gpt-5.6-luna:max"
+  # A single task in this monorepo is a real code change with a full
+  # verification tail (typecheck+lint+targeted tests), so per-task budget is
+  # generous; the batch-level deadline is enforced by campaign
+  # `implementation.timeout` instead of a short per-task kill.
+  default_timeout: 3600
+  default_workers: 1     # tasks mutate the same working tree; keep serial
+  argument_flags:
+    prompt: "-p"
+    model: "--model"
+    provider: "--provider"
+    thinking: "--thinking"
+    tools: "--tools"
+    exclude_tools: "--exclude-tools"
+
+project:
+  frontend_root: packages
+  backend_root: packages/core
+  report_root: docs
+
+limits:
+  per_second: 0
+  burst: 1
+  providers: {}
+  provider_breaker:
+    threshold: 5
+    base_cooldown: 60
+    max_cooldown: 900
+
+validation:
+  output_max_bytes: 262144
+
+commands:
+  timeout: 1800
+  output_max_bytes: 262144
+
+# iris engineering gates. `scope: repo` gates run once at the end of a
+# stage/batch so they never race concurrent role agents.
+validators:
+  # ── fast, artifact-scoped (run per task output) ───────────────────
+  format: "pnpm exec prettier --check {output}"
+  filesize: "node cli.mjs check-filesize"
+  architecture: "node cli.mjs check-architecture"
+  complexity: "node cli.mjs check-complexity"
+  exports: "node cli.mjs check-exports"
+  # ── repo-scoped, fail closed (run at stage end) ───────────────────
+  irischeck:
+    cmd: "node cli.mjs check"
+    scope: repo
+  typecheck:
+    cmd: "pnpm typecheck"
+    scope: repo
+  lint:
+    cmd: "pnpm lint"
+    scope: repo
+  # Full suite is heavy; use it as the acceptance gate of a pipeline, not
+  # of every stage. `test:core` / `test:adapter` are the cheap inner loops.
+  test:
+    cmd: "pnpm test"
+    scope: repo
+  testcore:
+    cmd: "pnpm --filter @iris-ui-kit/core test"
+    scope: repo
+  testreact:
+    cmd: "pnpm --filter @iris-ui-kit/react test"
+    scope: repo
+  testvue:
+    cmd: "pnpm --filter @iris-ui-kit/vue test"
+    scope: repo
+  testsolid:
+    cmd: "pnpm --filter @iris-ui-kit/solid test"
+    scope: repo
+  testsvelte:
+    cmd: "pnpm --filter @iris-ui-kit/svelte test"
+    scope: repo
+  # Contract/manifest gates: the four-framework truth source.
+  manifest:
+    cmd: "pnpm gen:manifest && pnpm check:manifest"
+    scope: repo
+  parity:
+    cmd: "pnpm check:parity"
+    scope: repo
+  docfacts:
+    cmd: "pnpm check:doc-facts"
+    scope: repo
+  docsreference:
+    cmd: "pnpm gen:docs-reference && pnpm check:docs-reference"
+    scope: repo
+  tokens:
+    cmd: "pnpm audit:tokens"
+    scope: repo
+  rsc:
+    cmd: "pnpm check:rsc"
+    scope: repo
+  archratchet:
+    cmd: "pnpm arch-check:ratchet"
+    scope: repo
+  size:
+    cmd: "pnpm size"
+    scope: repo
+  formatall:
+    cmd: "pnpm format:check"
+    scope: repo
+  # Full acceptance sweep for a batch that touched library code: the cheap
+  # deterministic gates plus every adapter suite. Use as the last stage of an
+  # implementation batch, never per task.
+  irisverify:
+    cmd: "pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm check:parity && pnpm check:doc-facts && pnpm audit:tokens"
+    scope: repo
+
+commit:
+  prefix: "[pi-batch]"

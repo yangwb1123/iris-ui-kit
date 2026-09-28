@@ -11,14 +11,7 @@ import {
 import { useDrag } from '../drag/useDrag'
 
 export type IrisResizerHandle =
-  | 'top'
-  | 'right'
-  | 'bottom'
-  | 'left'
-  | 'top-left'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-right'
+  'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 export interface IrisResizerSize {
   width: number

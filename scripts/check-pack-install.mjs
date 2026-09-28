@@ -30,6 +30,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+import { runPnpmOrExit } from './lib/run-pnpm.mjs'
 
 const packagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'packages')
 const workspaceRoot = dirname(packagesDir)
@@ -221,7 +222,7 @@ async function run() {
     // 1. `pnpm pack` every package in the closure into a real npm tarball.
     const tarballs = {}
     for (const dir of ALL) {
-      const res = spawnSync('pnpm', ['pack', '--json', '--pack-destination', tarballDir], {
+      const res = runPnpmOrExit(['pack', '--json', '--pack-destination', tarballDir], {
         cwd: join(packagesDir, dir),
         encoding: 'utf8',
       })

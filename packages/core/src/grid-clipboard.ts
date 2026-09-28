@@ -38,8 +38,7 @@ export interface GridClipboardPasteChange<Row extends Record<string, unknown>> {
 }
 
 export type GridClipboardChange<Row extends Record<string, unknown>> =
-  | GridClipboardCopyChange
-  | GridClipboardPasteChange<Row>
+  GridClipboardCopyChange | GridClipboardPasteChange<Row>
 
 export interface GridClipboardOverflowContext<Row extends Record<string, unknown>> {
   /** Clipboard lines that start after the effective body rows are exhausted. */

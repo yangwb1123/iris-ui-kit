@@ -246,7 +246,10 @@ describe('IrisCascader (svelte)', () => {
       await openDropdown(container)
       expect(container.querySelectorAll('[data-iris-cascader-item]').length).toBe(10_000)
       expect(container.querySelector('[data-iris-virtual-scroll]')).toBeNull()
-    }, 30_000)
+      // 10k un-virtualized nodes are a deliberate stress case: the default-off
+      // contract matters, not raw speed, so allow headroom for a loaded CI box
+      // running four adapter suites in parallel.
+    }, 120_000)
 
     it('a11y parity: virtual container carries the same surface as the plain listbox', async () => {
       const small = [

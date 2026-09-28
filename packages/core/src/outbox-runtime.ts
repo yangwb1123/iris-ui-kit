@@ -2,12 +2,7 @@ import type { OutboxFlushResult, OutboxItem, OutboxItemOutcome } from './outbox'
 
 /** JSON values accepted by the built-in durable snapshot guard. */
 export type OutboxJsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | OutboxJsonValue[]
-  | { [key: string]: OutboxJsonValue }
+  string | number | boolean | null | OutboxJsonValue[] | { [key: string]: OutboxJsonValue }
 
 /** Thrown when execute resolved after explicit remove()/clear(). */
 export class OutboxItemRemovedError extends Error {

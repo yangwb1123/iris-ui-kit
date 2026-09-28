@@ -7,6 +7,7 @@ import type {
   RawDiscovery,
 } from './schema'
 import { ALL_FRAMEWORKS } from './schema'
+import { annotateComponentParity, computeParitySummary } from './parity'
 
 const IMPORT_PATH: Record<Framework, string> = {
   react: '@iris-ui-kit/react',
@@ -203,6 +204,10 @@ function manifestFrameworkStats(components: ManifestComponent[]): {
 export function buildManifest(raw: RawDiscovery): IrisManifest {
   const components = buildManifestComponents(raw)
   addManifestComponentMetadata(components)
+  // Per-component overlap, then the aggregate. Order matters: annotate first so
+  // `stats.parity` and the per-component rows are derived from the same pass.
+  annotateComponentParity(components)
+  const parity = computeParitySummary(components)
   const groups = summarizeManifestGroups(components)
   const { full, byFramework } = manifestFrameworkStats(components)
 
@@ -226,6 +231,6 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
         ...raw.tokens.transitions,
       ],
     },
-    stats: { total: components.length, full, byFramework },
+    stats: { total: components.length, full, byFramework, parity },
   }
 }

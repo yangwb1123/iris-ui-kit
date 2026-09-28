@@ -335,14 +335,15 @@
       rowKey="id"
       columns={controlledColumnWidthsColumns}
       data={controlledColumnWidthsData}
-      columnWidths={columnWidths}
+      {columnWidths}
       onColumnWidthsChange={handleControlledColumnWidthsChange}
     />
     <output
       data-iris-vxe-column-widths-readout
       aria-live="polite"
       style="display: block; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px)"
-    >{JSON.stringify(columnWidths)}</output>
+      >{JSON.stringify(columnWidths)}</output
+    >
   </section>
 
   <section data-iris-vxe-section="column-visibility">
@@ -407,7 +408,7 @@
       rowKey="id"
       columns={controlledColumnVisibilityColumns}
       data={controlledColumnVisibilityData}
-      columnVisibility={columnVisibility}
+      {columnVisibility}
     />
     <output
       data-iris-vxe-visibility-readout
@@ -420,8 +421,8 @@
         border-radius: var(--iris-radius-md, 6px);
         color: var(--iris-muted);
         font-size: var(--iris-font-size-sm, 13px);
-      "
-    >visible: {JSON.stringify(visibleColumnKeys)}</output>
+      ">visible: {JSON.stringify(visibleColumnKeys)}</output
+    >
   </section>
 
   <section data-iris-vxe-section="context-menu">
@@ -435,7 +436,9 @@
         color: var(--iris-muted);
       "
     >
-      The menu lifecycle is internally uncontrolled; the page controls the action readout. Inspect and Open are enabled. The fixture is loaded, valid, and non-empty, with no empty, error, or loading branch.
+      The menu lifecycle is internally uncontrolled; the page controls the action readout. Inspect
+      and Open are enabled. The fixture is loaded, valid, and non-empty, with no empty, error, or
+      loading branch.
     </p>
     <IrisTable
       rowKey="key"
@@ -454,8 +457,8 @@
         border-radius: var(--iris-radius-md, 6px);
         color: var(--iris-muted);
         font-size: var(--iris-font-size-sm, 13px);
-      "
-    >{contextMenuReadout}</output>
+      ">{contextMenuReadout}</output
+    >
   </section>
 
   <section data-iris-vxe-section="grouped-summary">
@@ -471,12 +474,7 @@
     >
       Two fixed teams demonstrate a Metrics group with built-in Planned/Actual sums.
     </p>
-    <IrisTable
-      bordered
-      rowKey="id"
-      columns={groupedSummaryColumns}
-      data={groupedSummaryRows}
-    />
+    <IrisTable bordered rowKey="id" columns={groupedSummaryColumns} data={groupedSummaryRows} />
   </section>
 
   <section>
@@ -611,7 +609,7 @@
       rowKey="id"
       columns={filterValuesColumns}
       data={filterValuesRows}
-      filterValues={filterValues}
+      {filterValues}
       onFilterValuesChange={handleFilterValuesChange}
     />
     <output

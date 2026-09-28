@@ -3,14 +3,7 @@
   import { useI18n } from '../i18n'
 
   export type IrisResizableHandle =
-    | 'top'
-    | 'right'
-    | 'bottom'
-    | 'left'
-    | 'top-left'
-    | 'top-right'
-    | 'bottom-left'
-    | 'bottom-right'
+    'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   export interface IrisResizableSize {
     width: number
     height: number

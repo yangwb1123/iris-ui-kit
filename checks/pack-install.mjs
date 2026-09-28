@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
 import { getConfig, ROOT } from './config.mjs'
+import { runPnpmOrExit } from '../scripts/lib/run-pnpm.mjs'
 
 function readPkg(dir) {
   return JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
@@ -63,7 +64,7 @@ export async function run() {
     // 1. pnpm pack each package
     const tarballs = {}
     for (const dir of ALL) {
-      const res = spawnSync('pnpm', ['pack', '--json', '--pack-destination', tarballDir], {
+      const res = runPnpmOrExit(['pack', '--json', '--pack-destination', tarballDir], {
         cwd: join(packagesDir, dir),
         encoding: 'utf8',
       })

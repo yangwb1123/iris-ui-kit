@@ -80,6 +80,7 @@ export const lightTheme: IrisTheme = {
     'iris.radius.sm': 4,
     'iris.radius.md': 6,
     'iris.radius.lg': 12,
+    'iris.radius.full': 999,
   },
   shadows: {
     'iris.shadow.sm': '0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 3px 0 rgb(0 0 0 / 0.06)',

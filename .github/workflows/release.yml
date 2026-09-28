@@ -58,6 +58,8 @@ jobs:
           pnpm format:check
           pnpm turbo run test typecheck lint build
           pnpm check:manifest
+          pnpm check:doc-facts
+          pnpm check:parity
           pnpm check:docs-reference
           pnpm check:registry
           pnpm audit:tokens

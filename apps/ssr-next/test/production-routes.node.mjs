@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
-import { execFileSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:net'
 import process from 'node:process'
 import { fileURLToPath, URL, URLSearchParams } from 'node:url'
 import { after, before, test } from 'node:test'
 import { setTimeout as delay } from 'node:timers/promises'
+import { runPnpm } from '../../../scripts/lib/run-pnpm.mjs'
 
 const { fetch } = globalThis
 const appRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -43,11 +44,24 @@ async function waitForServer() {
 
 before(
   async () => {
-    execFileSync('pnpm', ['build'], {
+    // Route through the shared pnpm launcher: pnpm's global shim is
+    // shebang-less, so execFileSync('pnpm', …) dies with ENOEXEC on macOS and
+    // the failure is indistinguishable from a real build break. `runPnpm`
+    // separates "could not launch the tool" from "the tool reported a problem".
+    const build = runPnpm(['build'], {
       cwd: appRoot,
       stdio: 'inherit',
       timeout: 240_000,
     })
+    if (!build.ok) {
+      if (build.error) {
+        throw new Error(
+          `Could not launch pnpm (errno ${build.error.code ?? build.error.message}). ` +
+            'This is an environment problem, not a build failure.',
+        )
+      }
+      throw new Error(`pnpm build exited with status ${build.status}`)
+    }
 
     const port = await freePort()
     baseUrl = `http://127.0.0.1:${port}`

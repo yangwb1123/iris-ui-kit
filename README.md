@@ -11,7 +11,7 @@ bridge; every layer is themed by tokens; heavy capabilities ship as plugins.
 ## Status
 
 🔧 **Alpha** — the first npm publish has not been authorized. The generated
-manifest reports **155 components in each of four frameworks**. All **620
+manifest reports **157 components in each of four frameworks**. All **628
 adapter contracts** are extracted from their corresponding framework sources,
 with zero `unavailable` placeholders.
 

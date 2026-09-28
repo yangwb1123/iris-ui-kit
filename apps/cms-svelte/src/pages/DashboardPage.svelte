@@ -100,8 +100,8 @@
             font-size: var(--iris-font-size-sm, 13px);
           "
         >
-          Live release windows cover day/time formatting, millisecond precision, terminal state,
-          and finish-event feedback.
+          Live release windows cover day/time formatting, millisecond precision, terminal state, and
+          finish-event feedback.
         </p>
         <div
           style="
@@ -231,7 +231,7 @@
             color: var(--iris-foreground);
             font-size: var(--iris-font-size-sm, 13px);
           "
-        >Long-press count: <span data-iris-long-press-count>{longPressCount}</span>; Last action:
+          >Long-press count: <span data-iris-long-press-count>{longPressCount}</span>; Last action:
           <span data-iris-long-press-action>{longPressLastAction}</span></output
         >
       </section>
@@ -277,9 +277,7 @@
             </IrisMenuTrigger>
             <IrisMenuContent data-iris-dashboard-menu>
               <IrisMenuItem onclick={handleRefreshActivity}>Refresh activity</IrisMenuItem>
-              <IrisMenuItem disabled onclick={handleExportReport}>
-                Export report
-              </IrisMenuItem>
+              <IrisMenuItem disabled onclick={handleExportReport}>Export report</IrisMenuItem>
               <IrisMenuSeparator />
               <IrisMenuSub label="More operations">
                 <IrisMenuItem onclick={handleViewAuditLog}>View audit log</IrisMenuItem>
@@ -328,8 +326,8 @@
               border-radius: var(--iris-radius-md, 6px);
               color: var(--iris-muted);
               font-size: var(--iris-font-size-sm, 13px);
-            "
-          >Last action: {lastAction}</output>
+            ">Last action: {lastAction}</output
+          >
         </div>
       </section>
     </IrisDashboardCard>

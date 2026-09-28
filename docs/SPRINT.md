@@ -9,7 +9,7 @@
 
 ## 功能面
 
-- [x] 安全、tokens/skins/icons、manifest/package 契约（620 native /
+- [x] 安全、tokens/skins/icons、manifest/package 契约（628 native /
       0 unavailable）。
 - [x] CMS auth/RBAC、真实 dashboard/login/users/settings/workspace、设置持久化
       与 resilience 消费（无 `GenericPage`）。

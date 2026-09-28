@@ -439,6 +439,11 @@ export {
 } from './tabsNav'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId, safeArray, safeNumber } from './utils'
+/**
+ * Framework-agnostic `asChild` merge semantics. Adapters keep only element
+ * resolution, ref plumbing, and their own renderer's prop delivery.
+ */
+export * from './slot'
 export {
   createPlugin,
   runPlugins,

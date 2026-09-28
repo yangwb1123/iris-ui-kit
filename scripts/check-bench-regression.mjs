@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runPnpmOrExit } from './lib/run-pnpm.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const BASELINE_PATH = resolve(ROOT, 'scripts/bench-baseline.json')
@@ -23,12 +24,21 @@ const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
 
 console.log(`\nBenchmark regression check (threshold: ${THRESHOLD * 100}%)\n`)
 
-// Run benchmarks
-const result = spawnSync('pnpm', ['--filter', '@iris-ui-kit/core', 'bench'], {
+// Run benchmarks. Routed through runPnpm so a shebang-less pnpm shim (which
+// spawns as ENOEXEC on macOS) cannot masquerade as a benchmark regression.
+const result = runPnpmOrExit(['--filter', '@iris-ui-kit/core', 'bench'], {
   cwd: ROOT,
   encoding: 'buffer',
   stdio: ['pipe', 'pipe', 'pipe'],
 })
+
+if (result.error) {
+  process.stderr.write(
+    `\nERROR: could not run the benchmark suite (${result.error.message}).\n` +
+      `This is an environment problem, not a benchmark regression.\n`,
+  )
+  process.exit(2)
+}
 
 const text = result.stdout.toString('utf8')
 

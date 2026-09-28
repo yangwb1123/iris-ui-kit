@@ -200,12 +200,7 @@ export type IrisTableColumnWidths = Record<string, number>
 
 /** State pieces persistable via `persistState` (batch EJ, iris 独有). */
 export type IrisTablePersistPiece =
-  | 'sort'
-  | 'filters'
-  | 'columnVisibility'
-  | 'columnOrder'
-  | 'columnWidths'
-  | 'pageSize'
+  'sort' | 'filters' | 'columnVisibility' | 'columnOrder' | 'columnWidths' | 'pageSize'
 
 /** One persisted state snapshot (batch EJ): the pieces `persistState` loads
  * and saves, keyed by piece name — a piece appears only when defined + included. */

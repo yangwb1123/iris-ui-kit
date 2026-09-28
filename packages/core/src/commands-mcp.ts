@@ -29,8 +29,7 @@ function isValidMcpToolName(name: string): boolean {
 }
 
 type McpParamDefinitionsValidation =
-  | { ok: true; params: Record<string, CommandParam> }
-  | { ok: false; error: string }
+  { ok: true; params: Record<string, CommandParam> } | { ok: false; error: string }
 
 export interface McpToolArgsValidation {
   ok: boolean

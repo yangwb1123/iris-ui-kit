@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runPnpmOrExit } from './lib/run-pnpm.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const modes = {
@@ -34,8 +34,9 @@ const before = new Map(
     return [file, snapshot(path)]
   }),
 )
-const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const generated = spawnSync(pnpm, [config.script], { cwd: root, stdio: 'inherit' })
+// Route through runPnpmOrExit: a shebang-less pnpm shim yields ENOEXEC when
+// spawned directly on macOS, which used to masquerade as "output is stale".
+const generated = runPnpmOrExit([config.script], { cwd: root, stdio: 'inherit' })
 if (generated.status !== 0) process.exit(generated.status ?? 1)
 
 const changed = config.files.filter((file) => {

@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { buildManifest } from './build'
 import { discover, findRepoRoot } from './discover'
 import { renderLlmsText } from './llms'
+import { formatParityLine } from './parity'
 
 /**
  * Discover the inventory and write `manifest.json` + `llms.txt` inside
@@ -26,6 +27,10 @@ function main(): void {
       `(${byFw}; ${manifest.stats.full} in all ${manifest.frameworks.length}), ` +
       `${manifest.tokens.all.length} tokens → packages/manifest/{manifest.json,llms.txt}`,
   )
+  if (manifest.stats.parity) {
+    // eslint-disable-next-line no-console
+    console.log(`  ${formatParityLine(manifest.stats.parity)}`)
+  }
 }
 
 main()

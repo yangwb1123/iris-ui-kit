@@ -1,7 +1,7 @@
 # TODO
 
 > 仅保留当前可行动项。完成历史见 `CHANGELOG.md`；不要把已关闭的历史 gap
-> 重新复制成新待办。日期：2026-08-20。
+> 重新复制成新待办。日期：2026-09-27。
 
 ## 当前收口
 
@@ -14,7 +14,20 @@
 
 ## 已实现、不要再报为缺口
 
-- 155 个 manifest 组件在 React/Vue/Solid/Svelte 四端对齐；620 份框架契约
+- `docs/ui-audit/design-intelligence.md` 的 12 项 [MECHANICAL] 已全部落地
+  （info tone、focus ring、backdrop token、Card hover、Select 界高、
+  Button :active、Statistic trendTone、Gauge 诚实值、Badge solid 对比度、
+  数字列右对齐、Table 错误态 onRetry、Button danger variant）；该报告已过期，
+  复审时先核对当前源码再引用。
+- `IrisIconPicker` 的 16 条内置文案已有 zh-CN 译文（locale-zh 的
+  “无英文兜底”回归守住这条）。
+- `createDataSource` 的一次 load 只发布一次 rows（无 pending 乐观层时不再
+  重复 setState）；`plugin-admin` 客户端删除按 row key 定位。
+- 四套 SSR 应用的 production-route 测试与 `check:manifest` /
+  `check:docs-reference` 共用 `scripts/lib/run-pnpm.mjs`，在 pnpm 原生二进制
+  安装下不再假失败（`pnpm test:scripts` 守住该判定）。
+
+- 157 个 manifest 组件在 React/Vue/Solid/Svelte 四端对齐；628 份框架契约
   全部 native，`unavailable = 0`。
 - 42 个共享行为 scenario 均接入四端；包含 Table resize/edit、异步
   DataSource、overlay open/dismiss、portal destroy 与 focus restore。

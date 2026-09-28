@@ -8,6 +8,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { IrisSlot } from '../slot/IrisSlot'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { useDrawerContext, type IrisDrawerSide } from './context'
@@ -101,8 +102,14 @@ export interface IrisDrawerTitleProps extends JSX.HTMLAttributes<HTMLHeadingElem
   children?: JSX.Element
 }
 
-export interface IrisDrawerCloseProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface IrisDrawerCloseProps extends Omit<
+  JSX.ButtonHTMLAttributes<HTMLButtonElement>,
+  'ref'
+> {
+  /** Render the single child as the close control instead of a `<button>`. */
+  asChild?: boolean
   children?: JSX.Element
+  ref?: HTMLElement | ((element: HTMLElement) => void)
 }
 
 /**
@@ -240,19 +247,35 @@ export function IrisDrawerTitle(props: IrisDrawerTitleProps): JSX.Element {
   )
 }
 
-/** Close button for the drawer. */
+/**
+ * Close button for the drawer. `asChild` merges the close contract onto the
+ * single child element and emits no wrapper.
+ */
 export function IrisDrawerClose(props: IrisDrawerCloseProps): JSX.Element {
   const ctx = useDrawerContext('IrisDrawerClose')
-  const { onClick, children, ...rest } = props
+  const [local, others] = splitProps(props, ['asChild', 'onClick', 'children', 'ref'])
 
   const handleClick: JSX.EventHandler<HTMLButtonElement, MouseEvent> = (e) => {
-    if (typeof onClick === 'function') onClick(e)
+    if (typeof local.onClick === 'function') local.onClick(e)
+    if (e.defaultPrevented) return
     ctx.setOpen(false)
   }
 
+  if (local.asChild) {
+    return (
+      <IrisSlot
+        {...others}
+        data-iris-drawer-close=""
+        onClick={handleClick as JSX.EventHandler<HTMLElement, MouseEvent>}
+      >
+        {local.children}
+      </IrisSlot>
+    )
+  }
+
   return (
-    <button type="button" {...rest} data-iris-drawer-close="" onClick={handleClick}>
-      {children}
+    <button type="button" {...others} data-iris-drawer-close="" onClick={handleClick}>
+      {local.children}
     </button>
   )
 }

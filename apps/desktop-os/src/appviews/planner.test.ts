@@ -14,7 +14,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }))
 
-function makeRegistry() {
+function makeRegistry(options: { settingsParams?: Record<string, { type: 'number' }> } = {}) {
   const reg = createCommandRegistry()
   const ran: string[] = []
   reg.registerMany([
@@ -22,6 +22,7 @@ function makeRegistry() {
       id: 'app.open.settings',
       title: 'Open Settings',
       group: 'Apps',
+      ...(options.settingsParams ? { params: options.settingsParams } : {}),
       run: () => void ran.push('settings'),
     },
     { id: 'win.close', title: 'Close Window', group: 'Window', run: () => void ran.push('close') },
@@ -150,10 +151,13 @@ describe('createAnthropicCall (SDK transport, mocked)', () => {
   })
 
   it('drives createLlmPlanner end-to-end (mock network) to a real command + args', async () => {
+    // `q` is a *declared* param of the command, so it survives the MCP arg
+    // validation `createLlmPlanner` runs before executing (unknown args are
+    // rejected by design — see the next test).
+    const { reg } = makeRegistry({ settingsParams: { q: { type: 'number' } } })
     create.mockResolvedValueOnce({
       content: [{ type: 'tool_use', name: toToolName('app.open.settings'), input: { q: 1 } }],
     })
-    const { reg } = makeRegistry()
     const planner = createLlmPlanner(createAnthropicCall({ apiKey: 'sk-test' }))
     const plan = await planner('open the settings app', reg)
     expect(plan).toEqual({
@@ -161,5 +165,18 @@ describe('createAnthropicCall (SDK transport, mocked)', () => {
       say: 'Running “Open Settings”.',
       args: { q: 1 },
     })
+  })
+
+  it('falls back to the fuzzy planner when the model fills an undeclared arg', async () => {
+    // A param-less command must not receive invented arguments; the planner
+    // degrades to the deterministic path instead of forwarding junk to run().
+    const { reg } = makeRegistry()
+    create.mockResolvedValueOnce({
+      content: [{ type: 'tool_use', name: toToolName('app.open.settings'), input: { q: 1 } }],
+    })
+    const planner = createLlmPlanner(createAnthropicCall({ apiKey: 'sk-test' }))
+    const plan = await planner('open settings', reg)
+    expect(plan!.commandId).toBe('app.open.settings')
+    expect(plan!.args ?? {}).toEqual({})
   })
 })

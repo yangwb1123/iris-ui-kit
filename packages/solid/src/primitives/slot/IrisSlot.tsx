@@ -1,4 +1,12 @@
-import { composeEventHandlers } from '@iris-ui-kit/core'
+import {
+  attributeNameFromProp,
+  composeEventHandlers,
+  isEventProp,
+  mergeClassValues,
+  mergeStyleValues,
+  patchOpeningTag,
+  type SlotProps,
+} from '@iris-ui-kit/core'
 import { splitProps, type JSX } from 'solid-js'
 import { spread } from 'solid-js/web'
 
@@ -6,41 +14,10 @@ type AnyProps = Record<string, unknown>
 type ElementWithDelegatedEvents = Element & Record<`$$${string}`, unknown>
 type SolidSsrNode = { t: string }
 
-const BOOLEAN_ATTRIBUTES = new Set([
-  'allowfullscreen',
-  'async',
-  'autofocus',
-  'autoplay',
-  'checked',
-  'controls',
-  'default',
-  'defer',
-  'disabled',
-  'formnovalidate',
-  'hidden',
-  'inert',
-  'ismap',
-  'loop',
-  'multiple',
-  'muted',
-  'nomodule',
-  'novalidate',
-  'open',
-  'playsinline',
-  'readonly',
-  'required',
-  'reversed',
-  'selected',
-])
-
 export interface IrisSlotProps {
   children?: JSX.Element
   ref?: HTMLElement | ((element: HTMLElement) => void)
   [key: string]: unknown
-}
-
-function isEventHandlerName(key: string): boolean {
-  return /^on[A-Z]/.test(key)
 }
 
 function eventNameFromProp(key: string): string {
@@ -54,41 +31,6 @@ function normalizeEventHandler(value: unknown): ((event: Event) => void) | undef
     return (event: Event) => handler(value[1], event)
   }
   return undefined
-}
-
-function attributeNameFromProp(key: string): string {
-  if (key === 'className') return 'class'
-  if (key === 'htmlFor') return 'for'
-  return key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
-}
-
-function escapeAttribute(value: unknown): string {
-  return String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;')
-}
-
-function styleToString(value: unknown): string {
-  if (typeof value === 'string') return value
-  if (!value || typeof value !== 'object') return ''
-
-  return Object.entries(value as Record<string, unknown>)
-    .filter(([, styleValue]) => styleValue != null)
-    .map(([name, styleValue]) => `${name}: ${String(styleValue)}`)
-    .join('; ')
-}
-
-function mergeStyles(parent: unknown, child: string): string | undefined {
-  const parentCss = styleToString(parent).trim()
-  const childCss = child.trim()
-  if (!parentCss) return childCss || undefined
-  if (!childCss) return parentCss
-  return `${parentCss}; ${childCss}`
-}
-
-function mergeClasses(parent: unknown, child: string): string | undefined {
-  const parentNames = typeof parent === 'string' ? parent.trim().split(/\s+/).filter(Boolean) : []
-  const childNames = child.trim().split(/\s+/).filter(Boolean)
-  const merged = [...parentNames, ...childNames.filter((name) => !parentNames.includes(name))]
-  return merged.join(' ') || undefined
 }
 
 function resolveSingleSsrNode(value: unknown): SolidSsrNode | null {
@@ -110,72 +52,20 @@ function resolveSingleSsrNode(value: unknown): SolidSsrNode | null {
   return candidates.length === 1 ? candidates[0] : null
 }
 
-function mergeSsrSlotProps(child: SolidSsrNode, slotProps: AnyProps): SolidSsrNode {
+/**
+ * Merge a primitive's props into an already-serialised SSR element.
+ *
+ * Solid emits the child as a string during SSR, so there is no element to
+ * spread onto. Core owns the merge (attribute naming, boolean serialisation,
+ * escaping, class/style order); this only re-hosts it into the SSR node shape.
+ */
+function mergeSsrSlotProps(child: SolidSsrNode, slotProps: SlotProps): SolidSsrNode {
   const openEnd = child.t.indexOf('>')
   if (openEnd < 0) return child
-
-  let opening = child.t.slice(0, openEnd)
-  const existingNames = new Set<string>()
-  for (const match of opening.matchAll(/\s([^\s=/>]+)(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?/g)) {
-    if (match[1]) existingNames.add(match[1].toLowerCase())
+  return {
+    ...child,
+    t: patchOpeningTag(child.t.slice(0, openEnd + 1), slotProps) + child.t.slice(openEnd + 1),
   }
-
-  const additions: string[] = []
-  for (const key of Object.keys(slotProps)) {
-    if (
-      key === 'children' ||
-      key === 'ref' ||
-      key === 'class' ||
-      key === 'className' ||
-      key === 'style' ||
-      isEventHandlerName(key)
-    ) {
-      continue
-    }
-
-    const value = slotProps[key]
-    if (value == null || typeof value === 'function') continue
-    const forcedAttribute = key.startsWith('attr:')
-    const attributeName = attributeNameFromProp(forcedAttribute ? key.slice(5) : key)
-    if (existingNames.has(attributeName.toLowerCase())) continue
-
-    if (!forcedAttribute && BOOLEAN_ATTRIBUTES.has(attributeName.toLowerCase())) {
-      if (value) additions.push(attributeName)
-    } else {
-      additions.push(`${attributeName}="${escapeAttribute(value)}"`)
-    }
-  }
-
-  const parentClass = mergeClasses(slotProps.class ?? slotProps.className, '')
-  if (parentClass) {
-    const classMatch = /\sclass="([^"]*)"/.exec(opening)
-    if (classMatch) {
-      const childClass = classMatch[1]?.trim() ?? ''
-      opening = opening.replace(
-        classMatch[0],
-        ` class="${escapeAttribute(parentClass)}${childClass ? ` ${childClass}` : ''}"`,
-      )
-    } else {
-      additions.push(`class="${escapeAttribute(parentClass)}"`)
-    }
-  }
-
-  const parentStyle = styleToString(slotProps.style).trim()
-  if (parentStyle) {
-    const styleMatch = /\sstyle="([^"]*)"/.exec(opening)
-    if (styleMatch) {
-      const childStyle = styleMatch[1]?.trim() ?? ''
-      opening = opening.replace(
-        styleMatch[0],
-        ` style="${escapeAttribute(parentStyle)}${childStyle ? `; ${childStyle}` : ''}"`,
-      )
-    } else {
-      additions.push(`style="${escapeAttribute(parentStyle)}"`)
-    }
-  }
-
-  if (additions.length > 0) opening += ` ${additions.join(' ')}`
-  return { ...child, t: `${opening}${child.t.slice(openEnd)}` }
 }
 
 function resolveSingleElement(value: JSX.Element): Element | null {
@@ -230,7 +120,7 @@ export function IrisSlot(props: IrisSlotProps): JSX.Element {
   const eventHost = child as ElementWithDelegatedEvents
 
   for (const key of Object.keys(slotProps)) {
-    if (isEventHandlerName(key)) {
+    if (isEventProp(key)) {
       childEvents.set(key, eventHost[`$$${eventNameFromProp(key)}`])
     }
   }
@@ -238,7 +128,7 @@ export function IrisSlot(props: IrisSlotProps): JSX.Element {
   const merged: AnyProps = {}
   for (const key of Object.keys(slotProps)) {
     if (
-      !isEventHandlerName(key) &&
+      !isEventProp(key) &&
       key !== 'ref' &&
       key !== 'class' &&
       key !== 'className' &&
@@ -256,13 +146,13 @@ export function IrisSlot(props: IrisSlotProps): JSX.Element {
         const parentHandler = normalizeEventHandler(parentValue)
         const childHandler = normalizeEventHandler(childValueForKey)
 
-        if (isEventHandlerName(key) && parentHandler && childHandler) {
+        if (isEventProp(key) && parentHandler && childHandler) {
           return composeEventHandlers(parentHandler, childHandler)
         }
         if (key === 'class' || key === 'className') {
-          return mergeClasses(parentValue, childClass)
+          return mergeClassValues(parentValue, childClass)
         }
-        if (key === 'style') return mergeStyles(parentValue, childStyle)
+        if (key === 'style') return mergeStyleValues(parentValue, childStyle)
         return parentValue
       },
     })

@@ -1,30 +1,34 @@
 # Iris UI 功能需求基线
 
-> 生成日期：2026-08-20 · 来源：manifest.json（155 组件 × 4 框架）+ 仓库文档。
-> 本文件是组件库功能需求的机器可核验基线；组件契约以 `manifest.json`/`llms.txt`
-> 为准（源码生成），本文件只记录需求语义。
+> 生成日期：2026-09-28 · 来源：`packages/manifest/manifest.json`（157 组件 × 4 框架，
+> 628 份 native contract / 0 unavailable，87 token）+ 仓库文档。
+> 本文件是组件库功能需求的机器可核验基线；组件契约以
+> `packages/manifest/manifest.json`/`llms.txt` 为准（源码生成），本文件只记录
+> 需求语义。计数由 `pnpm check:doc-facts` 与生成物对账。
 
 ## 1. 核心需求
 
-| ID  | 需求                                                                                   | 验证                                            |
-| --- | -------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| R1  | 一套框架无关 core 定义全部组件行为，四个适配器（react/vue/solid/svelte）同名同语义薄桥 | manifest 620 份 native contract / 0 unavailable |
-| R2  | 组件样式 100% 由 `--iris-*` token 驱动，禁止硬编码 hex/裸像素值                        | `iris-ui-spec.py --mode all` = 0 违规           |
-| R3  | 重型能力按需插件化（12 插件），core 保持精简                                           | `IrisProvider(plugins=[…])` + 12 plugin-\* 包   |
-| R4  | AI 原生消费：manifest.json / llms.txt / MCP（11 工具）                                 | `pnpm gen:manifest` + `check:manifest`          |
-| R5  | 主题系统：light/dark + 皮肤（继承/持久化/防闪）+ RTL + reduced-motion                  | theme/skins 包测试                              |
+| ID  | 需求                                                                                                         | 验证                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| R1  | 一套框架无关 core 定义全部组件行为，四个适配器（react/vue/solid/svelte）同名同语义薄桥                       | manifest 628 份 native contract / 0 unavailable      |
+| R1a | 跨框架**语义对齐**可度量：manifest 携带 `stats.parity`（共有 prop 名、单框架独占 prop 名、surface 不对称度） | `pnpm check:parity` 棘轮：只允许变好，退化即 CI 失败 |
+| R2  | 组件样式 100% 由 `--iris-*` token 驱动，禁止硬编码 hex/裸像素值                                              | `iris-ui-spec.py --mode all` = 0 违规                |
+| R3  | 重型能力按需插件化（12 插件），core 保持精简                                                                 | `IrisProvider(plugins=[…])` + 12 plugin-\* 包        |
+| R4  | AI 原生消费：manifest.json / llms.txt / MCP（11 工具）                                                       | `pnpm gen:manifest` + `check:manifest`               |
+| R5  | 主题系统：light/dark + 皮肤（继承/持久化/防闪）+ RTL + reduced-motion                                        | theme/skins 包测试                                   |
 
-## 2. 组件面需求（155 × 4）
+## 2. 组件面需求（157 × 4）
 
-| 分组       | 数量 | 关键需求                                                                                                             |
-| ---------- | ---- | -------------------------------------------------------------------------------------------------------------------- |
-| primitives | 115  | 展示/表单/浮层/反馈/导航/数据 全谱系原语；受控+非受控双模                                                            |
-| behaviors  | 7    | ClickOutside/Compose/Hotkey/LongPress/Movable/Resizable/Sortable 正交包裹器                                          |
-| layouts    | 7    | Container/Grid/Stack/Sidebar/Header/DashboardGrid                                                                    |
-| skeletons  | 2    | Login/Dashboard 模板（真实页面骨架）                                                                                 |
-| other      | 7    | AdminLayout/NavMenu/Provider/ErrorBoundary/I18nProvider                                                              |
-| form       | 1    | IrisForm（core 表单引擎驱动，+FormField）                                                                            |
-| plugin     | 16   | ProTable/FormBuilder/Charts×5/Calendar/Kanban/Markdown/CodeEditor/QueryBuilder/NotificationCenter/Dashboard/AdminApp |
+| 分组       | 数量    | 关键需求                                                                                                             |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| primitives | 117     | 展示/表单/浮层/反馈/导航/数据 全谱系原语；受控+非受控双模（layer-1 67 / layer-2 49）                                 |
+| behaviors  | 7       | ClickOutside/Compose/Hotkey/LongPress/Movable/Resizable/Sortable 正交包裹器                                          |
+| layouts    | 7       | Container/Grid/Stack/Sidebar/Header/DashboardGrid                                                                    |
+| skeletons  | 2       | Login/Dashboard 模板（真实页面骨架）                                                                                 |
+| other      | 7       | AdminLayout/NavMenu/Provider/ErrorBoundary/I18nProvider                                                              |
+| form       | 1       | IrisForm（core 表单引擎驱动，+FormField）                                                                            |
+| plugin     | 16      | ProTable/FormBuilder/Charts×5/Calendar/Kanban/Markdown/CodeEditor/QueryBuilder/NotificationCenter/Dashboard/AdminApp |
+| **合计**   | **157** | 与 `manifest.stats.total` 对账                                                                                       |
 
 ## 3. Core 逻辑需求
 

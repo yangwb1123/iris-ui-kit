@@ -4,7 +4,7 @@
 
 ## 状态速览
 
-- **四框架对齐**：`react`/`vue`/`solid`/`svelte` 同名同语义 + 子路径 `exports`；当前 **151 组件 × 4 = 604 份契约**全部从对应适配器源码原生提取（`source: native`，`unavailable = 0`）。数字以 `manifest.json`/`llms.txt` 为准，**不手维护组件清单**。
+- **四框架对齐**：`react`/`vue`/`solid`/`svelte` 同名同语义 + 子路径 `exports`；当前 **157 组件 × 4 = 628 份契约**全部从对应适配器源码原生提取（`source: native`，`unavailable = 0`）。数字以 `packages/manifest/manifest.json`/`llms.txt` 为准，**不手维护组件清单**（`pnpm check:manifest` + `check:doc-facts` 守卫）。
 - **core 是复用逻辑之家**：引擎 + 控制器 + 9 数据韧性原语全部框架无关；适配器只渲染 + 桥接反应式（React `useSyncExternalStore` · Vue `ref`+订阅 · Solid `createSignal` · Svelte `toStore`）。
 - **12 个按需插件**：locale、editor、pro-table、admin、form-builder、charts、calendar、dashboard、kanban、markdown、notifications、query-builder。
 - **生产面闭环**：SSR 安全 · axe · i18n/RTL/reduced-motion · 皮肤系统 · registry/marketplace SHA-256 · 四框架 CMS/SSR/桌面壳参考应用 · E2E/视觉回归/bench。

@@ -7,7 +7,7 @@
 
 Iris UI 是 token-driven、四框架、插件可扩展的 UI 基础设施：
 
-- 155 个 manifest 组件在 React / Vue / Solid / Svelte 完全对齐；620 份框架契约
+- 157 个 manifest 组件在 React / Vue / Solid / Svelte 完全对齐；628 份框架契约
   全部为原生源码提取，`unavailable = 0`。
 - core 承载共享控制器、状态机、表单、数据视图、i18n、virtual、异步与
   resilience；适配器保持薄桥。

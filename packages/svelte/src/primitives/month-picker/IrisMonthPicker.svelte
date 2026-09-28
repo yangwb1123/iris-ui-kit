@@ -293,7 +293,18 @@
           >
             ‹
           </button>
-          <strong data-iris-month-picker-year aria-live="polite">{visibleYear}</strong>
+          <!-- Same typography contract as React/Vue: the year header must not
+               inherit the trigger's font size, or the four adapters render the
+               same control at different heights. -->
+          <strong
+            data-iris-month-picker-year
+            aria-live="polite"
+            style:color="var(--iris-foreground)"
+            style:font-size="var(--iris-font-size-md, 14px)"
+            style:line-height="var(--iris-font-line-height-md, 1.5)"
+          >
+            {visibleYear}
+          </strong>
           <button
             type="button"
             aria-label={reactiveT('monthPicker.nextYear')}

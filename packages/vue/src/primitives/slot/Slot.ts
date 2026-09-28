@@ -1,10 +1,5 @@
 import { defineComponent, Fragment, h, type VNode } from 'vue'
-import { composeEventHandlers } from '@iris-ui-kit/core'
-
-/** Test whether a prop key looks like a Vue event listener: `onXxx`. */
-function isEventListenerKey(key: string): boolean {
-  return key.startsWith('on') && key.length > 2 && /[A-Z]/.test(key.charAt(2))
-}
+import { mergeSlotProps as mergeCoreSlotProps, type SlotProps } from '@iris-ui-kit/core'
 
 /**
  * Compose multiple Vue template refs into a single function ref. Each input
@@ -25,58 +20,30 @@ export function composeRefs(...refs: Array<unknown>): (el: unknown) => void {
 }
 
 /**
- * Merge parent (slot) props onto a child VNode's props with Radix-style
- * semantics:
+ * Merge a primitive's (parent) props onto a consumer's (child) VNode props.
  *
- *   - **Event handlers (`on*`)**: composed via `composeEventHandlers` — the
- *     parent's handler runs first; if it calls `event.preventDefault()`, the
- *     child's handler is skipped. This lets the parent intercept (e.g. when
- *     IrisButton is `disabled`).
- *   - **`class`**: concatenated, parent first.
- *   - **`style`**: shallow-merged, child wins on key conflicts.
- *   - **Anything else**: child wins (the user's explicit prop is authoritative).
+ * The decision table lives in `@iris-ui-kit/core` so React, Vue, Solid and
+ * Svelte cannot drift: handlers compose parent-first with `preventDefault()`
+ * able to skip the child, `class` concatenates parent-first, `style` merges
+ * with the child last, and every other child value wins.
+ *
+ * Vue keeps two things of its own here — `ref` composition (a Vue `Ref` has a
+ * `.value`, which core does not model) and re-exporting the name, because
+ * `mergeSlotProps` is part of this module's public surface.
  */
-export function mergeSlotProps(
-  parent: Record<string, unknown>,
-  child: Record<string, unknown>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...child }
+export function mergeSlotProps(parent: SlotProps, child: SlotProps): SlotProps {
+  const merged = mergeCoreSlotProps(parent, child, { styleAsObject: true, preserveRef: true })
 
-  for (const key in parent) {
-    const parentVal = parent[key]
-    const childVal = child[key]
+  // Core omits `ref` entirely when `preserveRef` is set, so every case is
+  // decided here. Triggers merge in two stages (attrs + trigger props, then
+  // the consumer's own props), so the ref usually arrives on the *child* side.
+  const parentRef = parent.ref
+  const childRef = child.ref
+  if (parentRef != null && childRef != null) merged.ref = composeRefs(parentRef, childRef)
+  else if (parentRef != null) merged.ref = parentRef
+  else if (childRef != null) merged.ref = childRef
 
-    if (isEventListenerKey(key)) {
-      if (typeof parentVal === 'function' && typeof childVal === 'function') {
-        out[key] = composeEventHandlers(
-          parentVal as (e: { defaultPrevented: boolean }) => void,
-          childVal as (e: { defaultPrevented: boolean }) => void,
-        )
-      } else if (typeof parentVal === 'function' && childVal == null) {
-        out[key] = parentVal
-      }
-      // If only child has it, child wins (already in `out`).
-    } else if (key === 'ref') {
-      if (parentVal != null && childVal != null) {
-        out[key] = composeRefs(parentVal, childVal)
-      } else if (parentVal != null) {
-        out[key] = parentVal
-      }
-      // If only child has a ref, child wins (already in `out`).
-    } else if (key === 'class') {
-      const merged = [parentVal, childVal].filter(Boolean).join(' ').trim()
-      if (merged) out[key] = merged
-    } else if (key === 'style') {
-      if (parentVal || childVal) {
-        out[key] = { ...(parentVal as object | undefined), ...(childVal as object | undefined) }
-      }
-    } else if (!(key in child)) {
-      out[key] = parentVal
-    }
-    // else: non-handler, present in both — child wins (already in `out`).
-  }
-
-  return out
+  return merged
 }
 
 /**

@@ -339,3 +339,62 @@ export function extractInterfaceComponentProps(
 export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
   return extractInterfaceComponentProps(repoRoot, 'react')
 }
+
+/**
+ * Detect props types that are a *bare reference* to a framework attribute set.
+ *
+ * `export type IrisVisuallyHiddenProps = React.HTMLAttributes<HTMLSpanElement>`
+ * has no object literal and references no local `Iris*Props`, so the normal
+ * extraction path yields an empty array. That empty array is ambiguous: the
+ * component still forwards every attribute in that set at runtime.
+ *
+ * This pass reports the referenced type text so the manifest can record the real
+ * surface (`propsSource: 'intrinsic-spread'`) instead of implying the component
+ * accepts nothing.
+ */
+const INTRINSIC_PROPS_ALIAS_RE =
+  /export\s+type\s+(Iris[A-Za-z0-9]+Props)\s*=\s*([A-Za-z_$][\w$.]*\s*<[^;{}\n]*>|[A-Za-z_$][\w$.]*)\s*;?/
+
+/** Attribute-set types that mean "forwards the whole framework surface". */
+const INTRINSIC_ATTRIBUTE_RE =
+  /^(?:React\.)?(?:JSX\.)?(?:HTML|SVG|Button|Input|Form|Img|Anchor|Table|Text|Label|Fieldset|Progress|Meter|Details|Video|Audio|Canvas|Object|Embed|Iframe|Optgroup|Option|Select|Textarea|Link|Menu|Meter|Track|Script|Head)Attributes$/
+
+export function extractIntrinsicPropsAliases(
+  repoRoot: string,
+  framework: Extract<Framework, 'react' | 'solid' | 'svelte'>,
+): Map<string, string> {
+  const result = new Map<string, string>()
+  const srcRoot = join(repoRoot, 'packages', framework, 'src')
+  if (!existsSync(srcRoot)) return result
+
+  const pluginsDir = join(repoRoot, 'packages')
+  const roots = existsSync(pluginsDir)
+    ? [
+        srcRoot,
+        ...readdirSync(pluginsDir, { withFileTypes: true })
+          .filter((e) => e.isDirectory() && e.name.startsWith('plugin-'))
+          .map((e) => join(pluginsDir, e.name, 'src', framework))
+          .filter(existsSync),
+      ]
+    : [srcRoot]
+
+  for (const root of roots) {
+    for (const file of walkTs(root)) {
+      const text = readFileSync(file, 'utf8')
+      // Line-bounded: the type argument must stay on the declaration line, or
+      // the capture runs on into the following JSDoc and component statement.
+      for (const match of text.matchAll(new RegExp(INTRINSIC_PROPS_ALIAS_RE, 'g'))) {
+        const [, name, rawType] = match
+        const type = rawType.replace(/\s+/g, ' ').trim()
+        const base = type.replace(/<.*$/, '').trim()
+        if (!INTRINSIC_ATTRIBUTE_RE.test(base)) continue
+        // A type that *also* carries an object literal is fully extractable;
+        // leave those to the normal path.
+        const declaration = text.slice(match.index!, match.index! + match[0].length)
+        if (declaration.includes('{')) continue
+        if (!result.has(name)) result.set(name, type)
+      }
+    }
+  }
+  return result
+}

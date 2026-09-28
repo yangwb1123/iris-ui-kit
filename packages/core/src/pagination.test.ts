@@ -86,12 +86,10 @@ describe('createPaginatedResource', () => {
   })
 
   it('hasMore uses the reported total for a short page in paged mode', async () => {
-    const fetcher = vi.fn(
-      async ({ page }: PageQuery): Promise<PageResult<number>> => ({
-        items: [page],
-        total: 20,
-      }),
-    )
+    const fetcher = vi.fn(async ({ page }: PageQuery): Promise<PageResult<number>> => ({
+      items: [page],
+      total: 20,
+    }))
     const r = createPaginatedResource(fetcher, { pageSize: 10, mode: 'paged' })
     await r.loadMore()
     expect(r.hasMore()).toBe(true)
@@ -100,12 +98,10 @@ describe('createPaginatedResource', () => {
   })
 
   it('hasMore uses the reported total for a short page in infinite mode', async () => {
-    const fetcher = vi.fn(
-      async ({ page }: PageQuery): Promise<PageResult<number>> => ({
-        items: [page],
-        total: 20,
-      }),
-    )
+    const fetcher = vi.fn(async ({ page }: PageQuery): Promise<PageResult<number>> => ({
+      items: [page],
+      total: 20,
+    }))
     const r = createPaginatedResource(fetcher, { pageSize: 10, mode: 'infinite' })
     await r.loadMore()
     expect(r.hasMore()).toBe(true)
@@ -144,11 +140,9 @@ describe('createPaginatedResource', () => {
   })
 
   it('treats an empty unknown-total page as exhausted in paged mode', async () => {
-    const fetcher = vi.fn(
-      async ({ page }: PageQuery): Promise<PageResult<number>> => ({
-        items: page === 1 ? [1, 2] : [],
-      }),
-    )
+    const fetcher = vi.fn(async ({ page }: PageQuery): Promise<PageResult<number>> => ({
+      items: page === 1 ? [1, 2] : [],
+    }))
     const r = createPaginatedResource(fetcher, { pageSize: 2, mode: 'paged' })
     await r.loadMore()
     expect(r.hasMore()).toBe(true)
@@ -178,12 +172,10 @@ describe('createPaginatedResource', () => {
   })
 
   it('does not supersede a re-entrant request started by the refresh reset', async () => {
-    const fetcher = vi.fn(
-      async ({ page }: PageQuery): Promise<PageResult<number>> => ({
-        items: [page],
-        total: 10,
-      }),
-    )
+    const fetcher = vi.fn(async ({ page }: PageQuery): Promise<PageResult<number>> => ({
+      items: [page],
+      total: 10,
+    }))
     const r = createPaginatedResource(fetcher, { pageSize: 10 })
     let nestedLoad: Promise<void> | undefined
     r.subscribe((state) => {
@@ -223,11 +215,9 @@ describe('createPaginatedResource', () => {
   })
 
   it('normalizes invalid page and pageSize inputs before fetching', async () => {
-    const fetcher = vi.fn(
-      async (query: PageQuery): Promise<PageResult<number>> => ({
-        items: [query.page, query.pageSize],
-      }),
-    )
+    const fetcher = vi.fn(async (query: PageQuery): Promise<PageResult<number>> => ({
+      items: [query.page, query.pageSize],
+    }))
     const r = createPaginatedResource(fetcher, { pageSize: Number.NaN })
     expect(r.getState().pageSize).toBe(20)
 
@@ -256,12 +246,10 @@ describe('createPaginatedResource', () => {
   })
 
   it('rejects non-finite totals as malformed fetch results', async () => {
-    const fetcher = vi.fn(
-      async (): Promise<PageResult<number>> => ({
-        items: [1],
-        total: Number.NaN,
-      }),
-    )
+    const fetcher = vi.fn(async (): Promise<PageResult<number>> => ({
+      items: [1],
+      total: Number.NaN,
+    }))
     const r = createPaginatedResource(fetcher)
 
     await r.goToPage(1)
@@ -271,11 +259,9 @@ describe('createPaginatedResource', () => {
   })
 
   it('forwards an AbortSignal to a two-argument fetcher and keeps one-argument calls intact', async () => {
-    const oneArgument = vi.fn(
-      async (query: PageQuery): Promise<PageResult<number>> => ({
-        items: [query.page],
-      }),
-    )
+    const oneArgument = vi.fn(async (query: PageQuery): Promise<PageResult<number>> => ({
+      items: [query.page],
+    }))
     const oneArgumentResource = createPaginatedResource(oneArgument, { pageSize: 10 })
     await oneArgumentResource.goToPage(1)
     expect(oneArgument.mock.calls[0]?.[0]).toEqual({ page: 1, pageSize: 10 })
@@ -418,11 +404,9 @@ describe('createPaginatedResource', () => {
   it('works without AbortController in an SSR-like runtime', async () => {
     vi.stubGlobal('AbortController', undefined)
     try {
-      const fetcher = vi.fn(
-        async (query: PageQuery): Promise<PageResult<number>> => ({
-          items: [query.page],
-        }),
-      )
+      const fetcher = vi.fn(async (query: PageQuery): Promise<PageResult<number>> => ({
+        items: [query.page],
+      }))
       const r = createPaginatedResource(fetcher, { pageSize: 10 })
       await r.goToPage(1)
       expect(fetcher).toHaveBeenCalledWith({ page: 1, pageSize: 10 })

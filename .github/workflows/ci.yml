@@ -35,6 +35,9 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: Gate-launcher unit tests (scripts/lib)
+        run: pnpm test:scripts
+
       - name: Lint
         run: pnpm lint
 
@@ -52,6 +55,12 @@ jobs:
 
       - name: Manifest up-to-date
         run: pnpm check:manifest
+
+      - name: Documented facts match manifest
+        run: pnpm check:doc-facts
+
+      - name: Cross-framework parity has not regressed
+        run: pnpm check:parity
 
       - name: Generated docs reference up-to-date
         run: pnpm check:docs-reference

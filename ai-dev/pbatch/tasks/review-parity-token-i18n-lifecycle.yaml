@@ -1,0 +1,172 @@
+# pbatch 批次：iris-ui 四路只读对抗审查（并行）
+#
+# 用法（在 iris-ui 仓库根执行）：
+#   python3 -m pbatch ai-dev/pbatch/tasks/review-parity-token-i18n-lifecycle.yaml --dry-run
+#   python3 -m pbatch ai-dev/pbatch/tasks/review-parity-token-i18n-lifecycle.yaml
+#
+# 背景：确定性门禁（check:parity / audit:tokens / test / lint …）已覆盖可机器判定
+# 的部分；本批次只找**门禁抓不到**的四类真实缺陷：跨框架行为分叉、token/主题
+# 纪律、i18n/a11y 覆盖、core 边界与资源生命周期。
+#
+# 硬约束：
+# - 只读。禁止创建或修改仓库里的任何文件。
+# - **你的最后一条消息就是交付物**：pbatch 会把 stdout 原样存成 output 文件。
+#   所以必须把完整报告正文打印在最终回复里；只回复“报告已写入 xxx”是无效交付，
+#   会被覆盖成一句话。
+# - 每条结论必须读过当前源码并给出 path:line 证据；无法验证的不写。
+# - docs/ui-audit/design-intelligence.md 已过期（Card hover / Select empty /
+#   info tone / dialog backdrop 均已修复），不要复述其中已修项。
+config_version: 1
+
+tasks:
+  # ── 1. 四框架行为分叉（prop 名之外的语义分叉）─────────────────────
+  - prompt: |
+      你是 iris-ui 的跨框架一致性审查者，只读审查，不修改任何文件。
+
+      仓库根 = 当前目录。先读 AGENTS.md（项目铁律）再开始。
+
+      背景：iris-ui 的同一套 core 逻辑由 react / vue / solid / svelte 四个适配器
+      薄桥实现。`pnpm check:parity` 只比对**声明出来的 prop 名**，因此“某适配器
+      声明了 prop 但运行时静默忽略”“某能力只在一个适配器真正实现”这类**语义**
+      分叉在 CI 全绿下完全不可见。上一轮就是这样发现 `asChild` 在 solid/svelte
+      上被静默忽略的。
+
+      你的任务：找出**当前仍然存在**的语义分叉，按下列优先级：
+      1. props 声明了但实现里没消费（写了 `asChild`/`loading`/`disabled` 之类却
+         在渲染路径上被忽略）。
+      2. 同一能力只有一个适配器有（例如某组件 react 有 keyboard 导航 /
+         focus 管理 / 空态 / 边界处理，vue/solid/svelte 没有）。
+      3. 同一状态语义在四端表现不同（如错误态/加载态/空态的 DOM 钩子
+         `data-iris-*`、aria 属性、默认文案 key 不同）。
+      4. `pnpm check:parity:print` 输出的 surfaceAsymmetry 最高的那几个组件
+         （最大/最小 prop 数之比），逐个人工核对是否真有能力缺失，还是框架惯用
+         差异（Vue `modelValue`、Solid `onChange`、Svelte 回调 props 属正常）。
+
+      工作方法建议：先跑 `pnpm check:parity:print` 拿到候选清单，再对每个候选
+      组件**读四份源码**（packages/{react,vue,solid,svelte}/src/...）逐 prop /
+      逐状态对照。可用 grep 交叉验证，不要凭组件名猜测。
+
+      输出：**在最终回复里直接打印下面这份 markdown 全文**（不要写文件），含
+      - 概览表：ID | 严重度(P0 能力缺失 / P1 语义不一致 / P2 惯用差异可接受) | 组件 | 一句话症状
+      - 每条发现：证据（四端 path:line 对照）、用户可见症状、最小修复建议
+        （写清该改哪个文件的哪一段）、能抓住它的测试（哪个测试文件、断言什么）
+      - 明确列出你**核对后判定为可接受**的高 asymmetry 组件及理由
+      只写你亲自读代码验证过的发现，最多 12 条，按严重度排序。
+    provider: openai-codex
+    output: docs/auto/reviews/parity-semantic.md
+    timeout: 3600
+
+  # ── 2. token / 主题 / 皮肤 / RTL / 减动效纪律 ─────────────────────
+  - prompt: |
+      你是 iris-ui 的 token 与主题纪律审查者，只读审查，不修改任何文件。
+
+      仓库根 = 当前目录。先读 AGENTS.md（尤其是「主题与皮肤」一节的铁律），
+      再读 packages/tokens/src/tokens.ts 与 light.ts / dark.ts 了解真实 token 集。
+
+      背景：`pnpm audit:tokens` 能抓“CSS var 不在 token 集里”，抓不到以下四类：
+      1. 硬编码颜色**不在** `var(--iris-*, fallback)` 里（即颜色绕过 token 体系，
+         换肤后不跟随）；fallback 本身用 rgba/hex 是允许的。
+      2. `var(--iris-x, fallback)` 里的 token 名拼错或根本不存在（fallback 静默
+         生效，看起来正常，实际永远不跟随皮肤）——这类最隐蔽。
+      3. 方向相关样式写死 left/right/top/bottom，而项目要求 CSS 逻辑属性
+         （margin-inline-start / inset-inline 等），RTL 下会错。
+      4. 减动效 / 深色模式 / 皮肤覆盖下会失效的样式：硬编码浅色背景、忽略
+         `prefers-reduced-motion`、忽略 `--iris-*` 而写死色值。
+
+      范围：packages/{tokens,theme,skins,react,vue,solid,svelte}/src 与
+      packages/plugin-*/src 的 UI 代码。**不审** apps/、tests/、node_modules。
+
+      工作方法：用 grep 找 `#[0-9a-fA-F]{3,8}`、`rgb(`、`rgba(`、`hsl(`，
+      然后逐个判断它是否处在 `var(--iris-*, …)` 的 fallback 位置内；对每个
+      `var(--iris-*` 出现，反查 token 是否真实存在于 packages/tokens（拼写与
+      名称都要核）。对 `left:`/`right:` 判断是否语义上属于方向相关。
+
+      输出：**在最终回复里直接打印下面这份 markdown 全文**（不要写文件），含
+      - 概览表：ID | 严重度(P0 换肤即坏 / P1 静默 fallback / P2 规范不一致) |
+        文件 | 一句话症状
+      - 每条：path:line 证据、为什么是缺陷（具体在什么条件下暴露）、最小修复
+        （改成哪个 token 或哪个逻辑属性）、能抓住它的检查（现有门禁加规则？或
+        单测/axe 断言？）
+      - 末尾给出“可自动化的门禁建议”：哪几类可以写成 `scripts/check-*.mjs`
+        的确定性规则，避免下次靠人肉复查
+      只写你亲自读代码验证过的发现，最多 15 条，按严重度排序。
+    provider: openai-codex
+    output: docs/auto/reviews/token-discipline.md
+    timeout: 3600
+
+  # ── 3. i18n 覆盖 + 可访问性 ──────────────────────────────────────
+  - prompt: |
+      你是 iris-ui 的 i18n 与可访问性审查者，只读审查，不修改任何文件。
+
+      仓库根 = 当前目录。先读 AGENTS.md，再读 packages/core/src/i18n-messages.ts
+      （内置文案真相源）与 packages/plugin-locale-zh/src/core/index.ts（zh-CN 包）。
+
+      背景：locale-zh 已有“每个内置 key 都必须有中文”的回归测试，但以下情况
+      测试抓不到：
+      1. 组件里**硬编码的英文字符串**（aria-label / title / 空态 / 兜底文案 /
+         placeholder），没有走 `t('x.y')`。
+      2. 组件调用了 `t('some.key')`，但该 key **不存在**于
+         `defaultMessages`（运行时静默回退成 key 字符串本身）。
+      3. 只有部分组件支持 i18n：同一族组件有的接了 t()、有的没有。
+      4. a11y 缺口：可交互元素无可访问名称；开关类组件缺 aria-checked /
+         aria-expanded / aria-pressed；浮层缺 focus 陷阱或关闭后焦点不回归；
+         图标按钮无 aria-label；表单控件缺 label 关联；状态变化无
+         aria-live；自定义 role 缺必需属性。
+
+      方法建议：
+      - 用 grep 找 JSX/模板里的裸文本节点与 aria-label="..." 字面量，逐个判断
+        是否是用户可见/可听文案。
+      - 抽出所有 `t('...')` 的 key，与 i18n-messages.ts 的 key 集合做差集。
+      - 对每个 primitive 目录检查键盘可达性（tabIndex/role/onKeyDown）与 aria。
+
+      输出：**在最终回复里直接打印下面这份 markdown 全文**（不要写文件），含
+      - 概览表：ID | 严重度(P0 阻断无障碍/国际化 / P1 缺失态 / P2 一致性) |
+        组件 | 一句话症状
+      - 每条：path:line 证据、暴露条件（哪个 locale / 哪个 AT / 哪个交互路径）、
+        最小修复（该加哪个 i18n key、哪个 aria 属性）、能抓住它的测试
+        （现有 axe 套件覆盖什么、还缺什么断言）
+      - 末尾给出“i18n key 差集”的完整清单（key → 组件）
+      只写你亲自读代码验证过的发现，最多 15 条，按严重度排序。
+    provider: openai-codex
+    output: docs/auto/reviews/i18n-a11y.md
+    timeout: 3600
+
+  # ── 4. core 边界 + 资源生命周期 + SSR/hydration ───────────────────
+  - prompt: |
+      你是 iris-ui 的架构边界与资源生命周期审查者，只读审查，不修改任何文件。
+
+      仓库根 = 当前目录。先读 AGENTS.md（尤其「不可妥协的原则」与
+      「组合模式」两张表），再读 docs/ARCHITECTURE.md。
+
+      背景与要找的缺陷类型：
+      1. **下沉不足**：本该在 core（框架无关）的状态机/控制器/纯函数被写在
+         适配器里（渲染期做业务逻辑、适配器自带 effect 清理逻辑、四端各自重推
+         同一套合并/派生算法）。典型信号：同一个算法在四个适配器里各写一遍且
+         写法不同。
+      2. **下沉过度**：core 里出现 DOM/浏览器专属依赖，或适配器为了复用 core
+         而付出复杂度（对比 packages/core/src/slot.ts 的下沉收益：A 零配置在场、
+         B 不用不进包、net-negative 就不下沉）。
+      3. **资源泄漏**：事件监听、ResizeObserver/IntersectionObserver、定时器、
+         AbortController、订阅（store/bus/socket）没有在卸载时清理；core 提供了
+         `createDisposableScope` / `useDisposableScope` 却没被用的地方。
+      4. **异步竞态**：请求返回顺序错乱、未 abort 的旧请求覆盖新状态、
+         debounce/throttle 在卸载后仍回调。
+      5. **SSR/hydration 风险**：渲染期访问 window/document、模块级自增 id
+         （应用框架原生 useId）、时间/随机数导致的服务端-客户端不一致。
+
+      方法：grep 找 `addEventListener|setTimeout|setInterval|new (ResizeObserver|
+      IntersectionObserver|MutationObserver)|\.subscribe\(` 等，逐个确认有对应
+      清理；grep `window\.|document\.|navigator\.` 确认在 core 内不出现；
+      找四端重复实现的同名算法。
+
+      输出：**在最终回复里直接打印下面这份 markdown 全文**（不要写文件），含
+      - 概览表：ID | 严重度(P0 泄漏/竞态/SLR 崩 SSR / P1 下沉不足 / P2 风格) |
+        位置 | 一句话症状
+      - 每条：path:line 证据、复现条件、修复方向（该下沉到 core 的哪个模块 /
+          该用哪个已有 core 原语 / 该在哪个 effect 清理）、能抓住它的测试
+      - 末尾给出“建议下沉到 core 的候选清单”，每条标注预估净收益
+        （减少重复实现？四端一致性？体积影响？），并明确哪些**不应该**下沉
+      只写你亲自读代码验证过的发现，最多 15 条，按严重度排序。
+    provider: openai-codex
+    output: docs/auto/reviews/core-lifecycle.md
+    timeout: 3600

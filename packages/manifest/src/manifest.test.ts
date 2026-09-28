@@ -31,11 +31,25 @@ describe('buildManifest', () => {
   })
 
   it('computes per-framework stats', () => {
-    expect(buildManifest(sample).stats).toEqual({
+    expect(buildManifest(sample).stats).toMatchObject({
       total: 3,
       full: 0,
       byFramework: { react: 2, vue: 2, solid: 0, svelte: 0 },
     })
+  })
+
+  it('reports every sample component as parity-incomparable (no 4-framework contract)', () => {
+    // The sample has no per-framework contracts at all, so nothing is
+    // comparable. This must be reported honestly rather than counted as parity.
+    const { parity } = buildManifest(sample).stats
+    expect(parity).toMatchObject({
+      identical: 0,
+      nearIdentical: 0,
+      divergent: 0,
+      incomparable: 3,
+      propTotals: { react: 0, vue: 0, solid: 0, svelte: 0 },
+    })
+    expect(parity?.meanRatio).toBe(1)
   })
 
   it('groups components and flattens the token catalog', () => {
@@ -113,6 +127,39 @@ describe('discover (real repo)', () => {
       .filter((c) => c.frameworks.slice().sort().join(',') !== ALL.join(','))
       .map((c) => `${c.name} [${c.frameworks.slice().sort().join('/')}]`)
     expect(offParity).toEqual([])
+  })
+
+  it('emits cross-framework parity accounting for the real inventory', () => {
+    // The 4-framework check above proves every component is *exported* by all
+    // four adapters. It says nothing about whether they expose the same
+    // surface — IrisTable is `native` everywhere yet has 208 react props vs 65
+    // vue. This asserts the parity metric is always present and populated, so
+    // `pnpm check:parity` can never be fed a manifest that omits it.
+    const { parity } = buildManifest(discover()).stats
+    expect(parity).toBeDefined()
+    expect(parity!.incomparable).toBe(0)
+    expect(
+      parity!.identical + parity!.nearIdentical + parity!.divergent + parity!.intrinsicSpread,
+    ).toBe(buildManifest(discover()).stats.total)
+    expect(parity!.threshold).toBeGreaterThan(0)
+    expect(parity!.threshold).toBeLessThanOrEqual(1)
+    // The caveat must ship with the artifact so a consumer cannot read these
+    // numbers as a pass/fail parity guarantee.
+    expect(parity!.caveat).toMatch(/NOT a parity guarantee/i)
+    // Every framework must actually have prop declarations counted.
+    for (const framework of ['react', 'vue', 'solid', 'svelte'] as const) {
+      expect(parity!.propTotals[framework]).toBeGreaterThan(0)
+    }
+    // Sorting keeps the artifact byte-stable.
+    expect(Object.keys(parity!.propTotals)).toEqual(['react', 'vue', 'solid', 'svelte'])
+  })
+
+  it('annotates every comparable component with its own parity row', () => {
+    const m = buildManifest(discover())
+    const withoutParity = m.components
+      .filter((c) => c.frameworkContracts && !c.parity)
+      .map((c) => c.name)
+    expect(withoutParity).toEqual([])
   })
 
   it('discovers plugin components tagged with their owning package + sub-path import', () => {

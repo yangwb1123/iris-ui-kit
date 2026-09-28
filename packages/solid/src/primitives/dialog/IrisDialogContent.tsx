@@ -4,6 +4,7 @@ import { Portal, Dynamic } from 'solid-js/web'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { useDialogContext } from './context'
+import { IrisSlot } from '../slot/IrisSlot'
 
 export interface IrisDialogContentProps extends JSX.HTMLAttributes<HTMLDivElement> {
   /** Portal target; `false` renders in place. Default renders to body. */
@@ -19,8 +20,14 @@ export interface IrisDialogDescriptionProps extends JSX.HTMLAttributes<HTMLParag
   as?: string
 }
 
-export interface IrisDialogCloseProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface IrisDialogCloseProps extends Omit<
+  JSX.ButtonHTMLAttributes<HTMLButtonElement>,
+  'ref'
+> {
+  /** Render the single child as the close control instead of a `<button>`. */
+  asChild?: boolean
   children?: JSX.Element
+  ref?: HTMLElement | ((element: HTMLElement) => void)
 }
 
 /**
@@ -178,20 +185,30 @@ export function IrisDialogDescription(props: IrisDialogDescriptionProps): JSX.El
 }
 
 /**
- * Close button for dialog.
+ * Close button for dialog. `asChild` merges the close contract onto the single
+ * child element and emits no wrapper.
  */
 export function IrisDialogClose(props: IrisDialogCloseProps): JSX.Element {
   const ctx = useDialogContext('IrisDialogClose')
-  const { onClick, children, ...rest } = props
+  const [local, others] = splitProps(props, ['asChild', 'onClick', 'children', 'ref'])
 
   const handleClick: JSX.EventHandler<HTMLButtonElement, MouseEvent> = (e) => {
-    if (typeof onClick === 'function') onClick(e)
+    if (typeof local.onClick === 'function') local.onClick(e)
+    if (e.defaultPrevented) return
     ctx.setOpen(false)
   }
 
+  if (local.asChild) {
+    return (
+      <IrisSlot {...others} onClick={handleClick as JSX.EventHandler<HTMLElement, MouseEvent>}>
+        {local.children}
+      </IrisSlot>
+    )
+  }
+
   return (
-    <button type="button" {...rest} onClick={handleClick}>
-      {children}
+    <button type="button" {...others} onClick={handleClick}>
+      {local.children}
     </button>
   )
 }

@@ -7,20 +7,20 @@
   "version": "1.0.0",
   "frameworks": ["react", "vue", "solid", "svelte"],
   "dependencies": {
-    "@iris-ui-kit/core": "^0.2.1"
+    "@iris-ui-kit/core": "^0.2.6"
   },
   "dependenciesByFramework": {
     "react": {
-      "@iris-ui-kit/react": "^0.3.0"
+      "@iris-ui-kit/react": "^0.3.2"
     },
     "vue": {
-      "@iris-ui-kit/vue": "^0.2.29"
+      "@iris-ui-kit/vue": "^0.2.52"
     },
     "solid": {
-      "@iris-ui-kit/solid": "^0.2.3"
+      "@iris-ui-kit/solid": "^0.2.5"
     },
     "svelte": {
-      "@iris-ui-kit/svelte": "^0.2.3"
+      "@iris-ui-kit/svelte": "^0.2.5"
     }
   },
   "files": [

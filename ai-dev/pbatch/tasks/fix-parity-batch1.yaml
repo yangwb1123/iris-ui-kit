@@ -1,0 +1,145 @@
+# pbatch 批次：跨框架能力补齐（第一批）
+#
+# 来源：docs/auto/reviews/parity-semantic.md（pbatch 只读审查产出，12 条带
+# file:line 证据的语义分叉）。本批只取其中**适配器局部、无 API 改名、可单测**
+# 的 4 条；跨端新增 props（Table currentRowKey / MenuItem closeOnSelect 命名 /
+# EmptyState children 语义）属维护者的 API 决策，不在本批。
+#
+# 串行执行：四个任务改同一棵树，串行避免互相覆盖。
+# 每个任务自带 artifact 级门禁 irischeck（filesize + 依赖方向 + 格式）。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-parity-batch1.yaml --dry-run
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-parity-batch1.yaml --retries 1
+#
+# 验收（整仓门禁，另起一次运行；4 个任务全绿之后再跑）：
+#   python3 -m pbatch -p "跑 irisverify 门禁并汇总结果" \
+#     --validate irisverify --retries 0
+
+tasks:
+# ── 1. React IrisRadio 支持 standalone（审查 P0-2）────────────────
+- prompt: |
+    你是 iris-ui 的 React 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+    缺陷（已由独立审查核实，证据可复核）：
+    `packages/react/src/primitives/radio/Radio.tsx:21-30` 在没有
+    `IrisRadioGroup` context 时直接抛错，而 vue/solid/svelte 三端都支持
+    单个 radio 独立使用（vue `Radio.ts:102-120,152-155`；solid
+    `IrisRadio.tsx:83-115,122-125`；svelte `IrisRadio.svelte:24-29,41-44`）。
+    结果：同一个单选按钮在 React 必须包一层 group，否则运行时失败——
+    这是四框架能力分叉，不是框架惯用差异。
+
+    任务：让 React 的 `IrisRadio` 在**无 group** 时也能独立工作，且语义与
+    另外三端一致：
+    - 受控：`checked` + `onChange(checked: boolean)`；
+    - 非受控：`defaultChecked` + 内部 state；
+    - 仍支持 group 模式（受 group 的 value/onChange 管理），行为不变；
+    - ARIA 语义与另外三端保持一致（role、aria-checked、name 分组）。
+
+    约束：
+    - 只改 React 适配器（+ 必要的 core 纯函数下沉；若三端已有共用的
+      派生逻辑就复用它，不要新写第四份）；
+    - 命名与语义对齐现有 Radix/Naive 风格：`checked` / `defaultChecked` /
+      `onChange`，不要自创 `value`+`onUpdate`；
+    - 不加与缺陷无关的 prop；不顺手重构 RadioGroup；
+    - 补测试：packages/react/src/primitives/radio/ 下新增/扩展用例，覆盖
+      (a) 无 group 受控点击切换并回调、(b) 无 group 非受控 defaultChecked
+      切换、(c) group 模式既有行为不回归、(d) disabled 不响应。
+
+    完成标准：`pnpm --filter @iris-ui-kit/react test` 全绿，
+    `pnpm --filter @iris-ui-kit/react typecheck` 无错。
+    你的最终回复用中文简述：改了什么、为什么这样改、测试结果（贴关键行）。
+  provider: openai-codex
+  timeout: 3600
+  validate: irischeck
+  output: docs/auto/reviews/parity-batch1-react-radio.md
+
+# ── 2. Vue IrisDragger 非受控拖动生效（审查 P0-3）───────────────
+- prompt: |
+    你是 iris-ui 的 Vue 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+    缺陷（已由独立审查核实）：
+    `packages/vue/src/primitives/dragger/Dragger.ts:23-37,54-67` 只
+    `emit('update:modelValue')`，没有本地状态；react
+    （`Dragger.tsx:51-53,78-84`）、solid（`IrisDragger.tsx:37-49`）、
+    svelte（`IrisDragger.svelte:38-47`）都有内部位置状态。
+    结果：Vue 端不绑 `v-model`（或父组件不回写）时，拖动事件触发了但
+    transform 永远停在初始位置——**非受控模式完全不可用**。
+
+    任务：给 Vue 的 `IrisDragger` 补上非受控内部位置：
+    - 有 `modelValue` 时保持受控（父组件是唯一真相）；
+    - 无 `modelValue` 时用内部 ref 驱动 transform，并在拖动中更新；
+    - `defaultPosition` 之类的初始值按现有 props 语义接（若已存在
+      `defaultValue`/`initialPosition` 之类，沿用它，不要新造一个同义 prop）；
+    - 与另外三端的拖动阈值、pointer 捕获、disabled 行为保持一致。
+
+    约束：只改 Vue 适配器；若三端已有共用的拖动派生逻辑，复用它；
+    不做无关重构；补测试覆盖 (a) 非受控拖动后 transform 改变、
+    (b) 受控时仍由父组件决定、(c) disabled 不动。
+
+    完成标准：`pnpm --filter @iris-ui-kit/vue test` 全绿，
+    `pnpm --filter @iris-ui-kit/vue typecheck` 无错。
+    最终回复用中文简述：改了什么、测试结果（贴关键行）。
+  provider: openai-codex
+  timeout: 3600
+  validate: irischeck
+  output: docs/auto/reviews/parity-batch1-vue-dragger.md
+
+# ── 3. Solid IrisList 触发 item 级 onSelect（审查 P0-6）──────────
+- prompt: |
+    你是 iris-ui 的 Solid 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+    缺陷（已由独立审查核实）：
+    react（`List.tsx:20-27,195-200`）、vue（`List.ts:55-59,96-110`）、
+    svelte（`IrisList.svelte:24-35,147-152`）都有 item 级选择回调，
+    Solid 明确没有（`IrisList.tsx:13-25,97-102`）——只能拿到 value 变更，
+    拿不到被选中的完整 item（例如需要整行对象才能渲染选中态或发请求）。
+
+    任务：给 Solid 的 `IrisList` 增加与三端同义的 item 级回调：
+    - 命名与其它三端一致（`onSelect`），参数是被选中的 item（泛型 Row）；
+    - 鼠标点击与键盘（Enter/Space）两条选择路径都要触发，且只触发一次；
+    - disabled item 不触发；受控/非受控两种模式都成立；
+    - 不改变现有 value 变更回调的触发时机与次数。
+
+    约束：只改 Solid 适配器；若 core 里已有可复用的选择模型/派生逻辑，
+    复用而不是新写；不新增与缺陷无关的 prop；补测试覆盖
+    (a) 点击回调拿到完整 item、(b) 键盘选择同样回调且不重复、
+    (c) disabled item 不回调、(d) 既有 value 回调行为不变。
+
+    完成标准：`pnpm --filter @iris-ui-kit/solid test` 全绿，
+    `pnpm --filter @iris-ui-kit/solid typecheck` 无错。
+    最终回复用中文简述：改了什么、测试结果（贴关键行）。
+  provider: openai-codex
+  timeout: 3600
+  validate: irischeck
+  output: docs/auto/reviews/parity-batch1-solid-list.md
+
+# ── 4. Solid/Svelte Tour 步骤指示器走 i18n（审查 P1-10）──────────
+- prompt: |
+    你是 iris-ui 的 Solid + Svelte 适配器维护者。仓库根 = 当前目录，
+    先读 AGENTS.md。
+
+    缺陷（已由独立审查核实）：
+    Tour 的步骤指示器在 react（`Tour.tsx:201-205`）与 vue
+    （`Tour.ts:209-214`）走 i18n 的 `tour.step`（带 `{current}`/`{total}`
+    占位），而 solid（`IrisTour.tsx:232-237`）与 svelte
+    （`IrisTour.svelte:155-160`）直接硬编码 `1 / n` 英文式样。
+    结果：切到 zh-CN 时，同一个 Tour 在两个框架显示不同文案——违反
+    AGENTS.md「文案走 i18n」。
+
+    任务：让 solid 与 svelte 的步骤指示器改用与 react/vue 相同的
+    i18n key 与占位符（`tour.step`，参数 `{current}` / `{total}`），
+    渲染结构与另外两端一致（同样的 DOM 钩子/类名，若有）。
+    不要新增 i18n key（core 里已存在），也不要改 react/vue。
+
+    约束：只改 solid + svelte 两个适配器；不重构 Tour；
+    补测试：两端各加一条用例，切换 locale 为 `zh-CN` 后断言指示器文案
+    走翻译（并保留一条默认英文 locale 的断言）。
+
+    完成标准：`pnpm --filter @iris-ui-kit/solid test` 与
+    `pnpm --filter @iris-ui-kit/svelte test` 全绿，两个包的 typecheck 无错。
+    最终回复用中文简述：改了什么、测试结果（贴关键行）。
+  provider: openai-codex
+  timeout: 3600
+  validate: irischeck
+  output: docs/auto/reviews/parity-batch1-tour-i18n.md

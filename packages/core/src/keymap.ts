@@ -16,14 +16,7 @@
 
 /** The rebindable built-in shortcut actions. */
 export type IrisTableKeyAction =
-  | 'edit'
-  | 'clear'
-  | 'undo'
-  | 'redo'
-  | 'copy'
-  | 'paste'
-  | 'fill'
-  | 'query'
+  'edit' | 'clear' | 'undo' | 'redo' | 'copy' | 'paste' | 'fill' | 'query'
 
 /** Prop-shaped partial keymap: ONE key spec string per action. */
 export type IrisTableKeymap = Partial<Record<IrisTableKeyAction, string>>

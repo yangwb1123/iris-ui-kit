@@ -58,6 +58,26 @@ export interface ManifestFrameworkContract {
   slots: string[]
   /** Public `Iris<Name>*` type exports reachable from that adapter's barrels. */
   publicTypes: string[]
+  /**
+   * How `props` was obtained.
+   *
+   * - `declared` (default) — enumerated from a props `interface`, an object
+   *   literal, or references to other `Iris*Props` types.
+   * - `intrinsic-spread` — the props type is a bare reference to the
+   *   framework's own attribute set (`React.HTMLAttributes<HTMLSpanElement>`,
+   *   `JSX.HTMLAttributes<…>`, …) with no enumerable members. `props` is
+   *   therefore empty, but the component still forwards that whole attribute
+   *   set at runtime. An empty `props` array means "nothing extractable", not
+   *   "accepts nothing" — see `intrinsicAttributes` for the actual surface.
+   */
+  propsSource?: 'declared' | 'intrinsic-spread'
+  /**
+   * The intrinsic attribute type the component forwards, verbatim from source
+   * (e.g. `React.HTMLAttributes<HTMLSpanElement>`). Present only when
+   * `propsSource === 'intrinsic-spread'`, so a consumer can tell the real
+   * surface instead of inferring "no props" from an empty array.
+   */
+  intrinsicAttributes?: string
 }
 
 /** Raw record produced by the filesystem discovery pass. */
@@ -173,6 +193,13 @@ export interface ManifestComponent {
     propCount?: number
     eventCount?: number
   }
+  /**
+   * Cross-framework prop-name overlap for this component, plus the
+   * largest/smallest prop-count spread. Present only when the component has a
+   * native contract in every framework. See `parity.ts` for why this is a
+   * visibility metric and not a pass/fail guarantee.
+   */
+  parity?: import('./parity').ComponentParity
 }
 
 export interface ManifestGroupSummary {
@@ -203,6 +230,12 @@ export interface IrisManifest {
     full: number
     /** Component count per framework. */
     byFramework: Record<Framework, number>
+    /**
+     * Cross-framework prop-surface accounting. `byFramework` answers "does each
+     * adapter export it?"; this answers "do the adapters expose the same
+     * surface?". Absent only on legacy manifests built before this field.
+     */
+    parity?: import('./parity').ParitySummary
   }
 }
 

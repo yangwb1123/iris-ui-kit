@@ -62,8 +62,8 @@
     <p
       style="margin: 0 0 12px; color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px)"
     >
-      Manage billing is disabled, so IrisTree excludes it from the Workspace checkbox cascade.
-      Audit log shows the adapter loading marker while its child resolves.
+      Manage billing is disabled, so IrisTree excludes it from the Workspace checkbox cascade. Audit
+      log shows the adapter loading marker while its child resolves.
     </p>
     <IrisTree
       nodes={permissionNodes}

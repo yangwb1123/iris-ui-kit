@@ -335,7 +335,11 @@ class AdminDataControllerEngine<Row extends AdminRow> {
             async () => {
               await page.mutations?.delete?.(key, current)
               if (page.data !== undefined) {
-                const index = clientRows.indexOf(current)
+                // Locate by row key, not object identity: the resource publishes
+                // *clones* of `clientRows`, so `indexOf(current)` was always -1
+                // and a client-side delete silently removed nothing. The update
+                // path above already matches on the key for the same reason.
+                const index = clientRows.findIndex((row, rowIndex) => rowKey(row, rowIndex) === key)
                 if (index >= 0) clientRows.splice(index, 1)
               }
             },

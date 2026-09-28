@@ -6,6 +6,14 @@ function renderContractDetails(contract: ManifestFrameworkContract): string[] {
     details.push(
       `props ${contract.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')}`,
     )
+  } else if (contract.propsSource === 'intrinsic-spread' && contract.intrinsicAttributes) {
+    // An empty `props` array here means "nothing enumerable", NOT "accepts
+    // nothing". Saying so explicitly stops an agent from calling the component
+    // with no attributes.
+    details.push(
+      `props (all of ${contract.intrinsicAttributes} — forwards the whole attribute set; ` +
+        `the list is not enumerable, do NOT treat as prop-less)`,
+    )
   }
   if (contract.events.length) details.push(`events ${contract.events.join(', ')}`)
   if (contract.slots.length) details.push(`slots ${contract.slots.join(', ')}`)
@@ -123,6 +131,66 @@ function renderPluginSection(manifest: IrisManifest, lines: string[]): void {
   lines.push('')
 }
 
+function renderParitySection(manifest: IrisManifest, lines: string[]): void {
+  const parity = manifest.stats.parity
+  if (!parity) return
+  const fws = manifest.frameworks
+  lines.push('## Cross-framework parity (READ BEFORE generating code)')
+  lines.push(parity.caveat)
+  lines.push(
+    `- Of ${parity.identical + parity.nearIdentical + parity.divergent + parity.incomparable} ` +
+      `comparable components: ${parity.identical} have identical prop names in all ` +
+      `${fws.length} frameworks, ${parity.nearIdentical} are near-identical, ` +
+      `${parity.divergent} diverge.` +
+      (parity.incomparable > 0 ? ` ${parity.incomparable} could not be compared.` : ''),
+  )
+  if (parity.intrinsicSpread > 0) {
+    lines.push(
+      `- ${parity.intrinsicSpread} components are excluded from those counts because at least ` +
+        `one adapter forwards its whole HTML attribute set (contract \`propsSource: ` +
+        `"intrinsic-spread"\`), so its prop list is not enumerable. An empty \`props\` array ` +
+        `there does NOT mean the component accepts no attributes — read ` +
+        `\`intrinsicAttributes\`.`,
+    )
+  }
+  lines.push(
+    `- Mean shared prop names: ${Math.round(parity.meanRatio * 100)}% (lowest ` +
+      `${Math.round(parity.minRatio * 100)}%).`,
+  )
+  lines.push(
+    `- Prop declarations per framework: ` +
+      fws.map((f) => `${f} ${parity.propTotals[f]}`).join(', ') +
+      '.',
+  )
+  lines.push(
+    `- Prop names declared by exactly one framework (capability that exists on one ` +
+      `adapter only): ` +
+      fws.map((f) => `${f} ${parity.exclusivePropNames[f]}`).join(', ') +
+      '.',
+  )
+  if (parity.maxAsymmetry) {
+    const widest = parity.maxAsymmetry
+    lines.push(
+      `- Widest surface gap: \`${widest.name}\` — ${widest.ratio}x ` +
+        `(${fws.map((f) => `${f} ${widest.byFramework[f]}`).join(', ')} props).`,
+    )
+  }
+  if (parity.worst.length > 0) {
+    lines.push('- Most divergent components (shared/union prop names):')
+    for (const row of parity.worst) {
+      lines.push(
+        `  - \`${row.name}\` ${Math.round(row.ratio * 100)}% shared — ` +
+          `${fws.map((f) => `${f} ${row.byFramework[f]}`).join(', ')}` +
+          (row.uniqueTo.react?.length
+            ? `; react-only: ${row.uniqueTo.react.slice(0, 8).join(', ')}` +
+              (row.uniqueTo.react.length > 8 ? `, +${row.uniqueTo.react.length - 8} more` : '')
+            : ''),
+      )
+    }
+  }
+  lines.push('')
+}
+
 function renderComponentSection(manifest: IrisManifest, lines: string[]): void {
   const byFramework = manifest.frameworks
     .map((framework) => framework + ' ' + String(manifest.stats.byFramework[framework]))
@@ -166,6 +234,7 @@ export function renderLlmsText(manifest: IrisManifest): string {
   renderManifestHeader(manifest, lines)
   renderResilienceSection(lines)
   renderPluginSection(manifest, lines)
+  renderParitySection(manifest, lines)
   renderComponentSection(manifest, lines)
   renderTokenSection(manifest, lines)
   return lines.join('\n')

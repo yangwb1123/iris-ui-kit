@@ -62,14 +62,10 @@
     <section class="query-builder-panel" aria-labelledby="query-builder-controls-heading">
       <h2 id="query-builder-controls-heading">User-access filter</h2>
       <p class="query-builder-help">
-        Add rules and groups with the native Svelte adapter. Invalid editable rows stay visible while
-        invalid values are excluded from the compiled output.
+        Add rules and groups with the native Svelte adapter. Invalid editable rows stay visible
+        while invalid values are excluded from the compiled output.
       </p>
-      <IrisQueryBuilder
-        {builder}
-        onChange={handleChange}
-        onQueryChange={handleQueryChange}
-      />
+      <IrisQueryBuilder {builder} onChange={handleChange} onQueryChange={handleQueryChange} />
     </section>
 
     <section class="query-builder-panel" aria-labelledby="query-builder-results-heading">
@@ -81,8 +77,8 @@
             data-iris-query-builder-compiled-rules
             aria-label="Compiled rules"
             aria-live="polite"
-            class="query-builder-readout"
-          >{JSON.stringify(compiledRules)}</output>
+            class="query-builder-readout">{JSON.stringify(compiledRules)}</output
+          >
         </div>
         <div class="query-builder-readout-row">
           <span class="query-builder-readout-label">Recursive query</span>
@@ -90,8 +86,8 @@
             data-iris-query-builder-recursive-query
             aria-label="Recursive query"
             aria-live="polite"
-            class="query-builder-readout"
-          >{JSON.stringify(recursiveQuery)}</output>
+            class="query-builder-readout">{JSON.stringify(recursiveQuery)}</output
+          >
         </div>
         <div class="query-builder-readout-row">
           <span class="query-builder-readout-label">Compiled rule count</span>
@@ -99,8 +95,8 @@
             data-iris-query-builder-rule-count
             aria-label="Compiled rule count"
             aria-live="polite"
-            class="query-builder-readout"
-          >{compiledRules.length}</output>
+            class="query-builder-readout">{compiledRules.length}</output
+          >
         </div>
         <div class="query-builder-readout-row">
           <span class="query-builder-readout-label">Callback status</span>
@@ -108,8 +104,8 @@
             data-iris-query-builder-callback-status
             aria-label="Callback status"
             aria-live="polite"
-            class="query-builder-readout"
-          >{callbackStatus}</output>
+            class="query-builder-readout">{callbackStatus}</output
+          >
         </div>
       </div>
     </section>

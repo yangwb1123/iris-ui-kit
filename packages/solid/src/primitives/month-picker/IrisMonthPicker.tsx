@@ -316,7 +316,18 @@ export function IrisMonthPicker(props: IrisMonthPickerProps): JSX.Element {
               >
                 ‹
               </button>
-              <strong data-iris-month-picker-year="" aria-live="polite">
+              <strong
+                data-iris-month-picker-year=""
+                aria-live="polite"
+                style={{
+                  // Same typography contract as React/Vue: the year header must
+                  // not inherit the trigger's font size, or the four adapters
+                  // render the same control at different heights.
+                  color: 'var(--iris-foreground)',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
+                  'line-height': 'var(--iris-font-line-height-md, 1.5)',
+                }}
+              >
                 {visibleYear()}
               </strong>
               <button

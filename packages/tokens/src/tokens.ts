@@ -75,7 +75,16 @@ export const SPACING_TOKENS = [
   'iris.control.height.lg',
 ] as const
 
-export const RADII_TOKENS = ['iris.radius.sm', 'iris.radius.md', 'iris.radius.lg'] as const
+// `full` is the pill radius. It is a token (not a component-local 999px) so a
+// skin can round pickers/chips to a different shape and the four adapters stay
+// in sync — IrisIconPicker referenced `--iris-radius-full` before it existed,
+// which the token audit correctly flagged as an unknown token.
+export const RADII_TOKENS = [
+  'iris.radius.sm',
+  'iris.radius.md',
+  'iris.radius.lg',
+  'iris.radius.full',
+] as const
 
 export const SHADOW_TOKENS = [
   'iris.shadow.sm',

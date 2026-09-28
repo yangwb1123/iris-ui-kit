@@ -9,9 +9,15 @@ import {
   type RowMutateOptions,
 } from './data-source/types'
 import {
-  type DataSourceMutationRecord,
-  type DataSourceMutationRuntime,
-  type DataSourceMutationRuntimeOptions,
+  applyOptimisticLayer,
+  republishPendingLayers,
+  rowsAfterRemovingLayer,
+  type OptimisticLayerApi,
+} from './data-source-optimistic'
+import type {
+  DataSourceMutationRecord,
+  DataSourceMutationRuntime,
+  DataSourceMutationRuntimeOptions,
 } from './data-source-mutation-types'
 
 type MutationRecord<T> = DataSourceMutationRecord<T>
@@ -32,34 +38,17 @@ export function createDataSourceMutationRuntime<T>(
       mutationRecords.get(record.id) === record ||
       detachedMutationRecords.get(record.id) === record)
 
-  const applyOptimistic = (apply: (rows: T[]) => T[], rows: T[]): T[] =>
-    cloneRuntimeValue(apply(cloneRuntimeValue(rows)))
-  const rowsAfterRemoving = (record: MutationRecord<T>): T[] | undefined => {
-    if (!record.optimistic || !record.optimisticApply) return undefined
-    const remaining = [...mutationRecords.values()]
-      .filter(
-        (candidate) =>
-          candidate !== record &&
-          candidate.lifecycle === lifecycle &&
-          candidate.optimistic &&
-          candidate.optimisticApply,
-      )
-      .sort((a, b) => a.sequence - b.sequence)
-    let rows = cloneRuntimeValue(options.getCanonicalRows())
-    for (const layer of remaining) rows = applyOptimistic(layer.optimisticApply!, rows)
-    return rows
+  // One adapter over the store so the optimistic-layer arithmetic in
+  // data-source-optimistic.ts stays framework-agnostic and unit-testable.
+  const layerApi: OptimisticLayerApi<T> = {
+    getCanonicalRows: options.getCanonicalRows,
+    publish: (rows) => options.store.setState((s) => ({ ...s, rows })),
   }
-
-  const reapplyPendingOptimistic = (): void => {
-    const pending = [...mutationRecords.values()]
-      .filter(
-        (record) => record.lifecycle === lifecycle && record.optimistic && record.optimisticApply,
-      )
-      .sort((a, b) => a.sequence - b.sequence)
-    let rows = cloneRuntimeValue(options.getCanonicalRows())
-    for (const record of pending) rows = applyOptimistic(record.optimisticApply!, rows)
-    options.store.setState((s) => ({ ...s, rows }))
-  }
+  const applyOptimistic = applyOptimisticLayer
+  const rowsAfterRemoving = (record: MutationRecord<T>): T[] | undefined =>
+    rowsAfterRemovingLayer(layerApi, mutationRecords, lifecycle, record)
+  const reapplyPendingOptimistic = (): void =>
+    republishPendingLayers(layerApi, mutationRecords, lifecycle)
 
   const hasOtherRowMutation = (record: MutationRecord<T>): boolean => {
     if (record.rowKey === undefined) return false

@@ -6,7 +6,31 @@ import { defaultIcons } from './default-icons'
 import { createIconRegistry, defaultIconRegistry, resolveIcon } from './registry'
 import { renderIconSvg } from './render'
 import { resolveThemedIcon } from './theme'
+import {
+  defaultIconPickerCategories,
+  getIconPickerCategoryId,
+  matchesIconPickerQuery,
+} from './icon-picker'
 import type { IrisIcon, IrisIconSet } from './types'
+
+describe('@iris-ui-kit/icons picker helpers', () => {
+  it('categorizes built-in names and safely buckets unlisted custom names', () => {
+    expect(getIconPickerCategoryId('chevron-down')).toBe('navigation')
+    expect(getIconPickerCategoryId('thumbs-up')).toBe('display')
+    expect(getIconPickerCategoryId('custom-glyph')).toBe('other')
+    expect(
+      getIconPickerCategoryId('custom-glyph', [{ id: 'custom', iconNames: ['custom-glyph'] }]),
+    ).toBe('custom')
+    expect(defaultIconPickerCategories.map((category) => category.id)).toContain('communication')
+  })
+
+  it('matches semantic names case-insensitively and across hyphen spacing', () => {
+    expect(matchesIconPickerQuery('thumbs-up', 'THUMBS UP')).toBe(true)
+    expect(matchesIconPickerQuery('chevron-down', 'down')).toBe(true)
+    expect(matchesIconPickerQuery('chevron-down', 'folder')).toBe(false)
+    expect(matchesIconPickerQuery('anything', '  ')).toBe(true)
+  })
+})
 
 describe('@iris-ui-kit/icons defaultIcons', () => {
   it('ships a non-trivial set with well-formed structured entries', () => {

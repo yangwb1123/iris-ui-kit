@@ -16,3 +16,9 @@ export {
 } from './registry'
 export { renderIconSvg, type RenderIconOptions } from './render'
 export { resolveThemedIcon, type ThemeIconConfig } from './theme'
+export {
+  defaultIconPickerCategories,
+  getIconPickerCategoryId,
+  matchesIconPickerQuery,
+  type IrisIconPickerCategory,
+} from './icon-picker'

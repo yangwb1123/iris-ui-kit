@@ -122,7 +122,7 @@
     "@floating-ui/dom": "^1.7.6"
   },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "svelte": "^5.20.0"
   },
   "devDependencies": {
     "@sveltejs/package": "^2.3.7",

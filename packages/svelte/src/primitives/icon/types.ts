@@ -1,4 +1,4 @@
-import type { IrisIconRegistry } from '@iris-ui-kit/icons'
+import type { IrisIconPickerCategory, IrisIconRegistry } from '@iris-ui-kit/icons'
 
 export interface IrisIconProps {
   /** Semantic icon name resolved via the registry (e.g. 'check', 'chevron-down'). */
@@ -16,4 +16,22 @@ export interface IrisIconProps {
   class?: string
   /** Inline CSS string (Svelte convention), appended after the base icon style. */
   style?: string
+}
+
+export interface IrisIconPickerProps {
+  value?: string
+  defaultValue?: string
+  onValueChange?: (name: string) => void
+  registry?: IrisIconRegistry
+  iconNames?: readonly string[]
+  categories?: readonly IrisIconPickerCategory[]
+  columns?: number
+  disabled?: boolean
+  label?: string
+  searchLabel?: string
+  placeholder?: string
+  emptyText?: string
+  class?: string
+  style?: string
+  [key: string]: unknown
 }

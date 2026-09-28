@@ -1,2 +1,3 @@
 export { default as IrisIcon } from './IrisIcon.svelte'
-export type { IrisIconProps } from './types'
+export { default as IrisIconPicker } from './IrisIconPicker.svelte'
+export type { IrisIconPickerProps, IrisIconProps } from './types'

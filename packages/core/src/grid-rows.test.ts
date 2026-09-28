@@ -203,6 +203,60 @@ describe('createGridRowsFeature', () => {
     ])
   })
 
+  it('keeps lookups and mutations correct while legacy mode aliases the seed array', () => {
+    const seed: Row[] = [
+      { id: 1, name: 'Ada' },
+      { id: 2, name: 'Lin' },
+    ]
+    const core = createGridCore<Row>({
+      features: [createGridRowsFeature({ defaultRows: seed, cloneDefaultRows: false })],
+    })
+    const model = core.invoke<GridRowsModel<Row>>('getRowsModel')
+    expect(model.find(2)).toBe(seed[1]) // materialize any lazy index before the external edit
+
+    seed.unshift({ id: 0, name: 'Grace' })
+    seed.push({ id: 3, name: 'Katherine' })
+    seed[2]!.id = 4
+
+    expect(model.find(3)).toBe(seed[3])
+    expect(model.find(4)).toBe(seed[2])
+    expect(model.update(4, { name: 'Updated' })).toBe(true)
+    expect(model.removeMany([3])).toEqual([3])
+    expect(model.get()).toEqual([
+      { id: 0, name: 'Grace' },
+      { id: 1, name: 'Ada' },
+      { id: 4, name: 'Updated' },
+    ])
+  })
+
+  it('uses live row positions for remove operations on a legacy aliased seed', () => {
+    const singleSeed: Row[] = [
+      { id: 1, name: 'Ada' },
+      { id: 2, name: 'Lin' },
+    ]
+    const singleCore = createGridCore<Row>({
+      features: [createGridRowsFeature({ defaultRows: singleSeed, cloneDefaultRows: false })],
+    })
+    const singleModel = singleCore.invoke<GridRowsModel<Row>>('getRowsModel')
+    expect(singleModel.find(2)).toBe(singleSeed[1])
+    singleSeed.unshift({ id: 0, name: 'Grace' })
+    expect(singleModel.remove(2)).toBe(true)
+    expect(singleModel.get().map((row) => row.id)).toEqual([0, 1])
+
+    const batchSeed: Row[] = [
+      { id: 1, name: 'Ada' },
+      { id: 2, name: 'Lin' },
+    ]
+    const batchCore = createGridCore<Row>({
+      features: [createGridRowsFeature({ defaultRows: batchSeed, cloneDefaultRows: false })],
+    })
+    const batchModel = batchCore.invoke<GridRowsModel<Row>>('getRowsModel')
+    expect(batchModel.find(2)).toBe(batchSeed[1])
+    batchSeed.unshift({ id: 0, name: 'Grace' })
+    expect(batchModel.removeMany([2])).toEqual([2])
+    expect(batchModel.get().map((row) => row.id)).toEqual([0, 1])
+  })
+
   it('updates and removes nested rows through one immutable root transaction', () => {
     type TreeRow = Row & { children?: TreeRow[] }
     const source: TreeRow[] = [

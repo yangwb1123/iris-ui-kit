@@ -185,6 +185,10 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
       }
     : null
   let flatIndex: FlatRowIndex<Row> | undefined
+  // With cloneDefaultRows:false, the caller retains the initial seed (including
+  // its row objects), so list positions and keys can change without a store
+  // notification. Keep this legacy mode on traversal instead of caching.
+  const canUseFlatRowIndex = options.cloneDefaultRows !== false || options.defaultRows === undefined
   const getFlatIndex = (rows: readonly Row[]): FlatRowIndex<Row> => {
     if (!flatIndex || flatIndex.rows !== rows) {
       flatIndex = createFlatRowIndex(rows, rowKeyField)
@@ -269,7 +273,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
     find: (key) => {
       const rows = store.getState()
       if (treeOptions) return findTreeRow(rows, key, treeOptions)
-      if (!options.getRowKey) {
+      if (!options.getRowKey && canUseFlatRowIndex) {
         const index = getFlatIndex(rows)
         if (index.usable) return index.get(key)?.row
       }
@@ -314,7 +318,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         if (result.blocked || result.removed.size === 0 || !result.changed) return false
         return commit(result.rows, reasoned(commitOptions, 'remove'), true)
       }
-      if (!options.getRowKey) {
+      if (!options.getRowKey && canUseFlatRowIndex) {
         const index = getFlatIndex(rows)
         if (index.usable) {
           const entry = index.get(key)
@@ -349,7 +353,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         })
         return removed
       }
-      const indexed = !options.getRowKey ? getFlatIndex(current) : undefined
+      const indexed = !options.getRowKey && canUseFlatRowIndex ? getFlatIndex(current) : undefined
       const { removedIndexes, removedKeys } = resolveFlatRowRemovals(current, keys, keyOf, indexed)
       if (removedKeys.length === 0) return []
       const next = current.filter((_, index) => !removedIndexes.has(index))
@@ -364,7 +368,7 @@ export function createGridRowsModel<Row extends Record<string, unknown>, Meta = 
         if (!result.matched || result.blocked || !result.changed) return false
         return commit(result.rows, reasoned(commitOptions, 'edit'), true)
       }
-      if (!options.getRowKey) {
+      if (!options.getRowKey && canUseFlatRowIndex) {
         const index = getFlatIndex(rows)
         if (index.usable) {
           const entry = index.get(key)

@@ -356,6 +356,24 @@ grid/table 那一轮把发布面推过预算，本轮实测量化如下（gzip�
 | `@iris-ui-kit/solid`               | 120  | 128.2                        | +8.2         |
 | `svelte-published`（387 文件合计） | 274  | 302.8                        | +28.8        |
 
+顺带修好了 size 门里同类的第二个 launcher 缺陷：`check-size.mjs` 把
+`node_modules/.bin/esbuild`（pnpm 的 `/bin/sh` shim，Node spawn 不了）当作唯一
+候选，于是 per-export 探针全部返回 `unmeasurable`，被 enforce 的
+`icons: import { chevronDown }` 探针以“体积超标”的形式报错。现在改为按
+“平台包 → pnpm store → shim”顺序逐个**验证可执行**（`scripts/lib/esbuild-binary.mjs`
+
+- `pnpm test:scripts` 覆盖）。探针恢复测量后暴露了一个此前不可见的事实：
+
+| 探针                                      | 实测                   | 预算 |
+| ----------------------------------------- | ---------------------- | ---- |
+| `icons: import { chevronDown }`（单图标） | **0.1KB**（全集的 4%） | 1KB  |
+| `react: import { IrisButton }`            | 28.2KB（17%）          | 30KB |
+| `vue: import { IrisButton }`              | **116.0KB（93%）**     | 80KB |
+
+即 Vue barrel 实际上不可 tree-shake：只 import 一个按钮就会拖进整个包的 93%。
+这条探针目前是 advisory（不阻断），但它是**已量化的真实成本**，应作为后续
+“Vue 子路径导出/按需入口”工作的输入。
+
 没有单方面抬高预算：六项同时超标属于**一个**决策（发布面要不要瘦身），
 逐包抬预算只会把决策藏起来。可选路径：(a) 把 grid/table 新能力从主 barrel
 解耦成子路径导出，core 只导出控制器；(b) 明确接受当前体积并一次性重设预算，

@@ -25,6 +25,7 @@ import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import { findEsbuild } from './lib/esbuild-binary.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const UPDATE_BASELINE = process.argv.includes('--update-baseline')
@@ -264,10 +265,14 @@ function forbiddenPublishedArtifacts(dir, violations = []) {
  * esbuild from either pnpm's root shim or virtual-store shim. Missing tools are
  * reported explicitly instead of being silently mistaken for absent support.
  */
-const ESBUILD_BIN = [
-  join(repoRoot, 'node_modules', '.bin', 'esbuild'),
-  join(repoRoot, 'node_modules', '.pnpm', 'node_modules', '.bin', 'esbuild'),
-].find((candidate) => existsSync(candidate))
+/**
+ * Resolve a *runnable* esbuild once. The `node_modules/.bin/esbuild` shim is
+ * not spawnable from Node under pnpm (Node ends up loading the platform
+ * binary as JavaScript), which used to turn the enforced tree-shaking probe
+ * into a false failure with a vague "esbuild unavailable" message.
+ */
+const ESBUILD = findEsbuild(repoRoot)
+const ESBUILD_BIN = ESBUILD.bin
 
 /** Externals so the probe measures the ADAPTER's payload, not its peer deps. */
 const EXTERNALS = {
@@ -494,7 +499,7 @@ for (const probe of IMPORT_PROBES) {
     rows.push({
       pkg: probe.name,
       status: probe.enforce ? 'MISSING' : 'skip',
-      detail: 'unmeasurable (build first, or esbuild unavailable)',
+      detail: `unmeasurable — ${ESBUILD.bin === null ? `no runnable esbuild; tried ${ESBUILD.tried.join(', ')}` : 'build the package first'}`,
     })
     if (probe.enforce) failed = true
     continue

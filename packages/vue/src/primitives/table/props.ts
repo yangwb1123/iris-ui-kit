@@ -238,6 +238,20 @@ export const tableProps = {
   },
   seq: { type: Boolean, default: false },
   seqStartIndex: { type: Number, default: 1 },
+  /** Current (highlighted) row key (vxe row-config.isCurrent parity). */
+  currentRowKey: { type: [String, Number] as PropType<string | number> },
+  /** Fired when the current row changes (row click). */
+  onCurrentRowChange: {
+    type: Function as PropType<(key: string | number, row: Record<string, unknown>) => void>,
+    default: undefined,
+  },
+  /** Veto a current-row change: return false to keep the previous row. */
+  beforeCurrentRowChange: {
+    type: Function as PropType<
+      (key: string | number, row: Record<string, unknown>) => boolean | void
+    >,
+    default: undefined,
+  },
   spanMethod: {
     type: Function as PropType<(params: IrisTableSpanMethodParams) => IrisTableSpan | null>,
     default: undefined,

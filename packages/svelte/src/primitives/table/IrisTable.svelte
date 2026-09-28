@@ -112,6 +112,9 @@
     seq = false,
     seqStartIndex = 1,
     seqMethod,
+    currentRowKey,
+    onCurrentRowChange,
+    beforeCurrentRowChange,
     spanMethod,
     columnVisibility,
     columnOrder,
@@ -851,6 +854,10 @@
     return resolveTableRowKey(row, rowKey, index)
   }
 
+  function emitCurrentRowChange(key: string | number, row: Record<string, unknown>): void {
+    if (beforeCurrentRowChange?.(key, row) !== false) onCurrentRowChange?.(key, row)
+  }
+
   let lazyLoading = $state<Set<string>>(new Set())
   let lazyLoaded = $state<Set<string>>(new Set())
   let lazyEpoch = 0
@@ -1515,6 +1522,8 @@
   {flatTree}
   {virtualScroll}
   {rowId}
+  {currentRowKey}
+  onCurrentRowChange={onCurrentRowChange ? emitCurrentRowChange : undefined}
   {liveRowFor}
   {isSelected}
   {toggleRow}

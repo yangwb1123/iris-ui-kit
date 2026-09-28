@@ -120,6 +120,109 @@ describe('IrisTable', () => {
     expect(onRowClick).toHaveBeenCalledTimes(1)
   })
 
+  it('renders the controlled current-row marker', () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, rowKey: 'id', currentRowKey: 1 },
+    })
+
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="2"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBeNull()
+  })
+
+  it('asks beforeCurrentRowChange before reporting an allowed change', async () => {
+    const order: string[] = []
+    const beforeCurrentRowChange = vi.fn(() => {
+      order.push('before')
+      return true
+    })
+    const onCurrentRowChange = vi.fn(() => order.push('change'))
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        rowKey: 'id',
+        beforeCurrentRowChange,
+        onCurrentRowChange,
+      },
+    })
+
+    await fireEvent.click(container.querySelector('[data-iris-table-row-key="2"]')!)
+    expect(beforeCurrentRowChange).toHaveBeenCalledWith(2, expect.objectContaining({ id: 2 }))
+    expect(onCurrentRowChange).toHaveBeenCalledWith(2, expect.objectContaining({ id: 2 }))
+    expect(order).toEqual(['before', 'change'])
+  })
+
+  it('vetoes a current-row change when beforeCurrentRowChange returns false', async () => {
+    const beforeCurrentRowChange = vi.fn(() => false)
+    const onCurrentRowChange = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        rowKey: 'id',
+        currentRowKey: 1,
+        beforeCurrentRowChange,
+        onCurrentRowChange,
+      },
+    })
+
+    await fireEvent.click(container.querySelector('[data-iris-table-row-key="2"]')!)
+    expect(beforeCurrentRowChange).toHaveBeenCalledWith(2, expect.objectContaining({ id: 2 }))
+    expect(onCurrentRowChange).not.toHaveBeenCalled()
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="2"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBeNull()
+  })
+
+  it('moves the current-row marker only after the parent accepts the new key', async () => {
+    const onCurrentRowChange = vi.fn()
+    const { container, rerender } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        rowKey: 'id',
+        currentRowKey: 1,
+        onCurrentRowChange,
+      },
+    })
+
+    await fireEvent.click(container.querySelector('[data-iris-table-row-key="2"]')!)
+    expect(onCurrentRowChange).toHaveBeenCalledWith(2, expect.objectContaining({ id: 2 }))
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+
+    await rerender({ columns, data, rowKey: 'id', currentRowKey: 2, onCurrentRowChange })
+    flushSync()
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBeNull()
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="2"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+  })
+
   it('sorts ascending on header click for sortable column', async () => {
     const onUpdateSort = vi.fn()
     const { container } = render(IrisTable, { props: { columns, data, onUpdateSort } })

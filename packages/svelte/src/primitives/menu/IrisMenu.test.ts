@@ -55,8 +55,10 @@ describe('IrisMenu', () => {
       const { getByText } = render(MenuHarness, { props: { withSub: true } })
       await fireEvent.click(getByText('Menu'))
       expect(subContent()).toBeNull()
+      expect(subTrigger().getAttribute('data-iris-menu-sub-arrow')).toBe('right')
       await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
       expect(subContent()).not.toBeNull()
+      expect(subContent()!.getAttribute('data-iris-menu-sub-placement')).toBe('right-start')
       expect(subTrigger().getAttribute('aria-expanded')).toBe('true')
       // aria-controls references the submenu panel (not an unreferenced id).
       expect(subTrigger().getAttribute('aria-controls')).toBe(subContent()!.id)
@@ -68,6 +70,20 @@ describe('IrisMenu', () => {
       await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
       expect(subContent()).not.toBeNull()
       await fireEvent.keyDown(subTrigger(), { key: 'ArrowLeft' })
+      expect(subContent()).toBeNull()
+    })
+
+    it('RTL flips submenu placement, keys, and arrow direction', async () => {
+      const { getByText } = render(MenuHarness, { props: { withSub: true, dir: 'rtl' } })
+      await fireEvent.click(getByText('Menu'))
+      expect(subTrigger().getAttribute('data-iris-menu-sub-arrow')).toBe('left')
+      expect(subContent()).toBeNull()
+
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowLeft' })
+      expect(subContent()).not.toBeNull()
+      expect(subContent()!.getAttribute('data-iris-menu-sub-placement')).toBe('left-start')
+
+      await fireEvent.keyDown(subContent()!, { key: 'ArrowRight' })
       expect(subContent()).toBeNull()
     })
 

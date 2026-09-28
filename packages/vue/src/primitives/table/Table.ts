@@ -842,6 +842,13 @@ export const IrisTable = defineComponent({
     const rowId = (row: Record<string, unknown>, index: number): string | number =>
       resolveTableRowKey(row, props.rowKey, index)
 
+    const emitCurrentRowChange = (key: string | number, row: Record<string, unknown>): void => {
+      if (!props.onCurrentRowChange) return
+      if (props.beforeCurrentRowChange?.(key, row) !== false) {
+        props.onCurrentRowChange(key, row)
+      }
+    }
+
     // -------- Built-in audit log (iris 独有, batch EN — mirror react batch
     // AT) --------
     // A core createAuditLog keeps a bounded (200) ring of ONE entry per
@@ -2538,6 +2545,7 @@ export const IrisTable = defineComponent({
         isInRange,
         cellRangeCtrl,
         emitRowClick: (row, index) => emit('rowClick', row, index),
+        emitCurrentRowChange,
         emitRowDblclick: (row, index) => emit('rowDblclick', row, index),
       })
 

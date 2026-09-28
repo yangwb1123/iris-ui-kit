@@ -1,3 +1,4 @@
+import { PREFERS_REDUCED_MOTION_QUERY, watchMediaQuery } from '@iris-ui-kit/core'
 import { createEffect, mergeProps, onCleanup, type JSX } from 'solid-js'
 
 export type IrisMarqueeDirection = 'left' | 'right'
@@ -13,14 +14,6 @@ export interface IrisMarqueeProps {
   style?: JSX.CSSProperties
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
-}
-
 /**
  * Marquee: an accessible auto-scrolling ticker. The slot content is rendered
  * twice (the second copy aria-hidden) for a seamless loop.
@@ -34,19 +27,43 @@ export function IrisMarquee(props: IrisMarqueeProps): JSX.Element {
 
   let trackEl: HTMLDivElement | undefined
   let anim: Animation | null = null
+  let hovered = false
 
   createEffect(() => {
     const el = trackEl
-    if (!el || typeof el.animate !== 'function' || prefersReducedMotion()) return
-    const frames =
-      merged.direction === 'left'
-        ? [{ transform: 'translateX(0%)' }, { transform: 'translateX(-50%)' }]
-        : [{ transform: 'translateX(-50%)' }, { transform: 'translateX(0%)' }]
-    anim = el.animate(frames, {
-      duration: Math.max(1, merged.duration) * 1000,
-      iterations: Infinity,
+    const currentDirection = merged.direction
+    const currentDuration = merged.duration
+    const currentPauseOnHover = merged.pauseOnHover
+    const stop = () => {
+      anim?.cancel()
+      anim = null
+    }
+    const start = () => {
+      stop()
+      if (!el || typeof el.animate !== 'function') return
+      const frames =
+        currentDirection === 'left'
+          ? [{ transform: 'translateX(0%)' }, { transform: 'translateX(-50%)' }]
+          : [{ transform: 'translateX(-50%)' }, { transform: 'translateX(0%)' }]
+      anim = el.animate(frames, {
+        duration: Math.max(1, currentDuration) * 1000,
+        iterations: Infinity,
+      })
+      if (currentPauseOnHover && hovered) anim.pause()
+    }
+    const mediaQuery =
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia(PREFERS_REDUCED_MOTION_QUERY)
+        : null
+    const subscription = watchMediaQuery(mediaQuery, (reduced) => {
+      if (reduced) stop()
+      else start()
     })
-    onCleanup(() => anim?.cancel())
+
+    onCleanup(() => {
+      subscription.destroy()
+      stop()
+    })
   })
 
   const copy = (hidden: boolean): JSX.Element => (
@@ -69,9 +86,11 @@ export function IrisMarquee(props: IrisMarqueeProps): JSX.Element {
     <div
       data-iris-marquee=""
       onMouseEnter={() => {
+        hovered = true
         if (merged.pauseOnHover) anim?.pause()
       }}
       onMouseLeave={() => {
+        hovered = false
         if (merged.pauseOnHover) anim?.play()
       }}
       style={{

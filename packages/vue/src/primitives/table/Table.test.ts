@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisI18nProvider } from '../../i18n'
@@ -494,6 +494,72 @@ describe('IrisTable', () => {
     const emit = wrapper.emitted('rowClick')
     expect(emit?.[0]?.[0]).toEqual(rows[1])
     expect(emit?.[0]?.[1]).toBe(1)
+  })
+
+  it('renders and reports controlled current-row changes', async () => {
+    const onCurrentRowChange = vi.fn()
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: rows,
+        rowKey: 'id',
+        currentRowKey: 1,
+        onCurrentRowChange,
+      },
+      attachTo: host,
+    })
+
+    expect(wrapper.find('[data-iris-table-row-key="1"]').attributes('data-iris-row-current')).toBe(
+      'true',
+    )
+    expect(wrapper.find('[data-iris-table-row-key="2"]').attributes('data-iris-row-current')).toBe(
+      undefined,
+    )
+
+    await wrapper.find('[data-iris-table-row-key="2"]').trigger('click')
+    expect(onCurrentRowChange).toHaveBeenCalledWith(2, expect.objectContaining(rows[1]!))
+    // Like React, the callback does not mutate the controlled highlight. The
+    // parent must write the accepted key back before the marker moves.
+    expect(wrapper.find('[data-iris-table-row-key="1"]').attributes('data-iris-row-current')).toBe(
+      'true',
+    )
+    expect(wrapper.find('[data-iris-table-row-key="2"]').attributes('data-iris-row-current')).toBe(
+      undefined,
+    )
+
+    await wrapper.setProps({ currentRowKey: 2 })
+    expect(wrapper.find('[data-iris-table-row-key="1"]').attributes('data-iris-row-current')).toBe(
+      undefined,
+    )
+    expect(wrapper.find('[data-iris-table-row-key="2"]').attributes('data-iris-row-current')).toBe(
+      'true',
+    )
+  })
+
+  it('vetoes a current-row change when beforeCurrentRowChange returns false', async () => {
+    const beforeCurrentRowChange = vi.fn(() => false)
+    const onCurrentRowChange = vi.fn()
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: rows,
+        rowKey: 'id',
+        currentRowKey: 1,
+        beforeCurrentRowChange,
+        onCurrentRowChange,
+      },
+      attachTo: host,
+    })
+
+    await wrapper.find('[data-iris-table-row-key="2"]').trigger('click')
+    expect(beforeCurrentRowChange).toHaveBeenCalledWith(2, expect.objectContaining(rows[1]!))
+    expect(onCurrentRowChange).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-iris-table-row-key="1"]').attributes('data-iris-row-current')).toBe(
+      'true',
+    )
+    expect(wrapper.find('[data-iris-table-row-key="2"]').attributes('data-iris-row-current')).toBe(
+      undefined,
+    )
   })
 
   // ─── Table Pro v1 features ───

@@ -714,6 +714,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const rowId = (row: Row, index: number): string | number =>
     resolveTableRowKey(row, merged.rowKey, index)
 
+  const emitCurrentRowChange = (key: string | number, row: Row): void => {
+    const onCurrentRowChange = merged.onCurrentRowChange
+    if (!onCurrentRowChange) return
+    if (merged.beforeCurrentRowChange?.(key, row) !== false) {
+      onCurrentRowChange(key, row)
+    }
+  }
+
   // Static and lazy tree children share the Core rows source. Lazy rows use a
   // conventional `children` slot after their first load; static trees keep
   // their caller-provided `getSubRows` accessor.
@@ -1820,6 +1828,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     },
     seqValue,
     onContextMenu: handleContextMenu,
+    onCurrentRowChange: emitCurrentRowChange,
   })
 
   return (

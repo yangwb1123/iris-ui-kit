@@ -1,6 +1,9 @@
 import * as React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { darkTheme, lightTheme } from '@iris-ui-kit/tokens'
+import { ThemeProvider } from '../../theme'
 import { IrisMenu } from './Menu'
 import { IrisMenuTrigger } from './MenuTrigger'
 import { IrisMenuContent } from './MenuContent'
@@ -182,6 +185,7 @@ describe('@iris-ui-kit/react IrisMenuSub', () => {
     const subTrig = document.querySelector('[data-iris-menu-sub-trigger]')!
     expect(subTrig.getAttribute('aria-haspopup')).toBe('menu')
     expect(subTrig.getAttribute('aria-expanded')).toBe('false')
+    expect(subTrig.getAttribute('data-iris-menu-sub-arrow')).toBe('right')
   })
 
   it('clicking sub trigger opens the submenu', () => {
@@ -200,7 +204,9 @@ describe('@iris-ui-kit/react IrisMenuSub', () => {
     act(() => {
       fireEvent.keyDown(subTrig, { key: 'ArrowRight' })
     })
-    expect(document.querySelector('[data-iris-menu-sub]')).not.toBeNull()
+    const sub = document.querySelector('[data-iris-menu-sub]') as HTMLElement
+    expect(sub).not.toBeNull()
+    expect(sub.getAttribute('data-iris-menu-sub-placement')).toBe('right-start')
   })
 
   it('ArrowLeft on submenu closes it', () => {
@@ -213,6 +219,31 @@ describe('@iris-ui-kit/react IrisMenuSub', () => {
     expect(sub).not.toBeNull()
     act(() => {
       fireEvent.keyDown(sub, { key: 'ArrowLeft' })
+    })
+    expect(document.querySelector('[data-iris-menu-sub]')).toBeNull()
+  })
+
+  it('RTL flips submenu placement, keys, and arrow direction', () => {
+    const store = createThemeStore({
+      themes: { light: lightTheme, dark: darkTheme },
+      default: 'light',
+    })
+    render(
+      <ThemeProvider store={store} dir="rtl">
+        {nested()}
+      </ThemeProvider>,
+    )
+    const subTrig = document.querySelector('[data-iris-menu-sub-trigger]') as HTMLElement
+    expect(subTrig.getAttribute('data-iris-menu-sub-arrow')).toBe('left')
+
+    act(() => {
+      fireEvent.keyDown(subTrig, { key: 'ArrowLeft' })
+    })
+    const sub = document.querySelector('[data-iris-menu-sub]') as HTMLElement
+    expect(sub.getAttribute('data-iris-menu-sub-placement')).toBe('left-start')
+
+    act(() => {
+      fireEvent.keyDown(sub, { key: 'ArrowRight' })
     })
     expect(document.querySelector('[data-iris-menu-sub]')).toBeNull()
   })

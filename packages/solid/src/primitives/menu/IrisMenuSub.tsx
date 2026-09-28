@@ -1,6 +1,7 @@
 import { createEffect, createSignal, createUniqueId, onCleanup, Show, type JSX } from 'solid-js'
-import { nextEnabledIndex } from '@iris-ui-kit/core'
+import { getMenuSubDirection, nextEnabledIndex } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
+import { useDirection } from '../../theme'
 import { useDismiss } from '../../floating/useDismiss'
 import { useMenuContext } from './context'
 
@@ -16,6 +17,8 @@ export interface IrisMenuSubProps {
  */
 export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
   const ctx = useMenuContext('IrisMenuSub')
+  const direction = useDirection()
+  const submenuDirection = () => getMenuSubDirection(direction())
   const [open, setOpen] = createSignal(false)
   const [trigger, setTrigger] = createSignal<HTMLElement | undefined>()
   const [submenu, setSubmenu] = createSignal<HTMLElement | undefined>()
@@ -25,7 +28,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
     anchor: trigger,
     floating: submenu,
     open,
-    placement: 'right-start',
+    placement: submenuDirection().placement,
     offset: 4,
   })
 
@@ -52,8 +55,15 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
         e.preventDefault()
         items[nextEnabledIndex(index, -1, items.length)]?.focus()
         break
-      case 'ArrowLeft':
       case 'Escape':
+        e.preventDefault()
+        e.stopPropagation()
+        setOpen(false)
+        trigger()?.focus()
+        break
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        if (e.key !== submenuDirection().closeKey) break
         e.preventDefault()
         e.stopPropagation()
         setOpen(false)
@@ -66,8 +76,9 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
   }
 
   // Hover open is debounced ~100ms and pointer-leave does NOT close (it only
-  // cancels a pending open) — the submenu stays open until ArrowLeft / Escape /
-  // select / outside-dismiss. Matches the React/Vue reference hover model.
+  // cancels a pending open) — the submenu stays open until the direction-aware
+  // close key / Escape / select / outside-dismiss. Matches the React/Vue
+  // reference hover model.
   const HOVER_OPEN_DELAY = 100
   let openTimer: ReturnType<typeof setTimeout> | null = null
   const clearTimer = (): void => {
@@ -118,6 +129,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
         aria-controls={submenuId}
         aria-disabled={props.disabled ? 'true' : undefined}
         data-iris-menu-sub-trigger=""
+        data-iris-menu-sub-arrow={submenuDirection().arrow}
         onPointerEnter={scheduleOpen}
         onPointerLeave={clearTimer}
         onClick={() => {
@@ -125,11 +137,11 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           if (!props.disabled) setOpen((v) => !v)
         }}
         onKeyDown={(e: KeyboardEvent) => {
-          if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+          if (e.key === submenuDirection().openKey || e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             clearTimer()
             if (!props.disabled) setOpen(true)
-          } else if (e.key === 'ArrowLeft') {
+          } else if (e.key === submenuDirection().closeKey) {
             e.preventDefault()
             setOpen(false)
           }
@@ -151,7 +163,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           aria-hidden="true"
           style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', opacity: '0.7' }}
         >
-          ▶
+          {submenuDirection().arrow === 'right' ? '▶' : '◀'}
         </span>
       </div>
       <Show when={open()}>
@@ -161,6 +173,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           role="menu"
           tabindex={-1}
           data-iris-menu-sub-content=""
+          data-iris-menu-sub-placement={submenuDirection().placement}
           data-state="open"
           onPointerEnter={clearTimer}
           onKeyDown={handleKeyDown}

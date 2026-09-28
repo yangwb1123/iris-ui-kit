@@ -44,6 +44,10 @@ const TABLE_STYLES = `
 [data-iris-table-row-selected="true"] {
   --iris-row-bg: var(--iris-surface-selected);
 }
+[data-iris-row-current="true"] {
+  --iris-row-bg: var(--iris-surface-selected);
+  --iris-cell-bg: var(--iris-surface-selected);
+}
 /* Row edit mode (vxe editConfig.mode parity): the row whose editors are
    open gets the same token-driven highlight as the selected row. */
 [data-iris-table-row][data-iris-row-editing="true"] {

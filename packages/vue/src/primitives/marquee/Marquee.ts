@@ -1,14 +1,7 @@
+import { PREFERS_REDUCED_MOTION_QUERY, watchMediaQuery } from '@iris-ui-kit/core'
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
 
 export type IrisMarqueeDirection = 'left' | 'right'
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
-}
 
 /**
  * Marquee: an accessible auto-scrolling ticker. The slot content is rendered
@@ -30,10 +23,17 @@ export const IrisMarquee = defineComponent({
   setup(props, { attrs, slots }) {
     const trackEl = ref<HTMLElement | null>(null)
     let anim: Animation | null = null
+    let hovered = false
+    let mediaSubscription: ReturnType<typeof watchMediaQuery> | null = null
 
-    onMounted(() => {
+    const stop = () => {
+      anim?.cancel()
+      anim = null
+    }
+    const start = () => {
+      stop()
       const el = trackEl.value
-      if (!el || typeof el.animate !== 'function' || prefersReducedMotion()) return
+      if (!el || typeof el.animate !== 'function') return
       const frames =
         props.direction === 'left'
           ? [{ transform: 'translateX(0%)' }, { transform: 'translateX(-50%)' }]
@@ -42,8 +42,23 @@ export const IrisMarquee = defineComponent({
         duration: Math.max(1, props.duration) * 1000,
         iterations: Infinity,
       })
+      if (props.pauseOnHover && hovered) anim.pause()
+    }
+
+    onMounted(() => {
+      const mediaQuery =
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+          ? window.matchMedia(PREFERS_REDUCED_MOTION_QUERY)
+          : null
+      mediaSubscription = watchMediaQuery(mediaQuery, (reduced) => {
+        if (reduced) stop()
+        else start()
+      })
     })
-    onBeforeUnmount(() => anim?.cancel())
+    onBeforeUnmount(() => {
+      mediaSubscription?.destroy()
+      stop()
+    })
 
     const copy = (hidden: boolean) =>
       h(
@@ -69,9 +84,11 @@ export const IrisMarquee = defineComponent({
           ...attrs,
           'data-iris-marquee': '',
           onMouseenter: () => {
+            hovered = true
             if (props.pauseOnHover) anim?.pause()
           },
           onMouseleave: () => {
+            hovered = false
             if (props.pauseOnHover) anim?.play()
           },
           style: {

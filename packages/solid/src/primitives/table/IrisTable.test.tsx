@@ -148,6 +148,120 @@ describe('IrisTable', () => {
     expect(onRowClick).toHaveBeenCalledWith(data[0], 0)
   })
 
+  it('renders the controlled current-row marker', () => {
+    const currentRows = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+    ]
+    const { container } = render(() => (
+      <IrisTable columns={columns} data={currentRows} rowKey="id" currentRowKey={1} />
+    ))
+
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="2"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBeNull()
+  })
+
+  it('asks beforeCurrentRowChange before reporting an allowed change', () => {
+    const currentRows = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+    ]
+    const order: string[] = []
+    const beforeCurrentRowChange = vi.fn(() => {
+      order.push('before')
+      return true
+    })
+    const onCurrentRowChange = vi.fn(() => order.push('change'))
+    const { container } = render(() => (
+      <IrisTable
+        columns={columns}
+        data={currentRows}
+        rowKey="id"
+        beforeCurrentRowChange={beforeCurrentRowChange}
+        onCurrentRowChange={onCurrentRowChange}
+      />
+    ))
+
+    fireEvent.click(container.querySelector('[data-iris-table-row-key="2"]')!)
+    expect(beforeCurrentRowChange).toHaveBeenCalledWith(2, currentRows[1])
+    expect(onCurrentRowChange).toHaveBeenCalledWith(2, currentRows[1])
+    expect(order).toEqual(['before', 'change'])
+  })
+
+  it('vetoes a current-row change when beforeCurrentRowChange returns false', () => {
+    const currentRows = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+    ]
+    const beforeCurrentRowChange = vi.fn(() => false)
+    const onCurrentRowChange = vi.fn()
+    const { container } = render(() => (
+      <IrisTable
+        columns={columns}
+        data={currentRows}
+        rowKey="id"
+        currentRowKey={1}
+        beforeCurrentRowChange={beforeCurrentRowChange}
+        onCurrentRowChange={onCurrentRowChange}
+      />
+    ))
+
+    fireEvent.click(container.querySelector('[data-iris-table-row-key="2"]')!)
+    expect(beforeCurrentRowChange).toHaveBeenCalledWith(2, currentRows[1])
+    expect(onCurrentRowChange).not.toHaveBeenCalled()
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+  })
+
+  it('moves the current-row marker only after the parent accepts the new key', () => {
+    const currentRows = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+    ]
+    const [currentRowKey, setCurrentRowKey] = createSignal<string | number>(1)
+    const onCurrentRowChange = vi.fn()
+    const { container } = render(() => (
+      <IrisTable
+        columns={columns}
+        data={currentRows}
+        rowKey="id"
+        currentRowKey={currentRowKey()}
+        onCurrentRowChange={onCurrentRowChange}
+      />
+    ))
+
+    fireEvent.click(container.querySelector('[data-iris-table-row-key="2"]')!)
+    expect(onCurrentRowChange).toHaveBeenCalledWith(2, currentRows[1])
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+
+    setCurrentRowKey(2)
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="1"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBeNull()
+    expect(
+      container
+        .querySelector('[data-iris-table-row-key="2"]')
+        ?.getAttribute('data-iris-row-current'),
+    ).toBe('true')
+  })
+
   it('sorts data when sortable column header is clicked', () => {
     const { getByText, container } = render(() => <IrisTable columns={columns} data={data} />)
     fireEvent.click(getByText('Name'))

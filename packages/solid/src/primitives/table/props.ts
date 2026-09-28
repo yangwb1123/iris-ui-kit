@@ -51,6 +51,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   seqStartIndex?: number
   /** Custom sequence renderer (vxe seq-config.seqMethod parity). */
   seqMethod?: (params: IrisTableSeqMethodParams) => string | number
+  /** Current (highlighted) row key (vxe row-config.isCurrent parity). */
+  currentRowKey?: string | number
+  /** Fired when the current row changes (row click). */
+  onCurrentRowChange?: (key: string | number, row: Row) => void
+  /** Veto a current-row change: return false to keep the previous row. */
+  beforeCurrentRowChange?: (key: string | number, row: Row) => boolean | void
   /**
    * Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }`
    * for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make

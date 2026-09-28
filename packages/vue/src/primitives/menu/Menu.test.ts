@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { darkTheme, lightTheme } from '@iris-ui-kit/tokens'
 import { defineComponent, h, nextTick } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisMenu } from './Menu'
 import { IrisMenuTrigger } from './MenuTrigger'
 import { IrisMenuContent } from './MenuContent'
 import { IrisMenuItem, IrisMenuSeparator } from './MenuItem'
+import { ThemeProvider } from '../../theme'
 import { IrisMenuSub } from './MenuSub'
 
 enableAutoUnmount(afterEach)
@@ -58,6 +61,23 @@ const NestedHarness = defineComponent({
   },
   render() {
     return this.render()
+  },
+})
+
+const RtlNestedHarness = defineComponent({
+  setup() {
+    return () =>
+      h(
+        ThemeProvider,
+        {
+          store: createThemeStore({
+            themes: { light: lightTheme, dark: darkTheme },
+            default: 'light',
+          }),
+          dir: 'rtl',
+        },
+        { default: () => h(NestedHarness) },
+      )
   },
 })
 
@@ -156,9 +176,12 @@ describe('IrisMenu (nested with IrisMenuSub)', () => {
     const wrapper = mount(NestedHarness, { attachTo: host })
     await nextTick()
     const subTrigger = wrapper.find('[data-iris-menu-sub-trigger]')
+    expect(subTrigger.attributes('data-iris-menu-sub-arrow')).toBe('right')
     await subTrigger.trigger('keydown', { key: 'ArrowRight' })
     await nextTick()
-    expect(document.querySelector('[data-iris-menu-sub]')).not.toBeNull()
+    const sub = document.querySelector('[data-iris-menu-sub]') as HTMLElement
+    expect(sub).not.toBeNull()
+    expect(sub.getAttribute('data-iris-menu-sub-placement')).toBe('right-start')
   })
 
   it('submenu opens on click of its trigger', async () => {
@@ -167,6 +190,22 @@ describe('IrisMenu (nested with IrisMenuSub)', () => {
     await wrapper.find('[data-iris-menu-sub-trigger]').trigger('click')
     await nextTick()
     expect(document.querySelector('[data-iris-menu-sub]')).not.toBeNull()
+  })
+
+  it('RTL flips submenu placement, keys, and arrow direction', async () => {
+    const wrapper = mount(RtlNestedHarness, { attachTo: host })
+    await nextTick()
+    const subTrigger = wrapper.find('[data-iris-menu-sub-trigger]')
+    expect(subTrigger.attributes('data-iris-menu-sub-arrow')).toBe('left')
+
+    await subTrigger.trigger('keydown', { key: 'ArrowLeft' })
+    await nextTick()
+    const sub = document.querySelector('[data-iris-menu-sub]') as HTMLElement
+    expect(sub.getAttribute('data-iris-menu-sub-placement')).toBe('left-start')
+
+    sub.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    await nextTick()
+    expect(document.querySelector('[data-iris-menu-sub]')).toBeNull()
   })
 
   it('B1: pointerdown inside a teleported submenu does not dismiss the root', async () => {

@@ -90,6 +90,8 @@
     flatTree,
     virtualScroll,
     rowId,
+    currentRowKey,
+    onCurrentRowChange,
     liveRowFor,
     isSelected,
     toggleRow,
@@ -376,7 +378,7 @@
     >
       {#snippet item({ item: row, index })}
         <!-- prettier-ignore -->
-        <TableBodyRow row={row as Record<string, unknown>} {index} treeMeta={flatTree ? flatTree[index] : null} fillHeight {rowId} {liveRowFor} {isSelected} {rowMode} {rowEdit} {editConfig} {editingCellId} {editingColumnKey} {editingDraft} {editError} {pattern} {patternFill} {striped} {rowDrag} {rowDragSnapshot} {handleRowDragPointerDown} {seq} {seqValue} {hasDetail} {showSelection} {selectable} {toggleRow} {leafColumns} {visibleColSet} {spanPlan} {gridTemplate} {pinOf} {pinnedStyle} {columnFade} {keyboardNavigation} {cellRange} {cellTabIndex} {isInRange} {setFocusedCell} {expandedKeys} {expansionToggle} {isRowExpandable} {getCellValue} {beginEdit} {setCellDraft} {commitEdit} {cancelEdit} {startRange} {extendRange} {hasLazyChildren} {lazyLoad} {lazyLoading} {loadLazyChildren} {formulaTables} {editPreview} {colTrack} {onRowClick} {t} />
+        <TableBodyRow row={row as Record<string, unknown>} {index} treeMeta={flatTree ? flatTree[index] : null} fillHeight {rowId} {currentRowKey} {onCurrentRowChange} {liveRowFor} {isSelected} {rowMode} {rowEdit} {editConfig} {editingCellId} {editingColumnKey} {editingDraft} {editError} {pattern} {patternFill} {striped} {rowDrag} {rowDragSnapshot} {handleRowDragPointerDown} {seq} {seqValue} {hasDetail} {showSelection} {selectable} {toggleRow} {leafColumns} {visibleColSet} {spanPlan} {gridTemplate} {pinOf} {pinnedStyle} {columnFade} {keyboardNavigation} {cellRange} {cellTabIndex} {isInRange} {setFocusedCell} {expandedKeys} {expansionToggle} {isRowExpandable} {getCellValue} {beginEdit} {setCellDraft} {commitEdit} {cancelEdit} {startRange} {extendRange} {hasLazyChildren} {lazyLoad} {lazyLoading} {loadLazyChildren} {formulaTables} {editPreview} {colTrack} {onRowClick} {t} />
       {/snippet}
     </IrisVirtualScroll>
   {:else}
@@ -384,7 +386,7 @@
       {#each bodyData as row, index}
         {@const id = rowId(row, index)}
         <!-- prettier-ignore -->
-        <TableBodyRow {row} {index} treeMeta={flatTree ? flatTree[index] : null} fillHeight={false} {rowId} {liveRowFor} {isSelected} {rowMode} {rowEdit} {editConfig} {editingCellId} {editingColumnKey} {editingDraft} {editError} {pattern} {patternFill} {striped} {rowDrag} {rowDragSnapshot} {handleRowDragPointerDown} {seq} {seqValue} {hasDetail} {showSelection} {selectable} {toggleRow} {leafColumns} {visibleColSet} {spanPlan} {gridTemplate} {pinOf} {pinnedStyle} {columnFade} {keyboardNavigation} {cellRange} {cellTabIndex} {isInRange} {setFocusedCell} {expandedKeys} {expansionToggle} {isRowExpandable} {getCellValue} {beginEdit} {setCellDraft} {commitEdit} {cancelEdit} {startRange} {extendRange} {hasLazyChildren} {lazyLoad} {lazyLoading} {loadLazyChildren} {formulaTables} {editPreview} {colTrack} {onRowClick} {t} />
+        <TableBodyRow {row} {index} treeMeta={flatTree ? flatTree[index] : null} fillHeight={false} {rowId} {currentRowKey} {onCurrentRowChange} {liveRowFor} {isSelected} {rowMode} {rowEdit} {editConfig} {editingCellId} {editingColumnKey} {editingDraft} {editError} {pattern} {patternFill} {striped} {rowDrag} {rowDragSnapshot} {handleRowDragPointerDown} {seq} {seqValue} {hasDetail} {showSelection} {selectable} {toggleRow} {leafColumns} {visibleColSet} {spanPlan} {gridTemplate} {pinOf} {pinnedStyle} {columnFade} {keyboardNavigation} {cellRange} {cellTabIndex} {isInRange} {setFocusedCell} {expandedKeys} {expansionToggle} {isRowExpandable} {getCellValue} {beginEdit} {setCellDraft} {commitEdit} {cancelEdit} {startRange} {extendRange} {hasLazyChildren} {lazyLoad} {lazyLoading} {loadLazyChildren} {formulaTables} {editPreview} {colTrack} {onRowClick} {t} />
         {#if hasDetail && isRowExpandable(row, index) && expandedKeys.includes(String(id))}
           <div
             role="row"

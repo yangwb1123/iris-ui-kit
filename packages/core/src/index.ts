@@ -42,6 +42,13 @@ export {
   type FloatingState,
   type FloatingEvent,
 } from './floating'
+export { getMenuSubDirection, type MenuDirection, type MenuSubDirection } from './menu-direction'
+export {
+  watchMediaQuery,
+  PREFERS_REDUCED_MOTION_QUERY,
+  type MediaQueryListLike,
+  type MediaQueryChangeEvent,
+} from './media-query'
 export {
   createFormStore,
   type FormStore,

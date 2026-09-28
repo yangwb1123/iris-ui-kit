@@ -121,6 +121,8 @@ export interface TablePresentationProps {
   flatTree: Array<TreeRow<Record<string, unknown>>> | null
   virtualScroll: IrisTableProps['virtualScroll']
   rowId: (row: Record<string, unknown>, index: number) => string | number
+  currentRowKey: IrisTableProps['currentRowKey']
+  onCurrentRowChange: IrisTableProps['onCurrentRowChange']
   liveRowFor: (row: Record<string, unknown>, index: number) => Record<string, unknown>
   isSelected: (id: string | number) => boolean
   toggleRow: (id: string | number) => void

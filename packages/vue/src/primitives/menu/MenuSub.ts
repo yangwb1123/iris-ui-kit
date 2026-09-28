@@ -1,3 +1,4 @@
+import { getMenuSubDirection } from '@iris-ui-kit/core'
 import {
   Teleport,
   computed,
@@ -12,6 +13,7 @@ import {
   type PropType,
 } from 'vue'
 import { useFloating } from '../floating/useFloating'
+import { useDirection } from '../../theme'
 import { MenuContextKey } from './context'
 
 const HOVER_OPEN_DELAY = 100
@@ -21,8 +23,8 @@ const HOVER_CLOSE_DELAY = 150
  * Nested submenu. Renders its own trigger (as a `[role="menuitem"]` inside
  * the parent menu) and its own floating content panel. Opens on hover (with
  * a small delay to avoid accidental triggers when the pointer flies past)
- * and on `ArrowRight` / `Enter`; closes on `ArrowLeft` (restoring focus to
- * its own trigger).
+ * and on the direction-aware horizontal key / `Enter`; closes on the opposite
+ * horizontal key (restoring focus to its own trigger).
  *
  * Inherits `closeRoot` from the surrounding `IrisMenu` so picking a leaf
  * collapses the whole tree.
@@ -51,6 +53,9 @@ export const IrisMenuSub = defineComponent({
     if (!parentCtx) {
       throw new Error('[iris-ui] IrisMenuSub must be inside an IrisMenu')
     }
+
+    const direction = useDirection()
+    const submenuDirection = computed(() => getMenuSubDirection(direction.value))
 
     const open = ref(false)
     const triggerRef = ref<HTMLElement | null>(null)
@@ -103,7 +108,7 @@ export const IrisMenuSub = defineComponent({
       anchor: triggerRef,
       floating: contentRef,
       open,
-      placement: 'right-start',
+      placement: submenuDirection.value.placement,
       offset: -4,
     })
 
@@ -117,7 +122,7 @@ export const IrisMenuSub = defineComponent({
       contentRef,
       contentId: '',
       treeId: parentCtx.treeId,
-      placement: 'right-start',
+      placement: submenuDirection.value.placement,
       offset: 0,
       closeRoot: parentCtx.closeRoot,
     })
@@ -135,13 +140,14 @@ export const IrisMenuSub = defineComponent({
     }
     const onTriggerKeyDown = (event: KeyboardEvent) => {
       if (
-        event.key === 'ArrowRight' ||
+        event.key === submenuDirection.value.openKey ||
         event.key === 'ArrowDown' ||
         event.key === 'Enter' ||
         event.key === ' '
       ) {
-        // B4: ArrowDown opens the submenu like ArrowRight; stopPropagation
-        // keeps the root content from treating it as root-level navigation.
+        // B4: ArrowDown opens the submenu like the direction-aware open key;
+        // stopPropagation keeps the root content from treating it as root-level
+        // navigation.
         event.preventDefault()
         event.stopPropagation()
         focusOnOpen = true
@@ -155,7 +161,7 @@ export const IrisMenuSub = defineComponent({
         } else {
           open.value = true
         }
-      } else if (event.key === 'ArrowLeft') {
+      } else if (event.key === submenuDirection.value.closeKey) {
         event.preventDefault()
         event.stopPropagation()
         open.value = false
@@ -202,7 +208,7 @@ export const IrisMenuSub = defineComponent({
               ? items.length - 1
               : index - 1
         items[next]?.focus()
-      } else if (event.key === 'ArrowLeft' || event.key === 'Escape') {
+      } else if (event.key === submenuDirection.value.closeKey || event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
         open.value = false
@@ -224,6 +230,7 @@ export const IrisMenuSub = defineComponent({
           tabindex: 0,
           'data-iris-menu-sub-trigger': '',
           'data-state': open.value ? 'open' : 'closed',
+          'data-iris-menu-sub-arrow': submenuDirection.value.arrow,
           onPointerenter: onTriggerPointerEnter,
           onPointerleave: onTriggerPointerLeave,
           onClick: onTriggerClick,
@@ -245,7 +252,7 @@ export const IrisMenuSub = defineComponent({
           h('span', null, props.label || slots.label?.()),
           h('svg', { 'aria-hidden': 'true', viewBox: '0 0 16 16', width: '12', height: '12' }, [
             h('path', {
-              d: 'M6 4l4 4-4 4',
+              d: submenuDirection.value.arrow === 'right' ? 'M6 4l4 4-4 4' : 'M10 4l-4 4 4 4',
               fill: 'none',
               stroke: 'currentColor',
               'stroke-width': '1.5',
@@ -267,6 +274,7 @@ export const IrisMenuSub = defineComponent({
               role: 'menu',
               tabindex: -1,
               'data-iris-menu-sub': '',
+              'data-iris-menu-sub-placement': submenuDirection.value.placement,
               // B1: tag the surface with the root menu's tree id so the root
               // dismiss ignores pointerdown inside teleported submenus.
               'data-iris-menu-tree': parentCtx.treeId,

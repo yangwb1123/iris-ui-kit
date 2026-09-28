@@ -8,6 +8,9 @@ const TABLE_STYLES = `
 [data-iris-table-row-selected="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }
+[data-iris-row-current="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
 @media print { [data-iris-table-tabs], [data-iris-table-toolbar], [data-iris-table-form], [data-iris-scroll-hint] { display: none !important; } [data-iris-table][data-printable="true"] { border: none !important; box-shadow: var(--iris-shadow-none, none) !important; } }
 [data-iris-table][data-density="compact"] [data-iris-table-cell],
 [data-iris-table][data-density="compact"] [data-iris-table-header],

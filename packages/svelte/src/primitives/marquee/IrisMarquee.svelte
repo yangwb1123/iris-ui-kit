@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { PREFERS_REDUCED_MOTION_QUERY, watchMediaQuery } from '@iris-ui-kit/core'
+
   export type IrisMarqueeDirection = 'left' | 'right'
 
   interface Props {
@@ -23,29 +25,42 @@
 
   let trackEl = $state<HTMLElement | undefined>(undefined)
   let anim: Animation | null = null
-
-  function prefersReducedMotion(): boolean {
-    return (
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-  }
+  let hovered = false
 
   $effect(() => {
     const el = trackEl
-    if (!el || typeof el.animate !== 'function' || prefersReducedMotion()) return
-    const frames =
-      direction === 'left'
-        ? [{ transform: 'translateX(0%)' }, { transform: 'translateX(-50%)' }]
-        : [{ transform: 'translateX(-50%)' }, { transform: 'translateX(0%)' }]
-    anim = el.animate(frames, {
-      duration: Math.max(1, duration) * 1000,
-      iterations: Infinity,
-    })
-    return () => {
+    const currentDirection = direction
+    const currentDuration = duration
+    const currentPauseOnHover = pauseOnHover
+    const stop = () => {
       anim?.cancel()
       anim = null
+    }
+    const start = () => {
+      stop()
+      if (!el || typeof el.animate !== 'function') return
+      const frames =
+        currentDirection === 'left'
+          ? [{ transform: 'translateX(0%)' }, { transform: 'translateX(-50%)' }]
+          : [{ transform: 'translateX(-50%)' }, { transform: 'translateX(0%)' }]
+      anim = el.animate(frames, {
+        duration: Math.max(1, currentDuration) * 1000,
+        iterations: Infinity,
+      })
+      if (currentPauseOnHover && hovered) anim.pause()
+    }
+    const mediaQuery =
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia(PREFERS_REDUCED_MOTION_QUERY)
+        : null
+    const subscription = watchMediaQuery(mediaQuery, (reduced) => {
+      if (reduced) stop()
+      else start()
+    })
+
+    return () => {
+      subscription.destroy()
+      stop()
     }
   })
 
@@ -63,9 +78,11 @@
   {...rest}
   data-iris-marquee
   onmouseenter={() => {
+    hovered = true
     if (pauseOnHover) anim?.pause()
   }}
   onmouseleave={() => {
+    hovered = false
     if (pauseOnHover) anim?.play()
   }}
   style="display: flex; overflow: hidden;{style ? ' ' + style : ''}"

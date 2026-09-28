@@ -1,10 +1,11 @@
 <script lang="ts">
   /**
    * IrisMenuSub — nested submenu within a Menu. Renders a trigger item that
-   * opens a sub-panel on hover/focus (right side by default).
+   * opens a sub-panel on hover/focus on the direction-aware side.
    */
-  import { generateId } from '@iris-ui-kit/core'
+  import { generateId, getMenuSubDirection } from '@iris-ui-kit/core'
   import { useFloating } from '../../floating/useFloating.svelte'
+  import { useDirection } from '../../theme'
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
   import { getMenuContext, setMenuContext } from './context'
@@ -20,6 +21,8 @@
 
   // The root menu context — closing it collapses the whole tree (Tab behavior).
   const ctx = getMenuContext('IrisMenuSub')
+  const direction = useDirection()
+  const submenuDirection = $derived(getMenuSubDirection($direction))
 
   let open = $state(false)
   let triggerEl = $state<HTMLElement | undefined>(undefined)
@@ -49,7 +52,9 @@
       contentEl = el
     },
     contentId: subId,
-    placement: 'right-start',
+    get placement() {
+      return submenuDirection.placement
+    },
     offset: 0,
     closeRoot: ctx.closeRoot,
   })
@@ -58,14 +63,14 @@
     anchor: () => triggerEl,
     floating: () => contentEl,
     open: () => open,
-    placement: 'right-start',
+    placement: () => submenuDirection.placement,
     offset: 0,
   })
 
   // Outside-pointer-down closes this submenu (Escape is handled by the content
   // keydown). With this in place, pointer-LEAVE no longer needs to close — the
-  // submenu stays open until ArrowLeft / Escape / select / outside-click,
-  // matching the React/Vue reference hover model.
+  // submenu stays open until the direction-aware close key / Escape / select /
+  // outside-click, matching the React/Vue reference hover model.
   useDismiss({
     enabled: () => open,
     exclude: [() => triggerEl, () => contentEl],
@@ -110,20 +115,21 @@
     }
   }
 
-  // Trigger keyboard: ArrowRight/Enter/Space open; ArrowLeft closes.
+  // Trigger keyboard: the direction-aware horizontal key/Enter/Space open;
+  // the opposite horizontal key closes.
   function onTriggerKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+    if (e.key === submenuDirection.openKey || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       clearTimer()
       if (!disabled) open = true
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === submenuDirection.closeKey) {
       e.preventDefault()
       open = false
     }
   }
 
-  // Content keyboard: Arrow up/down roving nav; ArrowLeft/Escape close +
-  // return focus to the trigger; Tab collapses the whole menu tree.
+  // Content keyboard: Arrow up/down roving nav; the direction-aware close key
+  // / Escape close + return focus to the trigger; Tab collapses the whole tree.
   function onContentKeyDown(e: KeyboardEvent): void {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
@@ -142,7 +148,7 @@
             ? items.length - 1
             : index - 1
       items[next]?.focus()
-    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+    } else if (e.key === submenuDirection.closeKey || e.key === 'Escape') {
       e.preventDefault()
       e.stopPropagation()
       open = false
@@ -178,6 +184,7 @@
   aria-controls={subId}
   aria-disabled={disabled ? 'true' : undefined}
   data-iris-menu-sub-trigger
+  data-iris-menu-sub-arrow={submenuDirection.arrow}
   {...rest}
   use:setTrigger
   onpointerenter={scheduleOpen}
@@ -194,7 +201,7 @@
     : 'var(--iris-foreground)'}; outline: none"
 >
   {label}
-  <span aria-hidden="true">▶</span>
+  <span aria-hidden="true">{submenuDirection.arrow === 'right' ? '▶' : '◀'}</span>
 </div>
 
 {#if open}
@@ -205,6 +212,7 @@
     role="menu"
     tabindex={-1}
     data-iris-menu-sub-content
+    data-iris-menu-sub-placement={submenuDirection.placement}
     onpointerenter={clearTimer}
     onkeydown={onContentKeyDown}
     style="{floating.floatingStyles}; background: var(--iris-surface-floating); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: var(--iris-shadow-lg); min-width: 140px; z-index: 1001; outline: none"

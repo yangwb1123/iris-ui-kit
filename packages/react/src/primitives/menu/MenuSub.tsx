@@ -1,6 +1,8 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
+import { getMenuSubDirection } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
+import { useDirection } from '../../theme'
 import { MenuContext, useMenuContext } from './context'
 
 const HOVER_OPEN_DELAY = 100
@@ -14,7 +16,8 @@ export interface IrisMenuSubProps {
 /**
  * Nested submenu. Renders its own trigger (a `[role="menuitem"]` inside the
  * parent menu) and floating content panel. Opens on hover (with a short
- * delay) and on ArrowRight / Enter; closes on ArrowLeft.
+ * delay) and on the direction-aware horizontal key / Enter; closes on the
+ * opposite horizontal key.
  *
  * Inherits `closeRoot` from the surrounding `IrisMenu` so picking a leaf
  * collapses the whole tree.
@@ -25,6 +28,7 @@ export function IrisMenuSub({
   children,
 }: IrisMenuSubProps): React.ReactElement {
   const parentCtx = useMenuContext('IrisMenuSub')
+  const submenuDirection = getMenuSubDirection(useDirection())
 
   const [open, setOpenState] = React.useState(false)
   const triggerRef = React.useRef<HTMLElement | null>(null)
@@ -52,7 +56,7 @@ export function IrisMenuSub({
     anchor: triggerRef,
     floating: contentRef,
     open,
-    placement: 'right-start',
+    placement: submenuDirection.placement,
     offset: -4,
   })
 
@@ -78,10 +82,10 @@ export function IrisMenuSub({
     setOpenState((prev) => !prev)
   }
   const onTriggerKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+    if (e.key === submenuDirection.openKey || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       setOpenState(true)
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === submenuDirection.closeKey) {
       e.preventDefault()
       setOpenState(false)
     }
@@ -106,7 +110,7 @@ export function IrisMenuSub({
             ? items.length - 1
             : index - 1
       items[next]?.focus()
-    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+    } else if (e.key === submenuDirection.closeKey || e.key === 'Escape') {
       e.preventDefault()
       e.stopPropagation()
       setOpenState(false)
@@ -122,11 +126,11 @@ export function IrisMenuSub({
       triggerRef,
       contentRef,
       contentId: '',
-      placement: 'right-start' as const,
+      placement: submenuDirection.placement,
       offset: 0,
       closeRoot: parentCtx.closeRoot,
     }),
-    [open, setOpen, parentCtx.closeRoot],
+    [open, setOpen, parentCtx.closeRoot, submenuDirection.placement],
   )
 
   const trigger = (
@@ -140,6 +144,7 @@ export function IrisMenuSub({
       tabIndex={0}
       data-iris-menu-sub-trigger=""
       data-state={open ? 'open' : 'closed'}
+      data-iris-menu-sub-arrow={submenuDirection.arrow}
       onPointerEnter={scheduleOpen}
       onPointerLeave={clearTimer}
       onClick={onTriggerClick}
@@ -160,7 +165,7 @@ export function IrisMenuSub({
       <span>{label}</span>
       <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12">
         <path
-          d="M6 4l4 4-4 4"
+          d={submenuDirection.arrow === 'right' ? 'M6 4l4 4-4 4' : 'M10 4l-4 4 4 4'}
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -180,6 +185,7 @@ export function IrisMenuSub({
       tabIndex={-1}
       data-iris-menu-sub=""
       data-state="open"
+      data-iris-menu-sub-placement={submenuDirection.placement}
       onKeyDown={onContentKeyDown}
       onPointerEnter={clearTimer}
       style={{

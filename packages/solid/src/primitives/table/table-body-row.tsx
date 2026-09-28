@@ -19,6 +19,7 @@ interface TableBodyRowState<Row extends TableRow> {
   striped: boolean
   rowDrag?: IrisTableProps<Row>['rowDrag']
   seq: boolean
+  currentRowKey?: IrisTableProps<Row>['currentRowKey']
   keyboardNavigation: boolean
   cellRange: boolean
   contextMenu?: IrisTableProps<Row>['contextMenu']
@@ -120,6 +121,7 @@ export interface TableBodyRowRendererOptions<Row extends TableRow> {
     rowIndex: number,
     columnIndex: number,
   ) => void
+  onCurrentRowChange: (key: TableRowKey, row: Row) => void
 }
 
 /** Body-row renderer extracted from IrisTable.tsx; state stays in the parent. */
@@ -131,6 +133,7 @@ export function createTableBodyRowRenderer<Row extends TableRow>(
     const liveRow = (): Row => options.live.resolveRow(id, row)
     options.beforeRender()
     const selected = (): boolean => options.selection.isSelected(id)
+    const current = (): boolean => options.table.currentRowKey === id
     const expanded = (): boolean => options.expansion.keys().includes(String(id))
     const expandable = (): boolean => options.expansion.isRowExpandable(row, index)
 
@@ -143,19 +146,25 @@ export function createTableBodyRowRenderer<Row extends TableRow>(
         data-iris-row-editing={
           options.rowMode() && options.editing.rowEditing()?.k === id ? 'true' : undefined
         }
+        data-iris-row-current={current() ? 'true' : undefined}
         data-state={selected() ? 'selected' : undefined}
         aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
         aria-setsize={treeMeta ? treeMeta.setSize : undefined}
         aria-posinset={treeMeta ? treeMeta.posInset : undefined}
-        onClick={() => options.table.onRowClick?.(row, index)}
+        onClick={() => {
+          options.table.onRowClick?.(row, index)
+          options.onCurrentRowChange(id, row)
+        }}
         style={{
           display: 'grid',
           'grid-template-columns': options.gridTemplate(),
-          background: selected()
+          background: current()
             ? 'var(--iris-surface-selected)'
-            : options.table.striped && index % 2 === 1
-              ? 'var(--iris-surface)'
-              : 'var(--iris-row-bg, transparent)',
+            : selected()
+              ? 'var(--iris-surface-selected)'
+              : options.table.striped && index % 2 === 1
+                ? 'var(--iris-surface)'
+                : 'var(--iris-row-bg, transparent)',
           transition: options.cells.columnFade.columnFadeActive()
             ? 'background-color 120ms ease, grid-template-columns var(--iris-duration-md, 200ms) ease'
             : 'background-color 120ms ease',

@@ -19,6 +19,7 @@
     treeMeta,
     fillHeight,
     rowId,
+    currentRowKey,
     liveRowFor,
     isSelected,
     rowMode,
@@ -70,6 +71,7 @@
     editPreview,
     colTrack,
     onRowClick,
+    onCurrentRowChange,
     t,
   }: {
     row: Record<string, unknown>
@@ -77,6 +79,7 @@
     treeMeta: TreeRow<Record<string, unknown>> | null
     fillHeight: boolean
     rowId: (row: Record<string, unknown>, index: number) => string | number
+    currentRowKey?: string | number
     liveRowFor: (row: Record<string, unknown>, index: number) => Record<string, unknown>
     isSelected: (id: string | number) => boolean
     rowMode: boolean
@@ -136,13 +139,19 @@
     editPreview: boolean
     colTrack: (index: number) => number
     onRowClick: IrisTableProps['onRowClick']
+    onCurrentRowChange: IrisTableProps['onCurrentRowChange']
     t: Translate
   } = $props()
 
   const id = $derived(rowId(row, index))
   const renderedRow = $derived(liveRowFor(row, index))
   const selected = $derived(isSelected(id))
+  const current = $derived(currentRowKey === id)
   const rowEditing = $derived(rowMode && rowEdit.active?.key === id)
+  function handleRowClick(): void {
+    onRowClick?.(renderedRow, index)
+    onCurrentRowChange?.(id, renderedRow)
+  }
   function matchesPattern(column: IrisTableColumn, value: unknown, editing: boolean): boolean {
     if (!pattern && !patternFill) return false
     if (rowMode || editing || editingColumnKey !== column.key || editingDraft === '') return false
@@ -158,24 +167,27 @@
   data-iris-table-row-key={String(id)}
   data-iris-table-row-index={index}
   data-iris-row-editing={rowEditing ? 'true' : undefined}
+  data-iris-row-current={current ? 'true' : undefined}
   data-state={selected ? 'selected' : undefined}
   aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
   aria-setsize={treeMeta ? treeMeta.setSize : undefined}
   aria-posinset={treeMeta ? treeMeta.posInset : undefined}
-  onclick={onRowClick ? () => onRowClick(renderedRow, index) : undefined}
+  onclick={onRowClick || onCurrentRowChange ? handleRowClick : undefined}
   onkeydown={onRowClick
     ? (event) => handleTableRowKeyDown(event, renderedRow, index, onRowClick)
     : undefined}
   tabindex={onRowClick ? 0 : undefined}
   style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
     ? ' height: 100%;'
-    : ''} background: {selected
+    : ''} background: {current
     ? 'var(--iris-surface-selected)'
-    : rowEditing
+    : selected
       ? 'var(--iris-surface-selected)'
-      : striped && index % 2 === 1
-        ? 'var(--iris-surface)'
-        : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease{columnFade.columnFadeActive
+      : rowEditing
+        ? 'var(--iris-surface-selected)'
+        : striped && index % 2 === 1
+          ? 'var(--iris-surface)'
+          : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease{columnFade.columnFadeActive
     ? ', grid-template-columns var(--iris-duration-md, 200ms) ease'
     : ''}; cursor: default"
 >

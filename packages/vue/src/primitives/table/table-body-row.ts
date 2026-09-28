@@ -99,6 +99,7 @@ export interface TableBodyRowContext {
     extendRange: (row: number, col: number) => void
   }
   emitRowClick: (row: TableRow, index: number) => void
+  emitCurrentRowChange: (key: string | number, row: TableRow) => void
   emitRowDblclick: (row: TableRow, index: number) => void
 }
 
@@ -414,8 +415,12 @@ export function renderTableBodyRow(
       'data-iris-table-row': '',
       'data-iris-table-row-key': String(id),
       'data-iris-row-editing': ctx.rowMode && ctx.rowEditing?.k === id ? 'true' : undefined,
+      'data-iris-row-current': ctx.props.currentRowKey === id ? 'true' : undefined,
       'data-state': selected ? 'selected' : undefined,
-      onClick: () => ctx.emitRowClick(row, index),
+      onClick: () => {
+        ctx.emitRowClick(row, index)
+        ctx.emitCurrentRowChange(id, row)
+      },
       onDblclick: () => ctx.emitRowDblclick(row, index),
       style: {
         display: 'grid',

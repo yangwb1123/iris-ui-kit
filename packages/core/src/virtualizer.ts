@@ -291,6 +291,7 @@ function computeVirtualizerWindow(runtime: VirtualizerRuntime): VirtualizerState
   // offset tree is authoritative.
   if (
     fixedSize !== null &&
+    fixedSize > 0 &&
     runtime.fixedSizeEstimateMatches &&
     runtime.fixedSizeDivergentKeys.size === 0
   ) {

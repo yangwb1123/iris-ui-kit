@@ -636,6 +636,18 @@ describe('createVirtualizer — edge cases', () => {
     expect(s.items[0]!.index).toBe(9)
   })
 
+  it('uses the offset tree rather than an empty fixed window for zero-sized rows', () => {
+    const v = createVirtualizer({
+      count: 10,
+      estimateSize: 0,
+      fixedSize: 0,
+      viewportSize: 100,
+    })
+
+    expect(v.totalSize()).toBe(0)
+    expect(v.getState().items.map((item) => item.index)).toEqual([9])
+  })
+
   it('setCount with same count re-seats measurements (reorder)', () => {
     const data = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
     const v = createVirtualizer({

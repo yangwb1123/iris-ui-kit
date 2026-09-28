@@ -1,0 +1,177 @@
+# pbatch 批次：语义对齐与 RTL 收尾（第三批）
+#
+# 来源：docs/auto/reviews/parity-semantic.md 与 token-discipline.md 中
+# **不含 API 命名决策**的部分（命名/语义统一类问题留给维护者，见 docs/TODO.md）。
+# 串行执行：任务改同一棵树。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-parity-rtl-batch3.yaml --retries 2
+#
+# ⚠️ 任务文件是受保护输入：任何任务都不得修改 ai-dev/**、docs/**、scripts/**、
+#    CI 配置或其它组件。交付物写在最终回复里，不要自己写文件。
+
+tasks:
+  # ── 1. Menu content 的 DOM 钩子统一为 data-iris-menu ───────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Solid + Svelte 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：菜单浮层根节点上的 DOM 钩子四端不一致——
+      react `MenuContent.tsx:116-124` 与 vue `MenuContent.ts:104-114` 用
+      `data-iris-menu`，而 solid `IrisMenuContent.tsx:92` 与 svelte
+      `IrisMenuContent.svelte:99` 用 `data-iris-menu-content`。
+      后果：跨框架的测试、自动化脚本或消费方用 `[data-iris-menu]` 选择菜单时，
+      solid/svelte 上根本选不到（仓库里 53 处测试用前者、只有 2 处用后者）。
+
+      任务：把 solid 与 svelte 的钩子统一为规范名 `data-iris-menu`，
+      并同步更新引用旧名的那 2 处测试断言。不要保留双属性（那会让选择器语义
+      更糊）；改完后全仓 `grep -rn "data-iris-menu-content" packages` 应为 0 命中。
+
+      约束：只改 menu content 的渲染与对应测试；不动菜单其它行为。
+      完成标准：solid / svelte 的 menu 测试全绿，typecheck 无错。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch3-menu-marker.md
+
+  # ── 2. Solid IrisTimeline 支持逐项自定义渲染 ──────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Solid 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：Timeline 逐项自定义渲染能力只有 React/Vue/Svelte 有——
+      react `Timeline.tsx:18-23,105-107` 的 `renderItem`、vue `Timeline.ts:103-111`
+      的 `#item` slot、svelte `IrisTimeline.svelte:15-22,58-64` 的 `itemSnippet`；
+      Solid `IrisTimeline.tsx:18-24,92-112` 始终渲染默认的 time/title/description。
+      后果：Solid 端无法给某一项插入图标、按钮或富文本，只能整体换组件。
+
+      任务：给 Solid 的 `IrisTimeline` 增加与另外三端同义的能力，优先做成
+      `renderItem?: (item, index) => JSX.Element`（若仓库里 Solid 已有更惯用的
+      snippet/children 约定，就沿用那个，但语义必须与另三端一致：
+      传入该项数据与索引，返回自定义节点，替代默认三段结构）。
+      默认路径（不传回调）必须与现在完全一致。
+
+      约束：只改 solid 的 timeline 组件 + 其测试；不要给 core 加新概念。
+      补测试：传自定义节点时默认的 time/title/description 不再出现、自定义内容
+      出现；不传时默认渲染不变。
+      完成标准：solid timeline 测试全绿、typecheck 无错，`pnpm check:parity` 不回退。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch3-solid-timeline.md
+
+  # ── 3. Vue Popover 支持关闭自动聚焦 / 焦点恢复 ───────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Vue 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：`IrisPopoverContent` 在另外三端都能关掉自动聚焦与关闭后
+      焦点恢复——react `PopoverContent.tsx:12-18,70-83`、solid
+      `IrisPopoverContent.tsx:9-15,51-58`、svelte `IrisPopoverContent.svelte:9-14,33-40`；
+      而 vue `PopoverContent.ts:28-34,68-78` 只有 `teleport`，聚焦是无条件发生的。
+      后果：Vue 消费方无法表达 `autoFocus={false}` 或 `restoreFocus={false}`，
+      例如内联表单里不希望打开即抢焦点的场景做不到。
+
+      任务：在 Vue 的 `IrisPopoverContent` 上补上与另外三端**同名同语义**的两个
+      布尔 prop（按另三端的实际命名，默认值也照抄），并让聚焦/恢复逻辑按它们生效。
+      不要改动聚焦管理本身的实现方式。
+
+      约束：只改 vue 的 popover 组件 + 其测试；不顺手重构 focus 管理。
+      补测试：(a) 默认行为与现在一致（打开聚焦、关闭恢复）；
+      (b) 关闭自动聚焦后打开不抢焦点；(c) 关闭焦点恢复后关闭不还原焦点。
+      完成标准：vue popover 测试全绿、typecheck 无错。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch3-vue-popover-focus.md
+
+  # ── 4. List 的 SWR 状态策略四端统一 ───────────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 React / Solid / Svelte 适配器维护者。仓库根 = 当前目录，
+      先读 AGENTS.md。
+
+      缺陷（已核实）：列表在“已有内容 → 进入 loading/error”时，四端表现不一致。
+      Vue 把 `hasContent` 传给 core 的状态派生（`List.ts:61-68`），因此保留旧内容
+      做后台刷新；react `List.tsx:133-137`、solid `IrisList.tsx:61-65` 没传，
+      svelte `IrisList.svelte:103-108` 自己手算且没有 SWR 分支，于是这三个端在
+      刷新时会把内容换成 loading/错误态。同一份数据，四种观感。
+
+      任务：让四端走同一条 core 状态派生路径——react/solid/svelte 都把
+      `hasContent`（items 非空）传进去，与 vue 一致；svelte 那段手算逻辑删掉，
+      改为同样传参。不要改 core 的派生规则，也不要改默认的空/加载文案。
+
+      约束：只改三端 list 组件 + 其测试。
+      补测试（三端各一条）：已有 items 时再次进入 loading，DOM 仍保留原内容
+      （并带 loading 语义），与 vue 的既有行为一致。
+      完成标准：三端 list 测试全绿、typecheck 无错。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch3-list-swr.md
+
+  # ── 5. 锚定面板 / 轮播箭头 / 进度填充的逻辑属性 ───────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的适配器维护者。仓库根 = 当前目录，先读 AGENTS.md
+      （方向相关一律用 CSS 逻辑属性）。
+
+      缺陷（已核实，RTL 下可见）：
+      - 轮播箭头物理定位：solid `IrisCarousel.tsx:186-196` 用 `left`/`right`，
+        svelte `IrisCarousel.svelte:165-190` 同理，而 react/vue 用 insetInline*。
+      - 进度条填充从物理 left 起算：react `progress/styles.ts` 与 vue 同款
+        （keyframe 里用 `left`/`right` 定位 indeterminate 条）。
+      - 锚定面板用 `left: 0`：solid/svelte 的 DatePicker、DateRangePicker、
+        MonthPicker、TreeSelect、Cascader、Mentions（例：solid
+        `IrisDatePicker.tsx:111`、svelte `IrisCascader.svelte:226`）；
+        树缩进用物理 padding（solid `TreeNode.tsx:67`、svelte `IrisTree.svelte:372`）。
+
+      任务：全部改成逻辑属性（`inset-inline-start` / `inset-inline-end` /
+      `padding-inline-start`），并在必要处让动画/过渡跟着改成逻辑属性。
+      锚定面板的定位基准要与四端一致：如果你发现某端其实应该用
+      `inset-inline-end`，以 React/Vue 的既有行为为准。
+
+      约束：只改这些组件的样式与对应测试；不要改交互或布局数值。
+      补测试：至少覆盖轮播箭头与进度填充在 RTL 下的属性（断言不出现物理
+      `left:`/`right:` 定位），并保留 LTR 断言。
+      完成标准：涉及的四端包测试全绿、typecheck 无错。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch3-logical-properties.md
+
+  # ── 6. Segmented 阴影 token 化 ──────────────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 React / Vue / Svelte 适配器维护者。仓库根 = 当前目录，
+      先读 AGENTS.md（禁止硬编码阴影，样式走 `--iris-*` token）。
+
+      缺陷（已核实）：Segmented 的选中态阴影在 react `Segmented.tsx:185`、
+      vue `Segmented.ts:157`、svelte `IrisSegmented.svelte:185` 里写成裸
+      `0 1px 3px rgba(0,0,0,0.12)`，而 solid 已经用 `var(--iris-shadow-sm)`
+      （`IrisSegmented.tsx:216`）。后果：换皮肤/暗色时三端的分段控件阴影
+      不跟随 token，四端视觉不一致。
+
+      任务：把三端改成与 solid 相同的 `var(--iris-shadow-sm, …)` 写法（fallback
+      保留一个合理的 rgba 以防主题未注入），并统一四端的写法与层级。
+
+      约束：只改 segmented 组件 + 其测试；不要顺手改别的组件的阴影。
+      补测试：三端各一条，断言选中态使用 `--iris-shadow-sm` 而不是裸 rgba。
+      完成标准：react/vue/svelte 的 segmented 测试全绿、typecheck 无错，
+      `pnpm audit:tokens` 仍然 clean。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch3-segmented-shadow.md

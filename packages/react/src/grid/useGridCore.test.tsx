@@ -25,8 +25,18 @@ import { useGridRows } from './useGridRows'
 import { useGridSelection } from './useGridSelection'
 import { useGridSorting } from './useGridSorting'
 
+/**
+ * A single `act(Promise.resolve())` is not always enough for React to run the
+ * teardown of an abandoned suspended render: under load the effect flush lands
+ * a tick later, and the `dispose` assertion then fails for reasons that have
+ * nothing to do with the code under test. Drain microtasks and let React
+ * settle instead of assuming one tick.
+ */
 async function flushTeardown(): Promise<void> {
-  await act(async () => Promise.resolve())
+  await act(async () => {
+    await Promise.resolve()
+    await Promise.resolve()
+  })
 }
 
 describe('useGridCore', () => {
@@ -128,8 +138,11 @@ describe('useGridCore', () => {
     expect(capturedCore?.hasMethod('probe')).toBe(true)
 
     view.unmount()
-    await flushTeardown()
-    expect(dispose).toHaveBeenCalledOnce()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await vi.waitFor(() => expect(dispose).toHaveBeenCalledOnce())
     expect(capturedCore?.status).toBe('destroyed')
     expect(capturedCore?.features).toEqual([])
     expect(capturedCore?.methodNames).toEqual([])

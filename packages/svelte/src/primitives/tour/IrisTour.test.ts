@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/svelte'
 import IrisTour from './IrisTour.svelte'
+import IrisTourI18nHarness from './IrisTourI18nHarness.svelte'
 
 afterEach(cleanup)
 
@@ -26,9 +27,23 @@ describe('IrisTour', () => {
     expect(document.querySelector('[data-iris-tour-title]')?.textContent).toBe('Step 1')
   })
 
-  it('shows step indicator', () => {
+  it('shows the step indicator in the default English locale', () => {
     render(IrisTour, { props: { steps, open: true } })
-    expect(document.querySelector('[data-iris-tour-indicator]')?.textContent).toBe('1 / 3')
+    expect(document.querySelector('[data-iris-tour-indicator]')?.textContent).toBe('Step 1 of 3')
+  })
+
+  it('updates the step indicator when the locale switches to zh-CN', async () => {
+    const view = render(IrisTourI18nHarness, {
+      props: { steps, open: true, locale: 'en-US' },
+    })
+    expect(document.querySelector('[data-iris-tour-indicator]')?.textContent).toBe('Step 1 of 3')
+
+    await view.rerender({ steps, open: true, locale: 'zh-CN' })
+    await waitFor(() => {
+      expect(document.querySelector('[data-iris-tour-indicator]')?.textContent).toBe(
+        '第 1 步，共 3 步',
+      )
+    })
   })
 
   it('advances to next step on Next click', async () => {
@@ -37,7 +52,7 @@ describe('IrisTour', () => {
     await waitFor(() => {
       expect(document.querySelector('[data-iris-tour-title]')?.textContent).toBe('Step 2')
     })
-    expect(document.querySelector('[data-iris-tour-indicator]')?.textContent).toBe('2 / 3')
+    expect(document.querySelector('[data-iris-tour-indicator]')?.textContent).toBe('Step 2 of 3')
   })
 
   it('calls onClose when Skip is clicked', async () => {

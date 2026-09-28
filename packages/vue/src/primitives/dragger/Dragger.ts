@@ -8,9 +8,10 @@ export interface IrisDraggerPosition {
 
 /**
  * Make a child element positionable by drag. The child renders inside a
- * relative-positioned wrapper; position is driven by `v-model` (px from the
- * wrapper's top-left). Drag uses pointer capture so the gesture survives the
- * pointer leaving the element.
+ * relative-positioned wrapper; position is driven by `v-model` when supplied,
+ * otherwise the component keeps its own position (px from the wrapper's
+ * top-left). Drag uses pointer capture so the gesture survives the pointer
+ * leaving the element.
  *
  * The drag handle can be the whole element (default) or restricted to a
  * specific child via the `#handle` slot — useful for "title-bar" dragging
@@ -22,7 +23,7 @@ export const IrisDragger = defineComponent({
   props: {
     modelValue: {
       type: Object as () => IrisDraggerPosition,
-      default: () => ({ x: 0, y: 0 }),
+      default: undefined,
     },
     disabled: { type: Boolean, default: false },
     /** Constrain the position to within these bounds (px from wrapper origin). */
@@ -40,6 +41,11 @@ export const IrisDragger = defineComponent({
     const rootRef = ref<HTMLElement | null>(null)
     const handleRef = ref<HTMLElement | null>(null)
     const dragging = ref(false)
+    const isControlled = computed(() => props.modelValue !== undefined)
+    const internalPosition = ref<IrisDraggerPosition>({ x: 0, y: 0 })
+    const position = computed(() =>
+      isControlled.value ? (props.modelValue as IrisDraggerPosition) : internalPosition.value,
+    )
 
     let startPos: IrisDraggerPosition = { x: 0, y: 0 }
 
@@ -55,16 +61,18 @@ export const IrisDragger = defineComponent({
       handle: effectiveHandle,
       disabled: computed(() => props.disabled),
       onStart: () => {
-        startPos = { ...props.modelValue }
+        startPos = { ...position.value }
         dragging.value = true
         emit('dragStart', startPos)
       },
       onDrag: ({ dx, dy }) => {
-        emit('update:modelValue', clamp({ x: startPos.x + dx, y: startPos.y + dy }))
+        const next = clamp({ x: startPos.x + dx, y: startPos.y + dy })
+        if (!isControlled.value) internalPosition.value = next
+        emit('update:modelValue', next)
       },
       onEnd: () => {
         dragging.value = false
-        emit('dragEnd', { ...props.modelValue })
+        emit('dragEnd', { ...position.value })
       },
     })
 
@@ -83,7 +91,7 @@ export const IrisDragger = defineComponent({
             position: 'absolute',
             left: '0',
             top: '0',
-            transform: `translate3d(${props.modelValue.x}px, ${props.modelValue.y}px, 0)`,
+            transform: `translate3d(${position.value.x}px, ${position.value.y}px, 0)`,
             cursor: hasHandleSlot ? 'default' : props.disabled ? 'not-allowed' : 'grab',
             touchAction: 'none',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),

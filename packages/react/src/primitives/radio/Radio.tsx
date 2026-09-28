@@ -14,24 +14,45 @@ export interface IrisRadioProps extends Omit<
   'type' | 'size' | 'value' | 'checked' | 'onChange' | 'defaultChecked'
 > {
   value: string
+  checked?: boolean
+  defaultChecked?: boolean
+  onChange?: (checked: boolean) => void
   size?: IrisRadioSize
   children?: React.ReactNode
 }
 
-/** Single radio button. Must be used inside an `IrisRadioGroup`. */
+/** Single radio button. Works standalone or inside an `IrisRadioGroup`. */
 export const IrisRadio = React.forwardRef<HTMLInputElement, IrisRadioProps>(function IrisRadio(
-  { value, size = 'md', disabled, children, style, ...rest },
+  {
+    value,
+    checked,
+    defaultChecked = false,
+    onChange,
+    size = 'md',
+    disabled,
+    children,
+    style,
+    name,
+    ...rest
+  },
   ref,
 ) {
   const ctx = React.useContext(RadioGroupContext)
-  if (!ctx) throw new Error('IrisRadio must be used inside <IrisRadioGroup>')
+  const [internalChecked, setInternalChecked] = React.useState(Boolean(defaultChecked))
+  const isControlled = checked !== undefined
+  const isDisabled = Boolean(disabled || ctx?.disabled)
+  const isChecked = ctx ? ctx.value === value : isControlled ? Boolean(checked) : internalChecked
 
-  const isDisabled = disabled || ctx.disabled
-  const isChecked = ctx.value === value
-
-  const handleChange = () => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (isDisabled) return
-    ctx.setValue(value)
+    if (ctx) {
+      ctx.setValue(value)
+      return
+    }
+
+    const next = event.target.checked
+    if (!isControlled) setInternalChecked(next)
+    onChange?.(next)
   }
 
   const dim = DIM_MAP[size]
@@ -78,10 +99,11 @@ export const IrisRadio = React.forwardRef<HTMLInputElement, IrisRadioProps>(func
         {...rest}
         ref={ref}
         type="radio"
-        name={ctx.name}
+        name={ctx?.name ?? name}
         value={value}
         checked={isChecked}
         disabled={isDisabled}
+        aria-checked={isChecked ? 'true' : 'false'}
         onChange={handleChange}
         style={{
           position: 'absolute',

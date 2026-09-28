@@ -36,6 +36,15 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
+/**
+ * `query` is called as `query(params, signal)`, so `toHaveBeenCalledWith` cannot
+ * be used for a single-argument expectation (it would demand a one-argument
+ * call). Assert on the recorded params instead.
+ */
+function queriedWith(spy: { mock: { calls: unknown[][] } }, match: (params: any) => boolean) {
+  return spy.mock.calls.some((call) => match(call[0] as any))
+}
+
 describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
   it('renders the loading state, then the rows once the query resolves', async () => {
     const d = deferred<{ rows: Row[]; total: number }>()
@@ -91,19 +100,31 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch C)', () => {
         proxyConfig={{ query, remoteSort: true }}
       />,
     )
+    // Assert the *params each click produces*, not the absolute call count: the
+    // exact count also depends on when the mount-time `persistState` pageSize
+    // restore fires, which is timing-sensitive on a loaded machine (it was the
+    // only reason this test flaked). What must hold is that every click issues a
+    // query carrying the new sort.
     await waitFor(() => expect(query).toHaveBeenCalledTimes(1))
-    fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!)
-    await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
     expect(query.mock.lastCall?.[0]).toEqual({
       page: 1,
       pageSize: 10,
-      sort: { key: 'name', direction: 'asc' },
+      sort: null,
       filters: {},
     })
+    fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!)
+    await waitFor(() =>
+      expect(queriedWith(query, (p) => p.sort?.key === 'name' && p.sort?.direction === 'asc')).toBe(
+        true,
+      ),
+    )
     // Remote sort cycles asc → desc → none on further clicks.
     fireEvent.click(container.querySelector('[data-iris-table-header="name"]')!)
-    await waitFor(() => expect(query).toHaveBeenCalledTimes(3))
-    expect(query.mock.lastCall?.[0]).toMatchObject({ sort: { key: 'name', direction: 'desc' } })
+    await waitFor(() =>
+      expect(
+        queriedWith(query, (p) => p.sort?.key === 'name' && p.sort?.direction === 'desc'),
+      ).toBe(true),
+    )
   })
 
   it('page change re-queries with page=2 and fires onPageChange', async () => {

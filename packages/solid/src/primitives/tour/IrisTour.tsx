@@ -233,7 +233,7 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
                     color: 'var(--iris-muted)',
                   }}
                 >
-                  {current() + 1} / {total()}
+                  {t('tour.step', { current: current() + 1, total: total() })}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button type="button" data-iris-tour-skip="" onClick={close} style={btnGhost}>

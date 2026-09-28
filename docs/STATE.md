@@ -380,3 +380,30 @@ grid/table 那一轮把发布面推过预算，本轮实测量化如下（gzip�
 在 `iris.yaml` 写清测量值与理由；(c) 先做 tree-shake 探针（当前
 `icons: import { chevronDown }` 探针在本机报 _unmeasurable_，需要先确认
 esbuild 可用）。
+
+### pbatch 实施批 1：跨框架能力补齐（2026-09-28）
+
+批次定义 `ai-dev/pbatch/tasks/fix-parity-batch1.yaml`，4 个任务串行执行，每个
+任务自带 artifact 级门禁（`node cli.mjs check`），批末再跑一次 repo 级门禁。
+4/4 完成：
+
+| 任务                                  | 改动                                          | 复核                        |
+| ------------------------------------- | --------------------------------------------- | --------------------------- |
+| React `IrisRadio` 可独立使用          | 去掉了“无 group 就抛错”，补受控/非受控 + ARIA | react 3132/3132             |
+| Vue `IrisDragger` 非受控可拖动        | `modelValue` 默认改为 `undefined` 以区分受控  | vue 1820/1820               |
+| Solid `IrisList` 触发 item 级回调     | 新增 `onSelect(item)`，点击与键盘共用一条路径 | solid 1211/1211 + SSR 50/50 |
+| Solid/Svelte `IrisTour` 指示器走 i18n | 改用 `tour.step`，不再硬编码 `1 / n`          | solid/svelte 全绿           |
+
+复核时改掉一处 agent 的偏差：React `IrisRadio` 给原生 `<input type="radio">`
+加了显式 `role="radio"`，而另外三端都依赖原生隐式 role——那是新引入的分叉，
+已删除并把测试改成断言“不出现冗余 role”。
+
+批末 repo 门禁第一次失败也是真信号：`node cli.mjs check` 的 filesize 门因为
+上一轮的 `packages/*/src/grid/*`（4 份 index.ts + 4 份 index.test.ts，最大
+2298 行）而红。这些文件已按 iris.yaml 的既有机制逐个列入豁免（附理由），
+并在本文记为待拆分项——没有抬高 500 行上限，也没有让它们悄悄进 baseline。
+
+**新发现的脆弱测试**：整仓并行满载时，`react` 的 `proxy-config` /
+`multi-sort` 两个 remoteSort 用例会偶发失败（loader spy 期望 3 次、实测 5 次），
+单独跑与整仓轻载时都通过。属于时序敏感测试，不是本轮改动引入的回归；后续应
+改成 fake timers 或显式 await settle。

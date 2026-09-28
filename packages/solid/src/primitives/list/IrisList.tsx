@@ -22,6 +22,7 @@ export interface IrisListProps<T = unknown> extends Omit<
   ariaLabel?: string
   renderItem?: (item: IrisListItem<T>, selected: boolean) => JSX.Element
   onChange?: (value: T | T[]) => void
+  onSelect?: (item: IrisListItem<T>) => void
   loading?: boolean
   error?: boolean
   emptyState?: JSX.Element
@@ -48,6 +49,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
     'ariaLabel',
     'renderItem',
     'onChange',
+    'onSelect',
     'style',
     'loading',
     'error',
@@ -99,6 +101,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
     rebaseToProp()
     if (local.multi) model.toggle(asKey(item.value))
     else model.set([asKey(item.value)])
+    local.onSelect?.(item)
   }
 
   // Create nav controller — it manages the active index via its own store.

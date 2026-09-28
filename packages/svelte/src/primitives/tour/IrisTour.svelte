@@ -156,7 +156,7 @@
           <span
             data-iris-tour-indicator
             style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
-            >{current + 1} / {total}</span
+            >{reactiveT('tour.step', { current: current + 1, total })}</span
           >
           <div style="display: flex; gap: 8px">
             <button type="button" data-iris-tour-skip onclick={close} style={btnGhost}

@@ -28,6 +28,10 @@ filesize:
   # test 文件因大量用例行数偏高，Table/Tree 等高复杂度组件因天然内聚性偏高
   # react table 的 props/types 契约文件（IrisTableProps/IrisTableColumn + 参数接口）
   # 在 500 行上限边缘（批 AM 达 501/505），与 Table.tsx 同属内聚契约/渲染文件
+  # Grid Core 桥（2026-09-28）：grid/* 是上一轮从 Table 里抽出的桥接层，四个
+  # 适配器各一份（index.ts + index.test.ts）。与已豁免的 Table/Tree 同类——
+  # 天然内聚的适配层——但体量明显更大（test 最高 2298 行），所以单独列出，
+  # 并在 docs/STATE.md 记为待拆分项，而不是让它悄悄进入 baseline。
   exemptions:
     - packages/core/src/store.ts
     - packages/core/src/data-view.ts
@@ -67,6 +71,19 @@ filesize:
     - packages/vue/src/primitives/select/Select.ts
     - packages/react/src/primitives/select/Select.tsx
     - packages/svelte/src/primitives/select/IrisSelect.svelte
+    # Grid Core 桥（2026-09-28）：grid/* 是上一轮从 Table 抽出的适配层，四端
+    # 各一份（index.ts + index.test.ts）。与已豁免的 Table/Tree 同类——天然内聚
+    # 的桥接层——但体量明显更大（test 最高 2298 行），因此单独列出并记为待拆分
+    # 项，而不是让它悄悄进 baseline 把门禁上限抬高。
+    - packages/core/src/grid-rows.test.ts
+    - packages/core/src/virtualizer.test.ts
+    - packages/react/src/grid/useGridCore.test.tsx
+    - packages/solid/src/grid/index.ts
+    - packages/solid/src/grid/index.test.tsx
+    - packages/svelte/src/grid/useGrid.ts
+    - packages/svelte/src/grid/index.test.ts
+    - packages/vue/src/grid/index.ts
+    - packages/vue/src/grid/index.test.ts
 
 # ── 架构依赖方向门 ──────────────────────────────────────────────────────────
 architecture:

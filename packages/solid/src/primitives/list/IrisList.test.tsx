@@ -14,13 +14,17 @@ const fruits = [
 describe('IrisList', () => {
   it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
     const onChange = vi.fn()
+    const onSelect = vi.fn()
     const [value, setValue] = createSignal<string[]>([])
     const { container } = render(() => (
-      <IrisList items={fruits} multi value={value()} onChange={onChange} />
+      <IrisList items={fruits} multi value={value()} onChange={onChange} onSelect={onSelect} />
     ))
     const options = (): Element[] => Array.from(container.querySelectorAll('[role="option"]'))
     fireEvent.click(options()[0] as HTMLElement) // click "Apple"
     expect(onChange).toHaveBeenLastCalledWith(['apple'])
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledWith(fruits[0])
     // parent has not written it back → the option stays unselected (true controlled)
     expect(options()[0]!.getAttribute('aria-selected')).toBe('false')
     // parent accepts → prop updates → the option reflects it
@@ -46,11 +50,36 @@ describe('IrisList', () => {
     expect(items[2].getAttribute('aria-disabled')).toBe('true')
   })
 
-  it('calls onChange when an item is clicked', () => {
+  it('calls onSelect with the complete item when an item is clicked', () => {
+    const onSelect = vi.fn()
+    const { getByText } = render(() => <IrisList items={fruits} onSelect={onSelect} />)
+    fireEvent.click(getByText('Apple'))
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledWith(fruits[0])
+  })
+
+  it.each(['Enter', ' '])('calls onSelect once for keyboard selection with %s', (key) => {
+    const onSelect = vi.fn()
+    const { container } = render(() => <IrisList items={fruits} onSelect={onSelect} />)
+    const option = container.querySelector('[role="option"]') as HTMLElement
+    fireEvent.keyDown(option, { key })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledWith(fruits[0])
+  })
+
+  it('calls onChange once when an item is clicked', () => {
     const onChange = vi.fn()
     const { getByText } = render(() => <IrisList items={fruits} onChange={onChange} />)
     fireEvent.click(getByText('Apple'))
+    expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith('apple')
+  })
+
+  it('does not call onSelect for disabled items', () => {
+    const onSelect = vi.fn()
+    const { getByText } = render(() => <IrisList items={fruits} onSelect={onSelect} />)
+    fireEvent.click(getByText('Cherry'))
+    expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('does not call onChange for disabled items', () => {

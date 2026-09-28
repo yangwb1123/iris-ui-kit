@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, cleanup, fireEvent } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
+import { render, cleanup, fireEvent, waitFor } from '@solidjs/testing-library'
+import { createPlugin } from '@iris-ui-kit/core'
+import { IrisProvider } from '../../provider'
 import { IrisTour } from './IrisTour'
 
 afterEach(cleanup)
@@ -9,6 +12,15 @@ const steps = [
   { title: 'Second step', description: 'This is step two' },
   { title: 'Final step', description: 'The last step' },
 ]
+
+const tourLocalePlugin = createPlugin({
+  name: 'tour-i18n-test',
+  install(registry) {
+    registry.registerMessages('zh-CN', {
+      'tour.step': '第 {current} 步，共 {total} 步',
+    })
+  },
+})
 
 describe('IrisTour', () => {
   it('renders nothing when closed', () => {
@@ -25,6 +37,32 @@ describe('IrisTour', () => {
     render(() => <IrisTour steps={steps} open={true} />)
     const card = document.body.querySelector('[data-iris-tour-card]')
     expect(card?.textContent).toContain('Welcome')
+  })
+
+  it('shows the step indicator in the default English locale', () => {
+    render(() => <IrisTour steps={steps} open={true} />)
+    expect(document.body.querySelector('[data-iris-tour-indicator]')?.textContent).toBe(
+      'Step 1 of 3',
+    )
+  })
+
+  it('updates the step indicator when the locale switches to zh-CN', async () => {
+    const [locale, setLocale] = createSignal('en-US')
+    render(() => (
+      <IrisProvider locale={locale()} plugins={[tourLocalePlugin]}>
+        <IrisTour steps={steps} open={true} />
+      </IrisProvider>
+    ))
+    expect(document.body.querySelector('[data-iris-tour-indicator]')?.textContent).toBe(
+      'Step 1 of 3',
+    )
+
+    setLocale('zh-CN')
+    await waitFor(() => {
+      expect(document.body.querySelector('[data-iris-tour-indicator]')?.textContent).toBe(
+        '第 1 步，共 3 步',
+      )
+    })
   })
 
   it('advances to next step on Next click', async () => {

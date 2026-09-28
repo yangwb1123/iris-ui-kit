@@ -7,4 +7,4 @@
 '@iris-ui-kit/svelte': minor
 ---
 
-Add the searchable, categorized `IrisIconPicker` to all four framework adapters, with semantic-name helpers and localized default labels.
+Add the searchable, categorized `IrisIconPicker` to all four framework adapters, with semantic-name helpers and localized default labels. Add an optional Iconify JSON provider that converts a restricted, validated SVG subset into structured icons.

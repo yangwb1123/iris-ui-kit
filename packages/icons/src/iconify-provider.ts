@@ -149,29 +149,40 @@ function parseQualifiedName(value: string): QualifiedName {
   return { prefix: match[1]!, name: match[2]!, fullName: value }
 }
 
+function isValidXmlCharacter(codePoint: number): boolean {
+  return (
+    codePoint === 0x9 ||
+    codePoint === 0xa ||
+    codePoint === 0xd ||
+    (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+    (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+    (codePoint >= 0x10000 && codePoint <= 0x10ffff)
+  )
+}
+
+function decodeXmlEntity(token: string, iconName: string): string {
+  const named: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+  }
+  if (Object.hasOwn(named, token)) return named[token]!
+
+  const codePoint = token.startsWith('#x')
+    ? Number.parseInt(token.slice(2), 16)
+    : Number.parseInt(token.slice(1), 10)
+  if (!isValidXmlCharacter(codePoint)) {
+    return fail('unsafe-icon', `invalid XML character in Iconify icon "${iconName}"`)
+  }
+  return String.fromCodePoint(codePoint)
+}
+
 function decodeXmlAttribute(value: string, iconName: string): string {
   const decoded = value.replace(
     /&(#x[\da-fA-F]+|#\d+|amp|lt|gt|quot|apos);/g,
-    (entity, token: string) => {
-      if (token === 'amp') return '&'
-      if (token === 'lt') return '<'
-      if (token === 'gt') return '>'
-      if (token === 'quot') return '"'
-      if (token === 'apos') return "'"
-      const codePoint = token.startsWith('#x')
-        ? Number.parseInt(token.slice(2), 16)
-        : Number.parseInt(token.slice(1), 10)
-      const validXmlCharacter =
-        codePoint === 0x9 ||
-        codePoint === 0xa ||
-        codePoint === 0xd ||
-        (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
-        (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
-        (codePoint >= 0x10000 && codePoint <= 0x10ffff)
-      if (!validXmlCharacter)
-        fail('unsafe-icon', `invalid XML character in Iconify icon "${iconName}"`)
-      return String.fromCodePoint(codePoint)
-    },
+    (_entity, token: string) => decodeXmlEntity(token, iconName),
   )
   if (decoded.includes('&')) {
     return fail('unsafe-icon', `unsupported XML entity in Iconify icon "${iconName}"`)
@@ -188,36 +199,100 @@ function isSafePaint(value: string): boolean {
   )
 }
 
+const ATTRIBUTE_VALIDATORS: Record<string, (value: string) => boolean> = {
+  d: (value) => value.length <= MAX_ATTRIBUTE_LENGTH && PATH_DATA.test(value),
+  points: isNumberList,
+  'stroke-dasharray': isNumberList,
+  transform: (value) => value.length <= 512 && TRANSFORM.test(value),
+  fill: isSafePaint,
+  stroke: isSafePaint,
+  'fill-rule': (value) => value === 'nonzero' || value === 'evenodd',
+  'stroke-linecap': (value) => ['butt', 'round', 'square'].includes(value),
+  'stroke-linejoin': (value) => ['miter', 'round', 'bevel', 'miter-clip'].includes(value),
+  'vector-effect': (value) => value === 'none' || value === 'non-scaling-stroke',
+}
+
+function isNumberList(value: string): boolean {
+  return value === 'none' || (value.length <= MAX_ATTRIBUTE_LENGTH && NUMBER_LIST.test(value))
+}
+
+function isValidAttributeValue(name: string, value: string): boolean {
+  return (ATTRIBUTE_VALIDATORS[name] ?? isNumberValue)(value)
+}
+
+function isNumberValue(value: string): boolean {
+  return NUMBER.test(value)
+}
+
 function validateAttribute(name: string, value: string, iconName: string): void {
   if (!SAFE_ATTRIBUTES.has(name)) {
     fail('unsafe-icon', `unsupported SVG attribute "${name}" in Iconify icon "${iconName}"`)
   }
-  const valid =
-    name === 'd'
-      ? value.length <= MAX_ATTRIBUTE_LENGTH && PATH_DATA.test(value)
-      : name === 'points' || name === 'stroke-dasharray'
-        ? value === 'none' || (value.length <= MAX_ATTRIBUTE_LENGTH && NUMBER_LIST.test(value))
-        : name === 'transform'
-          ? value.length <= 512 && TRANSFORM.test(value)
-          : name === 'fill' || name === 'stroke'
-            ? isSafePaint(value)
-            : name === 'fill-rule'
-              ? value === 'nonzero' || value === 'evenodd'
-              : name === 'stroke-linecap'
-                ? value === 'butt' || value === 'round' || value === 'square'
-                : name === 'stroke-linejoin'
-                  ? value === 'miter' ||
-                    value === 'round' ||
-                    value === 'bevel' ||
-                    value === 'miter-clip'
-                  : name === 'vector-effect'
-                    ? value === 'none' || value === 'non-scaling-stroke'
-                    : name === 'opacity' || name === 'fill-opacity' || name === 'stroke-opacity'
-                      ? NUMBER.test(value)
-                      : NUMBER.test(value)
-  if (!valid) {
+  if (!isValidAttributeValue(name, value)) {
     fail('unsafe-icon', `invalid SVG value for "${name}" in Iconify icon "${iconName}"`)
   }
+}
+
+function skipWhitespace(value: string, start: number): number {
+  let cursor = start
+  while (/\s/.test(value[cursor] ?? '')) cursor++
+  return cursor
+}
+
+function readAttribute(
+  body: string,
+  start: number,
+  iconName: string,
+): { name: string; value: string; next: number } {
+  const match = XML_NAME.exec(body.slice(start))
+  if (!match) return fail('unsafe-icon', `malformed SVG attributes in Iconify icon "${iconName}"`)
+
+  const name = match[0]
+  let cursor = skipWhitespace(body, start + name.length)
+  if (body[cursor] !== '=') {
+    return fail('unsafe-icon', `missing SVG attribute value in Iconify icon "${iconName}"`)
+  }
+  cursor = skipWhitespace(body, cursor + 1)
+  const quote = body[cursor]
+  if (quote !== '"' && quote !== "'") {
+    return fail('unsafe-icon', `unquoted SVG attribute in Iconify icon "${iconName}"`)
+  }
+
+  const valueStart = cursor + 1
+  cursor = valueStart
+  while (cursor < body.length && body[cursor] !== quote) {
+    if (body[cursor] === '<') {
+      return fail('unsafe-icon', `invalid character in SVG attribute in Iconify icon "${iconName}"`)
+    }
+    cursor++
+  }
+  if (cursor >= body.length) {
+    return fail('unsafe-icon', `unterminated SVG attribute in Iconify icon "${iconName}"`)
+  }
+  if (cursor - valueStart > MAX_ATTRIBUTE_LENGTH) {
+    return fail('limit-exceeded', `SVG attribute is too large in Iconify icon "${iconName}"`)
+  }
+
+  const value = decodeXmlAttribute(body.slice(valueStart, cursor), iconName)
+  validateAttribute(name, value, iconName)
+  return { name, value, next: cursor + 1 }
+}
+
+function readEmptyElementClose(body: string, start: number, tag: string, iconName: string): number {
+  let cursor = skipWhitespace(body, start + 1)
+  if (!body.startsWith('</', cursor)) {
+    return fail('unsafe-icon', `nested SVG markup is not supported in Iconify icon "${iconName}"`)
+  }
+  cursor += 2
+  const match = XML_NAME.exec(body.slice(cursor))
+  if (!match || match[0] !== tag) {
+    return fail('unsafe-icon', `mismatched SVG element in Iconify icon "${iconName}"`)
+  }
+  cursor = skipWhitespace(body, cursor + match[0].length)
+  if (body[cursor] !== '>') {
+    return fail('unsafe-icon', `malformed SVG closing element in Iconify icon "${iconName}"`)
+  }
+  return cursor + 1
 }
 
 function parseLeafNode(
@@ -225,89 +300,34 @@ function parseLeafNode(
   start: number,
   iconName: string,
 ): { node: IrisIconNode; next: number } {
-  let cursor = start + 1
-  const tagMatch = XML_NAME.exec(body.slice(cursor))
+  const tagMatch = XML_NAME.exec(body.slice(start + 1))
   if (!tagMatch || !SAFE_TAGS.has(tagMatch[0])) {
     return fail('unsafe-icon', `unsupported SVG element in Iconify icon "${iconName}"`)
   }
+
   const tag = tagMatch[0]
-  cursor += tag.length
+  let cursor = start + 1 + tag.length
   const attrs: Record<string, string> = {}
-
   while (cursor < body.length) {
-    const whitespaceStart = cursor
-    while (/\s/.test(body[cursor] ?? '')) cursor++
-    const hadWhitespace = cursor > whitespaceStart
-
+    const beforeWhitespace = cursor
+    cursor = skipWhitespace(body, cursor)
     if (body.startsWith('/>', cursor)) return { node: { tag, attrs }, next: cursor + 2 }
     if (body[cursor] === '>') {
-      cursor++
-      while (/\s/.test(body[cursor] ?? '')) cursor++
-      if (!body.startsWith('</', cursor)) {
-        return fail(
-          'unsafe-icon',
-          `nested SVG markup is not supported in Iconify icon "${iconName}"`,
-        )
-      }
-      cursor += 2
-      const closeMatch = XML_NAME.exec(body.slice(cursor))
-      if (!closeMatch || closeMatch[0] !== tag) {
-        return fail('unsafe-icon', `mismatched SVG element in Iconify icon "${iconName}"`)
-      }
-      cursor += closeMatch[0].length
-      while (/\s/.test(body[cursor] ?? '')) cursor++
-      if (body[cursor] !== '>') {
-        return fail('unsafe-icon', `malformed SVG closing element in Iconify icon "${iconName}"`)
-      }
-      return { node: { tag, attrs }, next: cursor + 1 }
+      return { node: { tag, attrs }, next: readEmptyElementClose(body, cursor, tag, iconName) }
     }
-    if (!hadWhitespace) {
+    if (cursor === beforeWhitespace) {
       return fail('unsafe-icon', `malformed SVG attributes in Iconify icon "${iconName}"`)
     }
-    if (cursor >= body.length) break
 
-    const attrMatch = XML_NAME.exec(body.slice(cursor))
-    if (!attrMatch)
-      return fail('unsafe-icon', `malformed SVG attributes in Iconify icon "${iconName}"`)
-    const attrName = attrMatch[0]
-    cursor += attrName.length
-    while (/\s/.test(body[cursor] ?? '')) cursor++
-    if (body[cursor] !== '=') {
-      return fail('unsafe-icon', `missing SVG attribute value in Iconify icon "${iconName}"`)
-    }
-    cursor++
-    while (/\s/.test(body[cursor] ?? '')) cursor++
-    const quote = body[cursor]
-    if (quote !== '"' && quote !== "'") {
-      return fail('unsafe-icon', `unquoted SVG attribute in Iconify icon "${iconName}"`)
-    }
-    cursor++
-    const valueStart = cursor
-    while (cursor < body.length && body[cursor] !== quote) {
-      if (body[cursor] === '<') {
-        return fail(
-          'unsafe-icon',
-          `invalid character in SVG attribute in Iconify icon "${iconName}"`,
-        )
-      }
-      cursor++
-    }
-    if (cursor >= body.length) {
-      return fail('unsafe-icon', `unterminated SVG attribute in Iconify icon "${iconName}"`)
-    }
-    if (cursor - valueStart > MAX_ATTRIBUTE_LENGTH) {
-      return fail('limit-exceeded', `SVG attribute is too large in Iconify icon "${iconName}"`)
-    }
-    const value = decodeXmlAttribute(body.slice(valueStart, cursor), iconName)
-    cursor++
-    if (Object.hasOwn(attrs, attrName)) {
+    const attr = readAttribute(body, cursor, iconName)
+    if (Object.hasOwn(attrs, attr.name)) {
       return fail(
         'unsafe-icon',
-        `duplicate SVG attribute "${attrName}" in Iconify icon "${iconName}"`,
+        `duplicate SVG attribute "${attr.name}" in Iconify icon "${iconName}"`,
       )
     }
-    validateAttribute(attrName, value, iconName)
-    attrs[attrName] = value
+    attrs[attr.name] = attr.value
+    cursor = attr.next
   }
 
   return fail('unsafe-icon', `unterminated SVG element in Iconify icon "${iconName}"`)

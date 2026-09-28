@@ -17,6 +17,15 @@ export {
 export { renderIconSvg, type RenderIconOptions } from './render'
 export { resolveThemedIcon, type ThemeIconConfig } from './theme'
 export {
+  createIconifyProvider,
+  IconifyProviderError,
+  type IconifyFetch,
+  type IconifyFetchResponse,
+  type IconifyProvider,
+  type IconifyProviderErrorCode,
+  type IconifyProviderOptions,
+} from './iconify-provider'
+export {
   defaultIconPickerCategories,
   getIconPickerCategoryId,
   matchesIconPickerQuery,

@@ -1,0 +1,174 @@
+# pbatch 批次：Table current-row 能力补齐 + RTL/减动效收尾（第四批）
+#
+# 来源：docs/auto/reviews/parity-semantic.md 的 P0-1（Table current-row 只有
+# React 有）与 token-discipline.md 的 P1-6（子菜单 RTL 键盘/定位）、P2-14
+# （Marquee 只在初始化时读一次 prefers-reduced-motion）。
+#
+# 契约以 React 的现有实现为准（vxe row-config.isCurrent parity），三端补齐时
+# 必须同名同语义，不改名、不改默认值。
+#
+# 串行执行：任务改同一棵树。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-table-rtl-batch4.yaml --retries 2
+#
+# ⚠️ 任务文件是受保护输入：任何任务都不得修改 ai-dev/**、docs/**、scripts/**、
+#    CI 配置或其它组件。交付物写在最终回复里，不要自己写文件。
+
+tasks:
+  # ── 1. Table current-row：Vue 补齐 ───────────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Vue 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：`IrisTable` 的“当前行”能力只有 React 有——
+      `packages/react/src/primitives/table/props/layout.ts:48-52` 声明
+      `currentRowKey` / `onCurrentRowChange` / `beforeCurrentRowChange`
+      （vxe `row-config.isCurrent` parity），`Table.tsx:6361` 渲染
+      `data-iris-row-current`。Vue 只有 `rowClick`（`props.ts:186-187`），
+      行渲染（`table-body-row.ts:414-419`）没有任何 current 标记。
+      后果：同一个表格，Vue 端无法受控高亮当前行，也无法监听/否决变更。
+
+      任务：按 React 的契约在 Vue 端补齐这三个能力：
+      - 三个 prop **同名同类型**（`currentRowKey?: string | number`、
+        `onCurrentRowChange?: (key, row) => void`、
+        `beforeCurrentRowChange?: (key, row) => boolean | void`），默认值与
+        React 一致（`currentRowKey` 无默认、不受控时点击不改变高亮之外的任何
+        行为）；如果 Vue 端用 `v-model` 风格更自然，仍必须保留这三个名字。
+      - 行渲染输出 `data-iris-row-current="true"`（与 React 完全相同的属性名
+        与值），样式与 React 的 current 行样式保持一致。
+      - 点击行时：先询问 `beforeCurrentRowChange`，返回 false 则不切换；否则触发
+        `onCurrentRowChange`（受控场景由父组件决定最终高亮）。
+      - 先读 React 的实现（`Table.tsx:6361` 附近与 core 里的相关实现），尽量复用
+        已有纯函数，不要在 Vue 里重推一份判定逻辑。
+
+      约束：只改 vue 的 table（props 契约 + 行渲染 + 事件接线 + 测试）。
+      不要顺手改 Table 其它特性。补测试：受控切换、回调触发、
+      `beforeCurrentRowChange` 返回 false 时不切换、`data-iris-row-current`
+      属性与值与 React 一致。
+      完成标准：vue table 测试全绿、typecheck 无错、`pnpm check:parity` 不回退
+      （`IrisTable` 的 prop 共有率应当上升）。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch4-vue-table-current-row.md
+
+  # ── 2. Table current-row：Solid 补齐 ─────────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Solid 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：与 Vue 同一个缺陷在 Solid 端：React 的 Table 有
+      `currentRowKey` / `onCurrentRowChange` / `beforeCurrentRowChange`
+      （`packages/react/src/primitives/table/props/layout.ts:48-52`，
+      渲染见 `Table.tsx:6361` 的 `data-iris-row-current`），
+      而 Solid 完全没有（`packages/solid/src/primitives/table/props.ts:194-200`
+      附近只有 rowClick；行渲染 `table-body-row.tsx:141-150` 无 current 标记）。
+
+      任务：按 React 的契约在 Solid 端补齐，同样要求：
+      - 三个 prop 同名同类型同默认值；
+      - 行输出 `data-iris-row-current="true"`，样式与 React 一致；
+      - 点击行先询问 `beforeCurrentRowChange`（false 则不切换），再触发
+        `onCurrentRowChange`；
+      - 优先复用 core 里已有的纯函数/派生，不要在 Solid 里重推一份。
+
+      约束：只改 solid 的 table（契约 + 行渲染 + 接线 + 测试）。
+      补测试同 Vue 任务那四条。完成标准：solid table 测试全绿、typecheck 无错、
+      `pnpm check:parity` 不回退。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch4-solid-table-current-row.md
+
+  # ── 3. Table current-row：Svelte 补齐 ────────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Svelte 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：同一个 Table current-row 能力缺口在 Svelte 端：
+      React 有 `currentRowKey` / `onCurrentRowChange` /
+      `beforeCurrentRowChange`（`packages/react/src/primitives/table/props/layout.ts:48-52`，
+      渲染见 `Table.tsx:6361`），Svelte 完全没有
+      （`packages/svelte/src/primitives/table/props.ts:184-189` 与
+      `TableBodyRow.svelte:157-165` 都没有）。
+
+      任务：按 React 契约在 Svelte 端补齐：三个 prop 同名同类型同默认值；
+      行输出 `data-iris-row-current="true"`；点击先问
+      `beforeCurrentRowChange`（false 不切换）再触发 `onCurrentRowChange`；
+      优先复用 core 已有纯函数。注意 Svelte 端惯用回调 prop（onXxx）而不是
+      v-model，但属性名必须与另外三端一致。
+
+      约束：只改 svelte 的 table（契约 + 行渲染 + 接线 + 测试）。
+      补测试同前两条任务。完成标准：svelte table 测试全绿、svelte-check 无错、
+      `pnpm check:parity` 不回退。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch4-svelte-table-current-row.md
+
+  # ── 4. 子菜单的 RTL 定位与键盘方向 ───────────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的四适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：子菜单一律按 LTR 处理——
+      定位写死 `placement: 'right-start'`（react `MenuSub.tsx:55`、
+      vue `MenuSub.ts:106`、solid `IrisMenuSub.tsx:28`、
+      svelte `IrisMenuSub.svelte:52`），键盘也写死 ArrowRight 打开 /
+      ArrowLeft 关闭，箭头图标方向同样是物理的。
+      后果：`dir="rtl"` 下子菜单从错误的一侧展开，键盘用户的“打开/关闭”方向键
+      与视觉相反（这是键盘可达性缺陷，不只是视觉）。
+
+      任务：让四端在 RTL 下把 placement、打开键、关闭键与箭头方向一起翻转：
+      - 优先把“方向 → placement / 打开键 / 关闭键”的派生下沉到 core（或
+        theme 里已有的方向 helper 旁）成为纯函数，四端共用；不要四端各写一份。
+      - LTR 行为必须完全不变（现有测试不得回归）。
+      - 补测试：四端各一条，RTL 下子菜单 placement 落在左侧、ArrowLeft 打开 /
+        ArrowRight 关闭；LTR 断言保留。
+
+      约束：只改 menu/submenu 相关文件 + 方向派生函数 + 测试；不动菜单定位算法
+      （floating-ui）本身。完成标准：四端 menu 测试全绿、typecheck/svelte-check
+      无错、`pnpm check:parity` 不回退。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch4-submenu-rtl.md
+
+  # ── 5. Marquee 响应运行时的 prefers-reduced-motion 变化 ──────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的四适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实）：Marquee 只在初始化时读一次
+      `window.matchMedia('(prefers-reduced-motion: reduce)').matches`
+      （react `Marquee.tsx:46-48`、vue `Marquee.ts:34-36`、
+      solid `IrisMarquee.tsx:38-40`、svelte `IrisMarquee.svelte:37`），
+      不订阅 `MediaQueryList.change`。后果：用户在系统里中途打开“减弱动效”，
+      正在跑的滚动动画不会停下（prefers-reduced-motion 是一级无障碍要求）。
+
+      任务：四端在挂载时订阅该 media query，变化时同步动画状态：
+      - 变成 reduce → 停掉正在跑的 Web Animations / 定时器；
+      - 变回 no-preference → 按原有条件恢复；
+      - 卸载时必须取消订阅并清理（用 core 里既有的 disposable/生命周期设施，
+        不要各端各写一套泄漏-prone 的 addEventListener）。
+      - 优先把“订阅 + 回调”做成 core 的可复用 hook/helper（框架无关部分），
+        四端只桥接响应式。
+
+      约束：只改 marquee + 新增的共享订阅设施 + 测试；不要改动画时长/布局。
+      补测试：四端各一条，挂载后切换 media query（jsdom 里 mock
+      `matchMedia` 返回带 listener 的对象），断言动画状态随之改变。
+      完成标准：四端 marquee 测试全绿、typecheck/svelte-check 无错。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch4-marquee-motion.md

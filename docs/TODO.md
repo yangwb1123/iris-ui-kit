@@ -64,3 +64,16 @@
 - Tree + `renderDetail` 使用可变行高时不启用现有定高虚拟化。
 - 真浏览器/真实设备难以稳定自动化的极端平台行为继续由宿主集成测试承担。
 - 纯重构、命名统一或无具体缺陷信号的“为了对齐而改”不进入功能 backlog。
+
+## 待维护者裁决（本轮新增）
+
+- **size 预算**：`pnpm size` 红在 6 项（core/react/vue/solid/icons/
+  svelte-published，合计超出约 110KB），且在本次提交之前就已红。瘦身还是
+  重设预算属于产品决策，明细见 `docs/STATE.md`「size 预算待维护者裁决」。
+- **跨框架 API 决策**（来自 `docs/auto/reviews/parity-semantic.md`）：
+  `IrisTable` 的 `currentRowKey` 是否补齐到另外三端；`IrisMenuItem` 的
+  关闭语义统一用 `closeOnSelect` 还是 `keepOpen`；`IrisEmptyState.children`
+  统一为 description 兜底还是从类型里移除。
+- **portal 主题/方向传播**：默认 portal（Dialog/Popover 挂 `document.body`）
+  不继承 provider 的作用域主题、`dir` 与减动效规则（token-discipline 报告
+  P1-1/P1-2），修法涉及 provider 契约，未开工。

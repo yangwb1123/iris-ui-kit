@@ -204,6 +204,12 @@ const DIRECTORY_PAYLOAD_BUDGETS = {
     // measured payload is 256.3KB, with reviewable headroom for the new files.
     // Bumped 268→274 (2026-08-22): Svelte now publishes the Grid Core bridge
     // and IrisTable selection/expansion delegation; measured payload 270.4KB.
+    //
+    // RED since the grid/table round: measured payload is 302.8KB (302.8 > 274).
+    // Left unbumped on purpose — the same round also pushed core/react/vue/solid
+    // and icons over budget, and a package-by-package bump would hide a single
+    // decision. See docs/STATE.md “size 预算待维护者裁决” for the measurements
+    // and the trim-vs-raise question.
     budgetKb: 274,
   },
 }

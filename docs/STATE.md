@@ -341,3 +341,24 @@ check:manifest`、`check:docs-reference` 和 4 个 SSR 应用的
   vitest 超时（单独跑 2.9s）：三端该用例超时提到 120s，断言不变。
 - `docs/ui-audit/design-intelligence.md` 的 12 项 [MECHANICAL] 已全部落地
   （见上一节），复审时不要再把它们当缺口报。
+
+### size 预算待维护者裁决（2026-09-28 实测）
+
+`pnpm size` 当前是**红**的，且在本次提交之前就已红（HEAD~1 实测同样超标）。
+grid/table 那一轮把发布面推过预算，本轮实测量化如下（gzip，预算 → 实测）：
+
+| 包                                 | 预算 | 实测                         | 超出         |
+| ---------------------------------- | ---- | ---------------------------- | ------------ |
+| `@iris-ui-kit/core`                | 55   | 75.6                         | +26.4        |
+| `@iris-ui-kit/icons`               | 7    | 10.2                         | +4.1         |
+| `@iris-ui-kit/react`               | 160  | 167.6（脚本报 161 的旧预算） | +7.6 ~ +15.7 |
+| `@iris-ui-kit/vue`                 | 110  | 125.1                        | +15.1        |
+| `@iris-ui-kit/solid`               | 120  | 128.2                        | +8.2         |
+| `svelte-published`（387 文件合计） | 274  | 302.8                        | +28.8        |
+
+没有单方面抬高预算：六项同时超标属于**一个**决策（发布面要不要瘦身），
+逐包抬预算只会把决策藏起来。可选路径：(a) 把 grid/table 新能力从主 barrel
+解耦成子路径导出，core 只导出控制器；(b) 明确接受当前体积并一次性重设预算，
+在 `iris.yaml` 写清测量值与理由；(c) 先做 tree-shake 探针（当前
+`icons: import { chevronDown }` 探针在本机报 _unmeasurable_，需要先确认
+esbuild 可用）。

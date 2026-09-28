@@ -15,6 +15,29 @@ describe('IrisCarousel', () => {
     expect(container.querySelector('[data-iris-carousel-next]')).toBeTruthy()
   })
 
+  it('uses logical inline insets for arrows in LTR and RTL', () => {
+    const { container } = render(IrisCarousel, { props: { slideCount: 3 } })
+    const root = container.querySelector('[data-iris-carousel]') as HTMLElement
+    const prev = container.querySelector('[data-iris-carousel-prev]') as HTMLElement
+    const next = container.querySelector('[data-iris-carousel-next]') as HTMLElement
+
+    const assertLogicalInsets = () => {
+      expect(prev.style.getPropertyValue('inset-inline-start')).toBe('8px')
+      expect(prev.style.left).toBe('')
+      expect(prev.style.right).toBe('')
+      expect(prev.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+      expect(next.style.getPropertyValue('inset-inline-end')).toBe('8px')
+      expect(next.style.left).toBe('')
+      expect(next.style.right).toBe('')
+      expect(next.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+    }
+
+    root.setAttribute('dir', 'ltr')
+    assertLogicalInsets()
+    root.setAttribute('dir', 'rtl')
+    assertLogicalInsets()
+  })
+
   it('renders indicator dots', () => {
     const { container } = render(IrisCarousel, { props: { slideCount: 3, value: 0 } })
     const indicators = container.querySelector('[data-iris-carousel-indicators]')

@@ -31,6 +31,16 @@ export const IrisPopoverContent = defineComponent({
       type: [String, Object, Boolean] as PropType<string | HTMLElement | false>,
       default: 'body',
     },
+    /** Move focus into the content on open (default: true). */
+    autoFocus: {
+      type: Boolean,
+      default: true,
+    },
+    /** Restore focus to the trigger on close (default: true). */
+    restoreFocus: {
+      type: Boolean,
+      default: true,
+    },
   },
   setup(props, { slots, attrs }) {
     installFloatingAnimations()
@@ -70,11 +80,15 @@ export const IrisPopoverContent = defineComponent({
     watch(ctx.open, async (isOpen, wasOpen) => {
       if (isOpen && !wasOpen) {
         lastFocused = (document.activeElement as HTMLElement | null) ?? ctx.triggerRef.value
-        await nextTick()
-        innerRef.value?.focus()
+        if (props.autoFocus) {
+          await nextTick()
+          innerRef.value?.focus()
+        }
       } else if (!isOpen && wasOpen) {
-        const target = ctx.triggerRef.value ?? lastFocused
-        target?.focus()
+        if (props.restoreFocus) {
+          const target = ctx.triggerRef.value ?? lastFocused
+          target?.focus()
+        }
       }
     })
     // VNodes that carry refs must be created while this component is rendering.

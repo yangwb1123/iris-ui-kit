@@ -20,6 +20,23 @@ describe('IrisCarousel', () => {
     expect(w.emitted('update:modelValue')?.at(-1)).toEqual([1])
   })
 
+  it('uses logical inline insets for arrows in LTR and RTL', () => {
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const w = mount(IrisCarousel, { attrs: { dir }, slots: { default: threeSlides } })
+      const prev = w.find('[data-iris-carousel-prev]').element as HTMLElement
+      const next = w.find('[data-iris-carousel-next]').element as HTMLElement
+      expect(prev.style.insetInlineStart).toBe('8px')
+      expect(prev.style.left).toBe('')
+      expect(prev.style.right).toBe('')
+      expect(prev.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+      expect(next.style.insetInlineEnd).toBe('8px')
+      expect(next.style.left).toBe('')
+      expect(next.style.right).toBe('')
+      expect(next.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+      w.unmount()
+    }
+  })
+
   it('renders an indicator per slide and jumps on click', async () => {
     const w = mount(IrisCarousel, { slots: { default: threeSlides } })
     const dots = w.findAll('[data-iris-carousel-indicator]')

@@ -21,6 +21,8 @@ const VARIANT_COLOR: Record<IrisTimelineVariant, string> = {
 
 export interface IrisTimelineProps {
   items?: IrisTimelineItem[]
+  /** Replace the default content (time/title/description) for every item. */
+  renderItem?: (item: IrisTimelineItem, index: number) => JSX.Element
   style?: JSX.CSSProperties | string
   class?: string
 }
@@ -30,7 +32,7 @@ export interface IrisTimelineProps {
  */
 export function IrisTimeline(props: IrisTimelineProps): JSX.Element {
   const merged = mergeProps({ items: [] as IrisTimelineItem[] }, props)
-  const [local, rest] = splitProps(merged, ['items'])
+  const [local, rest] = splitProps(merged, ['items', 'renderItem'])
 
   return (
     <ol
@@ -93,35 +95,41 @@ export function IrisTimeline(props: IrisTimelineProps): JSX.Element {
                 data-iris-timeline-content=""
                 style={{ 'padding-block-end': isLast() ? '0' : '16px', 'min-width': '0' }}
               >
-                {item.time != null && (
-                  <div
-                    data-iris-timeline-time=""
-                    style={{
-                      'font-size': 'var(--iris-font-size-xs, 12px)',
-                      color: 'var(--iris-muted)',
-                    }}
-                  >
-                    {item.time}
-                  </div>
-                )}
-                {item.title != null && (
-                  <div
-                    data-iris-timeline-title=""
-                    style={{ 'font-weight': '600', color: 'var(--iris-foreground)' }}
-                  >
-                    {item.title}
-                  </div>
-                )}
-                {item.description != null && (
-                  <div
-                    data-iris-timeline-desc=""
-                    style={{
-                      'font-size': 'var(--iris-font-size-md, 14px)',
-                      color: 'var(--iris-foreground)',
-                    }}
-                  >
-                    {item.description}
-                  </div>
+                {local.renderItem ? (
+                  local.renderItem(item, i())
+                ) : (
+                  <>
+                    {item.time != null && (
+                      <div
+                        data-iris-timeline-time=""
+                        style={{
+                          'font-size': 'var(--iris-font-size-xs, 12px)',
+                          color: 'var(--iris-muted)',
+                        }}
+                      >
+                        {item.time}
+                      </div>
+                    )}
+                    {item.title != null && (
+                      <div
+                        data-iris-timeline-title=""
+                        style={{ 'font-weight': '600', color: 'var(--iris-foreground)' }}
+                      >
+                        {item.title}
+                      </div>
+                    )}
+                    {item.description != null && (
+                      <div
+                        data-iris-timeline-desc=""
+                        style={{
+                          'font-size': 'var(--iris-font-size-md, 14px)',
+                          color: 'var(--iris-foreground)',
+                        }}
+                      >
+                        {item.description}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </li>

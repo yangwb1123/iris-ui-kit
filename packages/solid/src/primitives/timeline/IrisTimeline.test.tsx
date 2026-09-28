@@ -18,7 +18,30 @@ describe('IrisTimeline', () => {
     const { getAllByRole, getByText } = render(() => <IrisTimeline items={items} />)
     expect(getAllByRole('listitem').length).toBe(2)
     expect(getByText('Event 1')).toBeTruthy()
+    expect(getByText('2024-01-01')).toBeTruthy()
     expect(getByText('Details here')).toBeTruthy()
+  })
+
+  it('renders custom item content instead of the default fields', () => {
+    const items = [
+      { key: '1', title: 'Event 1', time: 'Time 1', description: 'Description 1' },
+      { key: '2', title: 'Event 2', time: 'Time 2', description: 'Description 2' },
+    ]
+    const { container, getByText } = render(() => (
+      <IrisTimeline
+        items={items}
+        renderItem={(item, index) => (
+          <span data-custom-timeline-item="">{`Custom ${index}: ${item.title}`}</span>
+        )}
+      />
+    ))
+
+    expect(getByText('Custom 0: Event 1')).toBeTruthy()
+    expect(getByText('Custom 1: Event 2')).toBeTruthy()
+    expect(container.querySelectorAll('[data-custom-timeline-item]')).toHaveLength(2)
+    expect(container.querySelector('[data-iris-timeline-time]')).toBeNull()
+    expect(container.querySelector('[data-iris-timeline-title]')).toBeNull()
+    expect(container.querySelector('[data-iris-timeline-desc]')).toBeNull()
   })
 
   it('applies variant color to dots', () => {

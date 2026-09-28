@@ -292,7 +292,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
           }}
           style={{
             position: 'absolute',
-            left: '0',
+            'inset-inline-start': '0',
             top: '100%',
             'margin-top': '4px',
             'max-height': '200px',

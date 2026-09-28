@@ -108,14 +108,23 @@ describe('@iris-ui-kit/svelte IrisList', () => {
   })
 
   it('renders the loading state with aria-busy', () => {
-    const { container } = render(IrisList, { props: { items: ITEMS, loading: true } })
+    const { container } = render(IrisList, { props: { items: [], loading: true } })
     expect(container.querySelector('[data-iris-list-state="loading"]')).not.toBeNull()
+    expect(container.querySelector('ul')!.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('keeps existing items mounted during a loading revalidate', async () => {
+    const { container, rerender } = render(IrisList, { props: { items: ITEMS } })
+    await rerender({ items: ITEMS, loading: true })
+    expect(container.querySelector('[data-iris-list-state]')).toBeNull()
+    expect(container.querySelectorAll('[role="option"]')).toHaveLength(ITEMS.length)
+    expect(container.querySelector('[role="option"]')?.textContent).toContain('Apple')
     expect(container.querySelector('ul')!.getAttribute('aria-busy')).toBe('true')
   })
 
   it('error state takes precedence over loading', () => {
     const { container } = render(IrisList, {
-      props: { items: ITEMS, loading: true, error: true },
+      props: { items: [], loading: true, error: true },
     })
     expect(container.querySelector('[data-iris-list-state="error"]')).not.toBeNull()
   })

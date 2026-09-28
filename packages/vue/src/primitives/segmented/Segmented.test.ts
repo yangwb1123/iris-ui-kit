@@ -29,6 +29,14 @@ describe('IrisSegmented', () => {
     expect(sel?.text()).toBe('Week')
   })
 
+  it('uses the shadow token for the selected segment', () => {
+    const w = mount(IrisSegmented, { props: { options: OPTS, modelValue: 'week' } })
+    const selected = items(w).find((b) => b.attributes('data-selected') === 'true')
+
+    expect(selected?.element.style.boxShadow).toContain('var(--iris-shadow-sm')
+    expect(selected?.element.style.boxShadow).not.toBe('0 1px 3px rgba(0,0,0,0.12)')
+  })
+
   it('clicking a segment emits its value', async () => {
     const w = mount(IrisSegmented, { props: { options: OPTS } })
     await items(w)[1].trigger('click')

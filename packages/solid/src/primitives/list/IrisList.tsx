@@ -64,6 +64,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
     loading: local.loading,
     error: local.error,
     empty: local.items.length === 0,
+    hasContent: local.items.length > 0,
   }))
 
   const isEnabled = (i: number): boolean => !local.items[i]?.disabled
@@ -143,7 +144,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
       role="listbox"
       aria-label={local.ariaLabel}
       aria-multiselectable={local.multi ? 'true' : undefined}
-      aria-busy={state() === 'loading' ? 'true' : undefined}
+      aria-busy={local.loading ? 'true' : undefined}
       data-iris-list=""
       onKeyDown={onKeyDown}
       style={{

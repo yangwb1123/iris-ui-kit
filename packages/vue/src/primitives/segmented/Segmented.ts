@@ -154,7 +154,7 @@ export const IrisSegmented = defineComponent({
                 cursor: props.disabled || opt.disabled ? 'not-allowed' : 'pointer',
                 background: selected ? 'var(--iris-background)' : 'transparent',
                 color: selected ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-                boxShadow: selected ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                boxShadow: selected ? 'var(--iris-shadow-sm, 0 1px 3px rgba(0,0,0,0.12))' : 'none',
                 fontWeight: selected ? '600' : '400',
                 transition: 'background-color 120ms ease, color 120ms ease',
                 whiteSpace: 'nowrap',

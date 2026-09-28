@@ -8,9 +8,9 @@ export const PROGRESS_INDETERMINATE_ANIMATION = `${PROGRESS_INDETERMINATE_KEYFRA
  */
 export const PROGRESS_STYLES = `
 @keyframes ${PROGRESS_INDETERMINATE_KEYFRAME} {
-  0%   { left: -40%; right: 100%; }
-  60%  { left: 100%; right: -20%; }
-  100% { left: 100%; right: -20%; }
+  0%   { inset-inline-start: -40%; inset-inline-end: 100%; }
+  60%  { inset-inline-start: 100%; inset-inline-end: -20%; }
+  100% { inset-inline-start: 100%; inset-inline-end: -20%; }
 }
 [data-iris-progress] {
   position: relative;
@@ -22,20 +22,20 @@ export const PROGRESS_STYLES = `
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   border-radius: 9999px;
   transition: width 200ms ease;
 }
 [data-iris-progress][data-state="indeterminate"] [data-iris-progress-bar] {
   width: auto;
-  right: 100%;
+  inset-inline-end: 100%;
   animation: ${PROGRESS_INDETERMINATE_ANIMATION};
 }
 @media (prefers-reduced-motion: reduce) {
   [data-iris-progress][data-state="indeterminate"] [data-iris-progress-bar] {
     animation: none;
-    right: 50%;
-    left: 0;
+    inset-inline-end: 50%;
+    inset-inline-start: 0;
   }
 }
 `.trim()

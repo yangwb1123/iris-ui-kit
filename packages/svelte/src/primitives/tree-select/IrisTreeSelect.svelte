@@ -141,7 +141,7 @@
       role="dialog"
       style:position="absolute"
       style:top="calc(100% + 4px)"
-      style:left="0"
+      style:inset-inline-start="0"
       style:z-index="50"
       style:min-width="240px"
       style:max-height="320px"

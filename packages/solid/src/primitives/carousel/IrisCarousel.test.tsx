@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js'
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
 import { IrisCarousel } from './IrisCarousel'
@@ -24,6 +25,38 @@ describe('IrisCarousel', () => {
     ))
     expect(container.querySelector('[data-iris-carousel-prev]')).not.toBeNull()
     expect(container.querySelector('[data-iris-carousel-next]')).not.toBeNull()
+  })
+
+  it('uses logical inline insets for arrows in LTR and RTL', () => {
+    const [dir, setDir] = createSignal<'ltr' | 'rtl'>('ltr')
+    const { container } = render(() => (
+      <div dir={dir()}>
+        <IrisCarousel>
+          <div>Slide 1</div>
+          <div>Slide 2</div>
+        </IrisCarousel>
+      </div>
+    ))
+
+    const assertLogicalInsets = () => {
+      const prev = container.querySelector('[data-iris-carousel-prev]') as HTMLElement
+      const next = container.querySelector('[data-iris-carousel-next]') as HTMLElement
+      const indicators = container.querySelector('[data-iris-carousel-indicators]') as HTMLElement
+      expect(prev.style.getPropertyValue('inset-inline-start')).toBe('8px')
+      expect(prev.style.left).toBe('')
+      expect(prev.style.right).toBe('')
+      expect(prev.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+      expect(next.style.getPropertyValue('inset-inline-end')).toBe('8px')
+      expect(next.style.left).toBe('')
+      expect(next.style.right).toBe('')
+      expect(next.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+      expect(indicators.style.getPropertyValue('inset-inline-start')).toBe('50%')
+      expect(indicators.style.left).toBe('')
+    }
+
+    assertLogicalInsets()
+    setDir('rtl')
+    assertLogicalInsets()
   })
 
   it('renders indicator dots', () => {

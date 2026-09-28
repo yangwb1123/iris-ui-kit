@@ -433,3 +433,18 @@ esbuild 可用）。
    批处理不能跑”这个差异才定位到是**任务文件被改**而不是 provider 故障。
    处置：终止该批、删除越界产物、给每个任务加“只改点名文件”的硬约束。
    （这也说明：批次任务文件应当被当成受保护的输入。）
+
+### pbatch 实施批 3：语义对齐与 RTL 收尾（2026-09-28）
+
+6 个任务全部通过（批末 `node cli.mjs check` 绿）：
+
+- 菜单浮层根钩子统一为 `data-iris-menu`（solid/svelte 原先用
+  `data-iris-menu-content`，全仓 53 处测试用前者、只有 2 处用后者，现已归零）。
+- Solid `IrisTimeline` 支持逐项自定义渲染（对齐 react 的 `renderItem` /
+  vue 的 slot / svelte 的 snippet）。
+- Vue `IrisPopoverContent` 补上 `autoFocus` / `restoreFocus` 两个开关。
+- List 的刷新态统一走 core 的 `resolveDataState`（react/solid/svelte 补
+  `hasContent`，svelte 删掉手算分支），四端“已有内容 + 刷新”不再一个保留
+  内容一个换 loading。
+- 轮播箭头、进度填充/动画、日期/选择类锚定面板、树缩进一律改逻辑属性。
+- Segmented 选中阴影改用 `--iris-shadow-sm`（对齐 solid，去掉裸 rgba）。

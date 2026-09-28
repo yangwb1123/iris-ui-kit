@@ -64,7 +64,8 @@ export function TreeNodeItem(nodeProps: IrisTreeNodeItemProps): JSX.Element {
           display: 'flex',
           'align-items': 'center',
           gap: '4px',
-          padding: `4px 8px 4px ${nodeProps.depth * 20 + 8}px`,
+          padding: '4px 8px',
+          'padding-inline-start': `${nodeProps.depth * 20 + 8}px`,
           cursor: isDisabled() ? 'not-allowed' : 'pointer',
           opacity: isDisabled() ? '0.5' : '1',
           background: nodeProps.selected()
@@ -129,7 +130,7 @@ export function TreeNodeItem(nodeProps: IrisTreeNodeItemProps): JSX.Element {
             data-iris-tree-error=""
             style={{
               'font-size': 'var(--iris-font-size-xs, 12px)',
-              'margin-left': '4px',
+              'margin-inline-start': '4px',
               color: 'var(--iris-danger, #ef4444)',
             }}
           >

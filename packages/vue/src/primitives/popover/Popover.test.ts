@@ -48,6 +48,8 @@ function Harness(slotConfig?: {
   contentText?: string
   defaultOpen?: boolean
   controlledOpen?: import('vue').Ref<boolean>
+  autoFocus?: boolean
+  restoreFocus?: boolean
   placement?: 'top' | 'bottom' | 'left' | 'right'
 }) {
   const opts = slotConfig ?? {}
@@ -67,7 +69,15 @@ function Harness(slotConfig?: {
           {
             default: () => [
               h(IrisPopoverTrigger, null, () => opts.triggerLabel ?? 'Trigger'),
-              h(IrisPopoverContent, { teleport: false }, () => opts.contentText ?? 'Content'),
+              h(
+                IrisPopoverContent,
+                {
+                  teleport: false,
+                  ...(opts.autoFocus === undefined ? {} : { autoFocus: opts.autoFocus }),
+                  ...(opts.restoreFocus === undefined ? {} : { restoreFocus: opts.restoreFocus }),
+                },
+                () => opts.contentText ?? 'Content',
+              ),
             ],
           },
         )
@@ -96,6 +106,52 @@ describe('IrisPopover', () => {
     await wrapper.find('[aria-haspopup="dialog"]').trigger('click')
     await nextTick()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  })
+
+  it('focuses content on open and restores focus on close by default', async () => {
+    const wrapper = mount(Harness(), { attachTo: host })
+    const trigger = wrapper.find('[aria-haspopup="dialog"]')
+    const triggerElement = trigger.element as HTMLElement
+    triggerElement.focus()
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(triggerElement)
+  })
+
+  it('does not auto-focus content when autoFocus is false', async () => {
+    const wrapper = mount(Harness({ autoFocus: false }), { attachTo: host })
+    const trigger = wrapper.find('[aria-haspopup="dialog"]')
+    const triggerElement = trigger.element as HTMLElement
+    triggerElement.focus()
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    expect(document.activeElement).toBe(triggerElement)
+  })
+
+  it('does not restore focus when restoreFocus is false', async () => {
+    const wrapper = mount(Harness({ restoreFocus: false }), { attachTo: host })
+    const trigger = wrapper.find('[aria-haspopup="dialog"]')
+    const triggerElement = trigger.element as HTMLElement
+    triggerElement.focus()
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
+
+    const other = document.createElement('button')
+    host.appendChild(other)
+    other.focus()
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(other)
+    expect(document.activeElement).not.toBe(triggerElement)
   })
 
   it('resolves an as-child component trigger to its root HTMLElement', async () => {

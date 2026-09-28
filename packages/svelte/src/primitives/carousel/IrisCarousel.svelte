@@ -162,7 +162,7 @@
       disabled={!canPrev}
       onclick={() => advance(-1)}
       style:position="absolute"
-      style:left="8px"
+      style:inset-inline-start="8px"
       style:top="50%"
       style:transform="translateY(-50%)"
       style:z-index="2"
@@ -187,7 +187,7 @@
       disabled={!canNext}
       onclick={() => advance(1)}
       style:position="absolute"
-      style:right="8px"
+      style:inset-inline-end="8px"
       style:top="50%"
       style:transform="translateY(-50%)"
       style:z-index="2"

@@ -44,6 +44,29 @@ describe('@iris-ui-kit/react IrisProgress', () => {
     expect(bar.getAttribute('aria-valuenow')).toBeNull()
   })
 
+  it('uses logical inline positioning for the indeterminate fill in LTR and RTL', () => {
+    const view = (dir: 'ltr' | 'rtl') => (
+      <div dir={dir}>
+        <IrisProgress indeterminate />
+      </div>
+    )
+    const { container, rerender } = render(view('ltr'))
+
+    const assertLogicalPositioning = () => {
+      const fill = container.querySelector('[data-iris-progress-bar]') as HTMLElement
+      const stylesheet = document.getElementById(__PROGRESS_STYLE_ID)?.textContent ?? ''
+      expect(fill.style.left).toBe('')
+      expect(fill.style.right).toBe('')
+      expect(stylesheet).toContain('inset-inline-start')
+      expect(stylesheet).toContain('inset-inline-end')
+      expect(stylesheet).not.toMatch(/\b(?:left|right)\s*:/)
+    }
+
+    assertLogicalPositioning()
+    rerender(view('rtl'))
+    assertLogicalPositioning()
+  })
+
   it('indeterminate=true forces indeterminate', () => {
     const { container } = render(<IrisProgress value={50} indeterminate />)
     expect(container.querySelector('[data-iris-progress]')!.getAttribute('data-state')).toBe(

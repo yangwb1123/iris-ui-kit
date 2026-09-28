@@ -2,6 +2,7 @@
   import {
     createSelectionModel,
     createKeyboardNav,
+    resolveDataState,
     type KeyboardNavAction,
     type SelectionKey,
   } from '@iris-ui-kit/core'
@@ -100,10 +101,13 @@
   const displaySelectedKeys = $derived(isControlled ? toKeys(value) : $selectedKeys)
   const isSelected = (v: unknown): boolean => displaySelectedKeys.includes(asKey(v))
 
-  // Data-state precedence (error > loading > empty > content) mirrors core
-  // resolveDataState / the React adapter.
   const dataState = $derived(
-    error ? 'error' : loading ? 'loading' : items.length === 0 ? 'empty' : 'content',
+    resolveDataState({
+      loading,
+      error,
+      empty: items.length === 0,
+      hasContent: items.length > 0,
+    }),
   )
   const isContent = $derived(dataState === 'content')
 
@@ -213,7 +217,7 @@
   role="listbox"
   aria-label={ariaLabel}
   aria-multiselectable={multi ? 'true' : undefined}
-  aria-busy={dataState === 'loading' ? 'true' : undefined}
+  aria-busy={loading ? 'true' : undefined}
   data-iris-list
   onkeydown={onKeyDown}
   style={mergeStyle(listStyle, style)}

@@ -268,7 +268,7 @@ export function IrisMonthPicker(props: IrisMonthPickerProps): JSX.Element {
           style={{
             position: 'absolute',
             top: 'calc(100% + 4px)',
-            left: '0',
+            'inset-inline-start': '0',
             'z-index': '50',
             background: 'var(--iris-surface-floating)',
             color: 'var(--iris-foreground)',

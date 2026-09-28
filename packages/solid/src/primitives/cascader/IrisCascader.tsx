@@ -169,7 +169,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
       >
         <span>{node.label}</span>
         <Show when={hasChildren()}>
-          <span aria-hidden="true" style={{ 'margin-left': '8px', opacity: '0.6' }}>
+          <span aria-hidden="true" style={{ 'margin-inline-start': '8px', opacity: '0.6' }}>
             ›
           </span>
         </Show>
@@ -241,7 +241,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
           style={{
             position: 'absolute',
             top: '100%',
-            left: '0',
+            'inset-inline-start': '0',
             'z-index': '100',
             'margin-top': '4px',
             display: 'flex',
@@ -266,7 +266,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                   data-iris-cascader-column={colIdx()}
                   style={{
                     'min-width': '140px',
-                    'border-right':
+                    'border-inline-end':
                       colIdx() < columns().length - 1 ? '1px solid var(--iris-border)' : 'none',
                   }}
                 />
@@ -281,7 +281,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                     'min-width': '140px',
                     'max-height': '240px',
                     'overflow-y': 'auto',
-                    'border-right':
+                    'border-inline-end':
                       colIdx() < columns().length - 1 ? '1px solid var(--iris-border)' : 'none',
                   }}
                 >

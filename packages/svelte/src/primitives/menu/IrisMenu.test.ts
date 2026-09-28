@@ -13,7 +13,7 @@ describe('IrisMenu', () => {
 
   it('content is not visible initially', () => {
     const { container } = render(MenuHarness)
-    expect(container.querySelector('[data-iris-menu-content]')).toBeNull()
+    expect(container.querySelector('[data-iris-menu]')).toBeNull()
   })
 
   it('opens on trigger click', async () => {
@@ -108,7 +108,7 @@ describe('IrisMenu', () => {
       await fireEvent.click(deep)
       flushSync()
       expect(onDeepSelect).toHaveBeenCalledTimes(1)
-      expect(document.querySelector('[data-iris-menu-content]')).toBeNull()
+      expect(document.querySelector('[data-iris-menu]')).toBeNull()
     })
   })
 })

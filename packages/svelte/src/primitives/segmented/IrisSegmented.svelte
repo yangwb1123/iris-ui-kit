@@ -183,7 +183,7 @@
         : 'transparent'}; color:{selected
         ? 'var(--iris-foreground)'
         : 'var(--iris-muted)'}; box-shadow:{selected
-        ? '0 1px 3px rgba(0,0,0,0.12)'
+        ? 'var(--iris-shadow-sm, 0 1px 3px rgba(0,0,0,0.12))'
         : 'none'}; font-weight:{selected
         ? '600'
         : '400'}; transition:background-color 120ms ease,color 120ms ease; white-space:nowrap;"

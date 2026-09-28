@@ -134,6 +134,7 @@ export function IrisList<T = unknown>({
     loading,
     error,
     empty: safeItems.length === 0,
+    hasContent: safeItems.length > 0,
   })
 
   const isSelected = React.useCallback(
@@ -231,7 +232,7 @@ export function IrisList<T = unknown>({
       role="listbox"
       aria-label={ariaLabel}
       aria-multiselectable={multi ? true : undefined}
-      aria-busy={state === 'loading' ? true : undefined}
+      aria-busy={loading ? true : undefined}
       data-iris-list=""
       className={className}
       onKeyDown={onKeyDown}

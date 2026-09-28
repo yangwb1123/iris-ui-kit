@@ -12,6 +12,16 @@ describe('IrisSegmented', () => {
     expect(items.length).toBe(3)
   })
 
+  it('uses the shadow token for the selected segment', () => {
+    const { container } = render(IrisSegmented, {
+      props: { options: ['One', 'Two'], value: 'Two' },
+    })
+    const selected = container.querySelector<HTMLElement>('[data-selected="true"]')
+
+    expect(selected?.style.boxShadow).toContain('var(--iris-shadow-sm')
+    expect(selected?.style.boxShadow).not.toBe('0 1px 3px rgba(0,0,0,0.12)')
+  })
+
   it('calls onchange when an option is clicked', async () => {
     const onchange = vi.fn()
     const { container } = render(IrisSegmented, {

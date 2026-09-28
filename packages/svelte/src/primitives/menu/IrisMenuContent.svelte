@@ -96,7 +96,7 @@
     id={ctx.contentId}
     role="menu"
     tabindex={-1}
-    data-iris-menu-content
+    data-iris-menu
     data-state="open"
     onkeydown={handleKeyDown}
     style={mergedStyle}

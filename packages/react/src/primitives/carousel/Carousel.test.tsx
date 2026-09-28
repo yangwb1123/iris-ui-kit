@@ -28,6 +28,32 @@ describe('@iris-ui-kit/react IrisCarousel', () => {
     expect(onIndexChange).toHaveBeenLastCalledWith(1)
   })
 
+  it('uses logical inline insets for arrows in LTR and RTL', () => {
+    const view = (dir: 'ltr' | 'rtl') => (
+      <div dir={dir}>
+        <ThreeSlides showIndicators={false} />
+      </div>
+    )
+    const { container, rerender } = render(view('ltr'))
+
+    const assertLogicalInsets = () => {
+      const prev = container.querySelector('[data-iris-carousel-prev]') as HTMLElement
+      const next = container.querySelector('[data-iris-carousel-next]') as HTMLElement
+      expect(prev.style.insetInlineStart).toBe('8px')
+      expect(prev.style.left).toBe('')
+      expect(prev.style.right).toBe('')
+      expect(prev.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+      expect(next.style.insetInlineEnd).toBe('8px')
+      expect(next.style.left).toBe('')
+      expect(next.style.right).toBe('')
+      expect(next.getAttribute('style')).not.toMatch(/(?:^|;)\s*(?:left|right)\s*:/)
+    }
+
+    assertLogicalInsets()
+    rerender(view('rtl'))
+    assertLogicalInsets()
+  })
+
   it('renders an indicator per slide and jumps on click', () => {
     const onIndexChange = vi.fn()
     const { container } = render(<ThreeSlides onIndexChange={onIndexChange} />)

@@ -76,6 +76,13 @@ describe('IrisTree', () => {
       expect(list[1].getAttribute('aria-level')).toBe('2')
     })
 
+    it('indents rows with logical inline-start padding', () => {
+      const { container } = render(IrisTree, { props: { nodes, defaultExpanded: ['1'] } })
+      const child = items(container)[1]!
+      expect(child.style.getPropertyValue('padding-inline-start')).toBe('24px')
+      expect(child.getAttribute('style')).not.toMatch(/(?:^|;)\s*padding-left\s*:/)
+    })
+
     it('ArrowDown moves roving focus to the next visible node', async () => {
       const { container } = render(IrisTree, { props: { nodes, defaultExpanded: ['1'] } })
       await fireEvent.keyDown(items(container)[0], { key: 'ArrowDown' })

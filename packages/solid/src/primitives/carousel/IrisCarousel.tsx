@@ -183,7 +183,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
           aria-label={t('carousel.previous')}
           onClick={prev}
           disabled={!local.loop && currentIndex() === 0 ? true : undefined}
-          style={{ ...arrowBtnStyle, left: '8px' }}
+          style={{ ...arrowBtnStyle, 'inset-inline-start': '8px' }}
         >
           ‹
         </button>
@@ -193,7 +193,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
           aria-label={t('carousel.next')}
           onClick={next}
           disabled={!local.loop && currentIndex() === count() - 1 ? true : undefined}
-          style={{ ...arrowBtnStyle, right: '8px' }}
+          style={{ ...arrowBtnStyle, 'inset-inline-end': '8px' }}
         >
           ›
         </button>
@@ -208,7 +208,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
           style={{
             position: 'absolute',
             bottom: '10px',
-            left: '50%',
+            'inset-inline-start': '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
             gap: 'var(--iris-space-xs, 8px)',

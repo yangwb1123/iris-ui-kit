@@ -369,7 +369,7 @@
         style:align-items="center"
         style:gap="4px"
         style:padding="4px 8px"
-        style:padding-left={`${8 + fn.depth * 16}px`}
+        style:padding-inline-start={`${8 + fn.depth * 16}px`}
         style:cursor={fn.node.disabled ? 'default' : 'pointer'}
         style:border-radius="var(--iris-radius-sm, 4px)"
         style:background={isSelected ? 'var(--iris-surface-hover)' : 'transparent'}

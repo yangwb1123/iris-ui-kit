@@ -38,6 +38,20 @@ describe('IrisProgress', () => {
     expect(w.attributes('aria-valuenow')).toBeUndefined()
   })
 
+  it('uses logical inline positioning for the indeterminate fill in LTR and RTL', () => {
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const w = mount(IrisProgress, { props: { indeterminate: true }, attrs: { dir } })
+      const fill = w.find('[data-iris-progress-bar]').element as HTMLElement
+      const stylesheet = document.getElementById(__PROGRESS_STYLE_ID)?.textContent ?? ''
+      expect(fill.style.left).toBe('')
+      expect(fill.style.right).toBe('')
+      expect(stylesheet).toContain('inset-inline-start')
+      expect(stylesheet).toContain('inset-inline-end')
+      expect(stylesheet).not.toMatch(/\b(?:left|right)\s*:/)
+      w.unmount()
+    }
+  })
+
   it('indeterminate=true forces indeterminate even if value is given', () => {
     const w = mount(IrisProgress, { props: { value: 50, indeterminate: true } })
     expect(w.attributes('data-state')).toBe('indeterminate')

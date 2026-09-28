@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js'
 import {
   PROGRESS_INDETERMINATE_ANIMATION,
   PROGRESS_INDETERMINATE_KEYFRAME,
@@ -44,6 +45,29 @@ describe('IrisProgress', () => {
     expect(document.getElementById(__PROGRESS_STYLE_ID)?.textContent).toContain(
       `@keyframes ${PROGRESS_INDETERMINATE_KEYFRAME}`,
     )
+  })
+
+  it('uses logical inline positioning for the indeterminate fill in LTR and RTL', () => {
+    const [dir, setDir] = createSignal<'ltr' | 'rtl'>('ltr')
+    const { container } = render(() => (
+      <div dir={dir()}>
+        <IrisProgress indeterminate />
+      </div>
+    ))
+
+    const assertLogicalPositioning = () => {
+      const fill = container.querySelector('[data-iris-progress-bar]') as HTMLElement
+      const stylesheet = document.getElementById(__PROGRESS_STYLE_ID)?.textContent ?? ''
+      expect(fill.style.left).toBe('')
+      expect(fill.style.right).toBe('')
+      expect(stylesheet).toContain('inset-inline-start')
+      expect(stylesheet).toContain('inset-inline-end')
+      expect(stylesheet).not.toMatch(/\b(?:left|right)\s*:/)
+    }
+
+    assertLogicalPositioning()
+    setDir('rtl')
+    assertLogicalPositioning()
   })
 
   it('applies correct tone data attribute', () => {

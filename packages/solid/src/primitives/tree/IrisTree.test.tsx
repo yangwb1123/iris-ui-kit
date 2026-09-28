@@ -65,6 +65,13 @@ describe('IrisTree', () => {
       expect(item(container, 'a1').getAttribute('aria-level')).toBe('2')
     })
 
+    it('indents rows with logical inline-start padding', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
+      const row = item(container, 'a1').querySelector('[data-iris-tree-node-row]') as HTMLElement
+      expect(row.style.getPropertyValue('padding-inline-start')).toBe('28px')
+      expect(row.getAttribute('style')).not.toMatch(/(?:^|;)\s*padding-left\s*:/)
+    })
+
     it('ArrowRight expands the active parent node', () => {
       const onExpand = vi.fn()
       const { container, queryByText } = render(() => (

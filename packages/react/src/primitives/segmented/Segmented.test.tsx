@@ -47,6 +47,14 @@ describe('@iris-ui-kit/react IrisSegmented', () => {
     expect(sel?.textContent).toBe('Week')
   })
 
+  it('uses the shadow token for the selected segment', () => {
+    const { container } = render(<IrisSegmented options={OPTS} value="week" />)
+    const selected = container.querySelector<HTMLElement>('[data-selected="true"]')
+
+    expect(selected?.style.boxShadow).toContain('var(--iris-shadow-sm')
+    expect(selected?.style.boxShadow).not.toBe('0 1px 3px rgba(0,0,0,0.12)')
+  })
+
   it('clicking a segment selects it', () => {
     const onValueChange = vi.fn()
     const { container } = render(<IrisSegmented options={OPTS} onValueChange={onValueChange} />)

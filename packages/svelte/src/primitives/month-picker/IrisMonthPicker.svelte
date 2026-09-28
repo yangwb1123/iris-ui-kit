@@ -251,7 +251,7 @@
       aria-modal="true"
       style:position="absolute"
       style:top="calc(100% + 4px)"
-      style:left="0"
+      style:inset-inline-start="0"
       style:z-index="50"
       style:background="var(--iris-surface-floating)"
       style:color="var(--iris-foreground)"

@@ -211,6 +211,15 @@ describe('@iris-ui-kit/react IrisList data states', () => {
     expect(document.querySelectorAll('[role=option]').length).toBe(items.length)
   })
 
+  it('keeps existing options mounted during a loading revalidate', () => {
+    const { rerender } = render(<IrisList items={items} />)
+    rerender(<IrisList items={items} loading />)
+    expect(document.querySelector('[data-iris-list-state]')).toBeNull()
+    expect(document.querySelectorAll('[role=option]').length).toBe(items.length)
+    expect(document.querySelector('[role=option]')?.textContent).toContain('Alpha')
+    expect(listEl().getAttribute('aria-busy')).toBe('true')
+  })
+
   it('applies the enter-animation class on the state node', () => {
     render(<IrisList items={[]} loading />)
     expect(document.querySelector('[data-iris-list-state]')?.className).toContain(

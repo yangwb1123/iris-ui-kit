@@ -144,7 +144,7 @@ export function IrisTreeSelect(props: IrisTreeSelectProps): JSX.Element {
           style={{
             position: 'absolute',
             top: '100%',
-            left: '0',
+            'inset-inline-start': '0',
             'z-index': '100',
             'margin-top': '4px',
             background: 'var(--iris-surface)',

@@ -89,7 +89,7 @@ export function IrisMenuContent(props: IrisMenuContentProps): JSX.Element {
       id={ctx.contentId}
       role="menu"
       tabindex={-1}
-      data-iris-menu-content=""
+      data-iris-menu=""
       data-state="open"
       onKeyDown={handleKeyDown}
       style={{

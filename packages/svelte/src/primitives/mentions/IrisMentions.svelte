@@ -270,7 +270,7 @@
         virtualizer?.setScroll(e.currentTarget.scrollTop)
       }}
       style:position="absolute"
-      style:left="0"
+      style:inset-inline-start="0"
       style:top="100%"
       style:margin-top="4px"
       style:max-height="200px"

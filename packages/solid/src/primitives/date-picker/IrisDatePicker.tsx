@@ -108,7 +108,7 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
           style={{
             position: 'absolute',
             top: '100%',
-            left: '0',
+            'inset-inline-start': '0',
             'z-index': '100',
             'margin-top': '4px',
             'box-shadow': 'var(--iris-shadow-lg)',

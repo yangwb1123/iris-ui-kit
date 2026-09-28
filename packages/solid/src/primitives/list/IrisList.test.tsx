@@ -102,13 +102,23 @@ describe('IrisList', () => {
   })
 
   it('renders the loading state with aria-busy', () => {
-    const { container } = render(() => <IrisList items={fruits} loading />)
+    const { container } = render(() => <IrisList items={[]} loading />)
     expect(container.querySelector('[data-iris-list-state="loading"]')).not.toBeNull()
     expect(container.querySelector('ul')!.getAttribute('aria-busy')).toBe('true')
   })
 
+  it('keeps existing items mounted during a loading revalidate', () => {
+    const [loading, setLoading] = createSignal(false)
+    const { container } = render(() => <IrisList items={fruits} loading={loading()} />)
+    setLoading(true)
+    expect(container.querySelector('[data-iris-list-state]')).toBeNull()
+    expect(container.querySelectorAll('[role="option"]')).toHaveLength(fruits.length)
+    expect(container.querySelector('[role="option"]')?.textContent).toContain('Apple')
+    expect(container.querySelector('ul')!.getAttribute('aria-busy')).toBe('true')
+  })
+
   it('error state takes precedence over loading', () => {
-    const { container } = render(() => <IrisList items={fruits} loading error />)
+    const { container } = render(() => <IrisList items={[]} loading error />)
     expect(container.querySelector('[data-iris-list-state="error"]')).not.toBeNull()
   })
 })

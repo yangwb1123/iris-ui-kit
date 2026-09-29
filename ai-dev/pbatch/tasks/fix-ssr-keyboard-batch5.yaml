@@ -1,0 +1,222 @@
+# pbatch 批次：SSR 稳定性 + 键盘可达性（第五批）
+#
+# 来源：docs/auto/reviews/core-lifecycle.md（P1-6/P1-7/P1-8）与
+# docs/auto/reviews/i18n-a11y.md（#4/#5/#6）。这三类都是**门禁抓不到**、
+# 但直接违反 AGENTS.md 既有铁律的问题：
+#   - 「SSR 稳定 id：框架原生 useId，勿用模块自增计数器」
+#   - 「每种状态都有 prop / 文案走 i18n」
+#   - WCAG 2.1.1 Keyboard：Svelte 已经能做，React/Vue/Solid 不能
+#
+# 串行执行：任务改同一棵树。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-ssr-keyboard-batch5.yaml --retries 2
+#
+# ⚠️ 任务文件是受保护输入：禁止修改 ai-dev/**、docs/**、scripts/**、CI 配置；
+#    禁止启动任何 batch runner / 调度进程（越界过两次，见 README）。
+#    交付物写在最终回复里，不要自己写文件。
+
+tasks:
+  # ── 1. Svelte SSR 稳定 id（AGENTS.md 明令禁止模块自增计数器）──────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要启动任何 batch runner；最终回复里给总结，不要写文件。
+
+      你是 iris-ui 的 core + svelte 维护者。仓库根 = 当前目录，先读 AGENTS.md
+      （注意「组合模式」表里那条铁律：SSR 稳定 id 必须用框架原生机制，
+      **勿用模块自增计数器**）。
+
+      缺陷（已核实，直接违反上述铁律）：`packages/core/src/utils.ts:25-28` 用
+      模块级 `idCounter` 生成 id；Svelte 的 FormField 在初始化阶段就调用它
+      （`packages/svelte/src/primitives/form-field/FormField.svelte:19-22`），
+      Dialog / Select / Drawer / Popover 同样模式。现有测试
+      （`packages/svelte/src/hydration.test.ts:45-54`）甚至把这个 process-global
+      计数器写进了断言。
+      后果：常驻 SSR 进程处理第 2 个请求时，服务端可能已经输出 `iris-20`，
+      客户端 hydration 从 `iris-1` 开始 —— `for` / `aria-describedby` /
+      `aria-controls` 全部错位，React/Vue/Solid 因为用框架原生 id 没有这个问题。
+
+      任务：让 Svelte 端的 id 生成变成 **SSR/客户端一致且请求作用域内稳定**：
+      - 优先方案：Svelte 5 没有 useId，但可以在组件里用「渲染顺序稳定」的
+        派生 id（例如由 core 提供一个 factory，组件在初始化时取一次并随
+        实例生命周期固定），关键是**同一棵树在服务端与客户端得到同一串**；
+        请先查清 Svelte 端现有可行手段（含 core 是否已有 request-scoped 的
+        IdFactory 或 context 机制），再选实现；
+      - 如果 Svelte 5 提供了官方 id 原语（如 `crypto.randomUUID` 之外的
+        SSR 安全方案或 `$props.id()`），优先用官方手段；
+      - 组件继续接受宿主显式传入的 id（有则永远优先）；
+      - 不改 React/Vue/Solid（它们已经用框架原生 id）。
+
+      约束：只改 core 的 id 工具 + svelte 相关组件/测试。必须保留“显式传入 id
+      优先”的现有行为。补测试：连续两次 SSR 渲染（同一棵树、两次独立请求）
+      产出的 id 串相同；hydration 后 `for`/`aria-describedby` 指向的元素真实
+      存在且与 SSR 输出一致（用现有 hydration 测试基建扩展）。
+      完成标准：svelte 全量测试 + svelte-check 绿，core 测试绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch5-svelte-ssr-id.md
+
+  # ── 2. 日历 / 倒计时不要在渲染期读墙上时钟 ────────────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要启动任何 batch runner；最终回复里给总结，不要写文件。
+
+      你是 iris-ui 的 core + 四适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实，SSR 稳定性问题）：日历与倒计时在初始化/渲染阶段直接读
+      墙上时钟——calendar core `packages/plugin-calendar/src/core/index.ts:83`
+      读 `new Date()`，四个 renderer 也在渲染期取“今天”
+      （例：react `packages/plugin-calendar/src/react/index.tsx:39`）；
+      Countdown 在初始化读 `Date.now()`（react
+      `packages/react/src/primitives/countdown/Countdown.tsx:59`，vue/solid/svelte 同）。
+      后果：服务端在跨日/跨月边界前渲染、客户端在之后 hydration 时，初始月份、
+      `today` 标记、倒计时文本不一致 → hydration mismatch；服务端与浏览器
+      时区不同时更明显。
+
+      任务：把“当前时间”从渲染期的隐式读取改成**可注入 + 首帧不依赖**：
+      - 组件/控制器新增可选的 `now`（或等价命名）注入点，SSR 侧可传固定快照；
+      - 未注入时，初始渲染必须用**稳定的中性值**（例如不标记 today / 倒计时
+        先不显示剩余），并在挂载后再启动实时更新（避免 SSR 与客户端首帧不同）；
+      - 时区：默认用运行环境，但允许显式指定并写进文档注释。
+      - 不要改公开 API 已有语义；新 prop 可选、向后兼容。
+
+      约束：只改 calendar 插件与 countdown 组件 + 测试。
+      补测试：用 fake timers 固定跨午夜/跨月的时刻，断言 SSR 阶段不读时钟
+      （或读取注入值）、挂载后更新为实时值；倒计时首帧不出现与服务端不同的文本。
+      完成标准：四端 + calendar 插件测试绿、typecheck/svelte-check 绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch5-clock-in-render.md
+
+  # ── 3. Table named views 不要在首轮渲染读 localStorage ────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要启动任何 batch runner；最终回复里给总结，不要写文件。
+
+      你是 iris-ui 的 core + 四适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已核实，hydration 风险）：named views 的默认 storage 直接访问
+      `globalThis.localStorage`（`packages/core/src/table-views.ts:53-65`），
+      而四端都在**首轮渲染**阶段读取它：react
+      `packages/react/src/primitives/table/useTableViews.ts:127-130`（render 里的
+      lazy ref），solid `table-views.tsx:31`、vue `table-views.ts:33`、
+      svelte `table-views.svelte.ts:31`（controller 初始化）。
+      后果：SSR 侧没有 localStorage（要么抛错要么与客户端不同），首帧 HTML 与
+      hydration 后的视图状态不一致。
+
+      任务：让持久化视图状态在 SSR 安全的时机读取：
+      - 读取必须发生在挂载之后（effect/onMounted/onMount），首帧使用默认值；
+      - storage 访问要容错（无 localStorage / 隐私模式抛错时退回默认值，
+        不影响渲染）；
+      - 保持“显式传入 storage 覆盖”的现有能力；四端行为一致。
+      - 首帧与客户端首次读取的差异不应导致 hydration mismatch（值相同的部分
+        仍应相同）。
+
+      约束：只改 core 的 table-views storage 入口 + 四端读取时机 + 测试。
+      补测试：SSR 渲染（无 localStorage）不抛错且输出默认视图；挂载后恢复用户
+      视图；storage 抛错时退回默认。
+      完成标准：core + react/vue/solid/svelte 的 table 测试绿、typecheck 绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch5-table-views-storage.md
+
+  # ── 4. Cascader 选项的键盘可达性（四端对齐 Svelte）────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要启动任何 batch runner；最终回复里给总结，不要写文件。
+
+      你是 iris-ui 的 React / Vue / Solid 适配器维护者。仓库根 = 当前目录，
+      先读 AGENTS.md。
+
+      缺陷（已核实，WCAG 2.1.1）：Cascader 的选项有 `role="option"` 但没有
+      `tabIndex`、没有键盘激活（Enter/Space），列也没有 Svelte 已使用的
+      `cascader.level` 标签——react `Cascader.tsx:166-172`、vue/solid 同处。
+      Svelte 端已实现键盘与层级标签。
+      后果：键盘用户无法操作级联选择器（只能用鼠标）。
+
+      任务：让 react/vue/solid 与 Svelte 行为一致：
+      - 选项可聚焦（沿用 Svelte 的 roving/tabindex 方案，不要给每个选项都加
+        tabIndex），Enter/Space 选中，方向键在同列内移动（若 Svelte 已有该
+        行为就照搬语义）；
+      - 列容器补 `aria-label`（走 i18n key，若 `cascader.level` 已存在则复用；
+        core 的 `defaultMessages` 与 `zhCNMessages` 必须同步，locale-zh 有
+        “无英文兜底”回归守门）；
+      - disabled 选项不可激活；
+      - 焦点样式沿用现有 focus ring 约定，不引入新 token。
+
+      约束：只改三端 cascader + 其测试（core 的 i18n key 若需新增要同步两份）。
+      补测试：三端各一条——键盘 Tab 进入列表、方向键移动、Enter 选中、
+      aria-label 存在。
+      完成标准：三端 cascader 测试绿、typecheck 绿、`pnpm audit:tokens` clean、
+      locale-zh 测试绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch5-cascader-keyboard.md
+
+  # ── 5. Splitter 的键盘调整与可访问名称（四端对齐 Svelte）─────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要启动任何 batch runner；最终回复里给总结，不要写文件。
+
+      你是 iris-ui 的 React / Vue / Solid 适配器维护者。仓库根 = 当前目录，
+      先读 AGENTS.md。
+
+      缺陷（已核实，WCAG 2.1.1 + 3.3.2）：Splitter 的 separator 有 `tabIndex`
+      却没有 keydown 处理，也没有可本地化的可访问名称——react
+      `packages/react/src/primitives/splitter/Splitter.tsx:112-125`，vue/solid
+      同处；Svelte 已实现方向键调整与 `splitter.resize` 文案。
+      后果：键盘用户能聚焦分隔条但不能调整；屏幕阅读器读不出这是什么。
+
+      任务：让 react/vue/solid 与 Svelte 一致：
+      - 方向键 / Home / End 调整面板尺寸（与 Svelte 的语义、步长一致；
+        若步长等参数在 core 已有派生就复用）；
+      - separator 带可本地化名称（复用 `splitter.resize` 之类的既有 key；若需
+        新增，core 的 `defaultMessages` 与 `zhCNMessages` 同步）；
+      - `role="separator"` 与 `aria-valuenow/min/max/orientation` 保持正确
+        （现状若缺失一并补上，与 React 现有契约一致）；
+      - disabled 时不响应。
+
+      约束：只改三端 splitter + 测试（i18n key 若新增需两份同步）。
+      补测试：三端各一条——聚焦后方向键改变尺寸、Home/End 到边界、
+      aria 属性正确、i18n 名称存在。
+      完成标准：三端 splitter 测试绿、typecheck 绿、locale-zh 测试绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch5-splitter-keyboard.md
+
+  # ── 6. Resizable 拖拽手柄的语义（四端对齐 Svelte）────────────────────
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要启动任何 batch runner；最终回复里给总结，不要写文件。
+
+      你是 iris-ui 的 React / Vue / Solid 适配器维护者。仓库根 = 当前目录，
+      先读 AGENTS.md。
+
+      缺陷（已核实）：Resizable/Resizer 的拖拽手柄在 react/vue/solid 是一个空
+      `<div>`，没有 role、没有可访问名称、不可聚焦、不能用键盘调整
+      （react `packages/react/src/behaviors/Resizable.tsx:95-125`）；Svelte 用
+      `<button>` 并接了 `resizer.handle` 文案与键盘。
+      后果：键盘用户无法调整面板尺寸，屏幕阅读器把拖拽条当装饰。
+
+      任务：让三端与 Svelte 对齐：
+      - 手柄改为可聚焦的交互元素（沿用 Svelte 的按钮方案；或
+        `role="separator"` + tabIndex，两者选其一并四端统一）；
+      - 提供可本地化名称（复用既有 `resizer.*` key；需新增则 core 两份
+        消息同步）；
+      - 键盘调整：方向键按 step 调整，Home/End 到边界（若 Svelte 已有则照搬
+        语义与步长）；
+      - 保持现有 pointer 拖拽行为与 disabled 语义不变。
+
+      约束：只改三端 resizable/resizer + 测试（i18n key 若新增需两份同步）。
+      补测试：三端各一条——手柄可聚焦且有可访问名称、方向键调整尺寸、
+      现有 pointer 拖拽不回归。
+      完成标准：三端 behaviors 测试绿、typecheck 绿、locale-zh 测试绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch5-resizable-keyboard.md

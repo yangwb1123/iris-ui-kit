@@ -41,7 +41,10 @@ export const IrisFormField = defineComponent({
 
     const describedBy = computed(() => {
       const ids: string[] = []
-      if (props.hint) ids.push(hintId)
+      // The hint node is only rendered when there is no error (the error
+      // replaces it), so referencing it while an error is showing would point
+      // aria-describedby at an element that does not exist. Mirrors React.
+      if (props.hint && !props.error) ids.push(hintId)
       if (props.error) ids.push(errorId)
       return ids.length > 0 ? ids.join(' ') : undefined
     })

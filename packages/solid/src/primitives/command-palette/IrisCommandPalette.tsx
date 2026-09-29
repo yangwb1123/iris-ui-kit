@@ -197,6 +197,10 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
             <input
               type="text"
               data-iris-command-palette-input=""
+              // A placeholder is not an accessible name; React already labels
+              // the search field, so match it here instead of relying on the
+              // container's `commandPalette.label`.
+              aria-label={t('commandPalette.search')}
               placeholder={local.placeholder ?? t('commandPalette.placeholder')}
               value={query()}
               onInput={(e) => setQuery(e.currentTarget.value)}
@@ -302,9 +306,9 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                               <kbd
                                 style={{
                                   'font-size': 'var(--iris-font-size-xs, 12px)',
-                                  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xxs, 4px)',
-                                  background: 'rgba(0,0,0,0.1)',
-                                  'border-radius': '3px',
+                                  padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+                                  background: 'var(--iris-background)',
+                                  'border-radius': 'var(--iris-radius-sm, 4px)',
                                   opacity: '0.7',
                                 }}
                               >

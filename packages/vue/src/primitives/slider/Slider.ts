@@ -190,7 +190,7 @@ export const IrisSlider = defineComponent({
         border: '2px solid var(--iris-primary)',
         boxShadow: dragging.value
           ? '0 0 0 4px color-mix(in srgb, var(--iris-primary) 18%, transparent)'
-          : '0 1px 2px rgba(0,0,0,.15)',
+          : 'var(--iris-shadow-sm)',
         cursor: props.disabled ? 'not-allowed' : 'grab',
         transition: 'box-shadow 120ms ease',
         touchAction: 'none',

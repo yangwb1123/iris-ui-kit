@@ -69,14 +69,16 @@ describe('IrisFormField', () => {
     expect(w.find('[data-iris-form-field-label]').exists()).toBe(false)
   })
 
-  it('describedby contains both hint + error ids when both present', () => {
-    // Edge: even though hint hides visually when error exists, the IDs we
-    // emit reflect the props the consumer passed. (Our component hides the
-    // hint visually, but aria-describedby is computed up-front.)
+  it('every id in aria-describedby exists in the DOM (hint is replaced by error)', () => {
+    // The error replaces the hint visually, so the hint node is not rendered.
+    // Referencing it would leave aria-describedby pointing at a missing element
+    // — React only lists the hint while there is no error, and so do we.
     const w = mount(inputHarness({ hint: 'h', error: 'e' }))
-    const describedBy = w.find('input').attributes('aria-describedby')
-    // hint id + error id (space-joined)
-    expect((describedBy ?? '').split(' ').length).toBe(2)
+    const describedBy = w.find('input').attributes('aria-describedby') ?? ''
+    const ids = describedBy.split(' ').filter(Boolean)
+    expect(ids).toHaveLength(1)
+    expect(w.find(`[id="${ids[0]}"]`).exists()).toBe(true)
+    expect(w.find('[data-iris-form-field-error]').exists()).toBe(true)
   })
 
   it('label color reflects error state', () => {

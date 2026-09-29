@@ -170,6 +170,7 @@
           bind:value={query}
           type="text"
           placeholder={resolvedPlaceholder}
+          aria-label={reactiveT('commandPalette.search')}
           data-iris-command-palette-input
           style:width="100%"
           style:border="none"

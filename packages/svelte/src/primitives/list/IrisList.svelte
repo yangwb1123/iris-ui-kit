@@ -251,12 +251,11 @@
         data-state={selected ? 'selected' : active ? 'active' : 'idle'}
         data-hovered={hoveredIndex === index ? 'true' : 'false'}
         onclick={() => select(item)}
-        onkeydown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            select(item)
-          }
-        }}
+        // Keyboard selection is handled once, by the list-level `onKeyDown`
+        // (roving focus + core's keyboard nav). A per-item handler fired
+        // `select` a second time on the same key event — in multi-select mode
+        // that toggled the value on and immediately back off, so the selection
+        // looked like it never happened.
         onfocus={() => {
           activeIndex = index
         }}

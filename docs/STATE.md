@@ -492,3 +492,15 @@ pbatch 实例**。它的技术判断是对的——Solid/Svelte 的 standalone `
 新增约束已写进任务模板与 `ai-dev/pbatch/README.md`：任务禁止启动 batch
 runner/调度进程；提交前逐条核对 `git status` 与 `git diff --cached --stat`；
 开批前后都用 `pgrep -fl "m pbatch"` 确认只有一个实例。
+
+### 两个门禁对同一条规则各读各的豁免清单（2026-09-28）
+
+`cli.mjs check-filesize` 与 `scripts/arch-check.mjs` 都在卡 500 行，但前者读
+`iris.yaml` 的 `filesize.exemptions`，后者只读 `scripts/arch-baseline.json`。
+于是同一个文件对 A 门是“已豁免”、对 B 门是“新增超限”，看上去像回退，其实
+是两边清单不一致。现在 `arch-check` 也读 `iris.yaml`（解析抽到
+`scripts/lib/yaml-exemptions.mjs`，`pnpm test:scripts` 覆盖：只取 filesize 段、
+容忍段内注释、清单里每条路径都必须真实存在、文件缺失时 fail closed 返回空集）。
+
+顺带说明：`packages/core/src/index.ts` 因新增 progress 导出达到 511 行，但它
+早就在豁免清单里（有理由），所以两个门禁都不报。

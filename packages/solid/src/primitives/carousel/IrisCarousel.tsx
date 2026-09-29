@@ -231,8 +231,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
                   'border-radius': '50%',
                   border: 'none',
                   cursor: 'pointer',
-                  background:
-                    i() === currentIndex() ? 'var(--iris-primary)' : 'rgba(255,255,255,0.5)',
+                  background: i() === currentIndex() ? 'var(--iris-primary)' : 'var(--iris-border)',
                   transition: 'background 200ms',
                 }}
               />

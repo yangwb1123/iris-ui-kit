@@ -1,88 +1,44 @@
-# Read-only audit
+# Token / 主题 / RTL / 减动效审查
 
-`pnpm audit:tokens` currently passes; `iris.radius.full` is now canonical. The following defects are outside that check.
+基线：`pnpm audit:tokens` 通过；未计入合法 fallback、插件声明 token、坐标计算及已审阅 component-local 变量。未修改文件。
 
-## P1
+| ID     | 严重度 | 文件                                                                                 | 一句话症状                                                                                     |
+| ------ | ------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| AUD-01 | P0     | `packages/theme/src/applyTheme.ts:72-80`；各框架 Dialog 默认 portal                  | 使用局部 `target` 时，默认 `body` portal 不继承主题 CSS 变量与 `dir`，暗色/RTL 直接失效。      |
+| AUD-02 | P1     | `packages/theme/src/globalStyles.ts:20,92-97`                                        | 减动效规则仅匹配 `[data-iris-theme]` 子树，局部主题的 portal 或无 ThemeProvider 组件不受保护。 |
+| AUD-03 | P1     | 四框架 `primitives/carousel`                                                         | `prefers-reduced-motion` 只在初始化读取，系统偏好运行时变化后 autoplay 不停止或不恢复。        |
+| AUD-04 | P1     | `packages/solid/src/primitives/command-palette/IrisCommandPalette.tsx:306`           | 快捷键 badge 使用裸 `rgba(0,0,0,0.1)`，绕过主题。                                              |
+| AUD-05 | P1     | `packages/solid/src/primitives/carousel/IrisCarousel.tsx:235`                        | 非激活指示点使用裸白色，和其他框架的 `--iris-border` 不一致。                                  |
+| AUD-06 | P1     | `packages/vue/src/primitives/slider/Slider.ts:193`                                   | Slider idle thumb 使用裸黑色阴影，未使用 `--iris-shadow-sm`。                                  |
+| AUD-07 | P1     | `packages/svelte/src/primitives/split-button/IrisSplitButton.svelte:175`             | 下拉菜单使用裸阴影，换肤后不跟随 `--iris-shadow-lg`。                                          |
+| RTL-01 | P2     | 四框架 `primitives/table` tree 渲染                                                  | 树缩进和 caret 间距使用 `padding-left` / `margin-right`，RTL 下层级方向错误。                  |
+| RTL-02 | P2     | 四框架 `primitives/table` resize handle                                              | 列调整手柄固定 `right: 0`，RTL 下不在 inline-end。                                             |
+| RTL-03 | P2     | `solid/transfer/IrisTransfer.tsx:270`；`svelte/transfer/IrisTransfer.svelte:189,304` | 计数使用 `margin-left: auto`，RTL 下不会稳定贴合 inline-end。                                  |
+| RTL-04 | `P2`   | `packages/svelte/src/primitives/split-button/IrisSplitButton.svelte:162`             | `border-inline-start` 与物理 `border-right` 在 RTL 重叠，外侧边框位置错误。                    |
+| RTL-05 | P2     | `packages/svelte/src/primitives/textarea/IrisTextarea.svelte:155`                    | 字数计数器固定在物理右下角，RTL 下应位于 inline-end。                                          |
+| RTL-06 | P2     | `packages/react/src/primitives/table/styles.ts:51`；`Table.tsx:7855,8092`            | 表格 range/settings/batch 面板使用物理 `left/right`，RTL 对齐边缘错误。                        |
 
-1. **Scoped themes and RTL do not follow default portals.**  
-   Evidence: `packages/theme/src/applyTheme.ts:73-80`, `applyDirection.ts:34-35`, `packages/react/src/theme/ThemeProvider.tsx:51-52`; Dialog/Popover default to `document.body` (`packages/react/src/primitives/dialog/DialogContent.tsx:130`, `PopoverContent.tsx:120`, `packages/svelte/src/internal/portal.ts:11`).  
-   **Fix:** propagate a provider portal root, or mirror theme variables/`dir` onto portal hosts.  
-   **Gate:** custom `target` + default Dialog/Popover tests in all four adapters.
+## 修复与验证建议
 
-2. **Reduced-motion rules are unavailable outside `ThemeProvider` and miss scoped portals.**  
-   Evidence: `packages/theme/src/globalStyles.ts:92-100`; stylesheet injection only occurs in `ThemeProvider` (`packages/react/src/theme/ThemeProvider.tsx:51`), while `IrisProvider.theme` is optional (`packages/react/src/provider/IrisProvider.tsx:16-17`).  
-   **Fix:** install motion rules independently of theme application, or explicitly register portal roots.  
-   **Gate:** standalone components and portals under mocked `prefers-reduced-motion`.
+- **AUD-01**：由 Provider 提供 portal root，或将主题变量与 `dir` 同步到 body portal host。测试局部 `target + RTL + dark theme + Dialog/Popover`。
+- **AUD-02**：让 portal 落在主题作用域内，或为 standalone/portal root 安装独立 reduced-motion 样式。测试 `matchMedia(reduce)` 下的 portal transition。
+- **AUD-03**：四框架复用 `usePrefersReducedMotion` / `watchMediaQuery`，并将状态纳入 autoplay effect。测试运行中切换媒体查询。
+- **AUD-04**：改为 `var(--iris-background)`（可补 `--iris-border`）。
+- **AUD-05**：改为 `var(--iris-border)`。
+- **AUD-06**：改为 `var(--iris-shadow-sm)`。
+- **AUD-07**：改为 `var(--iris-shadow-lg)`。
+- **RTL-01**：改用 `padding-inline-start`、`margin-inline-end`。
+- **RTL-02**：改用 `inset-inline-end: 0`。
+- **RTL-03**：改用 `margin-inline-start: auto`。
+- **RTL-04**：将 `border-right` 改为 `border-inline-end`。
+- **RTL-05**：将 `right: 8px` 改为 `inset-inline-end: 8px`。
+- **RTL-06**：分别改为 `inset-inline-start/end`。
 
-3. **Solid/Svelte sliders and range sliders use LTR pointer math under RTL.**  
-   Evidence: `packages/solid/src/primitives/slider/IrisSlider.tsx:89-97`, `packages/svelte/src/primitives/slider/IrisSlider.svelte:85-93`, range equivalents at `packages/solid/src/primitives/range-slider/IrisRangeSlider.tsx:95-101` and `packages/svelte/src/primitives/range-slider/IrisRangeSlider.svelte:85-91`; React/Vue already use `getDirection`.  
-   **Fix:** invert horizontal ratios when `dir="rtl"` using shared direction logic.  
-   **Gate:** pointer tests at both track edges with RTL.
+## 自动化门禁建议
 
-4. **Select chevrons and reserved padding use physical `right` values.**  
-   Evidence: React `SelectTrigger.tsx:67`, Vue `Select.ts:317`, Solid `IrisSelect.tsx:400`, Svelte `IrisSelect.svelte:359`; size maps also use physical four-side padding.  
-   **Fix:** use `inset-inline-end` and logical inline padding.  
-   **Gate:** RTL snapshots verifying chevron placement and text clearance.
+新增：
 
-5. **Switch thumbs are physically left-anchored.**  
-   Evidence: React `Switch.tsx:75-80`, Vue `Switch.ts:63-68`, Solid `Switch.tsx:113-118`, Svelte `Switch.svelte:72-77`.  
-   **Fix:** use `inset-inline-start` and transition that property.  
-   **Gate:** checked/unchecked RTL visual tests.
-
-6. **Submenus are always positioned and keyboarded as LTR.**  
-   Evidence: `placement: 'right-start'` in React `MenuSub.tsx:55`, Vue `MenuSub.ts:106`, Solid `IrisMenuSub.tsx:28`, Svelte `IrisMenuSub.svelte:52`; all use fixed ArrowRight/ArrowLeft logic.  
-   **Fix:** derive placement, opening key, closing key, and chevron direction from `dir`.  
-   **Gate:** RTL submenu placement and keyboard contract tests.
-
-7. **Semantic overlays bypass the canonical backdrop token.**  
-   Evidence: Command Palette uses raw `rgba` at React `CommandPalette.tsx:212`, Vue `CommandPalette.ts:173`, Solid `IrisCommandPalette.tsx:172`, Svelte `IrisCommandPalette.svelte:149`; Image/Tour/Drawer contain similar literals.  
-   **Fix:** use `--iris-backdrop` or registered component-specific overlay tokens.  
-   **Gate:** custom-theme overrides must change every overlay backdrop.
-
-8. **Dark-theme foreground contrast is defeated by hardcoded white.**  
-   Evidence: dark theme defines dark foregrounds at `packages/tokens/src/dark.ts:14,20`; Solid CopyButton uses `#fff` at `IrisCopyButton.tsx:98`, Vue SplitButton uses `#fff` at `SplitButton.ts:83`, and split-button dividers use white RGBA across adapters.  
-   **Fix:** use `--iris-success-foreground` / `--iris-primary-foreground` and token-derived divider colors.  
-   **Gate:** dark-theme contrast assertions plus raw semantic-color lint.
-
-9. **Solid indeterminate Progress references a nonexistent animation.**  
-   Evidence: `packages/solid/src/primitives/progress/IrisProgress.tsx:83` uses `iris-progress-slide`; the repository only defines `iris-progress-indeterminate` in React/Vue/Svelte progress sources.  
-   **Fix:** reuse the shared progress stylesheet/keyframe.  
-   **Gate:** assert every referenced keyframe is defined and test indeterminate rendering.
-
-## P2
-
-10. **Typography token name is wrong and hidden from the token audit.**  
-    Canonical key: `packages/tokens/src/tokens.ts:51` → `--iris-font-letter-spacing-wide` via `packages/theme/src/toCssVarName.ts:9`. Adapters use nonexistent `--iris-letter-spacing-wide` (`packages/react/src/primitives/divider/Divider.tsx:84`, similarly Vue/Solid/Svelte); Solid/Svelte command headers also hardcode `0.05em`.  
-    **Fix:** migrate to the canonical variable and remove the exemption at `scripts/audit-tokens.mjs:150-153`.  
-    **Gate:** scan quoted CSS variable names, not only `var(...)` expressions.
-
-11. **Anchored panels and tree indentation contain physical inline-axis properties.**  
-    Evidence: Solid/Svelte DatePicker, DateRangePicker, MonthPicker, TreeSelect, Cascader and Mentions use `left: 0` (for example `packages/solid/src/primitives/date-picker/IrisDatePicker.tsx:111`, `packages/svelte/src/primitives/cascader/IrisCascader.svelte:226`); Solid Tree uses `padding` with physical left depth (`TreeNode.tsx:67`), Svelte uses `padding-left` (`IrisTree.svelte:372`).  
-    **Fix:** use `inset-inline-start`, `padding-inline-start`, and logical borders/margins.  
-    **Gate:** RTL snapshots for every anchored primitive and tree depth.
-
-12. **Solid/Svelte carousel arrows do not flip in RTL.**  
-    Evidence: Solid `IrisCarousel.tsx:186-196`, Svelte `IrisCarousel.svelte:165-190`; React/Vue use `insetInlineStart/End`.  
-    **Fix:** replace physical `left/right` with logical inset properties.  
-    **Gate:** compare previous/next edge placement under both directions.
-
-13. **React/Vue Progress fills from physical left.**  
-    Evidence: `packages/react/src/primitives/progress/styles.ts:19,25-32` and identical Vue styles.  
-    **Fix:** use logical inline-start anchoring and direction-aware indeterminate motion.  
-    **Gate:** determinate and indeterminate RTL tests.
-
-14. **Marquee only checks reduced motion at initialization.**  
-    Evidence: React `Marquee.tsx:46-48`, Vue `Marquee.ts:34-36`, Solid `IrisMarquee.tsx:38-40`, Svelte `IrisMarquee.svelte:37`. None subscribe to `MediaQueryList.change`.  
-    **Fix:** use the existing reactive reduced-motion hooks and cancel/restart Web Animations on preference changes.  
-    **Gate:** toggle the media query after mount and assert animation state.
-
-15. **Segmented shadow styling is not themeable in three adapters.**  
-    Evidence: raw shadow in React `Segmented.tsx:185`, Vue `Segmented.ts:157`, Svelte `IrisSegmented.svelte:185`; Solid already uses `--iris-shadow-sm` at `IrisSegmented.tsx:216`. Plugin Kanban also contains widespread hardcoded fallbacks, e.g. `packages/plugin-kanban/src/react/index.tsx:166-185`.  
-    **Fix:** use canonical shadow tokens and remove unapproved hex/RGBA fallbacks.  
-    **Gate:** add `check-hardcoded-colors.mjs` with narrow allowlists for color-picker math and token declarations.
-
-### Recommended shared gates
-
-- Extend `audit-tokens.mjs` to validate CSS variable names in strings and remove the letter-spacing exemption.
-- Add logical-property and hardcoded-color static checks with explicit allowlists for coordinates and physical APIs.
-- Add a four-framework runtime matrix covering custom themes, RTL, portal rendering, and reduced-motion changes.
+- `scripts/check-hardcoded-colors.mjs`：禁止 UI 样式中的裸 hex/rgba/阴影；允许主题定义、`var(..., fallback)`、颜色选择器和明确的数据颜色。
+- `scripts/check-css-vars.mjs`：校验 canonical/derived/plugin token；component-local 变量必须有带 owner、原因和测试的显式 allowlist。
+- `scripts/check-logical-properties.mjs`：禁止组件 UI 中的物理 inline-axis 属性；允许坐标对象、物理 API（如 drawer side）和完整 `left+right` 跨度。
+- `scripts/check-theme-motion.mjs`：运行四框架矩阵测试：局部主题 portal、RTL、dark/custom skin、运行时切换 reduced-motion。

@@ -1,0 +1,61 @@
+# pbatch 批次：让 resilient/SWR 后台请求可由 owner 真正取消
+# 来源：docs/auto/reviews/core-lifecycle.md finding #2。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-query-cancellation-batch8.yaml --retries 2
+#
+# 串行；明确 provider；禁止嵌套 runner；禁止 agent stage/commit。
+
+tasks:
+  - prompt: |
+      硬约束：本任务限于 core query-cache / resilient-fetcher / data-source /
+      resource 和 plugin-admin fetcher signal 透传及其测试。允许修改这些源文件、
+      相应 tests 与必要的类型文件。不要改 adapters/其他插件/docs 外的产品代码、
+      scripts、CI、release/size budgets；不要启动 runner；不要 git add / commit。
+      保留当前工作树中 AdminDataPage `{ immediate: false }` 的 batch7 修改，不要覆盖。
+
+      先读 AGENTS.md、`docs/auto/reviews/core-lifecycle.md` finding #2，以及
+      `packages/core/src/query-cache.ts`、`resilient-fetcher.ts`、`data-source.ts`、
+      `resource.ts`。
+
+      缺陷：普通 data-source fetch 的 AbortSignal 会透传；但 resilient path 中
+      `createQueryCache` 的 SWR 会立即把旧数据返回，后台刷新继续由 cache 持有。
+      DataSource 的 `inFlight` 随即清空，之后 `destroy()` 虽然 epoch-orphan 结果，
+      却不能 abort 实际网络请求；Resource fetcher 还会丢弃 signal。当前 query-cache
+      仅清除 promise/epoch，没有请求级 AbortController。
+
+      任务目标：destroy/remove/clear 或 superseding load 后，真实网络请求收到 abort；
+      后台结果仍不得写回被移除/替换的 cache entry；对旧的一参数 fetcher 完全兼容。
+
+      实现要求：
+      1. QueryCache 为每个实际 in-flight cache fetch 建立可用时的 AbortController，
+         并把 optional `AbortSignal` 作为 fetcher 的第二参数传入。cache 负责其生命周期；
+         `orphanInflight` / remove / clear / invalidate/replace/eviction 等真正 orphan 请求时
+         abort controller，并保留 epoch/entry identity 防 late settle。无 AbortController 的
+         runtime 仍须安全退化为只忽略 stale settle。
+      2. `ResilientFetcher.fetch` 第二参数兼容扩为 `(key, signal?)`，把 cache signal
+         传给 raw fetcher，再让 breaker/caching 逻辑正常工作。AbortError 属于取消而非
+         服务故障，不应累计 circuit-breaker failure / 错误打开 breaker。
+      3. DataSource resilient fetcher 从 QueryCache 接收的 signal 转交给
+         `DataSourceConfig.fetcher(query, signal)`；非 resilient 请求保持已有 abort。
+         `destroy()` 必须能取消 SWR 背景 fetch；开始新请求时只取消仍在 fetching 的
+         前序 cache entry，不可无故删除已完成的新鲜缓存。保持 loading/error/epoch 行为，
+         不要求本任务重构 SWR 结果更新桥。
+      4. ResourceControllerConfig.fetcher 改为接收 optional signal 并原样透传；
+         plugin-admin `AdminDataFetcher` 与 `createAdminDataController` 也透传这个 signal，
+         保持只接受 query 的既有函数类型向后兼容。不要丢弃 abort signal。
+
+      必须测试：
+      - QueryCache request 正在等待时 `remove` 和 `clear` 分别 abort signal；被 orphan 的
+        promise settle 不污染同 key 后续 entry。
+      - Resilient fetcher 在 SWR 后台刷新时 `cache.clear()` abort raw fetcher signal；
+        cancellation 不触发/累计 circuit-breaker failure。
+      - DataSource 经 resilient SWR 启动后台网络请求后立刻 `destroy()`，该真实 fetcher
+        signal.aborted 为 true；非 resilient destroy 的既有测试不回归。
+      - Resource 与 plugin-admin fetcher 分别能观察到 destroy 引发的 signal.aborted。
+      完成标准：相关 core/plugin-admin tests、typecheck、lint、format 绿；已有单参数
+      fetcher consumers 不需修改；没有忽略 abort rejection 的未处理 Promise。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch8-query-cancellation.md

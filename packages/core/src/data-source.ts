@@ -198,6 +198,15 @@ class DataSourceEngine<T> {
     let epoch = 0
     let inFlight: AbortController | null = null
     let activeResilientKey: string | undefined
+    const cancelActiveResilientFetch = (): void => {
+      if (!resilient || activeResilientKey === undefined) return
+      const key = activeResilientKey
+      activeResilientKey = undefined
+      // A stale-while-revalidate call resolves before this entry's network
+      // request does. Only remove it while it is still fetching; a completed
+      // fresh entry must remain available to the next load.
+      if (resilient.cache.get(key)?.isFetching) resilient.cache.remove(key)
+    }
     // Unique-key counter for queries whose FilterRule.value is not JSON-serializable
     // (functions, cyclic objects, …): such a query can't share the cache, so each
     // call gets a fresh key — caching degrades to pass-through instead of throwing
@@ -281,10 +290,7 @@ class DataSourceEngine<T> {
       // Removing the data-source-owned entry is required before aborting: the
       // cache otherwise deduplicates the next same-key load onto this aborted
       // promise. Other cache entries remain available for normal hits/SWR.
-      if (resilient && activeResilientKey !== undefined) {
-        resilient.cache.remove(activeResilientKey)
-        activeResilientKey = undefined
-      }
+      cancelActiveResilientFetch()
       inFlight?.abort()
       const ac = typeof AbortController !== 'undefined' ? new AbortController() : null
       inFlight = ac
@@ -297,9 +303,7 @@ class DataSourceEngine<T> {
           const key = cacheKey(query)
           const request = resilient.fetch(
             key,
-            async () => {
-              return ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
-            },
+            async (_key, signal) => config.fetcher(query, signal),
             {
               staleWhileRevalidate: config.resilient?.staleWhileRevalidate ?? false,
             },
@@ -332,9 +336,14 @@ class DataSourceEngine<T> {
         if (ac?.signal.aborted) return
         store.setState((s) => ({ ...s, loading: false, loadingMore: false, error }))
       } finally {
-        if (inFlight === ac) {
+        if (token === epoch && inFlight === ac) {
           inFlight = null
-          activeResilientKey = undefined
+          if (
+            activeResilientKey === undefined ||
+            !resilient?.cache.get(activeResilientKey)?.isFetching
+          ) {
+            activeResilientKey = undefined
+          }
         }
       }
     }

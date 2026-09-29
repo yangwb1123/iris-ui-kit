@@ -204,14 +204,49 @@ describe('createQueryCache', () => {
     expect(fetcher).not.toHaveBeenCalled()
   })
 
-  it('remove() orphans an in-flight settle so it never repopulates the cache', async () => {
+  it('remove() aborts the request and protects a recreated key from a late settle', async () => {
     const cache = createQueryCache<number>()
-    let resolve!: (v: number) => void
-    const p = cache.fetch('k', () => new Promise<number>((r) => (resolve = r)))
+    let signal: AbortSignal | undefined
+    let resolveOld!: (value: number) => void
+    const old = cache.fetch('k', (_key, nextSignal) => {
+      signal = nextSignal
+      return new Promise<number>((resolve) => {
+        resolveOld = resolve
+      })
+    })
+
     cache.remove('k')
-    resolve(1)
-    await p.catch(() => {})
+    expect(signal).toBeInstanceOf(AbortSignal)
+    expect(signal?.aborted).toBe(true)
+
+    let resolveFresh!: (value: number) => void
+    const fresh = cache.fetch('k', () => new Promise<number>((resolve) => (resolveFresh = resolve)))
+    resolveOld(1)
+    await expect(old).resolves.toBe(1)
     await flush()
+    expect(cache.get('k')).toMatchObject({ data: undefined, isFetching: true })
+
+    resolveFresh(2)
+    await expect(fresh).resolves.toBe(2)
+    expect(cache.get('k')?.data).toBe(2)
+  })
+
+  it('clear() aborts every in-flight request and drops their entries', async () => {
+    const cache = createQueryCache<number>()
+    let signal: AbortSignal | undefined
+    let resolve!: (value: number) => void
+    const pending = cache.fetch('k', (_key, nextSignal) => {
+      signal = nextSignal
+      return new Promise<number>((res) => {
+        resolve = res
+      })
+    })
+
+    cache.clear()
+    expect(signal).toBeInstanceOf(AbortSignal)
+    expect(signal?.aborted).toBe(true)
+    resolve(1)
+    await expect(pending).resolves.toBe(1)
     expect(cache.get('k')).toBeUndefined()
   })
 

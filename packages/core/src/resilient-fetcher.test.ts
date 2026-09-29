@@ -171,6 +171,36 @@ describe('createResilientFetcher', () => {
     expect(rf.cache.get('k')!.data).toBe(2) // refreshed in background
   })
 
+  it('cache.clear aborts an SWR refresh without counting cancellation as a breaker failure', async () => {
+    let clock = 0
+    let calls = 0
+    let refreshSignal: AbortSignal | undefined
+    const rf = createResilientFetcher<number>({
+      ttlMs: 100,
+      staleWhileRevalidate: true,
+      breaker: { failureThreshold: 1, resetMs: 1000 },
+      now: () => clock,
+    })
+    const fetcher = vi.fn((_key: string, signal?: AbortSignal) => {
+      calls += 1
+      if (calls === 1) return Promise.resolve(1)
+      refreshSignal = signal
+      return new Promise<number>((_resolve, reject) => {
+        signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+      })
+    })
+
+    await rf.fetch('k', fetcher)
+    clock = 500
+    await expect(rf.fetch('k', fetcher)).resolves.toBe(1)
+    expect(refreshSignal).toBeInstanceOf(AbortSignal)
+
+    rf.cache.clear()
+    expect(refreshSignal?.aborted).toBe(true)
+    await flush()
+    expect(rf.breaker?.state).toBe('closed')
+  })
+
   it('supports an opt-in factory SWR default without changing default-off behavior', async () => {
     let clock = 0
     const rf = createResilientFetcher<number>({

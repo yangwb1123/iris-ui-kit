@@ -111,6 +111,39 @@ describe('createDataSource with resilient option', () => {
     expect(ds.getState().rows[0]?.id).toBe(1)
   })
 
+  it('destroy aborts a resilient SWR background fetch through the raw fetcher signal', async () => {
+    type Result = { rows: Row[]; total: number }
+    let now = 0
+    let calls = 0
+    let refreshSignal: AbortSignal | undefined
+    let finishRefresh: (() => void) | undefined
+    const fetcher = vi.fn((_query: DataSourceQuery, signal?: AbortSignal): Promise<Result> => {
+      calls += 1
+      if (calls === 1) return Promise.resolve({ rows: [ROWS[0]!], total: 1 })
+      refreshSignal = signal
+      return new Promise<Result>((resolve, reject) => {
+        finishRefresh = () => resolve({ rows: [ROWS[1]!], total: 1 })
+        signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+      })
+    })
+    const ds = createDataSource<Row>({
+      fetcher,
+      immediate: false,
+      resilient: { ttlMs: 100, staleWhileRevalidate: true, breaker: false, now: () => now },
+    })
+
+    await ds.load()
+    now = 500
+    await ds.load()
+    expect(refreshSignal).toBeInstanceOf(AbortSignal)
+
+    ds.destroy()
+    expect(refreshSignal?.aborted).toBe(true)
+    finishRefresh?.()
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+
   it('resilient retry starts a fresh same-key fetch after superseding an aborted request', async () => {
     type Result = { rows: Row[]; total: number }
     const requests: Array<{

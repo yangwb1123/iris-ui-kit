@@ -2,6 +2,18 @@ import { createQueryCache, type QueryCache, type QueryFetchOptions } from './que
 import { createCircuitBreaker, type CircuitBreaker } from './circuit-breaker'
 import { createRateLimiter, type RateLimiter } from './rate-limiter'
 
+function isAbortError(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') return false
+  const candidate = error as { name?: unknown; code?: unknown }
+  return candidate.name === 'AbortError' || candidate.code === 'ABORT_ERR'
+}
+
+function createAbortError(): Error {
+  const error = new Error('The operation was aborted')
+  error.name = 'AbortError'
+  return error
+}
+
 /**
  * `@iris-ui-kit/core` resilient fetcher — composes the query-cache, circuit-breaker,
  * and rate-limiter primitives into one hardened async fetcher. The individual
@@ -43,7 +55,11 @@ export interface ResilientFetcherOptions {
 
 export interface ResilientFetcher<T> {
   /** Fetch `key`, honoring cache/SWR, the rate limit, and the circuit breaker. */
-  fetch(key: string, fetcher: (key: string) => Promise<T>, options?: QueryFetchOptions): Promise<T>
+  fetch(
+    key: string,
+    fetcher: (key: string, signal?: AbortSignal) => Promise<T>,
+    options?: QueryFetchOptions,
+  ): Promise<T>
   /** The underlying cache (get/set/invalidate/subscribe). */
   readonly cache: QueryCache<T>
   /** The circuit breaker (state/subscribe/reset), or `undefined` if disabled. */
@@ -64,6 +80,10 @@ export function createResilientFetcher<T>(
           failureThreshold: options.breaker?.failureThreshold,
           resetMs: options.breaker?.resetMs,
           now,
+          // Aborting an owned request is cancellation, not dependency
+          // unavailability. In particular, an SWR refresh aborted by cache
+          // eviction must not trip or advance the breaker.
+          isFailure: (error) => !isAbortError(error),
         })
   const limiter = options.rateLimit ? createRateLimiter({ ...options.rateLimit, now }) : undefined
 
@@ -77,11 +97,22 @@ export function createResilientFetcher<T>(
       // never touches the breaker.
       return cache.fetch(
         key,
-        async (k) => {
+        async (k, signal) => {
           if (limiter && !limiter.tryRemove()) {
             throw new RateLimitExceededError(limiter.timeUntil())
           }
-          const run = () => fetcher(k)
+          const run = async () => {
+            try {
+              return await fetcher(k, signal)
+            } catch (error) {
+              // Some fetch implementations reject with a generic error from
+              // their abort listener. Normalize that case so the breaker sees
+              // the cancellation even when the runtime does not use the
+              // platform AbortError shape.
+              if (signal?.aborted && !isAbortError(error)) throw createAbortError()
+              throw error
+            }
+          }
           return breaker ? breaker.run(run) : run()
         },
         {

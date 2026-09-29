@@ -50,7 +50,11 @@ export interface QueryCache<T> {
    * Return fresh cached data, a shared in-flight promise (de-dup), or a new
    * fetch — honoring `ttl`, `staleWhileRevalidate`, and `force`.
    */
-  fetch(key: string, fetcher: (key: string) => Promise<T>, options?: QueryFetchOptions): Promise<T>
+  fetch(
+    key: string,
+    fetcher: (key: string, signal?: AbortSignal) => Promise<T>,
+    options?: QueryFetchOptions,
+  ): Promise<T>
   /** Seed/overwrite an entry as freshly-loaded (e.g. optimistic or SSR data). */
   set(key: string, data: T): void
   /** Mark an entry stale so the next `fetch` refetches (data is retained). */
@@ -68,6 +72,8 @@ export interface QueryCache<T> {
 interface InternalEntry<T> extends QueryEntry<T> {
   /** Shared in-flight promise for de-duplication (undefined when settled). */
   inflight?: Promise<T>
+  /** Controller for the request represented by `inflight`, when supported. */
+  abortController?: AbortController
   /** Explicitly invalidated — treated as stale regardless of the clock. */
   stale: boolean
   /** Bumped on remove/clear so a late settle for a dropped key is ignored. */
@@ -121,9 +127,14 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
   // Clearing the promise is important for the next fetch to start a new
   // request; bumping the epoch makes the old request's settlement inert.
   const orphanInflight = (e: InternalEntry<T>): void => {
+    const controller = e.abortController
+    // Invalidate the generation before aborting: abort listeners are synchronous
+    // extension points and must not be able to re-use the orphaned promise.
     e.epoch += 1
     e.inflight = undefined
+    e.abortController = undefined
     e.isFetching = false
+    controller?.abort()
   }
 
   const evictIfNeeded = (protectedKey?: string): void => {
@@ -164,7 +175,7 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
   const runFetch = (
     key: string,
     e: InternalEntry<T>,
-    fetcher: (key: string) => Promise<T>,
+    fetcher: (key: string, signal?: AbortSignal) => Promise<T>,
   ): Promise<T> => {
     if (e.inflight) return e.inflight // de-dup: share the pending request
     const startEpoch = e.epoch
@@ -178,13 +189,15 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
       resolveRaw = resolve
       rejectRaw = reject
     })
+    const controller = typeof AbortController === 'function' ? new AbortController() : undefined
     e.inflight = p
+    e.abortController = controller
     e.isFetching = true
     if (e.status === 'idle') e.status = 'loading'
     emit(key, e)
     let raw: Promise<T>
     try {
-      raw = Promise.resolve(fetcher(key))
+      raw = Promise.resolve(fetcher(key, controller?.signal))
     } catch (err) {
       raw = Promise.reject(err)
     }
@@ -203,6 +216,7 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
           cur.isFetching = false
           cur.stale = false
           cur.inflight = undefined
+          cur.abortController = undefined
           touch(key, cur)
           emit(key, cur)
           evictIfNeeded()
@@ -216,6 +230,7 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
           cur.status = 'error'
           cur.isFetching = false
           cur.inflight = undefined
+          cur.abortController = undefined
           emit(key, cur)
           evictIfNeeded()
           throw err
@@ -286,12 +301,16 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
     },
     remove(key) {
       const e = entries.get(key)
-      if (e) orphanInflight(e)
+      if (!e) return
+      // Remove first so an abort listener cannot attach a new request to the
+      // entry that is being dropped.
       entries.delete(key)
+      orphanInflight(e)
     },
     clear() {
-      for (const e of entries.values()) orphanInflight(e)
+      const current = [...entries.values()]
       entries.clear()
+      for (const e of current) orphanInflight(e)
     },
     subscribe(key, listener) {
       let set = listeners.get(key)

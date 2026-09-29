@@ -31,7 +31,7 @@ export interface ResourceQuery {
 
 export interface ResourceControllerConfig<T> {
   /** Fetch one page for the given query (page/pageSize/sort/filters). */
-  fetcher: (query: ResourceQuery) => Promise<{ rows: T[]; total: number }>
+  fetcher: (query: ResourceQuery, signal?: AbortSignal) => Promise<{ rows: T[]; total: number }>
   /** Rows per page. Default 10. */
   pageSize?: number
   /** Auto-load the first page on creation. Default true. */
@@ -127,7 +127,7 @@ export function createResourceController<T>(
   // DataSourceQuery is a superset of ResourceQuery, so the fetcher receives it
   // unchanged (the extra multi-sort/filter-rule fields stay empty here).
   const ds = createDataSource<T>({
-    fetcher: (query) => config.fetcher(query),
+    fetcher: (query, signal) => config.fetcher(query, signal),
     pageSize: config.pageSize ?? 10,
     immediate: false,
     resilient: config.resilient,

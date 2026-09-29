@@ -138,6 +138,29 @@ describe('createResourceController', () => {
     expect(c.getState().total).toBe(0)
   })
 
+  it('destroy() forwards abort to the resource fetcher signal', async () => {
+    let signal: AbortSignal | undefined
+    let resolveFetch!: (value: { rows: Row[]; total: number }) => void
+    const fetcher = vi.fn(
+      (_query: { page: number; pageSize: number }, nextSignal?: AbortSignal) => {
+        signal = nextSignal
+        return new Promise<{ rows: Row[]; total: number }>((resolve) => {
+          resolveFetch = resolve
+        })
+      },
+    )
+    const c = createResourceController<Row>({ fetcher, immediate: false })
+    const pending = c.load()
+
+    expect(signal).toBeInstanceOf(AbortSignal)
+    c.destroy()
+    expect(signal?.aborted).toBe(true)
+
+    resolveFetch({ rows: all.slice(0, 2), total: 5 })
+    await pending
+    expect(c.getState().rows).toEqual([])
+  })
+
   it('destroy() is idempotent and the controller can still load afterwards (StrictMode remount)', async () => {
     const fetcher = fetcherFor(all)
     const c = createResourceController<Row>({ fetcher, pageSize: 2, immediate: false })

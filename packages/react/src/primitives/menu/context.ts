@@ -7,6 +7,8 @@ export interface MenuContextValue {
   triggerRef: React.MutableRefObject<HTMLElement | null>
   contentRef: React.MutableRefObject<HTMLElement | null>
   contentId: string
+  /** Root menu's unique id — shared by every nested submenu surface. */
+  treeId: string
   placement: Placement
   offset: number
   /** Close the *root* menu — propagates to nested submenus. */

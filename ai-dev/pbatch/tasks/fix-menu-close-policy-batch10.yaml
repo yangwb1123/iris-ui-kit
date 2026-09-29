@@ -1,0 +1,43 @@
+# pbatch 批次：MenuItem closeOnSelect 与 preventDefault 跨框架对齐
+# 来源：docs/auto/reviews/parity-semantic.md finding #8。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-menu-close-policy-batch10.yaml --retries 2
+#
+# 串行；明确 provider；禁止嵌套 runner；禁止 agent stage/commit。
+
+tasks:
+  - prompt: |
+      硬约束：只改四框架 MenuItem 实现与对应测试。允许修改：
+      `packages/{react,vue,solid,svelte}/src/primitives/menu/*Item*` 及其测试；不要改
+      Menu/MenuContent、其他组件、docs、scripts、CI、release/size budgets；不要启动
+      runner；不要 git add / commit。保留未提交树中已完成的跨框架菜单 dismissal 改动。
+
+      先读 AGENTS.md 和 `docs/auto/reviews/parity-semantic.md` finding #8。
+      现状：React 使用 `keepOpen`，Solid 使用 `closeOnSelect`，Vue/Svelte 无 opt-out；
+      Vue click 可因 preventDefault 而不关闭，但其 keyboard handler 先 preventDefault，
+      再 emit，无法区分组件自身的键盘默认抑制和用户取消；Solid/Svelte selection
+      callback 即使调用 preventDefault 仍关闭。
+
+      统一语义：
+      - 规范 prop 为 `closeOnSelect?: boolean`，默认 true，适用于 click 与 Enter/Space；
+      - React 保留 `keepOpen` 作为兼容别名（`closeOnSelect` 显式传入时优先）；
+      - 用户 selection handler/callback 在该事件上调用 `preventDefault()` 时，不关闭；
+      - 键盘 Enter/Space 仍必须 prevent 原生默认行为，但不能因为组件自己的
+        `preventDefault()` 而错误抑制正常关闭。处理顺序/取消标志必须区分“用户取消关闭”
+        与“组件只抑制键盘默认”；不要使用一个已被组件预先 prevent 的 event.defaultPrevented
+        来判断用户是否取消。
+      - disabled 项仍不触发 callback，也不关闭；默认选中仍关闭 root menu；嵌套 submenu
+        叶子仍关闭整个 root tree。
+      - 维持各框架现有 callback/event API（React onSelect、Vue select、Solid/Svelte
+        当前 click callback）；不要引入不兼容的事件名称/形状。
+
+      测试四端均覆盖：默认 click 关闭、`closeOnSelect=false` 的 click/Enter 都保持打开、
+      callback `preventDefault()` 的 click/Enter 都保持打开、默认 Enter/Space 会调用一次
+      callback 并关闭。React 再覆盖 legacy `keepOpen` 及 prop precedence。
+      尽量在已有 MenuItem 测试文件扩展；如超 500 行则拆新 focused test file。
+      完成标准：四端 menu item tests、typecheck、lint、format 绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch10-menu-close-policy.md

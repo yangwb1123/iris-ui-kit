@@ -1,0 +1,158 @@
+# pbatch 批次：Parity semantic review 中的 P1/P2 行为缺陷（第六批）
+# 来源：docs/auto/reviews/parity-semantic.md。跨框架任务串行执行。
+# 仅处理可独立修复的语义回归；不触碰 React Table 大规模架构差异、
+# ColorPicker alpha、Menu close-policy、Tour uncontrolled、useDataState Svelte
+# reactive bridge 与 Breadcrumb contract（这些留待单独决策/批次）。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-parity-semantic-batch6.yaml --retries 2
+#
+# 所有任务必须明确 provider；禁止嵌套 batch runner；禁止 agent 自行 stage/commit。
+
+tasks:
+  # ── 1. Portaled submenu 外部点击不能误关闭 root menu ───────────────────
+  - prompt: |
+      硬约束：只修改本任务点名的 React / Solid / Svelte menu context、content、
+      submenu 与对应测试；不要改 Vue（它已经有正确实现，可作参考）；不要改
+      ai-dev/**、docs/**、scripts/**、CI 配置；不要启动任何 batch runner；
+      不要 git add / commit。
+
+      先读 AGENTS.md，再阅读 `docs/auto/reviews/parity-semantic.md` 的 finding #2，
+      并逐行对照 Vue 实现：
+      - `packages/vue/src/primitives/menu/MenuContent.ts` 用 `excludePredicate`
+        判断 `target.closest([data-iris-menu-tree="<treeId>"])`；
+      - `packages/vue/src/primitives/menu/MenuSub.ts` 给 root/submenu portaled 内容
+        标记相同 tree id。
+
+      缺陷：React / Solid / Svelte 的 `useDismiss` 只排除了当前 trigger/content
+      ref。submenu content portal 到 body 后，点击其中的 item 被误判为 root menu
+      outside pointerdown，导致整个菜单树关闭。Vue 已正确解决。
+
+      任务：把 Vue 的 tree-exclusion 语义薄桥到 React / Solid / Svelte：
+      - 每个 root menu 建立一个稳定的 tree id，并通过 submenu context 继承；
+        React 用 framework `useId` / 现有 root id，Solid 用 `createUniqueId` 或
+        现有稳定 id，Svelte 用 `$props.id()` 或现有 component id；勿用模块计数器；
+      - root content 与每个 portal submenu content 都带
+        `data-iris-menu-tree="<same tree id>"`；
+      - root 与 nested `useDismiss` 均用 predicate 排除同一树内的 target，覆盖
+        SVG 子节点（使用 `Element.closest`，不要只做 HTMLElement 检查）；
+      - 真正点击菜单树外仍关闭 root；Escape/Tab/现有 focus 行为不变。
+
+      必须补回归测试：React/Solid/Svelte 各自打开至少一层 portal submenu，
+      pointerdown submenu 内容后 root 仍 open；再点树外后 root 关闭。测试应触发
+      真实 dismiss 监听，不要只断言 data attribute 存在。
+      完成标准：三端 menu 测试、typecheck、lint 绿；无新的 hard-coded style。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch6-menu-portal-dismiss.md
+
+  # ── 2. Svelte ColorPicker 初始化 / 外部同步不可触发 onValueChange ─────
+  - prompt: |
+      硬约束：只改本任务点名的 Svelte ColorPicker 与测试；不要改 ai-dev/**、
+      docs/**（输出路径由 pbatch 管理）、scripts/**、CI；不要启动 batch runner；
+      不要 git add / commit。
+
+      先读 AGENTS.md，再读 parity review finding #4。
+      `packages/svelte/src/primitives/color-picker/IrisColorPicker.svelte` 当前
+      reactive effect 同时负责由 HSVA 同步 hex input 与 `onValueChange`；因此
+      mount/受控 value 更新也会回调。React 的对应实现只在用户 commit 中回调。
+      测试在 mount 后 `mockClear()` 掩盖了这个差异。
+
+      任务：分离“外部 prop → 内部显示状态同步”和“用户输入 → commit”：
+      - mount、受控 `value` 更新只同步 HSVA / hex draft，不调用 onValueChange；
+      - pointer、键盘、有效 hex 输入、preset 等用户交互每次只调用一次；
+      - 不完整 hex draft 不触发回调；禁用态不 commit；保留现有回调格式/颜色归一化
+        与 alpha/颜色计算行为。
+      - 避免用一次性 `didMount` 标志掩盖受控 prop 更新；优先在交互事件路径显式
+        调用 commit，再让 `$effect` 只做 prop 同步。
+
+      测试：删除 mount 后清空 spy 的掩盖；断言 mount 时 0 次，受控 prop 更新时
+      0 次，pointer/hex/preset 用户动作各恰好一次，坏输入 0 次。
+      完成标准：Svelte ColorPicker tests + svelte-check + lint 绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch6-svelte-colorpicker-init.md
+
+  # ── 3. Solid Tree single-select 不应再次点击就取消选择 ────────────────
+  - prompt: |
+      硬约束：只改 Solid Tree 实现与测试；不要改 ai-dev/**、docs/**（output 除外）、
+      scripts/**、CI；不要启动 runner；不要 git add / commit。
+
+      先读 AGENTS.md 和 parity review finding #5。React/Vue/Svelte 的 single mode
+      再次激活当前选中 node 仍保留它；Solid 当前 `selectNode` 在 single mode
+      toggle 当前 id，所以会把 selected node 清空。
+
+      任务：Solid `selectionMode='single'` 用同一语义——设置 `[id]`，重复激活不
+      清空；multi 仍 toggle，none 仍不变；受控 `selected` / `onSelect` /
+      `onSelectedChange` 的现有回调形状保持。
+
+      测试：Solid 中 single mode 点击/键盘激活同一个 node 两次，第二次后仍选中且
+      callback 输出 `[id]`；再覆盖 multi mode 仍可 toggle off。
+      完成标准：Solid Tree tests、typecheck、lint 绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch6-solid-tree-single-select.md
+
+  # ── 4. Tree 四端统一 core data-state + stale-while-revalidate ─────────
+  - prompt: |
+      硬约束：只改 React / Solid / Svelte Tree 实现与测试；Vue 是正确基线，只读
+      参考、不修改；不要改 ai-dev/**、docs/**（output 除外）、scripts/**、CI；
+      不要启动 batch runner；不要 git add / commit。
+
+      先读 AGENTS.md、`packages/core/src/data-state.ts`、parity review finding #6，
+      再比对 `packages/vue/src/primitives/tree/Tree.ts`。
+
+      缺陷：React Tree 未给 `resolveDataState` 传 `hasContent`；Solid/Svelte 自己
+      写 top-level state 分支，导致已有 nodes 正在刷新时被 loading/error 节点替换，
+      且各端 precedence 有漂移。Core 的语义：无 content 时 `error > loading >
+      empty > content`；若 `loading && hasContent`，保留内容，返回 content
+      （stale-while-revalidate，抑制旧 error/loading 覆盖已有数据）。Vue 已通过
+      `useDataState(...hasContent)` 接此行为。
+
+      任务：
+      - React 传 `hasContent: safeNodes.length > 0` 给共享 useDataState；
+      - Solid/Svelte 使用同一 core `resolveDataState` / 现有共享桥，不再复制 precedence；
+      - content 状态始终渲染树；只有 resolved state 为 error/loading/empty 时渲染状态节点；
+      - `aria-busy` 维持统一约定（可在背景 revalidate 时反映 `loading`，但不得隐藏节点）；
+      - 保持 lazy-child loading/error per-node 状态与 top-level state 区分。
+
+      三端测试矩阵：
+      1) 空 nodes + loading -> loading；
+      2) 空 nodes + loading + error -> error；
+      3) 已有 node + loading -> node 保留、无 top-level loading replacement；
+      4) 已有 node + loading + error -> 按 core SWR 保留 nodes；
+      5) 空 nodes 无 loading/error -> empty。
+      完成标准：三端 Tree tests、typecheck、lint 绿；Vue 测试基线不回归。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch6-tree-data-state.md
+
+  # ── 5. Vue List 增加受控 / 非受控双模 ────────────────────────────────
+  - prompt: |
+      硬约束：只改 Vue List 源码与测试；不要改 ai-dev/**、docs/**（output 除外）、
+      scripts/**、CI；不要启动 runner；不要 git add / commit。
+
+      先读 AGENTS.md 和 parity review finding #9，再对照 React/Solid List API。
+      Vue `packages/vue/src/primitives/list/List.ts` 目前只有 `modelValue`，render
+      selection 完全依赖 props；不传 `v-model` 时 select event 发出但
+      `aria-selected` 永远不变。React/Solid 有 internal selection + defaultValue。
+
+      任务：实现 Vue `IrisList` 的 controlled/uncontrolled 双模：
+      - 添加可选 `defaultValue`，支持单值与 multi 数组；
+      - `modelValue !== undefined` 时为 controlled，只 emit，不本地覆盖；
+      - 未传 modelValue 时用 internal ref 更新，立即反映 aria-selected/renderItem/slot 的
+        selected 状态；
+      - controlled prop 后续更新同步显示；multi toggle 从当前有效值计算；
+      - 保持现有 update:modelValue/select 事件、disabled、keyboard 与数据状态语义。
+
+      测试：无 modelValue 点击后选中；defaultValue 起始值；multi uncontrolled toggle；
+      controlled parent 更新；controlled 点击只 emit 且保持传入值。
+      完成标准：Vue List tests、typecheck、lint 绿。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch6-vue-list-uncontrolled.md

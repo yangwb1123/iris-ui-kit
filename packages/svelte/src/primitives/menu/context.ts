@@ -11,6 +11,8 @@ export interface MenuContextValue {
   readonly content: HTMLElement | undefined
   setContent: (el: HTMLElement | undefined) => void
   contentId: string
+  /** Root menu's unique id — shared by every nested submenu surface. */
+  treeId: string
   readonly placement: Placement
   readonly offset: number
   /**

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createThemeStore } from '@iris-ui-kit/theme'
 import { darkTheme, lightTheme } from '@iris-ui-kit/tokens'
 import { defineComponent, h, nextTick } from 'vue'
@@ -13,6 +13,23 @@ import { IrisMenuSub } from './MenuSub'
 enableAutoUnmount(afterEach)
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+type MenuItemTestProps = {
+  closeOnSelect?: boolean
+  onSelect?: (event: Event) => void
+}
+
+function mountSingleItem(props: MenuItemTestProps = {}) {
+  return mount(IrisMenu, {
+    props: { defaultOpen: true },
+    slots: {
+      default: () => [
+        h(IrisMenuTrigger, null, () => 'File'),
+        h(IrisMenuContent, { teleport: false }, () => [h(IrisMenuItem, props, () => 'Action')]),
+      ],
+    },
+  })
+}
 
 const FlatHarness = defineComponent({
   setup() {
@@ -136,6 +153,54 @@ describe('IrisMenu (flat)', () => {
     await nextTick()
     await wrapper.findAll('[role="menuitem"]')[0]!.trigger('click')
     await nextTick()
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+  })
+
+  it('closeOnSelect=false keeps the menu open after click', async () => {
+    const wrapper = mountSingleItem({ closeOnSelect: false })
+    await nextTick()
+    await wrapper.find('[role="menuitem"]').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+  })
+
+  it('closeOnSelect=false keeps the menu open after Enter', async () => {
+    const onSelect = vi.fn()
+    const wrapper = mountSingleItem({ closeOnSelect: false, onSelect })
+    await nextTick()
+    await wrapper.find('[role="menuitem"]').trigger('keydown', { key: 'Enter' })
+    await nextTick()
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+  })
+
+  it('select preventDefault keeps the menu open after click', async () => {
+    const onSelect = vi.fn((event: Event) => event.preventDefault())
+    const wrapper = mountSingleItem({ onSelect })
+    await nextTick()
+    await wrapper.find('[role="menuitem"]').trigger('click')
+    await nextTick()
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+  })
+
+  it('select preventDefault keeps the menu open after Enter', async () => {
+    const onSelect = vi.fn((event: Event) => event.preventDefault())
+    const wrapper = mountSingleItem({ onSelect })
+    await nextTick()
+    await wrapper.find('[role="menuitem"]').trigger('keydown', { key: 'Enter' })
+    await nextTick()
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+  })
+
+  it.each(['Enter', ' '])('default %s selects once and closes the menu', async (key) => {
+    const onSelect = vi.fn()
+    const wrapper = mountSingleItem({ onSelect })
+    await nextTick()
+    await wrapper.find('[role="menuitem"]').trigger('keydown', { key })
+    await nextTick()
+    expect(onSelect).toHaveBeenCalledTimes(1)
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })
 

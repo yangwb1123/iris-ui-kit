@@ -46,6 +46,7 @@
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
   const contentId = $props.id()
+  const treeId = contentId
 
   setMenuContext({
     get open() {
@@ -65,6 +66,7 @@
       contentEl = el
     },
     contentId,
+    treeId,
     get placement() {
       return placement
     },

@@ -3,14 +3,15 @@ import { MenuContextKey } from './context'
 
 /**
  * Leaf menu item. Selecting fires `select` and closes the **root** menu
- * (`closeRoot`), so picking from a deeply nested branch collapses the entire
- * tree at once.
+ * (`closeRoot`) unless selection is canceled or `closeOnSelect` is false, so
+ * picking from a deeply nested branch collapses the entire tree at once.
  */
 export const IrisMenuItem = defineComponent({
   name: 'IrisMenuItem',
   inheritAttrs: false,
   props: {
     disabled: { type: Boolean, default: false },
+    closeOnSelect: { type: Boolean, default: true },
   },
   emits: {
     select: (_event: Event) => true,
@@ -22,10 +23,15 @@ export const IrisMenuItem = defineComponent({
     }
     const hovered = ref(false)
 
-    const fire = (event: Event) => {
-      if (props.disabled) return
+    const fire = (event: Event, suppressNativeDefault = false) => {
+      if (props.disabled) {
+        if (suppressNativeDefault) event.preventDefault()
+        return
+      }
       emit('select', event)
-      ctx.closeRoot()
+      const selectionCanceled = event.defaultPrevented
+      if (suppressNativeDefault) event.preventDefault()
+      if (props.closeOnSelect && !selectionCanceled) ctx.closeRoot()
     }
 
     const onClick = (event: MouseEvent) => {
@@ -34,8 +40,7 @@ export const IrisMenuItem = defineComponent({
     }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault()
-        fire(event)
+        fire(event, true)
       }
     }
 

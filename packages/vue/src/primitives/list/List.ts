@@ -1,4 +1,4 @@
-import { defineComponent, h, ref, watch, type PropType } from 'vue'
+import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
 import { createKeyboardNav } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
@@ -41,6 +41,8 @@ export const IrisList = defineComponent({
     items: { type: Array as PropType<IrisListItem<unknown>[]>, required: true },
     /** Selected value(s). For multi mode, pass an array. */
     modelValue: { type: null as unknown as PropType<unknown> },
+    /** Initial selected value(s) when modelValue is omitted. */
+    defaultValue: { type: null as unknown as PropType<unknown>, default: undefined },
     /** Allow multi-select. */
     multi: { type: Boolean, default: false },
     /** Loop ArrowDown past the last item back to the first (and vice versa). Default `true`. */
@@ -58,6 +60,35 @@ export const IrisList = defineComponent({
   },
   setup(props, { slots, attrs, emit }) {
     const { t } = useI18n()
+
+    const isControlled = computed(() => props.modelValue !== undefined)
+    const initialValue =
+      props.modelValue !== undefined
+        ? props.modelValue
+        : props.defaultValue !== undefined
+          ? props.defaultValue
+          : props.multi
+            ? []
+            : null
+    const internalValue = ref<unknown>(
+      Array.isArray(initialValue) ? [...initialValue] : initialValue,
+    )
+
+    // Keep the internal value ready for a controlled-to-uncontrolled transition,
+    // while rendering controlled lists directly from the prop below.
+    watch(
+      () => props.modelValue,
+      (value) => {
+        if (value !== undefined) {
+          internalValue.value = Array.isArray(value) ? [...value] : value
+        }
+      },
+    )
+
+    const currentValue = computed(() =>
+      isControlled.value ? props.modelValue : internalValue.value,
+    )
+
     const { state, isContent, stateKey, stateProps } = useDataState(() => ({
       loading: props.loading,
       error: props.error,
@@ -87,23 +118,26 @@ export const IrisList = defineComponent({
     )
 
     const isSelected = (value: unknown): boolean => {
+      const selectedValue = currentValue.value
       if (props.multi) {
-        return Array.isArray(props.modelValue) && (props.modelValue as unknown[]).includes(value)
+        return Array.isArray(selectedValue) && selectedValue.includes(value)
       }
-      return props.modelValue === value
+      return selectedValue === value
     }
 
     const select = (item: IrisListItem<unknown>) => {
       if (item.disabled) return
       if (props.multi) {
-        const arr: unknown[] = Array.isArray(props.modelValue)
-          ? [...(props.modelValue as unknown[])]
+        const arr: unknown[] = Array.isArray(currentValue.value)
+          ? [...(currentValue.value as unknown[])]
           : []
         const idx = arr.indexOf(item.value)
         if (idx >= 0) arr.splice(idx, 1)
         else arr.push(item.value)
+        if (!isControlled.value) internalValue.value = arr
         emit('update:modelValue', arr)
       } else {
+        if (!isControlled.value) internalValue.value = item.value
         emit('update:modelValue', item.value)
       }
       emit('select', item)

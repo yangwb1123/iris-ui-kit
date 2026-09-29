@@ -52,6 +52,7 @@
       contentEl = el
     },
     contentId: subId,
+    treeId: ctx.treeId,
     get placement() {
       return submenuDirection.placement
     },
@@ -74,6 +75,10 @@
   useDismiss({
     enabled: () => open,
     exclude: [() => triggerEl, () => contentEl],
+    // Every surface in this menu tree is inside for dismiss purposes, even
+    // when a submenu is portaled outside the root content.
+    excludePredicate: (target) =>
+      target instanceof Element ? !!target.closest(`[data-iris-menu-tree="${ctx.treeId}"]`) : false,
     onDismiss: () => {
       open = false
     },
@@ -213,6 +218,7 @@
     tabindex={-1}
     data-iris-menu-sub-content
     data-iris-menu-sub-placement={submenuDirection.placement}
+    data-iris-menu-tree={ctx.treeId}
     onpointerenter={clearTimer}
     onkeydown={onContentKeyDown}
     style="{floating.floatingStyles}; background: var(--iris-surface-floating); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: var(--iris-shadow-lg); min-width: 140px; z-index: 1001; outline: none"

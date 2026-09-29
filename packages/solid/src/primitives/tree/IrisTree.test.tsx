@@ -38,14 +38,51 @@ describe('IrisTree', () => {
     expect(getByText('Child A1')).not.toBeNull()
   })
 
-  it('calls onSelect when node is clicked', () => {
+  it('keeps the selected node selected when clicked twice in single mode', () => {
     const onSelect = vi.fn()
-    const { container } = render(() => <IrisTree nodes={nodes} onSelect={onSelect} />)
-    const bRow = container.querySelector(
-      '[data-iris-tree-node="b"] [data-iris-tree-node-row]',
-    ) as HTMLElement
-    fireEvent.click(bRow)
-    expect(onSelect).toHaveBeenCalledWith(['b'])
+    const { container } = render(() => (
+      <IrisTree nodes={nodes} selectionMode="single" onSelect={onSelect} />
+    ))
+    const item = container.querySelector('[data-iris-tree-node="b"]') as HTMLElement
+    const row = item.querySelector('[data-iris-tree-node-row]') as HTMLElement
+
+    fireEvent.click(row)
+    fireEvent.click(row)
+
+    expect(item.getAttribute('aria-selected')).toBe('true')
+    expect(onSelect).toHaveBeenNthCalledWith(1, ['b'])
+    expect(onSelect).toHaveBeenNthCalledWith(2, ['b'])
+  })
+
+  it('keeps the active node selected when activated twice by keyboard in single mode', () => {
+    const onSelect = vi.fn()
+    const { container } = render(() => (
+      <IrisTree nodes={nodes} selectionMode="single" onSelect={onSelect} />
+    ))
+    const tree = container.querySelector('[data-iris-tree]') as HTMLElement
+    const item = container.querySelector('[data-iris-tree-node="a"]') as HTMLElement
+
+    fireEvent.keyDown(tree, { key: 'Enter' })
+    fireEvent.keyDown(tree, { key: 'Enter' })
+
+    expect(item.getAttribute('aria-selected')).toBe('true')
+    expect(onSelect).toHaveBeenNthCalledWith(1, ['a'])
+    expect(onSelect).toHaveBeenNthCalledWith(2, ['a'])
+  })
+
+  it('toggles the active node off in multi mode', () => {
+    const onSelect = vi.fn()
+    const { container } = render(() => (
+      <IrisTree nodes={nodes} selectionMode="multi" onSelect={onSelect} />
+    ))
+    const item = container.querySelector('[data-iris-tree-node="b"]') as HTMLElement
+    const row = item.querySelector('[data-iris-tree-node-row]') as HTMLElement
+
+    fireEvent.click(row)
+    fireEvent.click(row)
+
+    expect(item.getAttribute('aria-selected')).toBe('false')
+    expect(onSelect).toHaveBeenLastCalledWith([])
   })
 
   describe('keyboard navigation (WAI-ARIA tree)', () => {
@@ -219,11 +256,34 @@ describe('IrisTree', () => {
       const { container } = render(() => <IrisTree nodes={[]} loading />)
       const stateEl = container.querySelector('[data-iris-tree-state]')!
       expect(stateEl.getAttribute('data-iris-tree-state')).toBe('loading')
+      expect(container.querySelector('[data-iris-tree]')?.getAttribute('aria-busy')).toBe('true')
+    })
+
+    it('resolves error before loading when nodes is empty', () => {
+      const { container } = render(() => <IrisTree nodes={[]} loading error />)
+      const stateEl = container.querySelector('[data-iris-tree-state]')!
+      expect(stateEl.getAttribute('data-iris-tree-state')).toBe('error')
     })
 
     it('renders a tree (no state node) when content is present', () => {
       const { container } = render(() => <IrisTree nodes={nodes} />)
       expect(container.querySelector('[data-iris-tree-state]')).toBeNull()
+    })
+
+    it('keeps existing nodes mounted during loading revalidation', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} loading />)
+
+      expect(container.querySelector('[data-iris-tree-state]')).toBeNull()
+      expect(container.querySelectorAll('[data-iris-tree-node]').length).toBe(2)
+      expect(container.querySelector('[data-iris-tree]')?.getAttribute('aria-busy')).toBe('true')
+    })
+
+    it('keeps existing nodes mounted when loading revalidation also errors', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} loading error />)
+
+      expect(container.querySelector('[data-iris-tree-state]')).toBeNull()
+      expect(container.querySelectorAll('[data-iris-tree-node]').length).toBe(2)
+      expect(container.querySelector('[data-iris-tree]')?.getAttribute('aria-busy')).toBe('true')
     })
   })
 

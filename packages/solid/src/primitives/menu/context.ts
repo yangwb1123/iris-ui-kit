@@ -9,6 +9,8 @@ export interface MenuContext {
   content: Accessor<HTMLElement | undefined>
   setContent: (el: HTMLElement) => void
   contentId: string
+  /** Root menu's unique id — shared by every nested submenu surface. */
+  treeId: string
   readonly placement: Placement
   readonly offset: number
   closeRoot: () => void

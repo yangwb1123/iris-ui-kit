@@ -46,8 +46,8 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
 - Of 152 comparable components: 5 have identical prop names in all 4 frameworks, 8 are near-identical, 139 diverge.
 - 5 components are excluded from those counts because at least one adapter forwards its whole HTML attribute set (contract `propsSource: "intrinsic-spread"`), so its prop list is not enumerable. An empty `props` array there does NOT mean the component accepts no attributes — read `intrinsicAttributes`.
 - Mean shared prop names: 45% (lowest 0%).
-- Prop declarations per framework: react 1268, vue 851, solid 1180, svelte 1211.
-- Prop names declared by exactly one framework (capability that exists on one adapter only): react 217, vue 69, solid 113, svelte 124.
+- Prop declarations per framework: react 1269, vue 853, solid 1181, svelte 1212.
+- Prop names declared by exactly one framework (capability that exists on one adapter only): react 216, vue 69, solid 112, svelte 124.
 - Widest surface gap: `IrisToggleGroupItem` — 5x (react 1, vue 2, solid 5, svelte 4 props).
 - Most divergent components (shared/union prop names):
   - `IrisDialogContent` 0% shared — react 2, vue 1, solid 2, svelte 3
@@ -60,8 +60,8 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   - `IrisProTable` 11% shared — react 2, vue 7, solid 2, svelte 2; react-only: className
   - `IrisPasswordInput` 13% shared — react 7, vue 8, solid 15, svelte 14; react-only: prefix, suffix, type
   - `IrisDragger` 17% shared — react 8, vue 3, solid 10, svelte 10
-  - `IrisMenuItem` 17% shared — react 3, vue 1, solid 3, svelte 3; react-only: keepOpen, onSelect
   - `IrisRadio` 17% shared — react 6, vue 5, solid 10, svelte 9
+  - `IrisTimeline` 17% shared — react 4, vue 1, solid 4, svelte 3; react-only: className
 
 ## Components (157 total — 157 in all 4 frameworks; react 157, vue 157, solid 157, svelte 157)
 
@@ -735,7 +735,7 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   react: props items, value?, defaultValue?, onValueChange?, onSelect?, multi?, loop?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, renderItem?, style?, className?; events onSelect, onValueChange; slots emptyState, errorState, loadingState; types IrisListItem, IrisListProps
   solid: props items, value?, defaultValue?, multi?, loop?, ariaLabel?, renderItem?, onChange?, onSelect?, loading?, error?, emptyState?, loadingState?, errorState?; events onChange, onSelect; slots emptyState, errorState, loadingState, renderItem; types IrisListItem, IrisListProps
   svelte: props items?, value?, defaultValue?, onValueChange?, onSelect?, multi?, loop?, ariaLabel?, loading?, error?, style?, emptyState?, loadingState?, errorState?, renderItem?, children?; events onSelect, onValueChange; slots default, emptyState, errorState, loadingState, renderItem
-  vue: props items, modelValue?, multi?, loop?, ariaLabel?, loading?, error?; events select, update:modelValue; slots empty, error, item, loading; types IrisListItem
+  vue: props items, modelValue?, defaultValue?, multi?, loop?, ariaLabel?, loading?, error?; events select, update:modelValue; slots empty, error, item, loading; types IrisListItem
   quality: 16 props, 2 events
 - IrisMarquee [react/solid/svelte/vue] — layer-1
   Marquee: an accessible auto-scrolling ticker. The content is rendered twice (the second copy `aria-hidden`) for a seamless loop and animated with the Web Animations API (no `@keyframes` injection). Pauses on hover and is disabled under `prefers-reduced-motion`.
@@ -773,12 +773,12 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   vue: props teleport?; slots default
   quality: 2 props, 0 events
 - IrisMenuItem [react/solid/svelte/vue] — layer-2
-  An individual selectable item in a menu. Renders as a `role="menuitem"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.
-  react: props disabled?, keepOpen?, onSelect?; events onSelect; types IrisMenuItemProps
+  An individual selectable item in a menu. Renders as a `role="menuitem"` `<div>`. Calls `onSelect`, then closes the root menu unless selection is canceled or `closeOnSelect` is false. Disabled items are skipped by keyboard navigation.
+  react: props disabled?, closeOnSelect?, keepOpen?, onSelect?; events onSelect; types IrisMenuItemProps
   solid: props disabled?, closeOnSelect?, children?; slots default; types IrisMenuItemProps
-  svelte: props disabled?, onclick?, children?; events onclick; slots default
-  vue: props disabled?; events select; slots default
-  quality: 3 props, 1 events
+  svelte: props disabled?, closeOnSelect?, onclick?, children?; events onclick; slots default
+  vue: props disabled?, closeOnSelect?; events select; slots default
+  quality: 4 props, 1 events
 - IrisMenuSeparator [react/solid/svelte/vue] — layer-2
   A visual separator within a menu — renders a `role="separator"` `<div>`.
   react: props (all of React.HTMLAttributes<HTMLDivElement> — forwards the whole attribute set; the list is not enumerable, do NOT treat as prop-less); types IrisMenuSeparatorProps
@@ -787,7 +787,7 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
 - IrisMenuSub [react/solid/svelte/vue] — layer-2
   Nested submenu. Renders its own trigger (a `[role="menuitem"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on the direction-aware horizontal key / Enter; closes on the opposite horizontal key.
   react: props label?, portalTarget?, children?; slots default, label; types IrisMenuSubProps
-  solid: props label, disabled?, children?; slots default; types IrisMenuSubProps
+  solid: props label, disabled?, portalTarget?, children?; slots default; types IrisMenuSubProps
   svelte: props label, disabled?, children?; slots default
   vue: props label?, teleport?; slots default, label
   quality: 3 props, 0 events

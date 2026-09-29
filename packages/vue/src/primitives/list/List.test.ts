@@ -24,6 +24,54 @@ describe('IrisList', () => {
     expect(options[1]!.attributes('aria-selected')).toBe('true')
   })
 
+  it('updates selection and slot state in uncontrolled mode', async () => {
+    const wrapper = mount(IrisList, {
+      props: { items: sampleItems },
+      slots: {
+        item: ({ item, selected }) =>
+          h('span', { class: 'custom' }, `${(item as IrisListItem<string>).value}-${selected}`),
+      },
+    })
+    const options = wrapper.findAll('[role="option"]')
+    expect(options[0]!.attributes('aria-selected')).toBe('false')
+    expect(wrapper.findAll('.custom')[0]!.text()).toBe('a-false')
+
+    await options[1]!.trigger('click')
+
+    expect(options[1]!.attributes('aria-selected')).toBe('true')
+    expect(wrapper.findAll('.custom')[1]!.text()).toBe('b-true')
+  })
+
+  it('uses defaultValue as the initial single selection', () => {
+    const wrapper = mount(IrisList, {
+      props: { items: sampleItems, defaultValue: 'b' },
+    })
+    expect(wrapper.findAll('[role="option"]')[1]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('supports an array defaultValue in multi mode', () => {
+    const wrapper = mount(IrisList, {
+      props: { items: sampleItems, multi: true, defaultValue: ['a', 'd'] },
+    })
+    const options = wrapper.findAll('[role="option"]')
+    expect(options[0]!.attributes('aria-selected')).toBe('true')
+    expect(options[1]!.attributes('aria-selected')).toBe('false')
+    expect(options[3]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('multi uncontrolled mode toggles its internal selection', async () => {
+    const wrapper = mount(IrisList, { props: { items: sampleItems, multi: true } })
+    const options = wrapper.findAll('[role="option"]')
+
+    await options[0]!.trigger('click')
+    await options[1]!.trigger('click')
+    await options[0]!.trigger('click')
+
+    expect(options[0]!.attributes('aria-selected')).toBe('false')
+    expect(options[1]!.attributes('aria-selected')).toBe('true')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['a']], [['a', 'b']], [['b']]])
+  })
+
   it('emits update:modelValue on click', async () => {
     const wrapper = mount(IrisList, { props: { items: sampleItems, modelValue: null } })
     await wrapper.findAll('[role="option"]')[1]!.trigger('click')
@@ -114,6 +162,40 @@ describe('IrisList', () => {
     await wrapper.findAll('[role="option"]')[0]!.trigger('click')
     await nextTick()
     expect(value.value).toEqual(['b'])
+  })
+
+  it('reflects a later controlled parent update', async () => {
+    const value = ref<string>('a')
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisList, {
+            items: sampleItems,
+            modelValue: value.value,
+            'onUpdate:modelValue': (next) => (value.value = next as string),
+          })
+      },
+    })
+    const wrapper = mount(Harness)
+    expect(wrapper.findAll('[role="option"]')[0]!.attributes('aria-selected')).toBe('true')
+
+    value.value = 'd'
+    await nextTick()
+
+    expect(wrapper.findAll('[role="option"]')[0]!.attributes('aria-selected')).toBe('false')
+    expect(wrapper.findAll('[role="option"]')[3]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('controlled clicks emit without changing the rendered value', async () => {
+    const wrapper = mount(IrisList, { props: { items: sampleItems, modelValue: 'a' } })
+    const options = wrapper.findAll('[role="option"]')
+
+    await options[1]!.trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([['b']])
+    expect(wrapper.emitted('select')).toEqual([[sampleItems[1]]])
+    expect(options[0]!.attributes('aria-selected')).toBe('true')
+    expect(options[1]!.attributes('aria-selected')).toBe('false')
   })
 
   it('loop=true wraps Down from last to first', async () => {

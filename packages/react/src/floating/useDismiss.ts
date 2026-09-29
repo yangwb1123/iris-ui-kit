@@ -5,6 +5,8 @@ export interface UseDismissOptions {
   enabled: boolean
   /** Elements that, if clicked, should NOT trigger dismiss (typically trigger + content). */
   exclude: Array<React.RefObject<HTMLElement | null>>
+  /** Extra "inside" test for pointerdown targets outside the excluded refs. */
+  excludePredicate?: (target: EventTarget | null) => boolean
   /** Called when the user attempts to dismiss the surface. */
   onDismiss: () => void
   /** Close on Escape key. Default `true`. */
@@ -28,9 +30,11 @@ export function useDismiss(options: UseDismissOptions): void {
 
   const onDismissRef = React.useRef(options.onDismiss)
   const excludeRef = React.useRef(options.exclude)
+  const excludePredicateRef = React.useRef(options.excludePredicate)
   React.useEffect(() => {
     onDismissRef.current = options.onDismiss
     excludeRef.current = options.exclude
+    excludePredicateRef.current = options.excludePredicate
   })
 
   React.useEffect(() => {
@@ -46,7 +50,7 @@ export function useDismiss(options: UseDismissOptions): void {
     }
 
     const onPointerDown = (event: PointerEvent) => {
-      if (isExcluded(event.target)) return
+      if (isExcluded(event.target) || excludePredicateRef.current?.(event.target)) return
       onDismissRef.current()
     }
     const onKeyDown = (event: KeyboardEvent) => {

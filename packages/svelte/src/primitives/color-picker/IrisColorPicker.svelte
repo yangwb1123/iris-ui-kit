@@ -52,12 +52,16 @@
   let hsva = $state<IrisHsva>(parseValue(untrack(() => value)))
   let hexInput = $state(untrack(() => value))
 
-  $effect(() => {
-    const rgba = hsvaToRgba(hsva)
-    const hex = rgbToHex(rgba)
-    hexInput = hex
-    onValueChange?.(hex)
-  })
+  function toHex(nextHsva: IrisHsva): string {
+    return rgbToHex(hsvaToRgba(nextHsva))
+  }
+
+  function commit(nextHsva: IrisHsva, nextHex = toHex(nextHsva)): void {
+    if (disabled) return
+    hsva = nextHsva
+    hexInput = nextHex
+    onValueChange?.(nextHex)
+  }
 
   $effect(() => {
     const parsed = parseValue(value)
@@ -76,7 +80,7 @@
     const rect = satValEl.getBoundingClientRect()
     const s = clamp01((e.clientX - rect.left) / rect.width)
     const v = clamp01(1 - (e.clientY - rect.top) / rect.height)
-    hsva = { ...hsva, s, v }
+    commit({ ...hsva, s, v })
   }
 
   function onHuePointer(e: PointerEvent) {
@@ -84,15 +88,16 @@
     e.preventDefault()
     const rect = hueEl.getBoundingClientRect()
     const h = clamp01((e.clientX - rect.left) / rect.width) * 360
-    hsva = { ...hsva, h }
+    commit({ ...hsva, h })
   }
 
   function onHexInput(e: Event) {
     const val = (e.target as HTMLInputElement).value
+    if (disabled) return
     hexInput = val
     const parsed = hexToRgba(val)
     if (parsed) {
-      hsva = rgbaToHsva(parsed)
+      commit(rgbaToHsva(parsed))
     }
   }
 
@@ -100,9 +105,7 @@
     if (disabled) return
     const parsed = hexToRgba(hex)
     if (parsed) {
-      hsva = rgbaToHsva(parsed)
-      hexInput = hex
-      onValueChange?.(hex)
+      commit(rgbaToHsva(parsed), hex)
     }
   }
 
@@ -144,7 +147,7 @@
     else if (event.key === 'ArrowUp') next = { ...hsva, v: clamp01(hsva.v + step) }
     else return
     event.preventDefault()
-    hsva = next
+    commit(next)
   }
 
   function onHueKeyDown(event: KeyboardEvent): void {
@@ -157,7 +160,7 @@
     else if (event.key === 'End') hue = 360
     else return
     event.preventDefault()
-    hsva = { ...hsva, h: Math.max(0, Math.min(360, hue)) }
+    commit({ ...hsva, h: Math.max(0, Math.min(360, hue)) })
   }
 </script>
 

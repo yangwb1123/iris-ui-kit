@@ -11,8 +11,9 @@
   import IrisMenuSub from './IrisMenuSub.svelte'
 
   interface Props {
-    onSelect?: () => void
+    onSelect?: (event: MouseEvent) => void
     onDeepSelect?: () => void
+    closeOnSelect?: boolean
     withSub?: boolean
     withNestedSub?: boolean
     dir?: Direction
@@ -21,6 +22,7 @@
   let {
     onSelect,
     onDeepSelect,
+    closeOnSelect = true,
     withSub = false,
     withNestedSub = false,
     dir = 'ltr',
@@ -36,7 +38,7 @@
   <IrisMenu>
     <IrisMenuTrigger>Menu</IrisMenuTrigger>
     <IrisMenuContent>
-      <IrisMenuItem onclick={onSelect}>Item 1</IrisMenuItem>
+      <IrisMenuItem {closeOnSelect} onclick={onSelect}>Item 1</IrisMenuItem>
       <IrisMenuSeparator />
       <IrisMenuItem>Item 2</IrisMenuItem>
       {#if withSub}

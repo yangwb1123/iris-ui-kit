@@ -27,6 +27,10 @@
   useDismiss({
     enabled: () => ctx.open,
     exclude: [() => ctx.trigger, () => ctx.content],
+    // Nested submenu surfaces are portaled siblings of the root content.
+    // Element (rather than HTMLElement) also matches SVG descendants.
+    excludePredicate: (target) =>
+      target instanceof Element ? !!target.closest(`[data-iris-menu-tree="${ctx.treeId}"]`) : false,
     onDismiss: () => ctx.setOpen(false),
   })
 
@@ -97,6 +101,7 @@
     role="menu"
     tabindex={-1}
     data-iris-menu
+    data-iris-menu-tree={ctx.treeId}
     data-state="open"
     onkeydown={handleKeyDown}
     style={mergedStyle}

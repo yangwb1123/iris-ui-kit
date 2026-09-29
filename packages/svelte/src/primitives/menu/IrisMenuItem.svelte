@@ -3,20 +3,31 @@
 
   interface Props {
     disabled?: boolean
+    closeOnSelect?: boolean
     onclick?: (e: MouseEvent) => void
     children?: import('svelte').Snippet
     [key: string]: unknown
   }
 
-  let { disabled = false, onclick, children, ...rest }: Props = $props()
+  let { disabled = false, closeOnSelect = true, onclick, children, ...rest }: Props = $props()
   const ctx = getMenuContext('IrisMenuItem')
 
-  function handleClick(e: MouseEvent): void {
-    if (disabled) return
-    onclick?.(e)
+  function select(e: MouseEvent | KeyboardEvent, suppressNativeDefault = false): void {
+    if (disabled) {
+      if (suppressNativeDefault) e.preventDefault()
+      return
+    }
+    onclick?.(e as MouseEvent)
+    const selectionCanceled = e.defaultPrevented
+    if (suppressNativeDefault) e.preventDefault()
     // Close the whole tree — a leaf inside a submenu collapses everything
-    // (matches React/Solid). At the root, closeRoot === setOpen(false).
-    ctx.closeRoot()
+    // (matches React/Solid), unless selection is canceled or opted out. At the
+    // root, closeRoot === setOpen(false).
+    if (closeOnSelect && !selectionCanceled) ctx.closeRoot()
+  }
+
+  function handleClick(e: MouseEvent): void {
+    select(e)
   }
 </script>
 
@@ -30,8 +41,7 @@
   onclick={handleClick}
   onkeydown={(e) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleClick(e as unknown as MouseEvent)
+      select(e, true)
     }
   }}
   style="padding: var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px); cursor: {disabled

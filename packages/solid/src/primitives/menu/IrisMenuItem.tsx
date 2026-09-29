@@ -3,35 +3,40 @@ import { useMenuContext } from './context'
 
 export interface IrisMenuItemProps extends JSX.HTMLAttributes<HTMLDivElement> {
   disabled?: boolean
-  /** Close the root menu after click (default true). */
+  /** Close the root menu after selection (default true). */
   closeOnSelect?: boolean
   children?: JSX.Element
 }
 
 /**
- * An individual menu item. Calls `closeRoot` after being selected (unless
- * `closeOnSelect={false}`). Solid port of the Vue IrisMenuItem.
+ * An individual menu item. Calls `closeRoot` after being selected unless
+ * selection is canceled or `closeOnSelect={false}`. Solid port of the Vue
+ * IrisMenuItem.
  */
 export function IrisMenuItem(props: IrisMenuItemProps): JSX.Element {
   const ctx = useMenuContext('IrisMenuItem')
   const [local, others] = splitProps(props, ['disabled', 'closeOnSelect', 'onClick', 'children'])
 
+  const select = (event: MouseEvent | KeyboardEvent, suppressNativeDefault = false): void => {
+    if (local.disabled) {
+      if (suppressNativeDefault) event.preventDefault()
+      return
+    }
+    if (typeof local.onClick === 'function')
+      local.onClick(
+        event as unknown as MouseEvent & { currentTarget: HTMLDivElement; target: Element },
+      )
+    const selectionCanceled = event.defaultPrevented
+    if (suppressNativeDefault) event.preventDefault()
+    if (local.closeOnSelect !== false && !selectionCanceled) ctx.closeRoot()
+  }
+
   const handleClick: JSX.EventHandler<HTMLDivElement, MouseEvent> = (e) => {
-    if (local.disabled) return
-    if (typeof local.onClick === 'function') local.onClick(e)
-    if (local.closeOnSelect !== false) ctx.closeRoot()
+    select(e)
   }
 
   const handleKeyDown: JSX.EventHandler<HTMLDivElement, KeyboardEvent> = (e) => {
-    if (local.disabled) return
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      if (typeof local.onClick === 'function')
-        local.onClick(
-          e as unknown as MouseEvent & { currentTarget: HTMLDivElement; target: Element },
-        )
-      if (local.closeOnSelect !== false) ctx.closeRoot()
-    }
+    if (e.key === 'Enter' || e.key === ' ') select(e, true)
   }
 
   return (

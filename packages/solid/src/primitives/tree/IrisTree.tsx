@@ -5,6 +5,7 @@ import {
   mergeProps,
   splitProps,
   For,
+  Show,
   onCleanup,
   type JSX,
 } from 'solid-js'
@@ -14,6 +15,7 @@ import {
   type TreeSelectionNode,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useDataState } from '../../motion'
 import { TreeNodeItem } from './TreeNode'
 
 export interface IrisTreeNode {
@@ -116,7 +118,12 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     'errorState',
   ])
 
-  const noContent = local.nodes.length === 0 && !local.loading && !local.error
+  const { state, isContent, stateProps } = useDataState(() => ({
+    loading: local.loading,
+    error: local.error,
+    empty: local.nodes.length === 0,
+    hasContent: local.nodes.length > 0,
+  }))
 
   const [internalSelected, setInternalSelected] = createSignal<string[]>(local.defaultSelectedIds)
   const [internalExpanded, setInternalExpanded] = createSignal<string[]>(local.defaultExpandedIds)
@@ -252,7 +259,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     if (local.selectionMode === 'multi') {
       next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
     } else {
-      next = current.includes(id) ? [] : [id]
+      next = [id]
     }
     if (!local.selectedIds) setInternalSelected(next)
     local.onSelect?.(next)
@@ -389,53 +396,6 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     return renderNodes(kids, depth + 1)
   }
 
-  // Top-level state rendering: error > loading > empty > tree content.
-  if (local.error) {
-    return (
-      <div
-        data-iris-tree-state="error"
-        style={{
-          padding: '12px',
-          'text-align': 'center',
-          color: 'var(--iris-muted)',
-          'font-size': 'var(--iris-font-size-md, 14px)',
-        }}
-      >
-        {local.errorState ?? t('tree.error')}
-      </div>
-    )
-  }
-  if (local.loading) {
-    return (
-      <div
-        data-iris-tree-state="loading"
-        style={{
-          padding: '12px',
-          'text-align': 'center',
-          color: 'var(--iris-muted)',
-          'font-size': 'var(--iris-font-size-md, 14px)',
-        }}
-      >
-        {local.loadingState ?? t('tree.loading')}
-      </div>
-    )
-  }
-  if (noContent) {
-    return (
-      <div
-        data-iris-tree-state="empty"
-        style={{
-          padding: '12px',
-          'text-align': 'center',
-          color: 'var(--iris-muted)',
-          'font-size': 'var(--iris-font-size-md, 14px)',
-        }}
-      >
-        {local.emptyState ?? t('tree.empty')}
-      </div>
-    )
-  }
-
   return (
     <ul
       data-iris-tree=""
@@ -447,7 +407,32 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
       onKeyDown={onKeyDown}
       style={{ 'list-style': 'none', margin: '0', padding: '0' }}
     >
-      {renderNodes(local.nodes, 0)}
+      <Show
+        when={isContent()}
+        fallback={
+          <li
+            role="presentation"
+            data-iris-tree-state={state()}
+            aria-live="polite"
+            {...stateProps()}
+            style={{
+              'list-style': 'none',
+              padding: '12px',
+              'text-align': 'center',
+              color: 'var(--iris-muted)',
+              'font-size': 'var(--iris-font-size-md, 14px)',
+            }}
+          >
+            {state() === 'error'
+              ? (local.errorState ?? t('tree.error'))
+              : state() === 'loading'
+                ? (local.loadingState ?? t('tree.loading'))
+                : (local.emptyState ?? t('tree.empty'))}
+          </li>
+        }
+      >
+        {renderNodes(local.nodes, 0)}
+      </Show>
     </ul>
   )
 }

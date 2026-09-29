@@ -54,6 +54,12 @@ export const IrisMenuContent = React.forwardRef<HTMLDivElement, IrisMenuContentP
     useDismiss({
       enabled: ctx.open,
       exclude: [ctx.triggerRef, ctx.contentRef],
+      // Nested submenu surfaces are portaled siblings of the root content.
+      // Element (rather than HTMLElement) also matches SVG descendants.
+      excludePredicate: (target) =>
+        target instanceof Element
+          ? !!target.closest(`[data-iris-menu-tree="${ctx.treeId}"]`)
+          : false,
       onDismiss: () => ctx.setOpen(false),
     })
 
@@ -120,6 +126,7 @@ export const IrisMenuContent = React.forwardRef<HTMLDivElement, IrisMenuContentP
         role="menu"
         tabIndex={-1}
         data-iris-menu=""
+        data-iris-menu-tree={ctx.treeId}
         data-state="open"
         onKeyDown={handleKeyDown}
         style={{

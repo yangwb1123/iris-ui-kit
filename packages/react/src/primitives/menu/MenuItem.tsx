@@ -4,7 +4,9 @@ import { useMenuContext } from './context'
 
 export interface IrisMenuItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
   disabled?: boolean
-  /** Skip closing the menu on select (e.g. for sub-actions). */
+  /** Close the root menu after select (default true). */
+  closeOnSelect?: boolean
+  /** Legacy alias; when true, keeps the menu open unless overridden. */
   keepOpen?: boolean
   /** Triggered on click or Enter/Space. */
   onSelect?: (event: React.SyntheticEvent) => void
@@ -12,21 +14,37 @@ export interface IrisMenuItemProps extends Omit<React.HTMLAttributes<HTMLDivElem
 
 /**
  * An individual selectable item in a menu. Renders as a `role="menuitem"` `<div>`.
- * Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled
- * items are skipped by keyboard navigation.
+ * Calls `onSelect`, then closes the root menu unless selection is canceled or
+ * `closeOnSelect` is false. Disabled items are skipped by keyboard navigation.
  */
 export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
   function IrisMenuItem(
-    { disabled = false, keepOpen = false, onSelect, onClick, onKeyDown, style, children, ...rest },
+    {
+      disabled = false,
+      closeOnSelect,
+      keepOpen = false,
+      onSelect,
+      onClick,
+      onKeyDown,
+      style,
+      children,
+      ...rest
+    },
     ref,
   ) {
     const ctx = useMenuContext('IrisMenuItem')
     const [hovered, setHovered] = React.useState(false)
+    const shouldCloseOnSelect = closeOnSelect !== undefined ? closeOnSelect : !keepOpen
 
-    const fire = (event: React.SyntheticEvent) => {
-      if (disabled) return
+    const fire = (event: React.SyntheticEvent, suppressNativeDefault = false) => {
+      if (disabled) {
+        if (suppressNativeDefault) event.preventDefault()
+        return
+      }
       onSelect?.(event)
-      if (!keepOpen) ctx.closeRoot()
+      const selectionCanceled = event.defaultPrevented
+      if (suppressNativeDefault) event.preventDefault()
+      if (shouldCloseOnSelect && !selectionCanceled) ctx.closeRoot()
     }
 
     const handleClick = composeEventHandlers(
@@ -37,8 +55,7 @@ export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
       onKeyDown as ((e: React.KeyboardEvent<HTMLDivElement>) => void) | undefined,
       (e: React.KeyboardEvent<HTMLDivElement>) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          fire(e)
+          fire(e, true)
         }
       },
     )

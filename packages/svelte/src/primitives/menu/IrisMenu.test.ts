@@ -39,6 +39,49 @@ describe('IrisMenu', () => {
     expect(document.querySelector('[role="menu"]')).toBeNull()
   })
 
+  it('closeOnSelect=false keeps the menu open after click', async () => {
+    const { getByText } = render(MenuHarness, { props: { closeOnSelect: false } })
+    await fireEvent.click(getByText('Menu'))
+    await fireEvent.click(getByText('Item 1'))
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+  })
+
+  it('closeOnSelect=false keeps the menu open after Enter', async () => {
+    const onSelect = vi.fn()
+    const { getByText } = render(MenuHarness, { props: { closeOnSelect: false, onSelect } })
+    await fireEvent.click(getByText('Menu'))
+    await fireEvent.keyDown(getByText('Item 1'), { key: 'Enter' })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+  })
+
+  it('click callback preventDefault keeps the menu open after click', async () => {
+    const onSelect = vi.fn((event: MouseEvent) => event.preventDefault())
+    const { getByText } = render(MenuHarness, { props: { onSelect } })
+    await fireEvent.click(getByText('Menu'))
+    await fireEvent.click(getByText('Item 1'))
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+  })
+
+  it('click callback preventDefault keeps the menu open after Enter', async () => {
+    const onSelect = vi.fn((event: MouseEvent) => event.preventDefault())
+    const { getByText } = render(MenuHarness, { props: { onSelect } })
+    await fireEvent.click(getByText('Menu'))
+    await fireEvent.keyDown(getByText('Item 1'), { key: 'Enter' })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+  })
+
+  it.each(['Enter', ' '])('default %s selects once and closes the menu', async (key) => {
+    const onSelect = vi.fn()
+    const { getByText } = render(MenuHarness, { props: { onSelect } })
+    await fireEvent.click(getByText('Menu'))
+    await fireEvent.keyDown(getByText('Item 1'), { key })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[role="menu"]')).toBeNull()
+  })
+
   it('Escape closes the menu', async () => {
     const { getByText } = render(MenuHarness)
     await fireEvent.click(getByText('Menu'))
@@ -71,6 +114,19 @@ describe('IrisMenu', () => {
       expect(subContent()).not.toBeNull()
       await fireEvent.keyDown(subTrigger(), { key: 'ArrowLeft' })
       expect(subContent()).toBeNull()
+    })
+
+    it('keeps the root open for pointerdown inside a portaled submenu', async () => {
+      const { getByText } = render(MenuHarness, { props: { withSub: true } })
+      await fireEvent.click(getByText('Menu'))
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
+      const item = subContent()!.querySelector<HTMLElement>('[role="menuitem"]')!
+
+      await fireEvent.pointerDown(item)
+      expect(document.querySelector('[data-iris-menu]')).not.toBeNull()
+
+      await fireEvent.pointerDown(document.body)
+      expect(document.querySelector('[data-iris-menu]')).toBeNull()
     })
 
     it('RTL flips submenu placement, keys, and arrow direction', async () => {

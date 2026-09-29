@@ -3,6 +3,8 @@ export interface UseDismissOptions {
   enabled: () => boolean
   /** Elements that, if clicked, should NOT trigger dismiss (trigger + content). */
   exclude: Array<() => HTMLElement | undefined | null>
+  /** Extra "inside" test for pointerdown targets outside the excluded refs. */
+  excludePredicate?: (target: EventTarget | null) => boolean
   /** Called when the user attempts to dismiss the surface. */
   onDismiss: () => void
   escape?: boolean
@@ -31,7 +33,7 @@ export function useDismiss(options: UseDismissOptions): void {
       return false
     }
     const onPointerDown = (event: PointerEvent): void => {
-      if (isExcluded(event.target)) return
+      if (isExcluded(event.target) || options.excludePredicate?.(event.target)) return
       options.onDismiss()
     }
     const onKeyDown = (event: KeyboardEvent): void => {

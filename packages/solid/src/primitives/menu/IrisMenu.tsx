@@ -46,6 +46,7 @@ export function IrisMenu(props: IrisMenuProps): JSX.Element {
   const [trigger, setTrigger] = createSignal<HTMLElement | undefined>()
   const [content, setContent] = createSignal<HTMLElement | undefined>()
   const contentId = createUniqueId()
+  const treeId = contentId
 
   return (
     <MenuContext.Provider
@@ -57,6 +58,7 @@ export function IrisMenu(props: IrisMenuProps): JSX.Element {
         content,
         setContent,
         contentId,
+        treeId,
         get placement() {
           return merged.placement
         },

@@ -126,11 +126,12 @@ export function IrisMenuSub({
       triggerRef,
       contentRef,
       contentId: '',
+      treeId: parentCtx.treeId,
       placement: submenuDirection.placement,
       offset: 0,
       closeRoot: parentCtx.closeRoot,
     }),
-    [open, setOpen, parentCtx.closeRoot, submenuDirection.placement],
+    [open, setOpen, parentCtx.closeRoot, parentCtx.treeId, submenuDirection.placement],
   )
 
   const trigger = (
@@ -186,6 +187,7 @@ export function IrisMenuSub({
       data-iris-menu-sub=""
       data-state="open"
       data-iris-menu-sub-placement={submenuDirection.placement}
+      data-iris-menu-tree={parentCtx.treeId}
       onKeyDown={onContentKeyDown}
       onPointerEnter={clearTimer}
       style={{

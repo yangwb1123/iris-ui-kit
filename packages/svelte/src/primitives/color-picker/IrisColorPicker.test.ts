@@ -80,12 +80,13 @@ describe('IrisColorPicker', () => {
       props: { value: '#000000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     await fireEvent.input(hexInput(container), { target: { value: '#00FF00' } })
     flushSync()
 
     expect(hexInput(container).value).toBe('#00ff00')
+    expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(onValueChange).toHaveBeenLastCalledWith('#00ff00')
     expect(hue(container).getAttribute('aria-valuenow')).toBe('120')
   })
@@ -96,7 +97,7 @@ describe('IrisColorPicker', () => {
       props: { value: '#3366cc', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
     const swatch = container.querySelector('[data-iris-color-picker-swatch]') as HTMLElement
     const before = swatch.style.background
 
@@ -114,14 +115,14 @@ describe('IrisColorPicker', () => {
       props: { value: '#000000', presets: ['#123456'], onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     await fireEvent.click(
       container.querySelector('[data-iris-color-picker-presets] button') as HTMLButtonElement,
     )
     flushSync()
 
-    expect(onValueChange).toHaveBeenCalled()
+    expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(onValueChange).toHaveBeenLastCalledWith('#123456')
     expect(hexInput(container).value).toBe('#123456')
   })
@@ -132,17 +133,19 @@ describe('IrisColorPicker', () => {
       props: { value: '#ff0000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     await fireEvent.keyDown(hue(container), { key: 'ArrowRight' })
     flushSync()
 
     expect(hue(container).getAttribute('aria-valuenow')).toBe('10')
+    expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(onValueChange).toHaveBeenLastCalledWith('#ff2a00')
 
     await fireEvent.keyDown(hue(container), { key: 'ArrowDown', shiftKey: true })
     flushSync()
     expect(hue(container).getAttribute('aria-valuenow')).toBe('9')
+    expect(onValueChange).toHaveBeenCalledTimes(2)
   })
 
   it('supports Home and End hue keyboard boundaries', async () => {
@@ -163,12 +166,13 @@ describe('IrisColorPicker', () => {
       props: { value: '#ff0000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     await fireEvent.keyDown(saturation(container), { key: 'ArrowLeft', shiftKey: true })
     flushSync()
     expect(saturation(container).getAttribute('aria-valuenow')).toBe('90')
     expect(saturation(container).getAttribute('aria-valuetext')).toContain('100% brightness')
+    expect(onValueChange).toHaveBeenCalledTimes(1)
 
     await fireEvent.keyDown(saturation(container), { key: 'ArrowDown' })
     flushSync()
@@ -183,7 +187,7 @@ describe('IrisColorPicker', () => {
       props: { value: '#ff0000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     await fireEvent.keyDown(hue(container), { key: 'PageDown' })
     await fireEvent.keyDown(saturation(container), { key: 'Enter' })
@@ -200,7 +204,7 @@ describe('IrisColorPicker', () => {
       props: { value: '#000000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
     setRect(saturation(container), 200, 100)
 
     await fireEvent.mouseDown(saturation(container), { clientX: 100, clientY: 0 })
@@ -209,6 +213,7 @@ describe('IrisColorPicker', () => {
 
     expect(saturation(container).getAttribute('aria-valuenow')).toBe('50')
     expect(saturation(container).getAttribute('aria-valuetext')).toContain('100% brightness')
+    expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(onValueChange).toHaveBeenLastCalledWith('#ff8080')
   })
 
@@ -218,7 +223,7 @@ describe('IrisColorPicker', () => {
       props: { value: '#ff0000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
     setRect(hue(container), 200, 12)
 
     await fireEvent.mouseDown(hue(container), { clientX: 100, clientY: 6 })
@@ -226,6 +231,7 @@ describe('IrisColorPicker', () => {
     await fireEvent.pointerUp(document)
 
     expect(hue(container).getAttribute('aria-valuenow')).toBe('180')
+    expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(onValueChange).toHaveBeenLastCalledWith('#00ffff')
   })
 
@@ -240,7 +246,7 @@ describe('IrisColorPicker', () => {
       },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     const root = container.querySelector('[data-iris-color-picker]') as HTMLElement
     const preset = container.querySelector(
@@ -282,13 +288,13 @@ describe('IrisColorPicker', () => {
       props: { value: '#ff0000', onValueChange },
     })
     flushSync()
-    onValueChange.mockClear()
+    expect(onValueChange).toHaveBeenCalledTimes(0)
 
     await rerender({ value: '#0000ff', onValueChange })
     flushSync()
 
     expect(hexInput(container).value).toBe('#0000ff')
     expect(hue(container).getAttribute('aria-valuenow')).toBe('240')
-    expect(onValueChange).toHaveBeenLastCalledWith('#0000ff')
+    expect(onValueChange).toHaveBeenCalledTimes(0)
   })
 })

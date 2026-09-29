@@ -116,6 +116,7 @@ export function IrisTree({
     loading,
     error,
     empty: safeNodes.length === 0,
+    hasContent: safeNodes.length > 0,
   })
 
   // Lazily-loaded children cache + per-node loading/error state (parity with
@@ -424,7 +425,7 @@ export function IrisTree({
         renderItem={(f) => renderFlatNode(f)}
         role="tree"
         aria-label={ariaLabel ?? t('tree.label')}
-        aria-busy={state === 'loading' ? true : undefined}
+        aria-busy={loading ? true : undefined}
         tabIndex={-1}
         onKeyDown={onKeyDown}
         className={className}
@@ -447,7 +448,7 @@ export function IrisTree({
     <div
       role="tree"
       aria-label={ariaLabel ?? t('tree.label')}
-      aria-busy={state === 'loading' ? true : undefined}
+      aria-busy={loading ? true : undefined}
       tabIndex={-1}
       onKeyDown={onKeyDown}
       className={className}

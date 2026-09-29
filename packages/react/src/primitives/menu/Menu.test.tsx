@@ -15,13 +15,21 @@ afterEach(() => cleanup())
 function flat(props?: {
   defaultOpen?: boolean
   onSelectA?: (e: React.SyntheticEvent) => void
+  closeOnSelectA?: boolean
+  keepOpenA?: boolean
   disableB?: boolean
 }) {
   return (
     <IrisMenu defaultOpen={props?.defaultOpen}>
       <IrisMenuTrigger>Actions</IrisMenuTrigger>
       <IrisMenuContent>
-        <IrisMenuItem onSelect={props?.onSelectA}>A</IrisMenuItem>
+        <IrisMenuItem
+          onSelect={props?.onSelectA}
+          closeOnSelect={props?.closeOnSelectA}
+          keepOpen={props?.keepOpenA}
+        >
+          A
+        </IrisMenuItem>
         <IrisMenuItem disabled={props?.disableB}>B</IrisMenuItem>
         <IrisMenuItem>C</IrisMenuItem>
       </IrisMenuContent>
@@ -80,6 +88,77 @@ describe('@iris-ui-kit/react IrisMenu', () => {
       fireEvent.click(items[0]!)
     })
     expect(onSelect).toHaveBeenCalled()
+    expect(menuEl()).toBeNull()
+  })
+
+  it('closeOnSelect=false keeps the menu open after click', () => {
+    render(flat({ defaultOpen: true, closeOnSelectA: false }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.click(item)
+    })
+    expect(menuEl()).not.toBeNull()
+  })
+
+  it('closeOnSelect=false keeps the menu open after Enter', () => {
+    const onSelect = vi.fn()
+    render(flat({ defaultOpen: true, closeOnSelectA: false, onSelectA: onSelect }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.keyDown(item, { key: 'Enter' })
+    })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(menuEl()).not.toBeNull()
+  })
+
+  it('onSelect preventDefault keeps the menu open after click', () => {
+    const onSelect = vi.fn((event: React.SyntheticEvent) => event.preventDefault())
+    render(flat({ defaultOpen: true, onSelectA: onSelect }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.click(item)
+    })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(menuEl()).not.toBeNull()
+  })
+
+  it('onSelect preventDefault keeps the menu open after Enter', () => {
+    const onSelect = vi.fn((event: React.SyntheticEvent) => event.preventDefault())
+    render(flat({ defaultOpen: true, onSelectA: onSelect }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.keyDown(item, { key: 'Enter' })
+    })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(menuEl()).not.toBeNull()
+  })
+
+  it.each(['Enter', ' '])('default %s selects once and closes the menu', (key) => {
+    const onSelect = vi.fn()
+    render(flat({ defaultOpen: true, onSelectA: onSelect }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.keyDown(item, { key })
+    })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(menuEl()).toBeNull()
+  })
+
+  it('supports the legacy keepOpen prop', () => {
+    render(flat({ defaultOpen: true, keepOpenA: true }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.click(item)
+    })
+    expect(menuEl()).not.toBeNull()
+  })
+
+  it('gives closeOnSelect precedence over keepOpen', () => {
+    render(flat({ defaultOpen: true, closeOnSelectA: true, keepOpenA: true }))
+    const item = document.querySelector('[role=menuitem]') as HTMLElement
+    act(() => {
+      fireEvent.click(item)
+    })
     expect(menuEl()).toBeNull()
   })
 
@@ -221,6 +300,26 @@ describe('@iris-ui-kit/react IrisMenuSub', () => {
       fireEvent.keyDown(sub, { key: 'ArrowLeft' })
     })
     expect(document.querySelector('[data-iris-menu-sub]')).toBeNull()
+  })
+
+  it('keeps the root open for pointerdown inside a portaled submenu', () => {
+    render(nested())
+    const subTrig = document.querySelector('[data-iris-menu-sub-trigger]') as HTMLElement
+    act(() => {
+      fireEvent.click(subTrig)
+    })
+    const subItem = document.querySelector('[data-iris-menu-sub] [role=menuitem]') as HTMLElement
+    expect(subItem).not.toBeNull()
+
+    act(() => {
+      fireEvent.pointerDown(subItem)
+    })
+    expect(menuEl()).not.toBeNull()
+
+    act(() => {
+      fireEvent.pointerDown(document.body)
+    })
+    expect(menuEl()).toBeNull()
   })
 
   it('RTL flips submenu placement, keys, and arrow direction', () => {

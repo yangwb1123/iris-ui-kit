@@ -24395,6 +24395,11 @@
               "optional": true
             },
             {
+              "name": "defaultValue",
+              "type": "unknown",
+              "optional": true
+            },
+            {
               "name": "multi",
               "type": "boolean",
               "optional": true,
@@ -24651,6 +24656,7 @@
         "name": "IrisList",
         "common": [
           "ariaLabel",
+          "defaultValue",
           "error",
           "items",
           "loading",
@@ -24678,10 +24684,10 @@
           "style",
           "value"
         ],
-        "ratio": 0.32,
+        "ratio": 0.37,
         "byFramework": {
           "react": 16,
-          "vue": 7,
+          "vue": 8,
           "solid": 14,
           "svelte": 16
         },
@@ -24700,7 +24706,6 @@
           ]
         },
         "shared": [
-          "defaultValue",
           "emptyState",
           "errorState",
           "loadingState",
@@ -24711,7 +24716,7 @@
           "value"
         ],
         "intrinsic": [],
-        "asymmetry": 2.29
+        "asymmetry": 2
       }
     },
     {
@@ -26978,7 +26983,7 @@
         "svelte": "@iris-ui-kit/svelte",
         "vue": "@iris-ui-kit/vue"
       },
-      "description": "An individual selectable item in a menu. Renders as a `role=\"menuitem\"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.",
+      "description": "An individual selectable item in a menu. Renders as a `role=\"menuitem\"` `<div>`. Calls `onSelect`, then closes the root menu unless selection is canceled or `closeOnSelect` is false. Disabled items are skipped by keyboard navigation.",
       "props": [
         {
           "name": "disabled",
@@ -26987,10 +26992,16 @@
           "default": "false"
         },
         {
+          "name": "closeOnSelect",
+          "type": "boolean",
+          "optional": true,
+          "description": "Close the root menu after select (default true)."
+        },
+        {
           "name": "keepOpen",
           "type": "boolean",
           "optional": true,
-          "description": "Skip closing the menu on select (e.g. for sub-actions).",
+          "description": "Legacy alias; when true, keeps the menu open unless overridden.",
           "default": "false"
         },
         {
@@ -27011,10 +27022,16 @@
               "default": "false"
             },
             {
+              "name": "closeOnSelect",
+              "type": "boolean",
+              "optional": true,
+              "description": "Close the root menu after select (default true)."
+            },
+            {
               "name": "keepOpen",
               "type": "boolean",
               "optional": true,
-              "description": "Skip closing the menu on select (e.g. for sub-actions).",
+              "description": "Legacy alias; when true, keeps the menu open unless overridden.",
               "default": "false"
             },
             {
@@ -27040,6 +27057,12 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "closeOnSelect",
+              "type": "boolean",
+              "optional": true,
+              "default": "true"
             }
           ],
           "events": [
@@ -27062,7 +27085,7 @@
               "name": "closeOnSelect",
               "type": "boolean",
               "optional": true,
-              "description": "Close the root menu after click (default true)."
+              "description": "Close the root menu after selection (default true)."
             },
             {
               "name": "children",
@@ -27088,6 +27111,12 @@
               "default": "false"
             },
             {
+              "name": "closeOnSelect",
+              "type": "boolean",
+              "optional": true,
+              "default": "true"
+            },
+            {
               "name": "onclick",
               "type": "(e: MouseEvent) => void",
               "optional": true
@@ -27111,12 +27140,13 @@
         "onSelect"
       ],
       "quality": {
-        "propCount": 3,
+        "propCount": 4,
         "eventCount": 1
       },
       "parity": {
         "name": "IrisMenuItem",
         "common": [
+          "closeOnSelect",
           "disabled"
         ],
         "union": [
@@ -27127,12 +27157,12 @@
           "onSelect",
           "onclick"
         ],
-        "ratio": 0.17,
+        "ratio": 0.33,
         "byFramework": {
-          "react": 3,
-          "vue": 1,
+          "react": 4,
+          "vue": 2,
           "solid": 3,
-          "svelte": 3
+          "svelte": 4
         },
         "uniqueTo": {
           "react": [
@@ -27140,9 +27170,7 @@
             "onSelect"
           ],
           "vue": [],
-          "solid": [
-            "closeOnSelect"
-          ],
+          "solid": [],
           "svelte": [
             "onclick"
           ]
@@ -27151,7 +27179,7 @@
           "children"
         ],
         "intrinsic": [],
-        "asymmetry": 3
+        "asymmetry": 2
       }
     },
     {
@@ -27341,6 +27369,12 @@
               "optional": true
             },
             {
+              "name": "portalTarget",
+              "type": "HTMLElement | false",
+              "optional": true,
+              "description": "Portal target; `false` renders the submenu inline. Default renders to body."
+            },
+            {
               "name": "children",
               "type": "JSX.Element",
               "optional": true
@@ -27405,13 +27439,11 @@
         "byFramework": {
           "react": 3,
           "vue": 2,
-          "solid": 3,
+          "solid": 4,
           "svelte": 3
         },
         "uniqueTo": {
-          "react": [
-            "portalTarget"
-          ],
+          "react": [],
           "vue": [
             "teleport"
           ],
@@ -27420,10 +27452,11 @@
         },
         "shared": [
           "children",
-          "disabled"
+          "disabled",
+          "portalTarget"
         ],
         "intrinsic": [],
-        "asymmetry": 1.5
+        "asymmetry": 2
       }
     },
     {
@@ -54828,15 +54861,15 @@
       "incomparable": 0,
       "intrinsicSpread": 5,
       "propTotals": {
-        "react": 1268,
-        "vue": 851,
-        "solid": 1180,
-        "svelte": 1211
+        "react": 1269,
+        "vue": 853,
+        "solid": 1181,
+        "svelte": 1212
       },
       "exclusivePropNames": {
-        "react": 217,
+        "react": 216,
         "vue": 69,
-        "solid": 113,
+        "solid": 112,
         "svelte": 124
       },
       "meanRatio": 0.45,
@@ -55272,45 +55305,6 @@
           "asymmetry": 3.33
         },
         {
-          "name": "IrisMenuItem",
-          "common": [
-            "disabled"
-          ],
-          "union": [
-            "children",
-            "closeOnSelect",
-            "disabled",
-            "keepOpen",
-            "onSelect",
-            "onclick"
-          ],
-          "ratio": 0.17,
-          "byFramework": {
-            "react": 3,
-            "vue": 1,
-            "solid": 3,
-            "svelte": 3
-          },
-          "uniqueTo": {
-            "react": [
-              "keepOpen",
-              "onSelect"
-            ],
-            "vue": [],
-            "solid": [
-              "closeOnSelect"
-            ],
-            "svelte": [
-              "onclick"
-            ]
-          },
-          "shared": [
-            "children"
-          ],
-          "intrinsic": [],
-          "asymmetry": 3
-        },
-        {
           "name": "IrisRadio",
           "common": [
             "size",
@@ -55359,6 +55353,45 @@
           ],
           "intrinsic": [],
           "asymmetry": 2
+        },
+        {
+          "name": "IrisTimeline",
+          "common": [
+            "items"
+          ],
+          "union": [
+            "class",
+            "className",
+            "itemSnippet",
+            "items",
+            "renderItem",
+            "style"
+          ],
+          "ratio": 0.17,
+          "byFramework": {
+            "react": 4,
+            "vue": 1,
+            "solid": 4,
+            "svelte": 3
+          },
+          "uniqueTo": {
+            "react": [
+              "className"
+            ],
+            "vue": [],
+            "solid": [
+              "class"
+            ],
+            "svelte": [
+              "itemSnippet"
+            ]
+          },
+          "shared": [
+            "renderItem",
+            "style"
+          ],
+          "intrinsic": [],
+          "asymmetry": 4
         }
       ]
     }

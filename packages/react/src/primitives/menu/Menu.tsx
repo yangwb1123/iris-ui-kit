@@ -51,6 +51,7 @@ export function IrisMenu({
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const contentRef = React.useRef<HTMLElement | null>(null)
   const contentId = React.useId()
+  const treeId = contentId
 
   const closeRoot = React.useCallback(() => setOpen(false), [setOpen])
 
@@ -61,6 +62,7 @@ export function IrisMenu({
       triggerRef,
       contentRef,
       contentId,
+      treeId,
       placement,
       offset,
       closeRoot,

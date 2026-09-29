@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { createTreeSelection, flattenTreeSelectionNodes } from '@iris-ui-kit/core'
+  import {
+    createTreeSelection,
+    flattenTreeSelectionNodes,
+    resolveDataState,
+  } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 
@@ -92,6 +96,16 @@
   const selectedSet = $derived(
     isSelectedControlled ? new Set(selectedProp ?? []) : internalSelected,
   )
+
+  const dataState = $derived(
+    resolveDataState({
+      loading,
+      error,
+      empty: nodes.length === 0,
+      hasContent: nodes.length > 0,
+    }),
+  )
+  const isContent = $derived(dataState === 'content')
 
   let activeId = $state<string | null>(null)
 
@@ -305,6 +319,7 @@
 <div
   role="tree"
   aria-label={ariaLabel ?? reactiveT('tree.label')}
+  aria-busy={loading ? 'true' : undefined}
   data-iris-tree
   style:display="flex"
   style:flex-direction="column"
@@ -312,34 +327,7 @@
   class={className}
   {...rest}
 >
-  {#if loading}
-    <div
-      data-iris-state="loading"
-      style:padding="12px"
-      style:color="var(--iris-muted)"
-      style:font-size="var(--iris-font-size-md, 14px)"
-    >
-      {reactiveT('tree.loading')}
-    </div>
-  {:else if error}
-    <div
-      data-iris-state="error"
-      style:padding="12px"
-      style:color="var(--iris-danger)"
-      style:font-size="var(--iris-font-size-md, 14px)"
-    >
-      {reactiveT('tree.error')}
-    </div>
-  {:else if nodes.length === 0}
-    <div
-      data-iris-state="empty"
-      style:padding="12px"
-      style:color="var(--iris-muted)"
-      style:font-size="var(--iris-font-size-md, 14px)"
-    >
-      {reactiveT('tree.empty')}
-    </div>
-  {:else}
+  {#if isContent}
     {#each flat as fn, idx (fn.node.id)}
       {@const isExpanded = expandedSet.has(fn.node.id)}
       {@const isSelected = selectedSet.has(fn.node.id)}
@@ -428,5 +416,23 @@
         <span>{fn.node.label}</span>
       </div>
     {/each}
+  {:else}
+    <div
+      role="presentation"
+      data-iris-state={dataState}
+      data-iris-tree-state={dataState}
+      aria-live="polite"
+      style:padding="12px"
+      style:color={dataState === 'error' ? 'var(--iris-danger)' : 'var(--iris-muted)'}
+      style:font-size="var(--iris-font-size-md, 14px)"
+    >
+      {#if dataState === 'error'}
+        {reactiveT('tree.error')}
+      {:else if dataState === 'loading'}
+        {reactiveT('tree.loading')}
+      {:else}
+        {reactiveT('tree.empty')}
+      {/if}
+    </div>
   {/if}
 </div>

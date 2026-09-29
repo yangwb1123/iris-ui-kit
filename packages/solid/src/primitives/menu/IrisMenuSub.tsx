@@ -1,13 +1,16 @@
 import { createEffect, createSignal, createUniqueId, onCleanup, Show, type JSX } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import { getMenuSubDirection, nextEnabledIndex } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDirection } from '../../theme'
 import { useDismiss } from '../../floating/useDismiss'
-import { useMenuContext } from './context'
+import { MenuContext, useMenuContext } from './context'
 
 export interface IrisMenuSubProps {
   label: string
   disabled?: boolean
+  /** Portal target; `false` renders the submenu inline. Default renders to body. */
+  portalTarget?: HTMLElement | false
   children?: JSX.Element
 }
 
@@ -24,6 +27,24 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
   const [submenu, setSubmenu] = createSignal<HTMLElement | undefined>()
   const submenuId = createUniqueId()
 
+  // Descendant submenus and items inherit this surface's state, while the
+  // root tree id and closeRoot channel continue through the whole tree.
+  const submenuContext = {
+    open,
+    setOpen: (value: boolean) => setOpen(value),
+    trigger,
+    setTrigger,
+    content: submenu,
+    setContent: setSubmenu,
+    contentId: submenuId,
+    treeId: ctx.treeId,
+    get placement() {
+      return submenuDirection().placement
+    },
+    offset: 0,
+    closeRoot: ctx.closeRoot,
+  }
+
   const { floatingStyles } = useFloating({
     anchor: trigger,
     floating: submenu,
@@ -35,6 +56,10 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
   useDismiss({
     enabled: open,
     exclude: [trigger, submenu],
+    // Every surface in this menu tree is inside for dismiss purposes, even
+    // when a submenu is portaled outside the root content.
+    excludePredicate: (target) =>
+      target instanceof Element ? !!target.closest(`[data-iris-menu-tree="${ctx.treeId}"]`) : false,
     onDismiss: () => setOpen(false),
     escape: false, // outer menu handles escape
   })
@@ -118,6 +143,35 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
     wasOpen = isOpen
   })
 
+  const submenuPanel = (): JSX.Element => (
+    <div
+      ref={setSubmenu}
+      id={submenuId}
+      role="menu"
+      tabindex={-1}
+      data-iris-menu-sub-content=""
+      data-iris-menu-sub-placement={submenuDirection().placement}
+      data-iris-menu-tree={ctx.treeId}
+      data-state="open"
+      onPointerEnter={clearTimer}
+      onKeyDown={handleKeyDown}
+      style={{
+        ...floatingStyles(),
+        background: 'var(--iris-surface-floating)',
+        color: 'var(--iris-foreground)',
+        border: '1px solid var(--iris-border)',
+        'border-radius': 'var(--iris-radius-md, 6px)',
+        padding: 'var(--iris-padding-sm, 4px)',
+        'box-shadow': 'var(--iris-shadow-lg)',
+        'min-width': '140px',
+        outline: 'none',
+        'z-index': 1001,
+      }}
+    >
+      <MenuContext.Provider value={submenuContext}>{props.children}</MenuContext.Provider>
+    </div>
+  )
+
   return (
     <div style={{ position: 'relative' }}>
       <div
@@ -167,31 +221,17 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
         </span>
       </div>
       <Show when={open()}>
-        <div
-          ref={setSubmenu}
-          id={submenuId}
-          role="menu"
-          tabindex={-1}
-          data-iris-menu-sub-content=""
-          data-iris-menu-sub-placement={submenuDirection().placement}
-          data-state="open"
-          onPointerEnter={clearTimer}
-          onKeyDown={handleKeyDown}
-          style={{
-            ...floatingStyles(),
-            background: 'var(--iris-surface-floating)',
-            color: 'var(--iris-foreground)',
-            border: '1px solid var(--iris-border)',
-            'border-radius': 'var(--iris-radius-md, 6px)',
-            padding: 'var(--iris-padding-sm, 4px)',
-            'box-shadow': 'var(--iris-shadow-lg)',
-            'min-width': '140px',
-            outline: 'none',
-            'z-index': 1001,
-          }}
-        >
-          {props.children}
-        </div>
+        <Show when={props.portalTarget !== false} fallback={submenuPanel()}>
+          <Portal
+            mount={
+              typeof HTMLElement !== 'undefined' && props.portalTarget instanceof HTMLElement
+                ? props.portalTarget
+                : undefined
+            }
+          >
+            {submenuPanel()}
+          </Portal>
+        </Show>
       </Show>
     </div>
   )

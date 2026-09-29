@@ -305,6 +305,24 @@ describe('@iris-ui-kit/react IrisTree data states', () => {
     expect(document.querySelector('[data-iris-tree-state]')).toBeNull()
   })
 
+  it('keeps existing nodes mounted during loading revalidation', () => {
+    const existingNodes: IrisTreeNode[] = [{ id: 'a', label: 'A' }]
+    render(<IrisTree nodes={existingNodes} loading />)
+
+    expect(document.querySelector('[data-iris-tree-state]')).toBeNull()
+    expect(document.querySelector('[data-iris-tree-node="a"]')).not.toBeNull()
+    expect(document.querySelector('[role=tree]')?.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('keeps existing nodes mounted when loading revalidation also errors', () => {
+    const existingNodes: IrisTreeNode[] = [{ id: 'a', label: 'A' }]
+    render(<IrisTree nodes={existingNodes} loading error />)
+
+    expect(document.querySelector('[data-iris-tree-state]')).toBeNull()
+    expect(document.querySelector('[data-iris-tree-node="a"]')).not.toBeNull()
+    expect(document.querySelector('[role=tree]')?.getAttribute('aria-busy')).toBe('true')
+  })
+
   describe('checkable', () => {
     const checkboxFor = (id: string) =>
       document.querySelector(

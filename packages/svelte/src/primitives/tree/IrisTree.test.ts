@@ -63,6 +63,32 @@ describe('IrisTree', () => {
   it('shows loading state', () => {
     const { container } = render(IrisTree, { props: { nodes: [], loading: true } })
     expect(container.querySelector('[data-iris-state="loading"]')).toBeTruthy()
+    expect(container.querySelector('[data-iris-tree]')?.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('resolves error before loading when nodes is empty', () => {
+    const { container } = render(IrisTree, { props: { nodes: [], loading: true, error: true } })
+    expect(container.querySelector('[data-iris-tree-state="error"]')).toBeTruthy()
+  })
+
+  it('keeps existing nodes mounted during loading revalidation', () => {
+    const existingNodes = [{ id: 'existing', label: 'Existing' }]
+    const { container } = render(IrisTree, { props: { nodes: existingNodes, loading: true } })
+
+    expect(container.querySelector('[data-iris-tree-state]')).toBeNull()
+    expect(container.querySelector('[data-iris-tree-item]')).toBeTruthy()
+    expect(container.querySelector('[data-iris-tree]')?.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('keeps existing nodes mounted when loading revalidation also errors', () => {
+    const existingNodes = [{ id: 'existing', label: 'Existing' }]
+    const { container } = render(IrisTree, {
+      props: { nodes: existingNodes, loading: true, error: true },
+    })
+
+    expect(container.querySelector('[data-iris-tree-state]')).toBeNull()
+    expect(container.querySelector('[data-iris-tree-item]')).toBeTruthy()
+    expect(container.querySelector('[data-iris-tree]')?.getAttribute('aria-busy')).toBe('true')
   })
 
   describe('keyboard navigation (WAI-ARIA tree)', () => {

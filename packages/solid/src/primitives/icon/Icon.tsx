@@ -1,7 +1,21 @@
 import { For, mergeProps, Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui-kit/icons'
+import {
+  defaultIconRegistry,
+  normalizeIconNodes,
+  resolveThemedIcon,
+  type IrisIconNode,
+  type IrisIconRegistry,
+} from '@iris-ui-kit/icons'
 import { useThemeOptional } from '../../theme'
+
+function renderIconNode(node: IrisIconNode): JSX.Element {
+  return (
+    <Dynamic component={node.tag} {...node.attrs}>
+      <For each={node.children ?? []}>{(child) => renderIconNode(child)}</For>
+    </Dynamic>
+  )
+}
 
 export interface IrisIconProps {
   /** Semantic icon name resolved via the registry (e.g. 'check', 'chevron-down'). */
@@ -59,7 +73,7 @@ export function IrisIcon(props: IrisIconProps): JSX.Element {
           }}
         >
           <Show when={merged.title}>{(t) => <title>{t()}</title>}</Show>
-          <For each={ic().nodes}>{(node) => <Dynamic component={node.tag} {...node.attrs} />}</For>
+          <For each={normalizeIconNodes(ic().nodes)}>{(node) => renderIconNode(node)}</For>
         </svg>
       )}
     </Show>

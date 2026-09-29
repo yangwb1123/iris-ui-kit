@@ -1,9 +1,10 @@
 <script lang="ts">
   import { get } from 'svelte/store'
-  import { defaultIconRegistry, resolveThemedIcon } from '@iris-ui-kit/icons'
+  import { defaultIconRegistry, normalizeIconNodes, resolveThemedIcon } from '@iris-ui-kit/icons'
   import type { IrisTheme } from '@iris-ui-kit/tokens'
   import { useThemeOptional } from '../../theme/useTheme'
   import { mergeStyle } from '../../internal/style'
+  import type { IrisIconNode } from '@iris-ui-kit/icons'
   import type { IrisIconProps } from './types'
 
   let {
@@ -30,6 +31,7 @@
   })
 
   const icon = $derived(resolveThemedIcon(registry, name, themeValue))
+  const iconNodes = $derived(icon ? normalizeIconNodes(icon.nodes) : [])
   const css = $derived(
     mergeStyle('display: inline-block; vertical-align: middle; flex-shrink: 0', style),
   )
@@ -53,9 +55,16 @@
     class={className}
     style={css}
   >
+    {#snippet renderNode(node: IrisIconNode)}
+      <svelte:element this={node.tag} {...node.attrs} xmlns="http://www.w3.org/2000/svg">
+        {#each node.children ?? [] as child, index (index)}
+          {@render renderNode(child)}
+        {/each}
+      </svelte:element>
+    {/snippet}
     {#if title}<title>{title}</title>{/if}
-    {#each icon.nodes as node}
-      <svelte:element this={node.tag} {...node.attrs} />
+    {#each iconNodes as node, index (index)}
+      {@render renderNode(node)}
     {/each}
   </svg>
 {/if}

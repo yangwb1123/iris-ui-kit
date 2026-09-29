@@ -57,6 +57,54 @@ describe('@iris-ui-kit/icons Iconify provider', () => {
     expect(renderIconSvg(set.icons['mdi:home']!)).toContain('fill-opacity="0.5"')
   })
 
+  it('preserves safe nested groups, definitions, gradients, masks, and local references', async () => {
+    const body =
+      '<defs><linearGradient id="paint"><stop offset="0%" stop-color="#fff"/><stop offset="1" stop-color="currentColor"/></linearGradient><clipPath id="clip"><circle cx="12" cy="12" r="10"/></clipPath><mask id="fade"><rect x="0" y="0" width="24" height="24" fill="white"/></mask></defs><g clip-path="url(#clip)" mask="url(#fade)" opacity="0.5"><path fill="url(#paint)" d="M0 0L24 24z"/></g>'
+    const provider = createIconifyProvider({
+      fetch: fetchWith(iconifyResponse('mdi', { complex: { body } })),
+    })
+
+    const icon = await provider.loadIcon('mdi:complex')
+    const registry = createIconRegistry({
+      sets: [{ name: 'remote', icons: { [icon.name]: icon } }],
+    })
+    expect(registry.resolve('mdi:complex')?.nodes[1]?.children?.[0]?.attrs.fill).toBe('url(#paint)')
+    const svg = renderIconSvg(icon)
+    expect(svg).toContain('<linearGradient id="paint">')
+    expect(svg).toContain('<clipPath id="clip">')
+    expect(svg).toContain('<mask id="fade">')
+    expect(svg).toContain('<g clip-path="url(#clip)" mask="url(#fade)" opacity="0.5">')
+    expect(svg).toContain('<path fill="url(#paint)" d="M0 0L24 24z"/>')
+  })
+
+  it('enforces nested-node depth and total-node limits', async () => {
+    const overDepth = `${'<g>'.repeat(18)}<path d="M0 0z"/>${'</g>'.repeat(18)}`
+    const overNodeCount = '<path d="M0 0z"/>'.repeat(513)
+    for (const body of [overDepth, overNodeCount]) {
+      const provider = createIconifyProvider({
+        fetch: fetchWith(iconifyResponse('mdi', { oversized: { body } })),
+      })
+      await expect(provider.loadIcon('mdi:oversized')).rejects.toMatchObject({
+        code: 'limit-exceeded',
+      })
+    }
+  })
+
+  it('rejects missing, incompatible, external, and cyclic SVG references', async () => {
+    const bodies = [
+      '<path fill="url(#missing)" d="M0 0z"/>',
+      '<defs><linearGradient id="paint"><stop offset="0" stop-color="url(#paint)"/></linearGradient></defs><path fill="url(#paint)" d="M0 0z"/>',
+      '<defs><linearGradient id="paint"><stop offset="0" stop-color="red"/></linearGradient></defs><path clip-path="url(#paint)" d="M0 0z"/>',
+      '<defs><clipPath id="a"><circle clip-path="url(#b)" cx="0" cy="0" r="1"/></clipPath><clipPath id="b"><circle clip-path="url(#a)" cx="0" cy="0" r="1"/></clipPath></defs><path clip-path="url(#a)" d="M0 0z"/>',
+    ]
+    for (const body of bodies) {
+      const provider = createIconifyProvider({
+        fetch: fetchWith(iconifyResponse('mdi', { unsafe: { body } })),
+      })
+      await expect(provider.loadIcon('mdi:unsafe')).rejects.toMatchObject({ code: 'unsafe-icon' })
+    }
+  })
+
   it('groups prefixes into separate requests and deduplicates requested names', async () => {
     const fetch: IconifyFetch = async (url) => {
       const { pathname, searchParams } = new URL(url)
@@ -83,7 +131,17 @@ describe('@iris-ui-kit/icons Iconify provider', () => {
     ['script elements', '<script>alert(1)</script>'],
     ['event handlers', '<path onload="alert(1)" d="M0 0L1 1z"/>'],
     ['external paint URLs', '<path fill="url(https://example.test/a.svg#x)" d="M0 0z"/>'],
-    ['nested SVG markup', '<g><path d="M0 0z"/></g>'],
+    ['text content', '<g>not SVG geometry</g>'],
+    ['mismatched nested elements', '<g><path d="M0 0z"/></defs>'],
+    [
+      'duplicate definition IDs',
+      '<defs><clipPath id="shared"/><mask id="shared"/></defs><path d="M0 0z"/>',
+    ],
+    [
+      'definitions without drawable geometry',
+      '<defs><linearGradient id="empty"><stop offset="0" stop-color="black"/></linearGradient></defs>',
+    ],
+    ['unsupported filters', '<filter><feGaussianBlur stdDeviation="2"/></filter>'],
     ['malformed attributes', '<path d=M0 />'],
     ['unknown attributes', '<path style="color:red" d="M0 0z"/>'],
   ])('rejects unsafe Iconify %s instead of rendering it', async (_case, body) => {

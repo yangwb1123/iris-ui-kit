@@ -1,3 +1,9 @@
+import {
+  ICON_NODE_CONTAINER_TAGS,
+  isAllowedIconNodeChild,
+  isIconRootNodeTag,
+  SAFE_ICON_NODE_TAGS,
+} from './icon-nodes'
 import type { IrisIcon, IrisIconNode, IrisIconSet } from './types'
 
 const DEFAULT_API_URL = 'https://api.iconify.design'
@@ -5,22 +11,17 @@ const MAX_ICON_COUNT = 100
 const MAX_RESPONSE_BYTES = 1_000_000
 const MAX_BODY_LENGTH = 65_536
 const MAX_NODE_COUNT = 512
+const MAX_TREE_DEPTH = 16
+const MAX_ATTRIBUTE_COUNT = 32
 const MAX_ATTRIBUTE_LENGTH = 32_768
-const SAFE_TAGS = new Set(['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'])
-const SAFE_ATTRIBUTES = new Set([
-  'cx',
-  'cy',
-  'd',
+const SHAPE_TAG_SET = new Set(['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'])
+const PRESENTATION_ATTRIBUTES = [
+  'clip-rule',
   'fill',
   'fill-rule',
   'fill-opacity',
-  'height',
+  'mask',
   'opacity',
-  'pathLength',
-  'points',
-  'r',
-  'rx',
-  'ry',
   'stroke',
   'stroke-dasharray',
   'stroke-dashoffset',
@@ -30,6 +31,20 @@ const SAFE_ATTRIBUTES = new Set([
   'stroke-width',
   'transform',
   'vector-effect',
+  'clip-path',
+] as const
+const SAFE_SHAPE_ATTRIBUTES = new Set([
+  ...PRESENTATION_ATTRIBUTES,
+  'clip-rule',
+  'cx',
+  'cy',
+  'd',
+  'height',
+  'pathLength',
+  'points',
+  'r',
+  'rx',
+  'ry',
   'width',
   'x',
   'x1',
@@ -38,11 +53,61 @@ const SAFE_ATTRIBUTES = new Set([
   'y1',
   'y2',
 ])
+const SAFE_ATTRIBUTES: Record<string, Set<string>> = {
+  circle: SAFE_SHAPE_ATTRIBUTES,
+  ellipse: SAFE_SHAPE_ATTRIBUTES,
+  line: SAFE_SHAPE_ATTRIBUTES,
+  path: SAFE_SHAPE_ATTRIBUTES,
+  polygon: SAFE_SHAPE_ATTRIBUTES,
+  polyline: SAFE_SHAPE_ATTRIBUTES,
+  rect: SAFE_SHAPE_ATTRIBUTES,
+  g: new Set(PRESENTATION_ATTRIBUTES),
+  defs: new Set(),
+  clipPath: new Set(['clipPathUnits', 'id', 'transform']),
+  mask: new Set([
+    ...PRESENTATION_ATTRIBUTES,
+    'height',
+    'id',
+    'mask-type',
+    'maskContentUnits',
+    'maskUnits',
+    'width',
+    'x',
+    'y',
+  ]),
+  linearGradient: new Set([
+    'gradientTransform',
+    'gradientUnits',
+    'id',
+    'spreadMethod',
+    'x1',
+    'x2',
+    'y1',
+    'y2',
+  ]),
+  radialGradient: new Set([
+    'cx',
+    'cy',
+    'fr',
+    'fx',
+    'fy',
+    'gradientTransform',
+    'gradientUnits',
+    'id',
+    'r',
+    'spreadMethod',
+  ]),
+  stop: new Set(['offset', 'stop-color', 'stop-opacity']),
+}
+const DEFINITION_TAGS = new Set(['clipPath', 'linearGradient', 'mask', 'radialGradient'])
+const GRADIENT_TAGS = new Set(['linearGradient', 'radialGradient'])
 const XML_NAME = /^[A-Za-z_][A-Za-z0-9_.:-]*/
 const NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?%?$/
 const NUMBER_LIST = /^[\s,+\-.\deE]+$/
 const PATH_DATA = /^[\s,+\-.\deEMmZzLlHhVvCcSsQqTtAa]+$/
 const TRANSFORM = /^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(\s*[+\-.\deE,\s]+\)\s*)+$/
+const LOCAL_REFERENCE = /^url\(#([A-Za-z_][A-Za-z0-9_.:-]{0,127})\)$/
+const SAFE_ID = /^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/
 const SAFE_PAINT = new Set([
   'aqua',
   'black',
@@ -190,7 +255,7 @@ function decodeXmlAttribute(value: string, iconName: string): string {
   return decoded
 }
 
-function isSafePaint(value: string): boolean {
+function isSafeColor(value: string): boolean {
   const normalized = value.trim().toLowerCase()
   return (
     SAFE_PAINT.has(normalized) ||
@@ -199,13 +264,28 @@ function isSafePaint(value: string): boolean {
   )
 }
 
+function isSafePaint(value: string): boolean {
+  return isSafeColor(value) || LOCAL_REFERENCE.test(value)
+}
+
 const ATTRIBUTE_VALIDATORS: Record<string, (value: string) => boolean> = {
   d: (value) => value.length <= MAX_ATTRIBUTE_LENGTH && PATH_DATA.test(value),
   points: isNumberList,
   'stroke-dasharray': isNumberList,
   transform: (value) => value.length <= 512 && TRANSFORM.test(value),
+  gradientTransform: (value) => value.length <= 512 && TRANSFORM.test(value),
   fill: isSafePaint,
   stroke: isSafePaint,
+  'clip-path': isLocalReferenceOrNone,
+  mask: isLocalReferenceOrNone,
+  id: (value) => SAFE_ID.test(value),
+  gradientUnits: (value) => value === 'objectBoundingBox' || value === 'userSpaceOnUse',
+  clipPathUnits: (value) => value === 'objectBoundingBox' || value === 'userSpaceOnUse',
+  maskUnits: (value) => value === 'objectBoundingBox' || value === 'userSpaceOnUse',
+  maskContentUnits: (value) => value === 'objectBoundingBox' || value === 'userSpaceOnUse',
+  'mask-type': (value) => value === 'alpha' || value === 'luminance',
+  spreadMethod: (value) => value === 'pad' || value === 'reflect' || value === 'repeat',
+  'stop-color': isSafeColor,
   'fill-rule': (value) => value === 'nonzero' || value === 'evenodd',
   'stroke-linecap': (value) => ['butt', 'round', 'square'].includes(value),
   'stroke-linejoin': (value) => ['miter', 'round', 'bevel', 'miter-clip'].includes(value),
@@ -216,6 +296,10 @@ function isNumberList(value: string): boolean {
   return value === 'none' || (value.length <= MAX_ATTRIBUTE_LENGTH && NUMBER_LIST.test(value))
 }
 
+function isLocalReferenceOrNone(value: string): boolean {
+  return value === 'none' || LOCAL_REFERENCE.test(value)
+}
+
 function isValidAttributeValue(name: string, value: string): boolean {
   return (ATTRIBUTE_VALIDATORS[name] ?? isNumberValue)(value)
 }
@@ -224,8 +308,8 @@ function isNumberValue(value: string): boolean {
   return NUMBER.test(value)
 }
 
-function validateAttribute(name: string, value: string, iconName: string): void {
-  if (!SAFE_ATTRIBUTES.has(name)) {
+function validateAttribute(tag: string, name: string, value: string, iconName: string): void {
+  if (!SAFE_ATTRIBUTES[tag]?.has(name)) {
     fail('unsafe-icon', `unsupported SVG attribute "${name}" in Iconify icon "${iconName}"`)
   }
   if (!isValidAttributeValue(name, value)) {
@@ -242,6 +326,7 @@ function skipWhitespace(value: string, start: number): number {
 function readAttribute(
   body: string,
   start: number,
+  tag: string,
   iconName: string,
 ): { name: string; value: string; next: number } {
   const match = XML_NAME.exec(body.slice(start))
@@ -274,16 +359,65 @@ function readAttribute(
   }
 
   const value = decodeXmlAttribute(body.slice(valueStart, cursor), iconName)
-  validateAttribute(name, value, iconName)
+  validateAttribute(tag, name, value, iconName)
   return { name, value, next: cursor + 1 }
 }
 
-function readEmptyElementClose(body: string, start: number, tag: string, iconName: string): number {
-  let cursor = skipWhitespace(body, start + 1)
-  if (!body.startsWith('</', cursor)) {
-    return fail('unsafe-icon', `nested SVG markup is not supported in Iconify icon "${iconName}"`)
+interface ParsedOpeningTag {
+  tag: string
+  attrs: Record<string, string>
+  selfClosing: boolean
+  next: number
+}
+
+interface ParseBudget {
+  nodeCount: number
+}
+
+function readOpeningTag(body: string, start: number, iconName: string): ParsedOpeningTag {
+  const tagMatch = XML_NAME.exec(body.slice(start + 1))
+  if (!tagMatch || !SAFE_ICON_NODE_TAGS.has(tagMatch[0])) {
+    return fail('unsafe-icon', `unsupported SVG element in Iconify icon "${iconName}"`)
   }
-  cursor += 2
+
+  const tag = tagMatch[0]
+  let cursor = start + 1 + tag.length
+  const attrs: Record<string, string> = {}
+  let attrCount = 0
+  while (cursor < body.length) {
+    const beforeWhitespace = cursor
+    cursor = skipWhitespace(body, cursor)
+    if (body.startsWith('/>', cursor)) {
+      return { tag, attrs, selfClosing: true, next: cursor + 2 }
+    }
+    if (body[cursor] === '>') return { tag, attrs, selfClosing: false, next: cursor + 1 }
+    if (cursor === beforeWhitespace) {
+      return fail('unsafe-icon', `malformed SVG attributes in Iconify icon "${iconName}"`)
+    }
+
+    const attr = readAttribute(body, cursor, tag, iconName)
+    if (Object.hasOwn(attrs, attr.name)) {
+      return fail(
+        'unsafe-icon',
+        `duplicate SVG attribute "${attr.name}" in Iconify icon "${iconName}"`,
+      )
+    }
+    attrCount++
+    if (attrCount > MAX_ATTRIBUTE_COUNT) {
+      return fail('limit-exceeded', `too many SVG attributes in Iconify icon "${iconName}"`)
+    }
+    attrs[attr.name] = attr.value
+    cursor = attr.next
+  }
+
+  return fail('unsafe-icon', `unterminated SVG element in Iconify icon "${iconName}"`)
+}
+
+function readClosingTag(body: string, start: number, tag: string, iconName: string): number {
+  if (!body.startsWith('</', start)) {
+    return fail('unsafe-icon', `expected closing SVG element in Iconify icon "${iconName}"`)
+  }
+  let cursor = start + 2
   const match = XML_NAME.exec(body.slice(cursor))
   if (!match || match[0] !== tag) {
     return fail('unsafe-icon', `mismatched SVG element in Iconify icon "${iconName}"`)
@@ -295,42 +429,148 @@ function readEmptyElementClose(body: string, start: number, tag: string, iconNam
   return cursor + 1
 }
 
-function parseLeafNode(
+function parseNode(
   body: string,
   start: number,
   iconName: string,
+  depth: number,
+  budget: ParseBudget,
 ): { node: IrisIconNode; next: number } {
-  const tagMatch = XML_NAME.exec(body.slice(start + 1))
-  if (!tagMatch || !SAFE_TAGS.has(tagMatch[0])) {
-    return fail('unsafe-icon', `unsupported SVG element in Iconify icon "${iconName}"`)
+  if (depth > MAX_TREE_DEPTH) {
+    return fail('limit-exceeded', `SVG nesting is too deep in Iconify icon "${iconName}"`)
+  }
+  budget.nodeCount++
+  if (budget.nodeCount > MAX_NODE_COUNT) {
+    return fail('limit-exceeded', `too many SVG elements in Iconify icon "${iconName}"`)
   }
 
-  const tag = tagMatch[0]
-  let cursor = start + 1 + tag.length
-  const attrs: Record<string, string> = {}
-  while (cursor < body.length) {
-    const beforeWhitespace = cursor
-    cursor = skipWhitespace(body, cursor)
-    if (body.startsWith('/>', cursor)) return { node: { tag, attrs }, next: cursor + 2 }
-    if (body[cursor] === '>') {
-      return { node: { tag, attrs }, next: readEmptyElementClose(body, cursor, tag, iconName) }
-    }
-    if (cursor === beforeWhitespace) {
-      return fail('unsafe-icon', `malformed SVG attributes in Iconify icon "${iconName}"`)
-    }
+  const opening = readOpeningTag(body, start, iconName)
+  const node: IrisIconNode = { tag: opening.tag, attrs: opening.attrs }
+  if (opening.selfClosing) return { node, next: opening.next }
 
-    const attr = readAttribute(body, cursor, iconName)
-    if (Object.hasOwn(attrs, attr.name)) {
+  let cursor = skipWhitespace(body, opening.next)
+  if (!ICON_NODE_CONTAINER_TAGS.has(opening.tag)) {
+    if (!body.startsWith('</', cursor)) {
       return fail(
         'unsafe-icon',
-        `duplicate SVG attribute "${attr.name}" in Iconify icon "${iconName}"`,
+        `nested content is not supported in SVG <${opening.tag}> in Iconify icon "${iconName}"`,
       )
     }
-    attrs[attr.name] = attr.value
-    cursor = attr.next
+    return { node, next: readClosingTag(body, cursor, opening.tag, iconName) }
+  }
+
+  const children: IrisIconNode[] = []
+  while (cursor < body.length) {
+    cursor = skipWhitespace(body, cursor)
+    if (body.startsWith('</', cursor)) {
+      node.children = children
+      return { node, next: readClosingTag(body, cursor, opening.tag, iconName) }
+    }
+    if (cursor >= body.length || body[cursor] !== '<' || body.startsWith('<!', cursor)) {
+      return fail('unsafe-icon', `unexpected SVG text or markup in Iconify icon "${iconName}"`)
+    }
+    const child = parseNode(body, cursor, iconName, depth + 1, budget)
+    if (!isAllowedIconNodeChild(opening.tag, child.node.tag)) {
+      return fail(
+        'unsafe-icon',
+        `unsupported <${child.node.tag}> child in <${opening.tag}> in Iconify icon "${iconName}"`,
+      )
+    }
+    children.push(child.node)
+    cursor = child.next
   }
 
   return fail('unsafe-icon', `unterminated SVG element in Iconify icon "${iconName}"`)
+}
+
+function nodeReferences(node: IrisIconNode): Array<{ id: string; kind: string }> {
+  const result: Array<{ id: string; kind: string }> = []
+  for (const attr of ['fill', 'stroke']) {
+    const match = LOCAL_REFERENCE.exec(String(node.attrs[attr] ?? ''))
+    if (match) result.push({ id: match[1]!, kind: 'gradient' })
+  }
+  for (const [attr, kind] of [
+    ['clip-path', 'clipPath'],
+    ['mask', 'mask'],
+  ]) {
+    const match = LOCAL_REFERENCE.exec(String(node.attrs[attr] ?? ''))
+    if (match) result.push({ id: match[1]!, kind })
+  }
+  return result
+}
+
+function validateReferences(nodes: readonly IrisIconNode[], iconName: string): void {
+  const definitions = new Map<string, string>()
+  const visitIds = (node: IrisIconNode): void => {
+    const id = node.attrs.id
+    if (typeof id === 'string') {
+      if (!DEFINITION_TAGS.has(node.tag)) {
+        fail('unsafe-icon', `SVG id on unsupported <${node.tag}> in Iconify icon "${iconName}"`)
+      }
+      if (definitions.has(id)) {
+        fail('unsafe-icon', `duplicate SVG id "${id}" in Iconify icon "${iconName}"`)
+      }
+      definitions.set(id, node.tag)
+    }
+    for (const child of node.children ?? []) visitIds(child)
+  }
+  for (const node of nodes) visitIds(node)
+
+  const references = new Map<string, Set<string>>()
+  const collectRefs = (node: IrisIconNode, output: Set<string>, root: boolean): void => {
+    if (!root && typeof node.attrs.id === 'string' && DEFINITION_TAGS.has(node.tag)) return
+    for (const reference of nodeReferences(node)) output.add(reference.id)
+    for (const child of node.children ?? []) collectRefs(child, output, false)
+  }
+
+  for (const node of nodes) {
+    const addDefinition = (current: IrisIconNode): void => {
+      if (typeof current.attrs.id === 'string' && DEFINITION_TAGS.has(current.tag)) {
+        const deps = new Set<string>()
+        collectRefs(current, deps, true)
+        references.set(current.attrs.id, deps)
+      }
+      for (const child of current.children ?? []) addDefinition(child)
+    }
+    addDefinition(node)
+  }
+
+  const validateNodeRefs = (node: IrisIconNode): void => {
+    for (const reference of nodeReferences(node)) {
+      const target = definitions.get(reference.id)
+      const validTarget =
+        target !== undefined &&
+        (reference.kind === 'gradient' ? GRADIENT_TAGS.has(target) : target === reference.kind)
+      if (!validTarget) {
+        fail(
+          'unsafe-icon',
+          `unresolved or incompatible SVG reference "${reference.id}" in Iconify icon "${iconName}"`,
+        )
+      }
+    }
+    for (const child of node.children ?? []) validateNodeRefs(child)
+  }
+  for (const node of nodes) validateNodeRefs(node)
+
+  const visiting = new Set<string>()
+  const visited = new Set<string>()
+  const visitDependencies = (id: string): void => {
+    if (visiting.has(id))
+      fail('unsafe-icon', `cyclic SVG definitions in Iconify icon "${iconName}"`)
+    if (visited.has(id)) return
+    visiting.add(id)
+    for (const dependency of references.get(id) ?? []) {
+      if (references.has(dependency)) visitDependencies(dependency)
+    }
+    visiting.delete(id)
+    visited.add(id)
+  }
+  for (const id of references.keys()) visitDependencies(id)
+}
+
+function hasRenderableGeometry(node: IrisIconNode): boolean {
+  if (SHAPE_TAG_SET.has(node.tag)) return true
+  return node.tag === 'g' && (node.children ?? []).some(hasRenderableGeometry)
 }
 
 function parseIconifyBody(body: string, iconName: string): IrisIconNode[] {
@@ -338,23 +578,25 @@ function parseIconifyBody(body: string, iconName: string): IrisIconNode[] {
     return fail('limit-exceeded', `SVG body is too large in Iconify icon "${iconName}"`)
   }
   const nodes: IrisIconNode[] = []
+  const budget: ParseBudget = { nodeCount: 0 }
   let cursor = 0
   while (cursor < body.length) {
-    while (/\s/.test(body[cursor] ?? '')) cursor++
+    cursor = skipWhitespace(body, cursor)
     if (cursor >= body.length) break
     if (body[cursor] !== '<' || body.startsWith('</', cursor) || body.startsWith('<!', cursor)) {
       return fail('unsafe-icon', `unexpected SVG text or markup in Iconify icon "${iconName}"`)
     }
-    const parsed = parseLeafNode(body, cursor, iconName)
-    nodes.push(parsed.node)
-    if (nodes.length > MAX_NODE_COUNT) {
-      return fail('limit-exceeded', `too many SVG elements in Iconify icon "${iconName}"`)
+    const parsed = parseNode(body, cursor, iconName, 0, budget)
+    if (!isIconRootNodeTag(parsed.node.tag)) {
+      return fail('unsafe-icon', `unsupported root SVG element in Iconify icon "${iconName}"`)
     }
+    nodes.push(parsed.node)
     cursor = parsed.next
   }
-  if (nodes.length === 0) {
-    return fail('unsafe-icon', `Iconify icon "${iconName}" contains no supported SVG elements`)
+  if (nodes.length === 0 || !nodes.some(hasRenderableGeometry)) {
+    return fail('unsafe-icon', `Iconify icon "${iconName}" contains no visible SVG geometry`)
   }
+  validateReferences(nodes, iconName)
   return nodes
 }
 
@@ -415,9 +657,9 @@ function normalizeApiUrl(value: string): URL {
 }
 
 /**
- * Create an optional, on-demand Iconify JSON provider. Only a restricted set of
- * flat SVG shapes and presentation attributes is accepted; scripts, external
- * references, CSS, nested markup, and unknown tags/attributes fail closed.
+ * Create an optional, on-demand Iconify JSON provider. A restricted SVG subset
+ * supports shapes, groups, definitions, gradients, clip paths, and masks. Scripts,
+ * CSS, external references, filters, unknown tags, and unsafe attributes fail closed.
  */
 export function createIconifyProvider(options: IconifyProviderOptions = {}): IconifyProvider {
   const apiBase = normalizeApiUrl(options.apiUrl ?? DEFAULT_API_URL)

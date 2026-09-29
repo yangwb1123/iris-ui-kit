@@ -1,3 +1,9 @@
+import {
+  ICON_NODE_CONTAINER_TAGS,
+  normalizeIconNodes,
+  SAFE_ICON_NODE_ATTRS,
+  SAFE_ICON_NODE_TAGS,
+} from './icon-nodes'
 import type { IrisIcon, IrisIconNode } from './types'
 
 export interface RenderIconOptions {
@@ -15,7 +21,8 @@ export interface RenderIconOptions {
 
 const DEFAULT_VIEW_BOX = '0 0 24 24'
 
-const SAFE_NODE_TAGS = new Set(['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'])
+const SAFE_NODE_TAGS = SAFE_ICON_NODE_TAGS
+const CONTAINER_TAGS = ICON_NODE_CONTAINER_TAGS
 
 const SAFE_ROOT_ATTRS = new Set([
   'aria-hidden',
@@ -40,43 +47,7 @@ const SAFE_ROOT_ATTRS = new Set([
   'xmlns',
 ])
 
-const SAFE_NODE_ATTRS = new Set([
-  'aria-hidden',
-  'aria-label',
-  'class',
-  'clip-rule',
-  'cx',
-  'cy',
-  'd',
-  'fill',
-  'fill-rule',
-  'fill-opacity',
-  'height',
-  'id',
-  'opacity',
-  'pathLength',
-  'points',
-  'r',
-  'role',
-  'rx',
-  'ry',
-  'stroke',
-  'stroke-dasharray',
-  'stroke-dashoffset',
-  'stroke-opacity',
-  'stroke-linecap',
-  'stroke-linejoin',
-  'stroke-width',
-  'transform',
-  'vector-effect',
-  'width',
-  'x',
-  'x1',
-  'x2',
-  'y',
-  'y1',
-  'y2',
-])
+const SAFE_NODE_ATTRS = SAFE_ICON_NODE_ATTRS
 
 const SAFE_EXTENSION_ATTR = /^(?:aria|data)-[A-Za-z0-9_.:-]+$/
 
@@ -103,7 +74,11 @@ function serializeAttrs(attrs: Record<string, string | number>, allowed: Set<str
 function serializeNode(node: IrisIconNode): string {
   if (!SAFE_NODE_TAGS.has(node.tag)) return ''
   const attrs = serializeAttrs(node.attrs, SAFE_NODE_ATTRS)
-  return `<${node.tag}${attrs ? ` ${attrs}` : ''}/>`
+  const opening = `<${node.tag}${attrs ? ` ${attrs}` : ''}`
+  const children = CONTAINER_TAGS.has(node.tag)
+    ? (node.children ?? []).map(serializeNode).join('')
+    : ''
+  return children ? `${opening}>${children}</${node.tag}>` : `${opening}/>`
 }
 
 /**
@@ -138,6 +113,6 @@ export function renderIconSvg(icon: IrisIcon, options: RenderIconOptions = {}): 
   }
 
   const titleEl = title ? `<title>${escapeXml(title)}</title>` : ''
-  const body = icon.nodes.map(serializeNode).join('')
+  const body = normalizeIconNodes(icon.nodes).map(serializeNode).join('')
   return `<svg ${serializeAttrs(root, SAFE_ROOT_ATTRS)}>${titleEl}${body}</svg>`
 }

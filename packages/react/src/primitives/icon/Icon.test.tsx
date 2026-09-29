@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { IrisIcon } from './Icon'
-import { createIconRegistry } from '@iris-ui-kit/icons'
+import { createIconRegistry, type IrisIconNode } from '@iris-ui-kit/icons'
 import { ThemeProvider } from '../../theme'
 import { createThemeStore } from '@iris-ui-kit/theme'
 import { lightTheme } from '@iris-ui-kit/tokens'
@@ -70,13 +70,85 @@ describe('@iris-ui-kit/react IrisIcon', () => {
         {
           name: 'x',
           icons: {
-            star: { name: 'star', nodes: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }] },
+            star: {
+              name: 'star',
+              nodes: [
+                {
+                  tag: 'defs',
+                  attrs: {},
+                  children: [
+                    {
+                      tag: 'linearGradient',
+                      attrs: { id: 'paint' },
+                      children: [
+                        { tag: 'stop', attrs: { offset: '0', 'stop-color': 'currentColor' } },
+                      ],
+                    },
+                    {
+                      tag: 'mask',
+                      attrs: { id: 'fade', 'mask-type': 'alpha' },
+                      children: [
+                        {
+                          tag: 'rect',
+                          attrs: { x: 0, y: 0, width: 24, height: 24, fill: 'white' },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  tag: 'g',
+                  attrs: { opacity: '0.5', mask: 'url(#fade)' },
+                  children: [
+                    {
+                      tag: 'path',
+                      attrs: { d: 'M0 0L1 1z', fill: 'url(#paint)' },
+                    },
+                  ],
+                },
+              ],
+            },
           },
         },
       ],
     })
-    render(<IrisIcon name="star" registry={reg} />)
-    expect(svg()!.querySelector('circle')).not.toBeNull()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      render(<IrisIcon name="star" registry={reg} />)
+      const root = svg()!
+      expect(root.querySelector('g > path')?.getAttribute('d')).toBe('M0 0L1 1z')
+      expect(root.querySelector('g > path')?.getAttribute('fill')).toBe('url(#paint)')
+      expect(root.querySelector('defs stop')?.getAttribute('stop-color')).toBe('currentColor')
+      expect(root.querySelector('defs mask')?.getAttribute('mask-type')).toBe('alpha')
+      expect(root.querySelector('g')?.getAttribute('mask')).toBe('url(#fade)')
+      expect(consoleError).not.toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
+  it('omits cyclic branches and unsafe attributes from custom icon registries', () => {
+    const group: IrisIconNode = { tag: 'g', attrs: { opacity: '0.5', onload: 'alert(1)' } }
+    group.children = [
+      group,
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M0 0L1 1z',
+          fill: 'url(https://example.test/paint.svg#x)',
+          href: 'javascript:alert(1)',
+        },
+      },
+    ]
+    const registry = createIconRegistry({
+      sets: [{ name: 'cyclic', icons: { cycle: { name: 'cycle', nodes: [group] } } }],
+    })
+    render(<IrisIcon name="cycle" registry={registry} />)
+    const rendered = svg()!
+    expect(rendered.querySelector('g > path')?.getAttribute('d')).toBe('M0 0L1 1z')
+    expect(rendered.querySelector('g')?.hasAttribute('onload')).toBe(false)
+    expect(rendered.querySelector('path')?.hasAttribute('href')).toBe(false)
+    expect(rendered.querySelector('path')?.hasAttribute('fill')).toBe(false)
   })
 
   it('merges custom className + style', () => {

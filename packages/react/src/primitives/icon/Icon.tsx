@@ -1,6 +1,42 @@
 import * as React from 'react'
-import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui-kit/icons'
+import {
+  defaultIconRegistry,
+  normalizeIconNodes,
+  resolveThemedIcon,
+  type IrisIconNode,
+  type IrisIconRegistry,
+} from '@iris-ui-kit/icons'
 import { useThemeOptional } from '../../theme'
+
+const REACT_SVG_ATTR_NAMES: Record<string, string> = {
+  class: 'className',
+  'clip-path': 'clipPath',
+  'clip-rule': 'clipRule',
+  'fill-opacity': 'fillOpacity',
+  'fill-rule': 'fillRule',
+  'stop-color': 'stopColor',
+  'stop-opacity': 'stopOpacity',
+  'stroke-dasharray': 'strokeDasharray',
+  'stroke-dashoffset': 'strokeDashoffset',
+  'stroke-linecap': 'strokeLinecap',
+  'stroke-linejoin': 'strokeLinejoin',
+  'stroke-opacity': 'strokeOpacity',
+  'stroke-width': 'strokeWidth',
+  'vector-effect': 'vectorEffect',
+}
+
+function reactSvgAttrs(attrs: Record<string, string | number>): Record<string, string | number> {
+  const result: Record<string, string | number> = {}
+  for (const [name, value] of Object.entries(attrs)) {
+    result[REACT_SVG_ATTR_NAMES[name] ?? name] = value
+  }
+  return result
+}
+
+function renderIconNode(node: IrisIconNode, key: number): React.ReactElement {
+  const children = (node.children ?? []).map((child, index) => renderIconNode(child, index))
+  return React.createElement(node.tag, { ...reactSvgAttrs(node.attrs), key }, children)
+}
 
 export interface IrisIconProps extends Omit<
   React.SVGAttributes<SVGSVGElement>,
@@ -65,7 +101,7 @@ export function IrisIcon({
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
       {title ? <title>{title}</title> : null}
-      {icon.nodes.map((node, i) => React.createElement(node.tag, { key: i, ...node.attrs }))}
+      {normalizeIconNodes(icon.nodes).map((node, index) => renderIconNode(node, index))}
     </svg>
   )
 }

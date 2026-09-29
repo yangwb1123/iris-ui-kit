@@ -1,5 +1,11 @@
 import { defineComponent, h, inject, type PropType, type VNode } from 'vue'
-import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui-kit/icons'
+import {
+  defaultIconRegistry,
+  normalizeIconNodes,
+  resolveThemedIcon,
+  type IrisIconNode,
+  type IrisIconRegistry,
+} from '@iris-ui-kit/icons'
 import { IrisThemeKey } from '../../theme'
 
 /**
@@ -8,6 +14,14 @@ import { IrisThemeKey } from '../../theme'
  * SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so
  * the surrounding CSS `color` themes it. Renders nothing for an unresolved name.
  */
+function renderIconNode(node: IrisIconNode, key: number): VNode {
+  return h(
+    node.tag,
+    { ...node.attrs, key },
+    (node.children ?? []).map((child, index) => renderIconNode(child, index)),
+  )
+}
+
 export const IrisIcon = defineComponent({
   name: 'IrisIcon',
   inheritAttrs: false,
@@ -41,7 +55,9 @@ export const IrisIcon = defineComponent({
             'stroke-linejoin': 'round',
           }
 
-      const children: VNode[] = icon.nodes.map((node, i) => h(node.tag, { key: i, ...node.attrs }))
+      const children: VNode[] = normalizeIconNodes(icon.nodes).map((node, index) =>
+        renderIconNode(node, index),
+      )
       if (props.title) children.unshift(h('title', props.title))
 
       return h(

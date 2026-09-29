@@ -5,13 +5,14 @@ import { chevronDown, search } from './icons'
 import { defaultIcons } from './default-icons'
 import { createIconRegistry, defaultIconRegistry, resolveIcon } from './registry'
 import { renderIconSvg } from './render'
+import { normalizeIconNodes } from './index'
 import { resolveThemedIcon } from './theme'
 import {
   defaultIconPickerCategories,
   getIconPickerCategoryId,
   matchesIconPickerQuery,
 } from './icon-picker'
-import type { IrisIcon, IrisIconSet } from './types'
+import type { IrisIcon, IrisIconNode, IrisIconSet } from './types'
 
 describe('@iris-ui-kit/icons picker helpers', () => {
   it('categorizes built-in names and safely buckets unlisted custom names', () => {
@@ -179,6 +180,90 @@ describe('@iris-ui-kit/icons registry', () => {
   })
 })
 
+describe('@iris-ui-kit/icons nested node safety', () => {
+  it('breaks cycles while preserving valid sibling nodes and flat-array identity', () => {
+    const flat: IrisIconNode[] = [{ tag: 'path', attrs: { d: 'M0 0z' } }]
+    expect(normalizeIconNodes(flat)).toBe(flat)
+
+    const cyclic: IrisIconNode = { tag: 'g', attrs: { opacity: '0.5' }, children: [] }
+    cyclic.children!.push(cyclic, { tag: 'path', attrs: { d: 'M0 0L1 1z' } })
+    const icon: IrisIcon = { name: 'cyclic', nodes: [cyclic] }
+    const normalized = normalizeIconNodes(icon.nodes)
+
+    expect(normalized).toEqual([
+      {
+        tag: 'g',
+        attrs: { opacity: '0.5' },
+        children: [{ tag: 'path', attrs: { d: 'M0 0L1 1z' } }],
+      },
+    ])
+    expect(renderIconSvg(icon)).toContain('<g opacity="0.5"><path d="M0 0L1 1z"/></g>')
+  })
+
+  it('filters unsafe tags, attributes, and external paint references from custom icons', () => {
+    const icon: IrisIcon = {
+      name: 'unsafe-custom',
+      nodes: [
+        {
+          tag: 'g',
+          attrs: { opacity: '0.5', onload: 'alert(1)' },
+          children: [
+            { tag: 'image', attrs: { href: 'https://example.test/image.svg' } },
+            {
+              tag: 'path',
+              attrs: {
+                d: 'M0 0L1 1z',
+                fill: 'url(https://example.test/paint.svg#x)',
+                href: 'javascript:alert(1)',
+                style: 'fill:red',
+                onload: 'alert(1)',
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    const safeNodes = normalizeIconNodes(icon.nodes)
+    expect(safeNodes).toEqual([
+      {
+        tag: 'g',
+        attrs: { opacity: '0.5' },
+        children: [{ tag: 'path', attrs: { d: 'M0 0L1 1z' } }],
+      },
+    ])
+    const svg = renderIconSvg(icon)
+    expect(svg).not.toContain('onload=')
+    expect(svg).not.toContain('href=')
+    expect(svg).not.toContain('style=')
+    expect(svg).not.toContain('https://')
+  })
+
+  it('bounds user-provided nested trees by depth and total node count', () => {
+    const countNodes = (nodes: readonly IrisIconNode[]): number =>
+      nodes.reduce((count, node) => count + 1 + countNodes(node.children ?? []), 0)
+
+    let deep: IrisIconNode = { tag: 'path', attrs: { d: 'M0 0z' } }
+    for (let index = 0; index < 20; index++) {
+      deep = { tag: 'g', attrs: {}, children: [deep] }
+    }
+    expect(countNodes(normalizeIconNodes([deep]))).toBe(17)
+
+    const flatWide = Array.from({ length: 513 }, () => ({
+      tag: 'path',
+      attrs: { d: 'M0 0z' },
+    }))
+    expect(normalizeIconNodes(flatWide)).toHaveLength(512)
+
+    const wide: IrisIconNode = {
+      tag: 'g',
+      attrs: {},
+      children: Array.from({ length: 513 }, () => ({ tag: 'path', attrs: { d: 'M0 0z' } })),
+    }
+    expect(countNodes(normalizeIconNodes([wide]))).toBe(512)
+  })
+})
+
 describe('@iris-ui-kit/icons renderIconSvg', () => {
   it('wraps nodes in an svg with viewBox + currentColor stroke', () => {
     const out = renderIconSvg(defaultIcons.icons.check!)
@@ -260,7 +345,7 @@ describe('@iris-ui-kit/icons renderIconSvg', () => {
       '<title>&lt;img src=x onerror=alert(1)&gt; &amp; &quot;quoted&quot;</title>',
     )
     expect(out).toContain('viewBox="0 0 24 24&quot; onload=&quot;alert(1)"')
-    expect(out).toContain('d="M0 0 &amp; &quot; &lt; &gt;"')
+    expect(out).not.toMatch(/\sd="/)
     expect(out).toContain('data-safe="a&quot;b"')
     expect(out).toContain('data-testid="safe&amp;sound"')
   })

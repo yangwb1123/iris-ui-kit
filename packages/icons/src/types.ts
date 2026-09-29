@@ -5,10 +5,12 @@
  * icon originates from a theme's `iconOverrides`).
  */
 export interface IrisIconNode {
-  /** SVG element tag, e.g. 'path', 'circle', 'line', 'polyline', 'rect'. */
+  /** SVG element tag, e.g. a shape ('path', 'circle') or container ('g', 'defs'). */
   tag: string
-  /** Geometry attributes (e.g. `{ d }`, `{ cx, cy, r }`, `{ points }`). */
+  /** Geometry and presentation attributes for this SVG element. */
   attrs: Record<string, string | number>
+  /** Nested safe SVG elements, used by groups and definitions. */
+  children?: IrisIconNode[]
 }
 
 /**

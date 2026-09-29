@@ -1,4 +1,5 @@
 export type { IrisIcon, IrisIconNode, IrisIconSet, IrisIconResolver } from './types'
+export { normalizeIconNodes } from './icon-nodes'
 export { defaultIcons } from './default-icons'
 // Per-icon, individually tree-shakeable exports (`import { chevronDown }`).
 // `sideEffects: false` + per-icon consts that reference only their own data let

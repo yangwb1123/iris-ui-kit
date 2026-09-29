@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { IrisIcon } from './Icon'
-import { createIconRegistry } from '@iris-ui-kit/icons'
+import { createIconRegistry, type IrisIconNode } from '@iris-ui-kit/icons'
 import { ThemeProvider } from '../../theme'
 import { createThemeStore } from '@iris-ui-kit/theme'
 import { lightTheme } from '@iris-ui-kit/tokens'
@@ -58,19 +58,83 @@ describe('@iris-ui-kit/vue IrisIcon', () => {
     expect(wrap.find('[data-iris-icon]').exists()).toBe(false)
   })
 
-  it('resolves from a custom registry', () => {
+  it('resolves nested definitions and local paint references from a custom registry', () => {
     const reg = createIconRegistry({
       sets: [
         {
           name: 'x',
           icons: {
-            star: { name: 'star', nodes: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }] },
+            star: {
+              name: 'star',
+              nodes: [
+                {
+                  tag: 'defs',
+                  attrs: {},
+                  children: [
+                    {
+                      tag: 'linearGradient',
+                      attrs: { id: 'paint' },
+                      children: [
+                        { tag: 'stop', attrs: { offset: '0', 'stop-color': 'currentColor' } },
+                      ],
+                    },
+                    {
+                      tag: 'mask',
+                      attrs: { id: 'fade', 'mask-type': 'alpha' },
+                      children: [
+                        {
+                          tag: 'rect',
+                          attrs: { x: 0, y: 0, width: 24, height: 24, fill: 'white' },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  tag: 'g',
+                  attrs: { opacity: '0.5', mask: 'url(#fade)' },
+                  children: [
+                    {
+                      tag: 'path',
+                      attrs: { d: 'M0 0L1 1z', fill: 'url(#paint)' },
+                    },
+                  ],
+                },
+              ],
+            },
           },
         },
       ],
     })
     const wrap = mount(IrisIcon, { props: { name: 'star', registry: reg } })
-    expect(wrap.find('circle').exists()).toBe(true)
+    expect(wrap.find('g > path').attributes('d')).toBe('M0 0L1 1z')
+    expect(wrap.find('g > path').attributes('fill')).toBe('url(#paint)')
+    expect(wrap.find('defs stop').attributes('stop-color')).toBe('currentColor')
+    expect(wrap.find('defs mask').attributes('mask-type')).toBe('alpha')
+    expect(wrap.find('g').attributes('mask')).toBe('url(#fade)')
+  })
+
+  it('omits cyclic branches and unsafe attributes from custom icon registries', () => {
+    const group: IrisIconNode = { tag: 'g', attrs: { opacity: '0.5', onload: 'alert(1)' } }
+    group.children = [
+      group,
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M0 0L1 1z',
+          fill: 'url(https://example.test/paint.svg#x)',
+          href: 'javascript:alert(1)',
+        },
+      },
+    ]
+    const registry = createIconRegistry({
+      sets: [{ name: 'cyclic', icons: { cycle: { name: 'cycle', nodes: [group] } } }],
+    })
+    const wrap = mount(IrisIcon, { props: { name: 'cycle', registry } })
+    expect(wrap.find('g > path').attributes('d')).toBe('M0 0L1 1z')
+    expect(wrap.find('g').attributes('onload')).toBeUndefined()
+    expect(wrap.find('path').attributes('href')).toBeUndefined()
+    expect(wrap.find('path').attributes('fill')).toBeUndefined()
   })
 
   it('merges custom style', () => {

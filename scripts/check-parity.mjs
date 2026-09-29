@@ -21,6 +21,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { classifyParity } from './lib/parity-gate.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifestPath = resolve(root, 'packages/manifest/manifest.json')
@@ -81,6 +82,11 @@ function recompute(components, threshold) {
     rows.push({
       name: component.name,
       ratio: union === 0 ? 1 : Math.round((common / union) * 100) / 100,
+      // The capability signal: how many prop NAMES all four adapters expose.
+      // `ratio` alone cannot tell "lost a shared prop" from "one adapter gained
+      // a prop the others spell differently" — both move the ratio down, but
+      // only the first is a regression.
+      shared: common,
       intrinsic,
       propTotals: Object.fromEntries(FRAMEWORKS.map((fw) => [fw, perFramework.get(fw).length])),
       exclusive,
@@ -115,6 +121,9 @@ function recompute(components, threshold) {
     exclusivePropNames,
     componentRatios: Object.fromEntries(
       scored.map((r) => [r.name, r.ratio]).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+    componentShared: Object.fromEntries(
+      scored.map((r) => [r.name, r.shared]).sort(([a], [b]) => a.localeCompare(b)),
     ),
   }
 }
@@ -189,6 +198,7 @@ const atMost = (label, now, then) => {
 const advise = (label, now, then) => {
   if (now > then) advisories.push(`${label}: ${then} → ${now} (increased)`)
 }
+const note = (line) => process.stdout.write(`  note: ${line}\n`)
 
 atLeast('identical', current.identical, baseline.identical)
 atLeast('nearIdentical', current.nearIdentical, baseline.nearIdentical)
@@ -207,12 +217,11 @@ for (const [framework, count] of Object.entries(current.propTotals)) {
 for (const [framework, count] of Object.entries(current.exclusivePropNames)) {
   advise(`exclusivePropNames.${framework}`, count, baseline.exclusivePropNames?.[framework] ?? 0)
 }
-for (const [name, ratio] of Object.entries(current.componentRatios)) {
-  const before = baseline.componentRatios?.[name]
-  if (before !== undefined && ratio < before) {
-    regressions.push(`component ${name}: ${before} → ${ratio} (shared props decreased)`)
-  }
-}
+// Capability loss blocks; a ratio move with the shared count intact is a note.
+const parityVerdict = classifyParity(current, baseline)
+regressions.push(...parityVerdict.regressions)
+for (const line of parityVerdict.notes) note(line)
+
 // A brand-new component starts unrecorded; require it to be reviewed rather
 // than silently inheriting a free pass.
 for (const name of Object.keys(current.componentRatios)) {

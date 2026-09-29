@@ -4,6 +4,8 @@
   let {
     value,
     modelValue,
+    defaultChecked = false,
+    onChange,
     size: sizeProp,
     disabled: disabledProp = false,
     id,
@@ -13,6 +15,8 @@
   }: {
     value: string | number | boolean
     modelValue?: string | number | boolean | null
+    defaultChecked?: boolean
+    onChange?: (checked: boolean) => void
     size?: RadioSize
     disabled?: boolean
     id?: string
@@ -25,7 +29,12 @@
 
   const size = $derived<RadioSize>(sizeProp ?? group?.size ?? 'md')
   const disabled = $derived(disabledProp || Boolean(group?.disabled))
-  const checked = $derived(group ? group.value === value : modelValue === value)
+  const isControlled = $derived(modelValue !== undefined)
+  // svelte-ignore state_referenced_locally — uncontrolled seed; controlled reads use the prop.
+  let internalChecked = $state(Boolean(defaultChecked))
+  const checked = $derived(
+    group ? group.value === value : isControlled ? modelValue === value : internalChecked,
+  )
 
   const DIM: Record<RadioSize, string> = { sm: '14px', md: '18px', lg: '22px' }
   const dim = $derived(DIM[size])
@@ -38,10 +47,18 @@
     `width:50%; height:50%; border-radius:999px; background:var(--iris-primary); transform:${checked ? 'scale(1)' : 'scale(0)'}; transition:transform 140ms cubic-bezier(0.34,1.56,0.64,1);`,
   )
 
-  function onChange(): void {
+  function handleChange(event: Event & { currentTarget: EventTarget & HTMLInputElement }): void {
     if (disabled) return
-    if (group) group.setValue(value)
-    else onchange?.(value)
+    if (group) {
+      group.setValue(value)
+      return
+    }
+
+    const next = event.currentTarget.checked
+    if (!isControlled) internalChecked = next
+    if (isControlled) event.currentTarget.checked = checked
+    onChange?.(next)
+    onchange?.(value)
   }
 </script>
 
@@ -61,7 +78,8 @@
     value={String(value)}
     {checked}
     {disabled}
-    onchange={onChange}
+    aria-checked={checked ? 'true' : 'false'}
+    onchange={handleChange}
     style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;"
   />
   <span aria-hidden="true" style={boxStyle}>

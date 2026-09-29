@@ -24451,6 +24451,11 @@
               "optional": true
             },
             {
+              "name": "onSelect",
+              "type": "(item: IrisListItem<T>) => void",
+              "optional": true
+            },
+            {
               "name": "loading",
               "type": "boolean",
               "optional": true
@@ -24477,7 +24482,8 @@
             }
           ],
           "events": [
-            "onChange"
+            "onChange",
+            "onSelect"
           ],
           "slots": [
             "emptyState",
@@ -24645,7 +24651,7 @@
         "byFramework": {
           "react": 16,
           "vue": 7,
-          "solid": 13,
+          "solid": 14,
           "svelte": 16
         },
         "uniqueTo": {
@@ -27220,7 +27226,7 @@
         "svelte": "@iris-ui-kit/svelte",
         "vue": "@iris-ui-kit/vue"
       },
-      "description": "Nested submenu. Renders its own trigger (a `[role=\"menuitem\"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on ArrowRight / Enter; closes on ArrowLeft.",
+      "description": "Nested submenu. Renders its own trigger (a `[role=\"menuitem\"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on the direction-aware horizontal key / Enter; closes on the opposite horizontal key.",
       "props": [
         {
           "name": "label",
@@ -31917,6 +31923,18 @@
               "type": "string | HTMLElement | false",
               "optional": true,
               "default": "body"
+            },
+            {
+              "name": "autoFocus",
+              "type": "boolean",
+              "optional": true,
+              "default": "true"
+            },
+            {
+              "name": "restoreFocus",
+              "type": "boolean",
+              "optional": true,
+              "default": "true"
             }
           ],
           "events": [],
@@ -32010,7 +32028,10 @@
       },
       "parity": {
         "name": "IrisPopoverContent",
-        "common": [],
+        "common": [
+          "autoFocus",
+          "restoreFocus"
+        ],
         "union": [
           "autoFocus",
           "children",
@@ -32019,10 +32040,10 @@
           "style",
           "teleport"
         ],
-        "ratio": 0,
+        "ratio": 0.33,
         "byFramework": {
           "react": 4,
-          "vue": 1,
+          "vue": 3,
           "solid": 4,
           "svelte": 5
         },
@@ -32037,13 +32058,11 @@
           ]
         },
         "shared": [
-          "autoFocus",
           "children",
-          "portalTarget",
-          "restoreFocus"
+          "portalTarget"
         ],
         "intrinsic": [],
-        "asymmetry": 5
+        "asymmetry": 1.67
       }
     },
     {
@@ -33769,12 +33788,28 @@
         "svelte": "@iris-ui-kit/svelte",
         "vue": "@iris-ui-kit/vue"
       },
-      "description": "Single radio button. Must be used inside an `IrisRadioGroup`.",
+      "description": "Single radio button. Works standalone or inside an `IrisRadioGroup`.",
       "props": [
         {
           "name": "value",
           "type": "string",
           "optional": false
+        },
+        {
+          "name": "checked",
+          "type": "boolean",
+          "optional": true
+        },
+        {
+          "name": "defaultChecked",
+          "type": "boolean",
+          "optional": true,
+          "default": "false"
+        },
+        {
+          "name": "onChange",
+          "type": "(checked: boolean) => void",
+          "optional": true
         },
         {
           "name": "size",
@@ -33803,6 +33838,22 @@
               "optional": false
             },
             {
+              "name": "checked",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "defaultChecked",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "onChange",
+              "type": "(checked: boolean) => void",
+              "optional": true
+            },
+            {
               "name": "size",
               "type": "IrisRadioSize",
               "optional": true,
@@ -33819,7 +33870,9 @@
               "optional": true
             }
           ],
-          "events": [],
+          "events": [
+            "onChange"
+          ],
           "slots": [
             "default"
           ],
@@ -33995,12 +34048,15 @@
           "publicTypes": []
         }
       },
+      "events": [
+        "onChange"
+      ],
       "slots": [
         "default"
       ],
       "quality": {
-        "propCount": 3,
-        "eventCount": 0
+        "propCount": 6,
+        "eventCount": 1
       },
       "parity": {
         "name": "IrisRadio",
@@ -34012,6 +34068,7 @@
           "checked",
           "children",
           "class",
+          "defaultChecked",
           "disabled",
           "id",
           "modelValue",
@@ -34021,20 +34078,20 @@
           "style",
           "value"
         ],
-        "ratio": 0.18,
+        "ratio": 0.17,
         "byFramework": {
-          "react": 3,
+          "react": 6,
           "vue": 5,
           "solid": 9,
           "svelte": 7
         },
         "uniqueTo": {
-          "react": [],
+          "react": [
+            "defaultChecked"
+          ],
           "vue": [],
           "solid": [
-            "checked",
             "class",
-            "onChange",
             "style"
           ],
           "svelte": [
@@ -34042,13 +34099,15 @@
           ]
         },
         "shared": [
+          "checked",
           "children",
           "disabled",
           "id",
-          "modelValue"
+          "modelValue",
+          "onChange"
         ],
         "intrinsic": [],
-        "asymmetry": 3
+        "asymmetry": 1.8
       }
     },
     {
@@ -46021,6 +46080,21 @@
               "default": "1"
             },
             {
+              "name": "currentRowKey",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "onCurrentRowChange",
+              "type": "(key: string | number, row: Record<string, unknown>) =",
+              "optional": true
+            },
+            {
+              "name": "beforeCurrentRowChange",
+              "type": "(key: string | number, row: Record<string, unknown>) =",
+              "optional": true
+            },
+            {
               "name": "spanMethod",
               "type": "(params: IrisTableSpanMethodParams) =",
               "optional": true
@@ -46047,6 +46121,7 @@
             "multiSortChange",
             "onActiveViewChange",
             "onColumnPinnedChange",
+            "onCurrentRowChange",
             "onDataChange",
             "onFilterValuesChange",
             "onPinnedCountChange",
@@ -46197,6 +46272,24 @@
               "type": "(params: IrisTableSeqMethodParams) => string | number",
               "optional": true,
               "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
+            },
+            {
+              "name": "currentRowKey",
+              "type": "string | number",
+              "optional": true,
+              "description": "Current (highlighted) row key (vxe row-config.isCurrent parity)."
+            },
+            {
+              "name": "onCurrentRowChange",
+              "type": "(key: string | number, row: Row) => void",
+              "optional": true,
+              "description": "Fired when the current row changes (row click)."
+            },
+            {
+              "name": "beforeCurrentRowChange",
+              "type": "(key: string | number, row: Row) => boolean | void",
+              "optional": true,
+              "description": "Veto a current-row change: return false to keep the previous row."
             },
             {
               "name": "spanMethod",
@@ -46596,6 +46689,7 @@
             "onColumnPinnedChange",
             "onColumnVisibilityChange",
             "onColumnWidthsChange",
+            "onCurrentRowChange",
             "onDataChange",
             "onExpandedRowsChange",
             "onFilterValuesChange",
@@ -46753,6 +46847,24 @@
               "type": "(params: IrisTableSeqMethodParams) => string | number",
               "optional": true,
               "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
+            },
+            {
+              "name": "currentRowKey",
+              "type": "string | number",
+              "optional": true,
+              "description": "Current (highlighted) row key (vxe row-config.isCurrent parity)."
+            },
+            {
+              "name": "onCurrentRowChange",
+              "type": "(key: string | number, row: Record<string, unknown>) => void",
+              "optional": true,
+              "description": "Fired when the current row changes (row click)."
+            },
+            {
+              "name": "beforeCurrentRowChange",
+              "type": "(key: string | number, row: Record<string, unknown>) => boolean | void",
+              "optional": true,
+              "description": "Veto a current-row change: return false to keep the previous row."
             },
             {
               "name": "spanMethod",
@@ -47158,6 +47270,7 @@
             "onColumnOrderChange",
             "onColumnPinnedChange",
             "onColumnWidthsChange",
+            "onCurrentRowChange",
             "onDataChange",
             "onExpandedRowsChange",
             "onFilterValuesChange",
@@ -47267,6 +47380,7 @@
         "name": "IrisTable",
         "common": [
           "autoDetectTypes",
+          "beforeCurrentRowChange",
           "bordered",
           "cellRange",
           "clipConfig",
@@ -47278,6 +47392,7 @@
           "columnWidths",
           "columns",
           "contextMenu",
+          "currentRowKey",
           "data",
           "defaultExpandedRowKeys",
           "defaultMultiSort",
@@ -47300,6 +47415,7 @@
           "multiSortState",
           "onActiveViewChange",
           "onColumnPinnedChange",
+          "onCurrentRowChange",
           "onDataChange",
           "onFilterValuesChange",
           "onPinnedCountChange",
@@ -47541,12 +47657,12 @@
           "zIndex",
           "zoomConfig"
         ],
-        "ratio": 0.28,
+        "ratio": 0.3,
         "byFramework": {
           "react": 208,
-          "vue": 65,
-          "solid": 85,
-          "svelte": 83
+          "vue": 68,
+          "solid": 88,
+          "svelte": 86
         },
         "uniqueTo": {
           "react": [
@@ -47560,7 +47676,6 @@
             "autoResizeColumns",
             "autoSaveState",
             "beforeCurrentColumnChange",
-            "beforeCurrentRowChange",
             "cellClassName",
             "cellDrag",
             "cellDragCopy",
@@ -47577,7 +47692,6 @@
             "compareWith",
             "conditionalStyles",
             "currentColumnKey",
-            "currentRowKey",
             "defaultGroupCollapsed",
             "editAutoHeight",
             "editAutosave",
@@ -47622,7 +47736,6 @@
             "onCellClick",
             "onCellDblClick",
             "onCurrentColumnChange",
-            "onCurrentRowChange",
             "onEditClosed",
             "onEditStart",
             "onExpandChange",
@@ -47712,7 +47825,7 @@
           "tableRef"
         ],
         "intrinsic": [],
-        "asymmetry": 3.2
+        "asymmetry": 3.06
       }
     },
     {
@@ -49646,6 +49759,12 @@
               "optional": true
             },
             {
+              "name": "renderItem",
+              "type": "(item: IrisTimelineItem, index: number) => JSX.Element",
+              "optional": true,
+              "description": "Replace the default content (time/title/description) for every item."
+            },
+            {
               "name": "style",
               "type": "JSX.CSSProperties | string",
               "optional": true
@@ -49657,7 +49776,9 @@
             }
           ],
           "events": [],
-          "slots": [],
+          "slots": [
+            "renderItem"
+          ],
           "publicTypes": [
             "IrisTimelineItem",
             "IrisTimelineProps",
@@ -49717,13 +49838,12 @@
         "byFramework": {
           "react": 4,
           "vue": 1,
-          "solid": 3,
+          "solid": 4,
           "svelte": 3
         },
         "uniqueTo": {
           "react": [
-            "className",
-            "renderItem"
+            "className"
           ],
           "vue": [],
           "solid": [
@@ -49734,6 +49854,7 @@
           ]
         },
         "shared": [
+          "renderItem",
           "style"
         ],
         "intrinsic": [],
@@ -54660,27 +54781,27 @@
       "incomparable": 0,
       "intrinsicSpread": 5,
       "propTotals": {
-        "react": 1264,
-        "vue": 845,
-        "solid": 1173,
-        "svelte": 1205
+        "react": 1267,
+        "vue": 850,
+        "solid": 1178,
+        "svelte": 1208
       },
       "exclusivePropNames": {
-        "react": 221,
+        "react": 218,
         "vue": 69,
-        "solid": 115,
+        "solid": 113,
         "svelte": 124
       },
-      "meanRatio": 0.44,
+      "meanRatio": 0.45,
       "minRatio": 0,
       "maxAsymmetry": {
-        "name": "IrisPopoverContent",
+        "name": "IrisToggleGroupItem",
         "ratio": 5,
         "byFramework": {
-          "react": 4,
-          "vue": 1,
-          "solid": 4,
-          "svelte": 5
+          "react": 1,
+          "vue": 2,
+          "solid": 5,
+          "svelte": 4
         }
       },
       "worst": [
@@ -54814,43 +54935,6 @@
           ],
           "intrinsic": [],
           "asymmetry": 4
-        },
-        {
-          "name": "IrisPopoverContent",
-          "common": [],
-          "union": [
-            "autoFocus",
-            "children",
-            "portalTarget",
-            "restoreFocus",
-            "style",
-            "teleport"
-          ],
-          "ratio": 0,
-          "byFramework": {
-            "react": 4,
-            "vue": 1,
-            "solid": 4,
-            "svelte": 5
-          },
-          "uniqueTo": {
-            "react": [],
-            "vue": [
-              "teleport"
-            ],
-            "solid": [],
-            "svelte": [
-              "style"
-            ]
-          },
-          "shared": [
-            "autoFocus",
-            "children",
-            "portalTarget",
-            "restoreFocus"
-          ],
-          "intrinsic": [],
-          "asymmetry": 5
         },
         {
           "name": "IrisSlot",
@@ -55178,6 +55262,57 @@
           ],
           "intrinsic": [],
           "asymmetry": 3
+        },
+        {
+          "name": "IrisRadio",
+          "common": [
+            "size",
+            "value"
+          ],
+          "union": [
+            "checked",
+            "children",
+            "class",
+            "defaultChecked",
+            "disabled",
+            "id",
+            "modelValue",
+            "onChange",
+            "onchange",
+            "size",
+            "style",
+            "value"
+          ],
+          "ratio": 0.17,
+          "byFramework": {
+            "react": 6,
+            "vue": 5,
+            "solid": 9,
+            "svelte": 7
+          },
+          "uniqueTo": {
+            "react": [
+              "defaultChecked"
+            ],
+            "vue": [],
+            "solid": [
+              "class",
+              "style"
+            ],
+            "svelte": [
+              "onchange"
+            ]
+          },
+          "shared": [
+            "checked",
+            "children",
+            "disabled",
+            "id",
+            "modelValue",
+            "onChange"
+          ],
+          "intrinsic": [],
+          "asymmetry": 1.8
         }
       ]
     }

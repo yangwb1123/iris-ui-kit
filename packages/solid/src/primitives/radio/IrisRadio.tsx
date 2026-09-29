@@ -80,11 +80,12 @@ export function IrisRadioGroup(props: IrisRadioGroupProps): JSX.Element {
 export interface IrisRadioProps {
   value: string | number | boolean
   /** Standalone mode only */
-  checked?: string | number | boolean | null
+  checked?: boolean
+  defaultChecked?: boolean
   size?: IrisRadioSize
   disabled?: boolean
   id?: string
-  onChange?: (value: string | number | boolean) => void
+  onChange?: (checked: boolean) => void
   children?: JSX.Element
   style?: JSX.CSSProperties | string
   class?: string
@@ -95,6 +96,7 @@ export function IrisRadio(props: IrisRadioProps): JSX.Element {
   const [local] = splitProps(merged, [
     'value',
     'checked',
+    'defaultChecked',
     'size',
     'disabled',
     'id',
@@ -108,10 +110,12 @@ export function IrisRadio(props: IrisRadioProps): JSX.Element {
 
   const size = (): IrisRadioSize => local.size ?? group?.size() ?? 'md'
   const disabled = (): boolean => local.disabled || (group?.disabled() ?? false)
+  const isControlled = (): boolean => local.checked !== undefined
+  const [internal, setInternal] = createSignal(Boolean(local.defaultChecked))
 
   const isChecked = (): boolean => {
     if (group) return group.value() === local.value
-    return local.checked === local.value
+    return isControlled() ? Boolean(local.checked) : internal()
   }
 
   const dim = (): string => {
@@ -119,10 +123,18 @@ export function IrisRadio(props: IrisRadioProps): JSX.Element {
     return map[size()]
   }
 
-  const handleChange = (): void => {
+  const handleChange = (e: Event & { currentTarget: HTMLInputElement }): void => {
     if (disabled()) return
-    if (group) group.setValue(local.value)
-    else local.onChange?.(local.value)
+    if (group) {
+      group.setValue(local.value)
+      return
+    }
+
+    const next = e.currentTarget.checked
+    const controlled = isControlled()
+    if (!controlled) setInternal(next)
+    local.onChange?.(next)
+    if (controlled) e.currentTarget.checked = isChecked()
   }
 
   return (
@@ -147,6 +159,7 @@ export function IrisRadio(props: IrisRadioProps): JSX.Element {
         value={String(local.value)}
         checked={isChecked()}
         disabled={disabled()}
+        aria-checked={isChecked() ? 'true' : 'false'}
         style={{
           position: 'absolute',
           opacity: 0,

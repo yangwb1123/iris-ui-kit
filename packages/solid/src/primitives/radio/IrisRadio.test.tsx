@@ -38,5 +38,46 @@ describe('IrisRadio', () => {
     const input = container.querySelector('input')!
     fireEvent.click(input)
     expect(onChange).toHaveBeenCalledWith('x')
+    expect(container.querySelector('[data-iris-radio]')!.getAttribute('data-state')).toBe('checked')
+    expect(input.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('works standalone in uncontrolled mode', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => <IrisRadio value="x" onChange={onChange} />)
+    const radio = container.querySelector('[data-iris-radio]')!
+    const input = radio.querySelector('input')!
+
+    expect(radio.getAttribute('data-state')).toBe('unchecked')
+    fireEvent.click(input)
+
+    expect(radio.getAttribute('data-state')).toBe('checked')
+    expect(input.checked).toBe(true)
+    expect(input.getAttribute('aria-checked')).toBe('true')
+    expect(onChange).toHaveBeenCalledWith(true)
+  })
+
+  it('uses defaultChecked for the standalone initial state', () => {
+    const { container } = render(() => <IrisRadio value="x" defaultChecked />)
+    const radio = container.querySelector('[data-iris-radio]')!
+    const input = radio.querySelector('input')!
+
+    expect(radio.getAttribute('data-state')).toBe('checked')
+    expect(input.checked).toBe(true)
+    expect(input.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('does not change its own state when controlled', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => <IrisRadio value="x" checked={false} onChange={onChange} />)
+    const radio = container.querySelector('[data-iris-radio]')!
+    const input = radio.querySelector('input')!
+
+    fireEvent.click(input)
+
+    expect(onChange).toHaveBeenCalledWith(true)
+    expect(radio.getAttribute('data-state')).toBe('unchecked')
+    expect(input.checked).toBe(false)
+    expect(input.getAttribute('aria-checked')).toBe('false')
   })
 })

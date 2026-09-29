@@ -448,3 +448,34 @@ esbuild 可用）。
   内容一个换 loading。
 - 轮播箭头、进度填充/动画、日期/选择类锚定面板、树缩进一律改逻辑属性。
 - Segmented 选中阴影改用 `--iris-shadow-sm`（对齐 solid，去掉裸 rgba）。
+
+### pbatch 实施批 4：Table current-row / 子菜单 RTL / Marquee 减动效（2026-09-28）
+
+5 个任务全部通过（批末 `node cli.mjs check` 绿）：
+
+- **Table current-row 补齐到 Vue / Solid / Svelte**：此前只有 React 有
+  `currentRowKey` / `onCurrentRowChange` / `beforeCurrentRowChange`
+  （vxe `row-config.isCurrent` parity）与 `data-iris-row-current`，另外三端
+  完全无法表达受控高亮 / 监听 / 否决变更。三端同名同语义，默认值与 React 一致。
+- **子菜单 RTL**：新增 core 纯函数 `getMenuSubDirection`，四端共用；RTL 下
+  placement 翻到左侧、ArrowLeft 打开 / ArrowRight 关闭，箭头方向同步翻转
+  （键盘可达性缺陷，不只是视觉）。
+- **Marquee 响应运行时的 prefers-reduced-motion 变化**：此前四端都只在初始化
+  读一次 `matchMedia(...).matches`，用户中途打开“减弱动效”不会停掉已运行的
+  动画；现在订阅 `MediaQueryList.change`，并在卸载时用 core 既有生命周期设施
+  取消订阅。
+
+### 门禁自身的两处修正（都是被本轮的真实改动逼出来的）
+
+1. **`check:parity` 原来用“共有率”判定能力丢失**：React 给 `IrisRadio` 补上
+   独立使用能力后，union 变大、共有率 0.18 → 0.17，而**共有 prop 名数量仍是
+   2** —— 门禁把真实进展判成回退。现在改为：共有名**数量**下降才阻断，共有率
+   变化只提示（并说明“某个适配器新增了框架惯用 prop”）；旧 baseline 没有该
+   字段的条目继续沿用旧规则，避免升级门禁时悄悄放松。分类逻辑抽到
+   `scripts/lib/parity-gate.mjs`，`pnpm test:scripts` 覆盖四个分支。
+2. **registry 摘要只能手算，且会被格式化悄悄作废**：item JSON 里任何一个字节
+   被 Prettier 改写（例如提交时 lint-staged 跑 prettier），`registry.json` 里的
+   SHA-256 就失效，而报错出现在几层之外的 CLI `add`（“Integrity check failed”）。
+   新增 `pnpm check:registry:fix`（`--update`）：只做**外科式**替换 digest 那一段
+   文本（整份重新序列化会被 Prettier 再格式化，等于自己作废自己写的摘要），
+   并且校验失败时直接提示这条命令。

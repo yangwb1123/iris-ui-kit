@@ -41,6 +41,7 @@
     "check:rsc": "node scripts/check-rsc-directive.mjs",
     "check:pack-install": "node scripts/check-pack-install.mjs",
     "check:registry": "node scripts/check-registry-templates.mjs",
+    "check:registry:fix": "node scripts/check-registry-templates.mjs --update",
     "check:desktop-parity": "node scripts/check-desktop-parity.mjs",
     "check:brace-expansion-compat": "node scripts/check-brace-expansion-compat.mjs",
     "check:framework-parity": "node cli.mjs check-framework",

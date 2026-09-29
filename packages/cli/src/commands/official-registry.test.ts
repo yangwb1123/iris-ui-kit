@@ -22,13 +22,28 @@ describe('official admin-layout installation', () => {
   it.each(['react', 'vue', 'solid', 'svelte'] as IrisFramework[])(
     'installs the %s source variant through the public CLI flow',
     async (framework) => {
-      vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
-      vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+      // The CLI reports failures on stderr; swallowing the stream made a
+      // non-zero exit indistinguishable from "something went wrong" — capture
+      // it so a failure explains itself.
+      const output: string[] = []
+      vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+        output.push(String(chunk))
+        return true
+      })
+      vi.spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+        output.push(String(chunk))
+        return true
+      })
+      const fail = (step: string, code: number) =>
+        `${step} exited ${code}\n--- CLI output ---\n${output.join('')}\n---`
+
       const cwd = mkdtempSync(join(tmpdir(), `iris-${framework}-`))
       directories.push(cwd)
-      expect(runInit({ cwd, framework })).toBe(0)
-      expect(runRegistryAdd('local', catalog, { cwd })).toBe(0)
-      expect(await runAdd(['admin-layout'], { cwd, registry: 'local' })).toBe(0)
+      expect(runInit({ cwd, framework }), fail('iris init', 0)).toBe(0)
+      expect(runRegistryAdd('local', catalog, { cwd }), fail('iris registry add', 0)).toBe(0)
+      expect(await runAdd(['admin-layout'], { cwd, registry: 'local' }), fail('iris add', 0)).toBe(
+        0,
+      )
       const extension = framework === 'vue' ? 'vue' : framework === 'svelte' ? 'svelte' : 'tsx'
       expect(existsSync(resolve(cwd, `src/templates/admin-layout/AdminLayout.${extension}`))).toBe(
         true,

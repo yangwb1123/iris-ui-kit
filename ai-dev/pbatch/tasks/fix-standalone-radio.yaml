@@ -1,0 +1,81 @@
+# pbatch 批次：standalone radio 视觉状态（第五批）
+#
+# 来源：实施批 4 之后 `pnpm check:parity` 报出 IrisRadio 的共有率回退
+# （0.18 → 0.17）。追下去发现不是指标噪声，而是真缺陷：
+#   - React（批 1 刚补齐 standalone 受控/非受控）与 Vue（内部状态）点击后
+#     data-state 会变成 checked；
+#   - Solid 与 Svelte 的 standalone `IrisRadio` 点击后**永远**停在 unchecked
+#     ——原生 input 的 checked 会变，但组件的视觉状态由 prop 派生，没有内部
+#     状态，所以看起来像坏了。
+#
+# 契约与 React 对齐：`checked` / `defaultChecked` / `onChange`；group 模式行为
+# 不变。Svelte 保留既有 `modelValue` 入口（框架惯用），但未受控时必须能自选中。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-standalone-radio.yaml --retries 2
+#
+# ⚠️ 任务文件是受保护输入；交付物写在最终回复里，不要自己写文件。
+
+tasks:
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Solid 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已用探针复现）：不套 `IrisRadioGroup`、也不传 `checked` 时，
+      Solid 的 `IrisRadio` 点击后 `data-state` 永远是 `unchecked`
+      （`packages/solid/src/primitives/radio/IrisRadio.tsx:114` 的
+      `local.checked === local.value` 没有内部状态兜底）——原生 input 变了，
+      组件的视觉状态没变，用户看到的是“点不亮”。React（受控 `checked` +
+      非受控 `defaultChecked` + `onChange`）与 Vue（内部值）都正常。
+
+      任务：让 Solid 的 standalone radio 与 React 契约一致：
+      - 声明 `defaultChecked?: boolean` 与 `onChange?: (checked: boolean) => void`；
+        `checked` 保持现有含义（有它就是受控）。
+      - 未受控时用内部 signal 记录状态，点击更新并触发 `onChange`；受控时不改内部状态。
+      - `data-state`、`aria-checked` 与视觉圆点都要跟随最终状态。
+      - group 模式（`IrisRadioGroup` 存在时）行为完全不变，状态仍由 group 决定。
+      - 补测试：不套 group、不传 checked → 点击后 `data-state` 变 checked 且
+        回调收到 true；传 `defaultChecked` → 初始即 checked；受控 → 只回调不
+        自改；group 模式回归。
+
+      约束：只改 solid 的 radio 组件 + 其测试；不要改 RadioGroup。
+      完成标准：solid radio 测试全绿、typecheck 无错、`pnpm check:parity` 不回退。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch5-solid-standalone-radio.md
+
+  - prompt: |
+      硬约束：只改本任务点名的文件；不要新建脚本或改 ai-dev/**、docs/**、
+      scripts/**、CI 配置；不要设计额外工作流；最终回复里给总结，不要自己写文件。
+
+      你是 iris-ui 的 Svelte 适配器维护者。仓库根 = 当前目录，先读 AGENTS.md。
+
+      缺陷（已用探针复现）：不套 group、也不传受控 prop 时，Svelte 的
+      `IrisRadio` 点击后 `data-state` 永远是 `unchecked`
+      （`packages/svelte/src/primitives/radio/IrisRadio.svelte:28`
+      `group ? group.value === value : modelValue === value` 没有内部状态兜底）
+      ——原生 input 的 checked 会变，组件视觉状态不变，用户看到的是“点不亮”。
+      React 与 Vue 都正常。
+
+      任务：让 Svelte 的 standalone radio 能自选中，契约与 React 对齐：
+      - 新增 `defaultChecked?: boolean` 与 `onChange?: (checked: boolean) => void`
+        （Svelte 5 回调 prop 风格，与仓库既有写法一致；保留既有 `modelValue`
+        入口作为框架惯用的受控方式）。
+      - 未受控时用内部 `$state` 记录选择，点击更新并触发回调；受控（传了
+        `modelValue` 或 group）时只回调、不自改。
+      - `data-state`、`aria-checked` 与视觉圆点跟随最终状态。
+      - group 模式行为不变。
+      - 补测试：不套 group 不传受控 → 点击后 `data-state` 变 checked 且回调
+        收到 true；`defaultChecked` → 初始即 checked；受控 → 只回调不自改；
+        group 回归。
+
+      约束：只改 svelte 的 radio 组件 + 其测试；不要改 RadioGroup。
+      完成标准：svelte radio 测试全绿、svelte-check 0 error、
+      `pnpm check:parity` 不回退。
+    provider: openai-codex
+    timeout: 3600
+    validate: irischeck
+    output: docs/auto/reviews/batch5-svelte-standalone-radio.md

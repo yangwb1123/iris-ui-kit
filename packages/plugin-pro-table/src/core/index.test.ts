@@ -323,7 +323,10 @@ describe('createProTableStore — server mode', () => {
     const t = createProTableStore<User>({ columns, rowKey: 'id', mode: 'server', onLoad })
     await Promise.resolve()
     await Promise.resolve()
-    expect(onLoad).toHaveBeenCalled()
+    expect(onLoad).toHaveBeenCalledWith(
+      { page: 1, pageSize: 10, sort: null, filters: {} },
+      expect.any(AbortSignal),
+    )
     expect(t.getState().rows.map((r) => r.id)).toEqual([9])
     expect(t.getState().total).toBe(1)
     expect(t.getState().loading).toBe(false)
@@ -332,6 +335,10 @@ describe('createProTableStore — server mode', () => {
   it('requires an injected create handler for server mutations', async () => {
     const onLoad = vi.fn().mockResolvedValue({ rows: [], total: 0 })
     const table = createProTableStore<User>({ columns, rowKey: 'id', mode: 'server', onLoad })
+    expect(onLoad).toHaveBeenCalledWith(
+      { page: 1, pageSize: 10, sort: null, filters: {} },
+      expect.any(AbortSignal),
+    )
     await expect(table.createRow({ id: 9, name: 'Z', age: 1 })).rejects.toThrow(
       'config.mutations.create',
     )

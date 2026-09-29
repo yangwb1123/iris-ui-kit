@@ -119,8 +119,8 @@ export interface ProTableConfig<Row = Record<string, unknown>> {
   pageSize?: number
   /** `'client'` (default) processes `data` locally; `'server'` calls {@link ProTableConfig.onLoad}. */
   mode?: ProTableMode
-  /** Server-mode fetcher. Required when `mode: 'server'`. */
-  onLoad?: (query: ProTableQuery) => Promise<{ rows: Row[]; total: number }>
+  /** Server-mode fetcher. Required when `mode: 'server'`; the signal is aborted on cancellation. */
+  onLoad?: (query: ProTableQuery, signal?: AbortSignal) => Promise<{ rows: Row[]; total: number }>
   /** Notified after a successful inline edit commit. */
   onCellEdit?: (event: CellEditEvent<Row>) => void
   /**
@@ -162,6 +162,12 @@ export interface ProTableState<Row = Record<string, unknown>> {
 
 export interface ProTableStore<Row = Record<string, unknown>> {
   store: Store<ProTableState<Row>>
+  /**
+   * Stop subscriptions and dispose resources owned by this store.
+   * The store owner must call this when the store's lifecycle ends. Renderers
+   * do not call it for an externally supplied store that may be reused.
+   */
+  destroy(): void
   getState(): ProTableState<Row>
   subscribe(listener: (state: ProTableState<Row>) => void): () => void
   rowKeyOf(row: Row): string

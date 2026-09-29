@@ -119,28 +119,33 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
     const dataSource = createDataSource<Row>({
       fetcher:
         mode === 'server' && config.onLoad
-          ? (q) =>
-              config.onLoad!({
-                page: q.page,
-                pageSize: q.pageSize,
-                sort: q.sort,
-                filters: q.filters,
-              })
+          ? (q, signal) =>
+              config.onLoad!(
+                {
+                  page: q.page,
+                  pageSize: q.pageSize,
+                  sort: q.sort,
+                  filters: q.filters,
+                },
+                signal,
+              )
           : buildSyncFetcher(),
       pageSize: config.pageSize ?? 10,
       immediate: false,
     })
 
+    let destroyed = false
+
     // When tree expansion changes, re-flatten and reload the data source.
-    if (expansion) {
-      expansion.store.subscribe(() => {
-        void dataSource.reload()
-      })
-    }
+    const unsubscribeExpansion = expansion?.store.subscribe(() => {
+      if (destroyed) return
+      void dataSource.reload()
+    })
 
     // Mirror the engine's state into ProTableState so subscribers (renderers)
     // re-render on any query / selection / loading change.
-    dataSource.subscribe((s) => {
+    const unsubscribeDataSource = dataSource.subscribe((s) => {
+      if (destroyed) return
       // In tree mode, compute treeRows from the current expansion + root data.
       let treeRows: TreeRow<Row>[] | null = null
       if (config.tree && expansion && treeRoots) {
@@ -201,7 +206,8 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
         config.onCellEdit?.({ rowKey, columnKey, dataIndex, oldValue, newValue, row: updatedRow })
       },
     })
-    cellEdit.store.subscribe((s) => {
+    const unsubscribeCellEdit = cellEdit.store.subscribe((s) => {
+      if (destroyed) return
       store.setState((st) => ({ ...st, editing: s.editing }))
     })
 
@@ -221,7 +227,8 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
       if (!headerMatrixCache) headerMatrixCache = buildHeaderMatrix(cols)
       return headerMatrixCache
     }
-    store.subscribe(() => {
+    const unsubscribeHeaderCache = store.subscribe(() => {
+      if (destroyed) return
       headerMatrixCache = null
     })
 
@@ -279,6 +286,19 @@ class ProTableStoreEngine<Row extends Record<string, unknown>> {
 
     const api: ProTableStore<Row> = {
       store,
+      destroy() {
+        if (destroyed) return
+        destroyed = true
+
+        // Stop every bridge before tearing down the resources they observe.
+        unsubscribeExpansion?.()
+        unsubscribeDataSource()
+        unsubscribeCellEdit()
+        unsubscribeHeaderCache()
+
+        dataSource.destroy()
+        exportGrid.destroy()
+      },
       getState: store.getState,
       subscribe: store.subscribe,
       rowKeyOf,

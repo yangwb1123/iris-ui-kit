@@ -1,0 +1,47 @@
+# pbatch 批次：ProTable store 生命周期出口与 server fetch 取消
+# 来源：docs/auto/reviews/core-lifecycle.md finding #3。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-pro-table-lifecycle-batch9.yaml --retries 2
+#
+# 串行；每任务显式 provider；禁止嵌套 runner；禁止 agent stage/commit。
+
+tasks:
+  - prompt: |
+      硬约束：只修改 `packages/plugin-pro-table/src/core` 中 ProTable store/types/tests，
+      并在需要时修改该 package 对外的 `onLoad` 类型与测试；不要改其他 package、
+      adapters、docs、scripts、CI、release/size budgets；不要启动 runner；不要 git add / commit。
+
+      先读 AGENTS.md 与 `docs/auto/reviews/core-lifecycle.md` finding #3，并阅读
+      `packages/plugin-pro-table/src/core/store-engine.ts` / `types.ts`。
+      当前 createProTableStore 创建 DataSource、expansion、cell-edit 及 Grid Core，
+      并建立 expansion→dataSource、dataSource→ProTable store、cellEdit→store 和
+      store→header-cache 四个订阅，但不保存 unsubscribe、不暴露 destroy。Server
+      mode 初始 `onLoad` 也不接收 AbortSignal，因此 owner 无法取消网络请求。
+
+      任务：
+      - 给 `ProTableStore` 增加幂等 `destroy(): void`，文档说明 store 的 owner 必须在
+        生命周期结束时调用；不要让 `<IrisProTable store={externalStore}>` 在卸载时
+        错误销毁调用方可能复用的 store。
+      - 保存上述所有 subscribe 的 unsubscribe；`destroy` 时先停止反应式订阅，再
+        destroy 内部 DataSource 并销毁本 store 创建的 Grid Core（如果有可销毁 API）；
+        多次调用安全。不要手动 dispose 没有 owner API 的纯状态 helper。
+      - `ProTableConfig.onLoad` fetcher 接收可选第二参数 `signal?: AbortSignal`；
+        server-mode DataSource wrapper 原样传递它，旧的 `(query)=>Promise` 调用签名保持
+        兼容。destroy 必须让尚未完成的 onLoad signal.aborted 为 true，并且 late resolve
+        不写回 ProTable state。
+      - owner destroy 后通过旧 expansion/store/cellEdit subscription 不再启动 reload
+        或发出镜像更新；不要改变 query、mutation 或 sync client-mode 首次 rows 语义。
+
+      新建/扩充 core lifecycle 测试，覆盖：
+      1) deferred server onLoad 收到 AbortSignal；store.destroy() 取消请求，晚到结果忽略；
+      2) destroy 幂等；
+      3) tree expansion 订阅在 destroy 后移除（destroy 后 toggleExpand 不得触发 onLoad）；
+      4) store/datasource/cell-edit 的正常 client 行为在 destroy 前仍与现有 tests 一致。
+      有关 onLoad 的旧 mock 断言按新增可选 signal 更新，禁止通过不传 signal 让测试侥幸通过。
+
+      完成标准：plugin-pro-table 全部 tests、typecheck、lint、build 绿；变更仅限上述范围。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch9-pro-table-lifecycle.md

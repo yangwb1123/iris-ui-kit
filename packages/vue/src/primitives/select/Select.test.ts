@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
+import { IrisDialog } from '../dialog/Dialog'
+import { IrisDialogContent } from '../dialog/DialogContent'
 import { IrisSelect } from './Select'
 import type { IrisListItem } from '../list/List'
 
@@ -104,6 +106,61 @@ describe('IrisSelect', () => {
     await wrapper.find('[data-iris-select-trigger]').trigger('click')
     await nextTick()
     expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+  })
+
+  it('keeps a teleported select above a dialog backdrop', async () => {
+    const value = ref<string | null>(null)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(
+            IrisDialog,
+            { defaultOpen: true },
+            {
+              default: () =>
+                h(IrisDialogContent, null, () =>
+                  h(IrisSelect, {
+                    items,
+                    modelValue: value.value,
+                    'onUpdate:modelValue': (next) => (value.value = next as string),
+                  }),
+                ),
+            },
+          )
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+
+    try {
+      await nextTick()
+      const backdrop = document.querySelector<HTMLElement>('[data-iris-dialog-backdrop]')
+      const dialog = backdrop?.querySelector<HTMLElement>('[role="dialog"]')
+      const trigger = dialog?.querySelector<HTMLElement>('[data-iris-select-trigger]')
+      trigger?.click()
+      await nextTick()
+
+      const floatingId = trigger?.getAttribute('aria-controls')
+      const floating = floatingId ? document.getElementById(floatingId) : null
+      const listbox = floating?.querySelector<HTMLElement>('[role="listbox"]')
+      expect(listbox).not.toBeNull()
+      expect(floating?.style.zIndex).toBe(
+        'calc(max(var(--iris-z-popover, 1000), var(--iris-z-modal, 1200)) + 1)',
+      )
+      expect(backdrop?.style.zIndex).toBe('var(--iris-z-modal, 1200)')
+      const fallbackLayers = [
+        ...(floating?.style.zIndex.matchAll(/var\(--iris-z-(?:popover|modal),\s*(\d+)\)/g) ?? []),
+      ].map((match) => Number(match[1]))
+      const fallbackLayer = Math.max(...fallbackLayers) + 1
+      const backdropFallbackLayer = Number(backdrop?.style.zIndex.match(/,\s*(\d+)\s*\)$/)?.[1])
+      expect(fallbackLayer).toBeGreaterThan(backdropFallbackLayer)
+
+      floating?.querySelectorAll<HTMLElement>('[role="option"]')[1]?.click()
+      await nextTick()
+      expect(value.value).toBe('b')
+    } finally {
+      wrapper.unmount()
+      await nextTick()
+    }
   })
 
   it('renders the IrisList with the same items + modelValue when open', async () => {

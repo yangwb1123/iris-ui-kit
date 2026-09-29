@@ -12,6 +12,7 @@ import {
 import { installFloatingAnimations, ANIM_POPOVER } from '../floating/animations'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
+import { DialogContextKey } from '../dialog/context'
 import { PopoverContextKey } from './context'
 /**
  * The floating panel rendered when the Popover is open. Position is computed
@@ -45,6 +46,7 @@ export const IrisPopoverContent = defineComponent({
   setup(props, { slots, attrs }) {
     installFloatingAnimations()
     const ctx = inject(PopoverContextKey)
+    const dialog = inject(DialogContextKey, null)
     if (!ctx) {
       throw new Error('[iris-ui] IrisPopoverContent must be a descendant of IrisPopover')
     }
@@ -117,7 +119,12 @@ export const IrisPopoverContent = defineComponent({
             padding: 'var(--iris-padding-md)',
             boxShadow: 'var(--iris-shadow-lg)',
             fontSize: 'var(--iris-font-size-md, 14px)',
-            zIndex: '1000',
+            // Dialog backdrops share the modal token. Raise only nested
+            // popovers above both active overlay tokens; standalone popovers
+            // keep their normal theme layer.
+            zIndex: dialog
+              ? 'calc(max(var(--iris-z-popover, 1000), var(--iris-z-modal, 1200)) + 1)'
+              : 'var(--iris-z-popover, 1000)',
             outline: 'none',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },

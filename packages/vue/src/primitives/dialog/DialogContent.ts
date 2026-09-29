@@ -99,7 +99,9 @@ export const IrisDialogContent = defineComponent({
             position: 'fixed',
             inset: '0',
             background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
-            zIndex: '1200',
+            zIndex: parentPopover
+              ? 'calc(max(var(--iris-z-modal, 1200), var(--iris-z-popover, 1000)) + 1)'
+              : 'var(--iris-z-modal, 1200)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

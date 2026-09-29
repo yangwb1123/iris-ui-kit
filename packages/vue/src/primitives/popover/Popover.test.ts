@@ -108,6 +108,13 @@ describe('IrisPopover', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
   })
 
+  it('keeps a standalone popover on the normal theme layer', async () => {
+    const wrapper = mount(Harness({ defaultOpen: true }), { attachTo: host })
+    await nextTick()
+    expect(wrapper.get('[data-placement]').element.style.zIndex).toBe('var(--iris-z-popover, 1000)')
+    wrapper.unmount()
+  })
+
   it('focuses content on open and restores focus on close by default', async () => {
     const wrapper = mount(Harness(), { attachTo: host })
     const trigger = wrapper.find('[aria-haspopup="dialog"]')
@@ -283,6 +290,10 @@ describe('IrisPopover', () => {
     const dialog = document.querySelector('[data-testid="dialog-content"]') as HTMLElement | null
     expect(popover).not.toBeNull()
     expect(dialog).not.toBeNull()
+    expect((popover as HTMLElement).style.zIndex).toBe('var(--iris-z-popover, 1000)')
+    expect(dialog?.closest<HTMLElement>('[data-iris-dialog-backdrop]')?.style.zIndex).toBe(
+      'calc(max(var(--iris-z-modal, 1200), var(--iris-z-popover, 1000)) + 1)',
+    )
 
     dialog?.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }))
     await nextTick()

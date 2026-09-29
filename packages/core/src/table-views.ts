@@ -52,7 +52,12 @@ export const TABLE_VIEWS_SAVE_ITEM = '__iris-save-view'
 
 function defaultStorage(): TableViewStorage | null {
   try {
-    const candidate = (globalThis as { localStorage?: TableViewStorage }).localStorage
+    // Do not even resolve an ambient storage backend during SSR. Some server
+    // runtimes expose a global `localStorage` shim, but it must not influence
+    // the server's first render; adapters load views from their mount hooks.
+    const root = globalThis as { window?: unknown; localStorage?: TableViewStorage }
+    if (root.window === undefined) return null
+    const candidate = root.localStorage
     return candidate &&
       typeof candidate.getItem === 'function' &&
       typeof candidate.setItem === 'function'

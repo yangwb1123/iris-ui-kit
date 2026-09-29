@@ -61,6 +61,40 @@ describe('IrisResizable', () => {
     expect(container.querySelector('[data-iris-resizable-handle="right"]')).not.toBeNull()
     expect(container.querySelector('[data-iris-resizable-handle="bottom"]')).not.toBeNull()
   })
+
+  it('provides named keyboard handles without regressing pointer dragging', () => {
+    const onSizeChange = vi.fn()
+    const { container } = render(() => (
+      <IrisResizable
+        defaultSize={{ width: 100, height: 100 }}
+        handles={['right']}
+        maxSize={{ width: 300 }}
+        onSizeChange={onSizeChange}
+      >
+        <div>content</div>
+      </IrisResizable>
+    ))
+    const handle = container.querySelector(
+      '[data-iris-resizable-handle="right"]',
+    ) as HTMLButtonElement
+
+    expect(handle.tagName).toBe('BUTTON')
+    expect(handle.getAttribute('aria-label')).toBe('Resize right')
+    handle.focus()
+    expect(document.activeElement).toBe(handle)
+
+    fireEvent.mouseDown(handle, { clientX: 100, clientY: 100 })
+    fireEvent.mouseMove(document, { clientX: 120, clientY: 100 })
+    fireEvent.mouseUp(document, { clientX: 120, clientY: 100 })
+    expect(onSizeChange).toHaveBeenLastCalledWith({ width: 120, height: 100 })
+
+    fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(onSizeChange).toHaveBeenLastCalledWith({ width: 130, height: 100 })
+    fireEvent.keyDown(handle, { key: 'Home' })
+    expect(onSizeChange).toHaveBeenLastCalledWith({ width: 40, height: 100 })
+    fireEvent.keyDown(handle, { key: 'End' })
+    expect(onSizeChange).toHaveBeenLastCalledWith({ width: 300, height: 100 })
+  })
 })
 
 describe('IrisSortable', () => {

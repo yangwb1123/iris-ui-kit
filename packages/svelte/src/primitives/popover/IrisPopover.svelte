@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createFloatingMachine, generateId } from '@iris-ui-kit/core'
+  import { createFloatingMachine } from '@iris-ui-kit/core'
   import { toMachine } from '../../useMachine'
   import { setPopoverContext } from './context'
   import type { Placement } from '@iris-ui-kit/core'
@@ -45,7 +45,7 @@
 
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
-  const contentId = generateId()
+  const contentId = $props.id()
 
   setPopoverContext({
     get open() {

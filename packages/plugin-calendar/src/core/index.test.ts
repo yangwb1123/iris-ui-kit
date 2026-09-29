@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
 import {
   createCalendar,
@@ -22,6 +22,8 @@ const baseConfig = (): CalendarConfig => ({
   initialMonth: 5, // June (0-indexed)
   events: [event1, event2, event3],
 })
+
+afterEach(() => vi.useRealTimers())
 
 describe('createCalendar core', () => {
   it('returns initial state matching config', () => {
@@ -149,12 +151,39 @@ describe('createCalendar core', () => {
     expect(cfg.events).toHaveLength(3)
   })
 
-  it('defaults to current year/month when initialYear/initialMonth omitted', () => {
-    const now = new Date()
+  it('uses a stable neutral month until the runtime clock is activated', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2025, 5, 30, 23, 59, 59))
     const store = createCalendar({})
-    const { year, month } = store.getState()
-    expect(year).toBe(now.getFullYear())
-    expect(month).toBe(now.getMonth())
+
+    expect(store.getState()).toMatchObject({ year: 1970, month: 0, today: null })
+
+    store.refreshNow()
+    expect(store.getState()).toMatchObject({ year: 2025, month: 5, today: '2025-06-30' })
+  })
+
+  it('uses an injected snapshot and explicit time zone without reading the runtime clock', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2040-01-01T00:00:00.000Z'))
+    const store = createCalendar({
+      now: Date.UTC(2025, 0, 1, 0, 30),
+      timeZone: 'America/Los_Angeles',
+    })
+
+    expect(store.getState()).toMatchObject({ year: 2024, month: 11, today: '2024-12-31' })
+  })
+
+  it('updates the default month and today after mount across midnight', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2025, 0, 31, 23, 59, 59))
+    const store = createCalendar({})
+    const stop = store.startNow(1000)
+
+    expect(store.getState()).toMatchObject({ year: 2025, month: 0, today: '2025-01-31' })
+    vi.advanceTimersByTime(1000)
+    expect(store.getState()).toMatchObject({ year: 2025, month: 1, today: '2025-02-01' })
+
+    stop()
   })
 })
 

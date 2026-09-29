@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisSplitterOrientation = 'horizontal' | 'vertical'
@@ -38,6 +39,7 @@ export function IrisSplitter({
   end,
   ...rest
 }: IrisSplitterProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState(defaultValue)
   const ratio = isControlled ? (valueProp as number) : internal
@@ -55,6 +57,38 @@ export function IrisSplitter({
   const setRatio = (next: number) => {
     if (!isControlled) setInternal(next)
     onValueChange?.(next)
+  }
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (disabled) return
+    const rect = containerRef.current?.getBoundingClientRect()
+    const size = isHorizontal ? rect?.width : rect?.height
+    const min = size && size > 0 ? minStart / size : 0
+    const max = size && size > 0 ? 1 - minEnd / size : 1
+    const step = event.shiftKey ? 0.01 : 0.05
+    let next: number | null = null
+
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = ratio - step
+        break
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = ratio + step
+        break
+      case 'Home':
+        next = min
+        break
+      case 'End':
+        next = max
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    setRatio(Math.max(min, Math.min(max, next)))
   }
 
   useDrag({
@@ -111,11 +145,14 @@ export function IrisSplitter({
         ref={handleRef}
         data-iris-splitter-handle=""
         role="separator"
+        aria-label={t('splitter.resize')}
         aria-orientation={orientation}
         aria-valuenow={Math.round(ratio * 100)}
+        aria-disabled={disabled ? 'true' : undefined}
         aria-valuemin={0}
         aria-valuemax={100}
         tabIndex={disabled ? -1 : 0}
+        onKeyDown={onKeyDown}
         style={{
           flex: '0 0 4px',
           background: dragging ? 'var(--iris-primary)' : 'var(--iris-border)',

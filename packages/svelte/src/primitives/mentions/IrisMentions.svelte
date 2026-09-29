@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    createVirtualizer,
-    generateId,
-    type Virtualizer,
-    type VirtualizerState,
-  } from '@iris-ui-kit/core'
+  import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 
   export interface IrisMentionOption {
     label: string
@@ -63,8 +58,9 @@
   let internal = $state(defaultValue)
   const text = $derived(isControlled ? (value as string) : internal)
 
-  const baseId = generateId()
-  const listboxId = `${baseId}-listbox`
+  const generatedId = $props.id()
+  const baseId = $derived(id ?? generatedId)
+  const listboxId = $derived(`${baseId}-listbox`)
 
   let textareaEl = $state<HTMLTextAreaElement | undefined>(undefined)
   let activeIndex = $state(0)

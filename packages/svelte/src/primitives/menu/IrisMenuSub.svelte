@@ -3,7 +3,7 @@
    * IrisMenuSub — nested submenu within a Menu. Renders a trigger item that
    * opens a sub-panel on hover/focus on the direction-aware side.
    */
-  import { generateId, getMenuSubDirection } from '@iris-ui-kit/core'
+  import { getMenuSubDirection } from '@iris-ui-kit/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDirection } from '../../theme'
   import { useDismiss } from '../../floating/useDismiss.svelte'
@@ -27,7 +27,7 @@
   let open = $state(false)
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
-  const subId = generateId()
+  const subId = $props.id()
 
   // Provide a NESTED menu context so descendant items / deeper IrisMenuSubs use
   // THIS submenu's open state (not the root's), while `closeRoot` still points

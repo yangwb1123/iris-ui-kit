@@ -1,9 +1,15 @@
-import { createSignal, onCleanup, type JSX } from 'solid-js'
-import { createCalendar, formatMonthYear, formatLocalISO, type CalendarConfig } from '../core'
+import { createSignal, onCleanup, onMount, type JSX } from 'solid-js'
+import { createCalendar, formatMonthYear, type CalendarConfig } from '../core'
 import { CalendarGrid } from './calendar-grid'
 import { CalendarHeader } from './calendar-header'
 
-export type { CalendarEvent, CalendarConfig, CalendarState, CalendarStore } from '../core'
+export type {
+  CalendarEvent,
+  CalendarConfig,
+  CalendarState,
+  CalendarStore,
+  CalendarNow,
+} from '../core'
 
 export interface IrisEventCalendarProps {
   config: CalendarConfig
@@ -24,7 +30,12 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
   const [calendarState, setCalendarState] = createSignal(store.getState())
   onCleanup(store.subscribe(setCalendarState))
 
-  const today = formatLocalISO(new Date())
+  let stopClock: (() => void) | undefined
+  onMount(() => {
+    stopClock = store.startNow()
+  })
+  onCleanup(() => stopClock?.())
+
   const monthLabel = () => formatMonthYear(new Date(calendarState().year, calendarState().month, 1))
 
   return (
@@ -36,7 +47,7 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
       <CalendarHeader monthLabel={monthLabel} store={store} />
       <CalendarGrid
         state={calendarState}
-        today={today}
+        today={() => calendarState().today ?? null}
         onDateClick={props.config.onDateClick}
         onEventClick={props.config.onEventClick}
       />

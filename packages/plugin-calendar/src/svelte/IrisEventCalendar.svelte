@@ -26,9 +26,14 @@
 
   let calendarState = $state(store.getState())
 
-  $effect(() => store.subscribe((s) => (calendarState = s)))
-
-  const today = formatLocalISO(new Date())
+  $effect(() => {
+    const unsubscribe = store.subscribe((s) => (calendarState = s))
+    const stopClock = store.startNow()
+    return () => {
+      unsubscribe()
+      stopClock()
+    }
+  })
 
   const rootStyle = $derived(`font-family:inherit;${style}`)
 
@@ -83,7 +88,7 @@
     {#each buildMonthMatrix(currentDate(), 0).flat() as date (formatLocalISO(date))}
       {@const iso = formatLocalISO(date)}
       {@const isCurrentMonth = date.getMonth() === calendarState.month}
-      {@const isToday = iso === today}
+      {@const isToday = calendarState.today !== null && iso === calendarState.today}
       {@const dayEvents = eventsForDate(iso)}
       <div
         data-iris-event-cal-day={iso}

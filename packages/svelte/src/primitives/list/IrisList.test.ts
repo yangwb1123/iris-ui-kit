@@ -96,6 +96,25 @@ describe('@iris-ui-kit/svelte IrisList', () => {
     expect(onValueChange).toHaveBeenCalledWith('b')
   })
 
+  it('a key press on the focused option selects exactly once', async () => {
+    // A real key press targets the option and bubbles to the list. The option
+    // used to run its own Enter/Space handler *and* the list handler, so
+    // `select` fired twice — in multi mode that toggled the value straight back
+    // off, which looked like "the keyboard does nothing".
+    const onValueChange = vi.fn()
+    const { container } = render(IrisList, {
+      props: { items: ITEMS, multi: true, onValueChange },
+    })
+    const ul = container.querySelector('ul')!
+    const option = container.querySelectorAll<HTMLElement>('[role="option"]')[1]!
+    await fireEvent.keyDown(ul, { key: 'ArrowDown' })
+    await fireEvent.keyDown(option, { key: 'Enter' })
+    expect(onValueChange).toHaveBeenCalledTimes(1)
+    expect(container.querySelectorAll('[role="option"]')[1]!.getAttribute('aria-selected')).toBe(
+      'true',
+    )
+  })
+
   it('multi mode toggles values into an array', async () => {
     const onValueChange = vi.fn()
     const { container } = render(IrisList, {

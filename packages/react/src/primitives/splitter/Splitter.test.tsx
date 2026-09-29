@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisSplitter } from './Splitter'
 
 afterEach(() => cleanup())
@@ -21,6 +21,21 @@ describe('@iris-ui-kit/react IrisSplitter', () => {
     expect(handle.getAttribute('aria-valuenow')).toBe('30')
     expect(handle.getAttribute('aria-valuemin')).toBe('0')
     expect(handle.getAttribute('aria-valuemax')).toBe('100')
+    expect(handle.getAttribute('aria-label')).toBe('Resize panels')
+  })
+
+  it('focused handle resizes with arrows and jumps to Home/End boundaries', () => {
+    const { container } = render(<IrisSplitter defaultValue={0.5} start={<div />} end={<div />} />)
+    const handle = container.querySelector('[data-iris-splitter-handle]') as HTMLElement
+
+    handle.focus()
+    expect(document.activeElement).toBe(handle)
+    fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(handle.getAttribute('aria-valuenow')).toBe('55')
+    fireEvent.keyDown(handle, { key: 'Home' })
+    expect(handle.getAttribute('aria-valuenow')).toBe('0')
+    fireEvent.keyDown(handle, { key: 'End' })
+    expect(handle.getAttribute('aria-valuenow')).toBe('100')
   })
 
   it('vertical orientation reflects on data + aria attrs', () => {
@@ -38,10 +53,14 @@ describe('@iris-ui-kit/react IrisSplitter', () => {
   })
 
   it('disabled handle has tabindex=-1', () => {
-    const { container } = render(<IrisSplitter disabled start={<div />} end={<div />} />)
-    expect((container.querySelector('[data-iris-splitter-handle]') as HTMLElement).tabIndex).toBe(
-      -1,
+    const { container } = render(
+      <IrisSplitter disabled defaultValue={0.5} start={<div />} end={<div />} />,
     )
+    const handle = container.querySelector('[data-iris-splitter-handle]') as HTMLElement
+    expect(handle.tabIndex).toBe(-1)
+    expect(handle.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(handle.getAttribute('aria-valuenow')).toBe('50')
   })
 
   it('pane flex ratios derive from value', () => {

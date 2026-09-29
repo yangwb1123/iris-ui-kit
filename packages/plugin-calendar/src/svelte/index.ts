@@ -1,2 +1,8 @@
 export { default as IrisEventCalendar } from './IrisEventCalendar.svelte'
-export type { CalendarEvent, CalendarConfig, CalendarState, CalendarStore } from '../core'
+export type {
+  CalendarEvent,
+  CalendarConfig,
+  CalendarState,
+  CalendarStore,
+  CalendarNow,
+} from '../core'

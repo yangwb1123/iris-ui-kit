@@ -126,6 +126,20 @@ describe('TableViewSnapshot shape', () => {
     expect(ambient.setItem).not.toHaveBeenCalled()
   })
 
+  it('does not resolve ambient storage during SSR', () => {
+    const ambient = {
+      getItem: vi.fn(() => JSON.stringify([{ name: 'ambient', snapshot: {} }])),
+      setItem: vi.fn(),
+    }
+    vi.stubGlobal('window', undefined)
+    vi.stubGlobal('localStorage', ambient)
+
+    expect(readTableViews({})).toEqual([])
+    writeTableViews({}, [{ name: 'V', snapshot: {} }])
+    expect(ambient.getItem).not.toHaveBeenCalled()
+    expect(ambient.setItem).not.toHaveBeenCalled()
+  })
+
   it('treats storage:false and missing config as no-ops', () => {
     const storage = memoryStorage(JSON.stringify([{ name: 'V', snapshot: { sort: null } }]))
     const setItem = vi.spyOn(storage, 'setItem')

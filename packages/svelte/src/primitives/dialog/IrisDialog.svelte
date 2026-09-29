@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createFloatingMachine, generateId } from '@iris-ui-kit/core'
+  import { createFloatingMachine } from '@iris-ui-kit/core'
   import { toMachine } from '../../useMachine'
   import { setDialogContext } from './context'
 
@@ -44,7 +44,7 @@
 
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
-  const baseId = generateId()
+  const baseId = $props.id()
   const contentId = `${baseId}-content`
   const titleId = `${baseId}-title`
   const descriptionId = `${baseId}-desc`

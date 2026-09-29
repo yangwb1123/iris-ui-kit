@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
   import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
 
@@ -85,7 +84,8 @@
       return translate(key, params)
     }
   })
-  const popupId = `${generateId()}-popup`
+  const generatedId = $props.id()
+  const popupId = $derived(`${id ?? generatedId}-popup`)
 
   let open = $state(false)
   let activePath = $state<string[]>([])

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
 import { IrisCountdown } from './Countdown'
 
 afterEach(() => {
@@ -10,11 +11,19 @@ afterEach(() => {
 const time = (c: HTMLElement) => c.querySelector('[data-iris-countdown-time]')?.textContent
 
 describe('@iris-ui-kit/react IrisCountdown', () => {
-  it('renders the remaining time', () => {
+  it('does not read the wall clock during SSR and starts after mount', () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
+    const serverHtml = renderToString(<IrisCountdown value={3661000} />)
+    expect(serverHtml).toContain('data-iris-countdown-time=""></span>')
+
     const { container } = render(<IrisCountdown value={3661000} />)
     expect(time(container)).toBe('01:01:01')
+  })
+
+  it('renders an injected snapshot during SSR', () => {
+    const serverHtml = renderToString(<IrisCountdown value={3661000} now={0} />)
+    expect(serverHtml).toContain('01:01:01')
   })
 
   it('ticks down each second', () => {

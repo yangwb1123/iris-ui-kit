@@ -1,4 +1,4 @@
-import { createSignal, For, Show, type Accessor, type JSX } from 'solid-js'
+import { createSignal, For, onMount, Show, type Accessor, type JSX } from 'solid-js'
 import {
   readTableViews,
   TABLE_VIEWS_SAVE_ITEM,
@@ -28,7 +28,10 @@ export function createTableViewsController(options: {
   deleteView: (key: string) => void
   applyTableTab: (tab: TableTab) => void
 } {
-  const [viewList, setViewList] = createSignal<NamedView[]>(readTableViews(options.config()))
+  // Hydration must start from the same default list as SSR. Read storage only
+  // after the component is mounted; core makes the read fail-inert.
+  const [viewList, setViewList] = createSignal<NamedView[]>([])
+  onMount(() => setViewList(readTableViews(options.config())))
   const [internalActiveView, setInternalActiveView] = createSignal<string | null>(null)
   const activeViewKey = (): string | null => {
     const key = options.config()?.activeKey

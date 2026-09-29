@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateId, createHoverIntent } from '@iris-ui-kit/core'
+  import { createHoverIntent } from '@iris-ui-kit/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { portal } from '../../internal/portal'
   import type { Placement } from '@iris-ui-kit/core'
@@ -36,7 +36,7 @@
   let open = $state(false)
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let tooltipEl = $state<HTMLElement | undefined>(undefined)
-  const tooltipId = generateId()
+  const tooltipId = $props.id()
 
   // createHoverIntent — state machine driven timing for open/close delays.
   // The onChange callback synchronously sets the reactive $state variable.

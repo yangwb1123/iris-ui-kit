@@ -9,7 +9,7 @@ import {
 
 export interface CalendarGridProps {
   state: Accessor<CalendarState>
-  today: string
+  today: Accessor<string | null>
   onDateClick?: (date: string) => void
   onEventClick?: (event: CalendarEvent) => void
 }
@@ -50,19 +50,19 @@ const chipStyle: JSX.CSSProperties = {
   display: 'block',
 }
 
-function DayNumber(props: { date: Date; today: boolean }): JSX.Element {
+function DayNumber(props: { date: Date; today: Accessor<boolean> }): JSX.Element {
   return (
     <span
       data-iris-event-cal-day-num=""
       style={{
         'align-self': 'flex-start',
         'font-size': '0.8em',
-        'font-weight': props.today ? '700' : '400',
-        background: props.today
+        'font-weight': props.today() ? '700' : '400',
+        background: props.today()
           ? 'var(--iris-cal-today-bg, var(--iris-primary, #6366f1))'
           : 'transparent',
-        color: props.today ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
-        'border-radius': props.today ? '50%' : '0',
+        color: props.today() ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
+        'border-radius': props.today() ? '50%' : '0',
         width: '22px',
         height: '22px',
         display: 'flex',
@@ -102,14 +102,14 @@ function EventChip(props: {
 function CalendarDay(props: {
   date: Date
   currentMonth: number
-  today: string
+  today: Accessor<string | null>
   events: Accessor<CalendarEvent[]>
   onDateClick?: (date: string) => void
   onEventClick?: (event: CalendarEvent) => void
 }): JSX.Element {
   const iso = formatLocalISO(props.date)
   const isCurrentMonth = props.date.getMonth() === props.currentMonth
-  const isToday = iso === props.today
+  const isToday = () => props.today() !== null && iso === props.today()
   return (
     <div
       data-iris-event-cal-day={iso}

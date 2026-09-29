@@ -17,7 +17,13 @@ import {
   type CalendarEvent,
 } from '../core'
 
-export type { CalendarEvent, CalendarConfig, CalendarState, CalendarStore } from '../core'
+export type {
+  CalendarEvent,
+  CalendarConfig,
+  CalendarState,
+  CalendarStore,
+  CalendarNow,
+} from '../core'
 
 /**
  * Render a month-view events calendar from a declarative config (Vue, render-
@@ -35,19 +41,24 @@ export const IrisEventCalendar = defineComponent({
     const store = createCalendar(props.config)
     const calendarState = shallowRef(store.getState())
     let unsub = () => {}
+    let stopClock = () => {}
     onMounted(() => {
       unsub = store.subscribe((s) => {
         calendarState.value = s
       })
+      stopClock = store.startNow()
     })
-    onUnmounted(() => unsub())
+    onUnmounted(() => {
+      unsub()
+      stopClock()
+    })
 
     return () => {
       const s = calendarState.value
       const currentDate = new Date(s.year, s.month, 1)
       const matrix = buildMonthMatrix(currentDate, 0)
       const weekdayNames = getWeekdayNames(0)
-      const today = formatLocalISO(new Date())
+      const today = s.today ?? null
       const monthLabel = formatMonthYear(currentDate)
 
       // Weekday headers
@@ -72,7 +83,7 @@ export const IrisEventCalendar = defineComponent({
       const dayCells: VNode[] = matrix.flat().map((date) => {
         const iso = formatLocalISO(date)
         const isCurrentMonth = date.getMonth() === s.month
-        const isToday = iso === today
+        const isToday = today !== null && iso === today
         const dayEvents = s.events.filter((e: CalendarEvent) => e.date === iso)
 
         const dayNumNode = h(

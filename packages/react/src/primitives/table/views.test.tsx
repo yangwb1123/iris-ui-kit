@@ -259,6 +259,17 @@ describe('@iris-ui-kit/react IrisTable views (batch AH, iris 独有)', () => {
     expect(lastSaved(storage)[0]!.name).toBe('Healed')
   })
 
+  it('storage read errors fall back to the default view list', () => {
+    const storage = makeStorage()
+    storage.getItem.mockImplementation(() => {
+      throw new Error('storage blocked')
+    })
+    expect(() =>
+      render(<ViewsHarness viewsCfg={{ storage: storageAdapter(storage) }} />),
+    ).not.toThrow()
+    expect(viewNames()).toEqual([])
+  })
+
   it('non-array / malformed-entry JSON is ignored', () => {
     const bads = ['null', '"str"', '42', '{}', '[{"name": 7}, {"snapshot": {}}, "x"]']
     for (const bad of bads) {

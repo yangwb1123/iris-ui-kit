@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createFloatingMachine, generateId } from '@iris-ui-kit/core'
+  import { createFloatingMachine } from '@iris-ui-kit/core'
   import { toMachine } from '../../useMachine'
   import { setDropdownContext, type DropdownContextValue } from './context'
   import type { IrisDropdownProps } from './types'
@@ -36,7 +36,7 @@
 
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
-  const contentId = generateId()
+  const contentId = $props.id()
 
   setDropdownContext({
     get open() {

@@ -11319,6 +11319,12 @@
           "description": "Target time as an epoch timestamp (ms)."
         },
         {
+          "name": "now",
+          "type": "number",
+          "optional": true,
+          "description": "Optional epoch snapshot for the first render. Without it, the first render intentionally has no remaining text; the runtime clock starts after mount."
+        },
+        {
           "name": "format",
           "type": "string",
           "optional": true,
@@ -11377,6 +11383,12 @@
               "type": "number",
               "optional": false,
               "description": "Target time as an epoch timestamp (ms)."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": true,
+              "description": "Optional epoch snapshot for the first render. Without it, the first render intentionally has no remaining text; the runtime clock starts after mount."
             },
             {
               "name": "format",
@@ -11450,6 +11462,11 @@
               "optional": false
             },
             {
+              "name": "now",
+              "type": "number",
+              "optional": true
+            },
+            {
               "name": "format",
               "type": "string",
               "optional": true,
@@ -11498,6 +11515,12 @@
               "type": "number",
               "optional": false,
               "description": "Target epoch timestamp (ms)."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": true,
+              "description": "Optional epoch snapshot for the first render; otherwise text waits for mount."
             },
             {
               "name": "format",
@@ -11563,6 +11586,12 @@
               "optional": false
             },
             {
+              "name": "now",
+              "type": "number",
+              "optional": true,
+              "description": "Optional epoch snapshot for the first render; otherwise text waits for mount."
+            },
+            {
               "name": "format",
               "type": "string",
               "optional": true,
@@ -11621,13 +11650,14 @@
         "suffix"
       ],
       "quality": {
-        "propCount": 9,
+        "propCount": 10,
         "eventCount": 1
       },
       "parity": {
         "name": "IrisCountdown",
         "common": [
           "format",
+          "now",
           "prefix",
           "size",
           "suffix",
@@ -11638,6 +11668,7 @@
           "class",
           "className",
           "format",
+          "now",
           "onFinish",
           "onfinish",
           "prefix",
@@ -11647,12 +11678,12 @@
           "title",
           "value"
         ],
-        "ratio": 0.55,
+        "ratio": 0.58,
         "byFramework": {
-          "react": 9,
-          "vue": 6,
-          "solid": 9,
-          "svelte": 8
+          "react": 10,
+          "vue": 7,
+          "solid": 10,
+          "svelte": 9
         },
         "uniqueTo": {
           "react": [
@@ -11671,7 +11702,7 @@
           "style"
         ],
         "intrinsic": [],
-        "asymmetry": 1.5
+        "asymmetry": 1.43
       }
     },
     {
@@ -33937,9 +33968,14 @@
             },
             {
               "name": "checked",
-              "type": "string | number | boolean | null",
+              "type": "boolean",
               "optional": true,
               "description": "Standalone mode only"
+            },
+            {
+              "name": "defaultChecked",
+              "type": "boolean",
+              "optional": true
             },
             {
               "name": "size",
@@ -33963,7 +33999,7 @@
             },
             {
               "name": "onChange",
-              "type": "(value: string | number | boolean) => void",
+              "type": "(checked: boolean) => void",
               "optional": true
             },
             {
@@ -34008,6 +34044,17 @@
               "optional": true
             },
             {
+              "name": "defaultChecked",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "onChange",
+              "type": "(checked: boolean) => void",
+              "optional": true
+            },
+            {
               "name": "size",
               "type": "RadioSize",
               "optional": true,
@@ -34040,6 +34087,7 @@
             }
           ],
           "events": [
+            "onChange",
             "onchange"
           ],
           "slots": [
@@ -34082,13 +34130,11 @@
         "byFramework": {
           "react": 6,
           "vue": 5,
-          "solid": 9,
-          "svelte": 7
+          "solid": 10,
+          "svelte": 9
         },
         "uniqueTo": {
-          "react": [
-            "defaultChecked"
-          ],
+          "react": [],
           "vue": [],
           "solid": [
             "class",
@@ -34101,13 +34147,14 @@
         "shared": [
           "checked",
           "children",
+          "defaultChecked",
           "disabled",
           "id",
           "modelValue",
           "onChange"
         ],
         "intrinsic": [],
-        "asymmetry": 1.8
+        "asymmetry": 2
       }
     },
     {
@@ -54781,13 +54828,13 @@
       "incomparable": 0,
       "intrinsicSpread": 5,
       "propTotals": {
-        "react": 1267,
-        "vue": 850,
-        "solid": 1178,
-        "svelte": 1208
+        "react": 1268,
+        "vue": 851,
+        "solid": 1180,
+        "svelte": 1211
       },
       "exclusivePropNames": {
-        "react": 218,
+        "react": 217,
         "vue": 69,
         "solid": 113,
         "svelte": 124
@@ -55287,13 +55334,11 @@
           "byFramework": {
             "react": 6,
             "vue": 5,
-            "solid": 9,
-            "svelte": 7
+            "solid": 10,
+            "svelte": 9
           },
           "uniqueTo": {
-            "react": [
-              "defaultChecked"
-            ],
+            "react": [],
             "vue": [],
             "solid": [
               "class",
@@ -55306,13 +55351,14 @@
           "shared": [
             "checked",
             "children",
+            "defaultChecked",
             "disabled",
             "id",
             "modelValue",
             "onChange"
           ],
           "intrinsic": [],
-          "asymmetry": 1.8
+          "asymmetry": 2
         }
       ]
     }

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui-kit/core'
   import IrisTree from '../tree/IrisTree.svelte'
   import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from '../tree/types'
@@ -38,7 +37,8 @@
       return translate(key, params)
     }
   })
-  const panelId = `${generateId()}-panel`
+  const generatedId = $props.id()
+  const panelId = `${generatedId}-panel`
 
   let open = $state(false)
   let containerEl = $state<HTMLElement | undefined>(undefined)

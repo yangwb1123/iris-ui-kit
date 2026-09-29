@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, splitProps, For, type JSX } from 'solid-js'
+import { useI18n } from '../i18n'
 
 export type IrisResizableHandle =
   'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
@@ -56,6 +57,52 @@ function handlePosition(handle: IrisResizableHandle): JSX.CSSProperties {
   return s
 }
 
+function resizeFromKeyboard(
+  base: IrisResizableSize,
+  handle: IrisResizableHandle,
+  key: string,
+  step: number,
+  minWidth: number,
+  minHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+): IrisResizableSize | null {
+  let dx = 0
+  let dy = 0
+  const isBoundary = key === 'Home' || key === 'End'
+
+  if (key === 'ArrowLeft') dx = -step
+  else if (key === 'ArrowRight') dx = step
+  else if (key === 'ArrowUp') dy = -step
+  else if (key === 'ArrowDown') dy = step
+  else if (!isBoundary) return null
+
+  let width = base.width
+  let height = base.height
+  const hasHorizontalHandle = handle.includes('left') || handle.includes('right')
+  const hasVerticalHandle = handle.includes('top') || handle.includes('bottom')
+
+  if (isBoundary) {
+    if (hasHorizontalHandle) {
+      width = key === 'Home' ? minWidth : Number.isFinite(maxWidth) ? maxWidth : base.width
+    }
+    if (hasVerticalHandle) {
+      height = key === 'Home' ? minHeight : Number.isFinite(maxHeight) ? maxHeight : base.height
+    }
+  } else {
+    if (handle.includes('right')) width = base.width + dx
+    if (handle.includes('left')) width = base.width - dx
+    if (handle.includes('bottom')) height = base.height + dy
+    if (handle.includes('top')) height = base.height - dy
+  }
+
+  const next = {
+    width: Math.max(minWidth, Math.min(maxWidth, width)),
+    height: Math.max(minHeight, Math.min(maxHeight, height)),
+  }
+  return next.width === base.width && next.height === base.height ? null : next
+}
+
 export interface IrisResizableProps {
   size?: IrisResizableSize
   defaultSize?: IrisResizableSize
@@ -93,22 +140,46 @@ export function IrisResizable(props: IrisResizableProps): JSX.Element {
     'children',
   ])
 
+  const { t } = useI18n()
   const [internalSize, setInternalSize] = createSignal<IrisResizableSize>({ ...local.defaultSize })
 
   const currentSize = (): IrisResizableSize => local.size ?? internalSize()
 
-  const setSize = (next: IrisResizableSize) => {
-    const w = Math.max(
+  const clampSize = (next: IrisResizableSize): IrisResizableSize => ({
+    width: Math.max(
       local.minSize?.width ?? 40,
       Math.min(local.maxSize?.width ?? Infinity, next.width),
-    )
-    const h = Math.max(
+    ),
+    height: Math.max(
       local.minSize?.height ?? 40,
       Math.min(local.maxSize?.height ?? Infinity, next.height),
-    )
-    const clamped = { width: w, height: h }
+    ),
+  })
+
+  const setSize = (next: IrisResizableSize): IrisResizableSize => {
+    const clamped = clampSize(next)
     if (!local.size) setInternalSize(clamped)
     local.onSizeChange?.(clamped)
+    return clamped
+  }
+
+  const onHandleKeyDown = (handle: IrisResizableHandle, e: KeyboardEvent) => {
+    if (local.disabled) return
+    const base = { ...currentSize() }
+    const next = resizeFromKeyboard(
+      base,
+      handle,
+      e.key,
+      e.shiftKey ? 1 : 10,
+      local.minSize?.width ?? 40,
+      local.minSize?.height ?? 40,
+      local.maxSize?.width ?? Infinity,
+      local.maxSize?.height ?? Infinity,
+    )
+    if (!next) return
+    e.preventDefault()
+    const clamped = setSize(next)
+    local.onResizeEnd?.(clamped)
   }
 
   const onHandleMouseDown = (handle: IrisResizableHandle, e: MouseEvent) => {
@@ -152,13 +223,19 @@ export function IrisResizable(props: IrisResizableProps): JSX.Element {
       {local.children}
       <For each={local.handles}>
         {(handle) => (
-          <div
+          <button
+            type="button"
+            disabled={local.disabled || undefined}
+            aria-label={t('resizer.handle', { handle })}
             data-iris-resizable-handle={handle}
             onMouseDown={(e) => onHandleMouseDown(handle, e)}
+            onKeyDown={(e) => onHandleKeyDown(handle, e)}
             style={{
               ...handlePosition(handle),
               cursor: local.disabled ? 'default' : HANDLE_CURSORS[handle],
               'z-index': '10',
+              border: '0',
+              padding: '0',
               background: 'transparent',
             }}
           />

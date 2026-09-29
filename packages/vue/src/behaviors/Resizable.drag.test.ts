@@ -207,4 +207,49 @@ describe('@iris-ui-kit/vue IrisResizable — drag integration (two consecutive d
     expect(wrapper.emitted('resizeEnd')?.slice(-1)[0]?.[0]).toEqual({ width: 303, height: 150 })
     wrapper.unmount()
   })
+
+  it('provides named keyboard handles without regressing pointer dragging', async () => {
+    const wrapper = mount(IrisResizable, {
+      props: {
+        defaultSize: { width: 200, height: 100 },
+        handles: ['right'],
+        maxWidth: 300,
+      },
+      slots: { default: '<div>x</div>' },
+      attachTo: document.body,
+    })
+    await nextTick()
+    const handle = wrapper.find('[data-iris-resizable-handle=right]')
+
+    expect(handle.element.tagName).toBe('BUTTON')
+    expect(handle.attributes('aria-label')).toBe('Resize right')
+    ;(handle.element as HTMLElement).focus()
+    expect(document.activeElement).toBe(handle.element)
+
+    handle.element.dispatchEvent(makePointerEvent('pointerdown', { clientX: 100, clientY: 100 }))
+    handle.element.dispatchEvent(makePointerEvent('pointermove', { clientX: 120, clientY: 100 }))
+    handle.element.dispatchEvent(makePointerEvent('pointerup', { clientX: 120, clientY: 100 }))
+    await nextTick()
+    expect(wrapper.emitted('update:size')?.slice(-1)[0]?.[0]).toEqual({
+      width: 220,
+      height: 100,
+    })
+
+    await handle.trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.emitted('update:size')?.slice(-1)[0]?.[0]).toEqual({
+      width: 230,
+      height: 100,
+    })
+    await handle.trigger('keydown', { key: 'Home' })
+    expect(wrapper.emitted('update:size')?.slice(-1)[0]?.[0]).toEqual({
+      width: 40,
+      height: 100,
+    })
+    await handle.trigger('keydown', { key: 'End' })
+    expect(wrapper.emitted('update:size')?.slice(-1)[0]?.[0]).toEqual({
+      width: 300,
+      height: 100,
+    })
+    wrapper.unmount()
+  })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderToString } from 'solid-js/web'
 import { IrisTable } from './IrisTable'
 import type { IrisTableColumn, IrisTableFormulaTables } from './types'
@@ -42,5 +42,22 @@ describe('Solid IrisTable cross-table formulas SSR/hydration safety', () => {
     // shape as SSR. Two independent passes guard against render-time state or
     // cross-table scope leaking into the generated markup.
     expect(renderTable()).toBe(renderTable())
+  })
+
+  it('renders the default named-view list during SSR', () => {
+    const getItem = vi.fn(() => JSON.stringify([{ name: 'Fav', snapshot: {} }]))
+    const setItem = vi.fn()
+    const html = renderToString(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        rowKey="id"
+        views={{ storage: { getItem, setItem } }}
+      />
+    ))
+
+    expect(html).toContain('data-iris-table-views')
+    expect(html).not.toContain('Fav')
+    expect(getItem).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisResizerHandle =
@@ -60,6 +61,57 @@ function handlePosition(handle: IrisResizerHandle): React.CSSProperties {
   return s
 }
 
+function resizeFromKeyboard(
+  base: IrisResizerSize,
+  handle: IrisResizerHandle,
+  key: string,
+  step: number,
+  minWidth: number,
+  minHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+  keepAspect: boolean,
+): IrisResizerSize | null {
+  let dx = 0
+  let dy = 0
+  const isBoundary = key === 'Home' || key === 'End'
+
+  if (key === 'ArrowLeft') dx = -step
+  else if (key === 'ArrowRight') dx = step
+  else if (key === 'ArrowUp') dy = -step
+  else if (key === 'ArrowDown') dy = step
+  else if (!isBoundary) return null
+
+  let width = base.width
+  let height = base.height
+  const hasHorizontalHandle = handle.includes('left') || handle.includes('right')
+  const hasVerticalHandle = handle.includes('top') || handle.includes('bottom')
+
+  if (isBoundary) {
+    if (hasHorizontalHandle) {
+      width = key === 'Home' ? minWidth : Number.isFinite(maxWidth) ? maxWidth : base.width
+    }
+    if (hasVerticalHandle) {
+      height = key === 'Home' ? minHeight : Number.isFinite(maxHeight) ? maxHeight : base.height
+    }
+  } else {
+    if (handle.includes('right')) width = base.width + dx
+    if (handle.includes('left')) width = base.width - dx
+    if (handle.includes('bottom')) height = base.height + dy
+    if (handle.includes('top')) height = base.height - dy
+
+    if (keepAspect && hasHorizontalHandle && hasVerticalHandle) {
+      height = width / (base.width / Math.max(1, base.height))
+    }
+  }
+
+  const next = {
+    width: Math.max(minWidth, Math.min(maxWidth, width)),
+    height: Math.max(minHeight, Math.min(maxHeight, height)),
+  }
+  return next.width === base.width && next.height === base.height ? null : next
+}
+
 interface HandleRenderProps {
   handle: IrisResizerHandle
   disabled: boolean
@@ -75,9 +127,31 @@ interface HandleRenderProps {
 }
 
 function ResizerHandle(props: HandleRenderProps): React.ReactElement {
-  const handleRef = React.useRef<HTMLDivElement | null>(null)
+  const { t } = useI18n()
+  const handleRef = React.useRef<HTMLButtonElement | null>(null)
   const startSizeRef = React.useRef<IrisResizerSize>({ width: 0, height: 0 })
   const aspectRef = React.useRef(1)
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (props.disabled) return
+    const base = { ...props.sizeRef.current }
+    const next = resizeFromKeyboard(
+      base,
+      props.handle,
+      event.key,
+      event.shiftKey ? 1 : 10,
+      props.minWidth,
+      props.minHeight,
+      props.maxWidth,
+      props.maxHeight,
+      props.keepAspect,
+    )
+    if (!next) return
+    event.preventDefault()
+    props.onResizeStart?.(base)
+    props.onUpdate(next)
+    props.onResizeEnd?.(next)
+  }
 
   useDrag({
     handle: handleRef,
@@ -115,12 +189,18 @@ function ResizerHandle(props: HandleRenderProps): React.ReactElement {
   })
 
   return (
-    <div
+    <button
       ref={handleRef}
+      type="button"
+      disabled={props.disabled}
+      aria-label={t('resizer.handle', { handle: props.handle })}
       data-iris-resizer-handle={props.handle}
+      onKeyDown={onKeyDown}
       style={{
         ...handlePosition(props.handle),
         touchAction: 'none',
+        border: 0,
+        padding: 0,
         background: 'transparent',
         zIndex: 1,
       }}

@@ -1,9 +1,13 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, cleanup, fireEvent } from '@testing-library/react'
+import { act, render, cleanup, fireEvent } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
 import { IrisEventCalendar } from './index'
 import type { CalendarConfig } from '../core'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 const config = (): CalendarConfig => ({
   initialYear: 2025,
@@ -20,6 +24,30 @@ describe('IrisEventCalendar (react)', () => {
     const { container } = render(<IrisEventCalendar config={config()} />)
     expect(container.querySelector('[data-iris-event-calendar]')).toBeTruthy()
     expect(container.querySelector('[data-iris-event-cal-grid]')).toBeTruthy()
+  })
+
+  it('keeps an un-injected SSR month neutral and updates after mount', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2025, 0, 31, 23, 59, 59))
+    const serverHtml = renderToString(<IrisEventCalendar config={{}} />)
+    expect(serverHtml).toContain('January 1970')
+
+    const { container } = render(<IrisEventCalendar config={{}} />)
+    expect(container.querySelector('[data-iris-event-cal-title]')?.textContent).toContain(
+      'January 2025',
+    )
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(container.querySelector('[data-iris-event-cal-title]')?.textContent).toContain(
+      'February 2025',
+    )
+  })
+
+  it('uses an injected current-time snapshot for SSR', () => {
+    const html = renderToString(<IrisEventCalendar config={{ now: new Date(2025, 5, 15, 12) }} />)
+    expect(html).toContain('June 2025')
+    expect(html).toContain('var(--iris-cal-today-bg')
   })
 
   it('renders the month title header containing the year', () => {

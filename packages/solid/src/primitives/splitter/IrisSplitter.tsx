@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisSplitterOrientation = 'horizontal' | 'vertical'
@@ -38,6 +39,8 @@ export function IrisSplitter(props: IrisSplitterProps): JSX.Element {
     },
     props,
   )
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => props.value !== undefined
   const [internalValue, setInternalValue] = createSignal(merged.defaultValue)
@@ -83,6 +86,38 @@ export function IrisSplitter(props: IrisSplitterProps): JSX.Element {
     },
   })
 
+  const onKeyDown = (event: KeyboardEvent): void => {
+    if (merged.disabled) return
+    const rect = containerEl()?.getBoundingClientRect()
+    const size = isHorizontal() ? rect?.width : rect?.height
+    const min = size && size > 0 ? merged.minStart / size : 0
+    const max = size && size > 0 ? 1 - merged.minEnd / size : 1
+    const step = event.shiftKey ? 0.01 : 0.05
+    let next: number | null = null
+
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = currentValue() - step
+        break
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = currentValue() + step
+        break
+      case 'Home':
+        next = min
+        break
+      case 'End':
+        next = max
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    setRatio(Math.max(min, Math.min(max, next)))
+  }
+
   return (
     <div
       ref={setContainerEl}
@@ -113,11 +148,14 @@ export function IrisSplitter(props: IrisSplitterProps): JSX.Element {
         ref={setHandleEl}
         data-iris-splitter-handle=""
         role="separator"
+        aria-label={t('splitter.resize')}
         aria-orientation={merged.orientation}
         aria-valuenow={Math.round(currentValue() * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
+        aria-disabled={merged.disabled ? 'true' : undefined}
         tabindex={merged.disabled ? -1 : 0}
+        onKeyDown={onKeyDown}
         style={{
           flex: '0 0 4px',
           background: dragging() ? 'var(--iris-primary)' : 'var(--iris-border)',

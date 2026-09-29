@@ -21,11 +21,23 @@ export function mergeProps<A extends object, B extends object>(a: A, b: B): A & 
   return { ...a, ...b }
 }
 
-/** Generate a stable random id. Adapters may override via `useId()`-style hooks. */
-let idCounter = 0
+/**
+ * Generate a runtime-unique id.
+ *
+ * This is intentionally not an SSR id primitive: adapters rendering DOM must
+ * use their framework's request-scoped id API (for example Svelte's
+ * `$props.id()`). Keeping entropy local to the call avoids a module-global
+ * counter leaking request state between server renders.
+ */
 export function generateId(prefix = 'iris'): string {
-  idCounter += 1
-  return `${prefix}-${idCounter}`
+  const cryptoApi = (
+    globalThis as typeof globalThis & {
+      crypto?: { randomUUID?: () => string }
+    }
+  ).crypto
+  const suffix =
+    cryptoApi?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  return `${prefix}-${suffix}`
 }
 
 /**

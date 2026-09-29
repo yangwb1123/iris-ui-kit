@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { IrisTable } from './Table'
 import { TABLE_VIEWS_SAVE_ITEM } from '@iris-ui-kit/core'
@@ -100,6 +101,7 @@ const fullData = [
 ]
 
 async function selectView(wrapper: ReturnType<typeof mount>, name: string): Promise<void> {
+  await nextTick()
   await wrapper.find('[data-iris-table-views]').setValue(name)
 }
 
@@ -215,6 +217,24 @@ describe('IrisTable named-view snapshot channels', () => {
         columns: fullColumns,
         data: fullData,
         views: { storage: { getItem: vi.fn(() => '{broken'), setItem: vi.fn() } },
+      },
+    })
+    expect(wrapper.findAll('[data-iris-table-views] option')).toHaveLength(2)
+  })
+
+  it('storage read errors fall back to the default view list', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: fullColumns,
+        data: fullData,
+        views: {
+          storage: {
+            getItem: vi.fn(() => {
+              throw new Error('storage blocked')
+            }),
+            setItem: vi.fn(),
+          },
+        },
       },
     })
     expect(wrapper.findAll('[data-iris-table-views] option')).toHaveLength(2)

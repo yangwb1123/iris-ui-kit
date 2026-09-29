@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui-kit/core'
   import { setRadioGroupContext, type RadioSize } from './context'
 
   let {
@@ -23,7 +22,7 @@
   } = $props()
 
   // svelte-ignore state_referenced_locally
-  const fallbackName = generateId()
+  const fallbackName = $props.id()
   const groupName = $derived(name ?? fallbackName)
   const isControlled = $derived(valueProp !== undefined)
   // svelte-ignore state_referenced_locally

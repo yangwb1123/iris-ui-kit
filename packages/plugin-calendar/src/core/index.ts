@@ -26,12 +26,26 @@ export interface CalendarEvent {
   allDay?: boolean
 }
 
+/** A serializable epoch timestamp or a Date snapshot supplied by the host. */
+export type CalendarNow = Date | number
+
 export interface CalendarConfig {
   events?: CalendarEvent[]
-  /** Defaults to current year */
+  /** Defaults to the injected snapshot, or a stable neutral month until mount. */
   initialYear?: number
-  /** 0-indexed; defaults to current month */
+  /** 0-indexed; defaults to the injected snapshot, or January until mount. */
   initialMonth?: number
+  /**
+   * Current-time snapshot used for default month and today marking. Supplying it
+   * makes SSR deterministic; without it, the adapters resolve the runtime clock
+   * only after mounting.
+   */
+  now?: CalendarNow
+  /**
+   * IANA time zone used to interpret `now` (for example, `America/New_York`).
+   * Defaults to the runtime environment's local time zone.
+   */
+  timeZone?: string
   onEventClick?: (event: CalendarEvent) => void
   onDateClick?: (date: string) => void
 }
@@ -41,6 +55,8 @@ export interface CalendarState {
   /** 0-indexed */
   month: number
   events: CalendarEvent[]
+  /** Current day in the configured time zone; null before the client clock starts. */
+  today?: string | null
 }
 
 export interface CalendarStore {
@@ -49,9 +65,55 @@ export interface CalendarStore {
   prevMonth(): void
   nextMonth(): void
   goToMonth(year: number, month: number): void
+  /** Apply an explicit current-time snapshot without reading the wall clock. */
+  setNow(now: CalendarNow): void
+  /** Resolve the runtime clock; adapters call this after mount, never during SSR. */
+  refreshNow(): void
+  /** Start post-mount clock updates. Returns a cleanup function. */
+  startNow(intervalMs?: number): () => void
   addEvent(event: CalendarEvent): void
   removeEvent(id: string): void
   eventsForDate(date: string): CalendarEvent[]
+}
+
+const DEFAULT_INITIAL_YEAR = 1970
+const DEFAULT_INITIAL_MONTH = 0
+const DEFAULT_CLOCK_INTERVAL = 60_000
+
+type CalendarDateParts = { year: number; month: number; day: number }
+
+function toDate(snapshot: CalendarNow): Date {
+  return snapshot instanceof Date ? snapshot : new Date(snapshot)
+}
+
+function readDateParts(snapshot: CalendarNow, timeZone?: string): CalendarDateParts | null {
+  const date = toDate(snapshot)
+  if (!Number.isFinite(date.getTime())) return null
+
+  if (timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date)
+      const year = Number(parts.find((part) => part.type === 'year')?.value)
+      const month = Number(parts.find((part) => part.type === 'month')?.value)
+      const day = Number(parts.find((part) => part.type === 'day')?.value)
+      if ([year, month, day].every(Number.isFinite)) {
+        return { year, month: month - 1, day }
+      }
+    } catch {
+      // Invalid IANA zones fall back to the runtime environment below.
+    }
+  }
+
+  return { year: date.getFullYear(), month: date.getMonth(), day: date.getDate() }
+}
+
+function formatDateParts(parts: CalendarDateParts): string {
+  return `${String(parts.year).padStart(4, '0')}-${String(parts.month + 1).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
 }
 
 function createCalendarApi(
@@ -59,6 +121,9 @@ function createCalendarApi(
   prevMonth: () => void,
   nextMonth: () => void,
   goToMonth: (year: number, month: number) => void,
+  setNow: (now: CalendarNow) => void,
+  refreshNow: () => void,
+  startNow: (intervalMs?: number) => () => void,
   addEvent: (event: CalendarEvent) => void,
   removeEvent: (id: string) => void,
   eventsForDate: (date: string) => CalendarEvent[],
@@ -69,6 +134,9 @@ function createCalendarApi(
     prevMonth,
     nextMonth,
     goToMonth,
+    setNow,
+    refreshNow,
+    startNow,
     addEvent,
     removeEvent,
     eventsForDate,
@@ -80,17 +148,26 @@ class CalendarStoreEngine {
   readonly store: CalendarStore
 
   constructor(config: CalendarConfig) {
-    const now = new Date()
-    const initialYear = config.initialYear ?? now.getFullYear()
-    const initialMonth = config.initialMonth ?? now.getMonth()
+    const initialParts =
+      config.now === undefined ? null : readDateParts(config.now, config.timeZone)
+    const initialYear = config.initialYear ?? initialParts?.year ?? DEFAULT_INITIAL_YEAR
+    const initialMonth = config.initialMonth ?? initialParts?.month ?? DEFAULT_INITIAL_MONTH
 
     const store = createStore<CalendarState>({
       year: initialYear,
       month: initialMonth,
       events: (config.events ?? []).map((e) => ({ ...e })),
+      today: initialParts ? formatDateParts(initialParts) : null,
     })
 
+    // A default calendar follows the current month until the user navigates.
+    // Explicit initial values retain their existing controlled starting point.
+    let followsCurrentMonth = config.initialYear === undefined || config.initialMonth === undefined
+    let clockTimer: ReturnType<typeof setTimeout> | undefined
+    let clockGeneration = 0
+
     const prevMonth = (): void => {
+      followsCurrentMonth = false
       const { year, month } = store.getState()
       if (month === 0) {
         store.setState({ ...store.getState(), year: year - 1, month: 11 })
@@ -100,6 +177,7 @@ class CalendarStoreEngine {
     }
 
     const nextMonth = (): void => {
+      followsCurrentMonth = false
       const { year, month } = store.getState()
       if (month === 11) {
         store.setState({ ...store.getState(), year: year + 1, month: 0 })
@@ -109,7 +187,67 @@ class CalendarStoreEngine {
     }
 
     const goToMonth = (year: number, month: number): void => {
+      followsCurrentMonth = false
       store.setState({ ...store.getState(), year, month })
+    }
+
+    const setNow = (snapshot: CalendarNow): void => {
+      const parts = readDateParts(snapshot, config.timeZone)
+      if (!parts) return
+      const current = store.getState()
+      const year =
+        followsCurrentMonth && config.initialYear === undefined ? parts.year : current.year
+      const month =
+        followsCurrentMonth && config.initialMonth === undefined ? parts.month : current.month
+      const today = formatDateParts(parts)
+      if (current.year === year && current.month === month && current.today === today) return
+      store.setState({ ...current, year, month, today })
+    }
+
+    const refreshNow = (): void => {
+      // This is intentionally called only by a post-mount adapter effect.
+      setNow(new Date())
+    }
+
+    const stopNow = (): void => {
+      if (clockTimer !== undefined) {
+        clearTimeout(clockTimer)
+        clockTimer = undefined
+      }
+    }
+
+    const startNow = (intervalMs?: number): (() => void) => {
+      stopNow()
+      const generation = ++clockGeneration
+      refreshNow()
+      const customDelay =
+        intervalMs !== undefined && Number.isFinite(intervalMs) && intervalMs > 0
+          ? intervalMs
+          : undefined
+
+      const schedule = (): void => {
+        // Align the default refresh with a minute boundary so a midnight
+        // rollover is observed without polling every second. An explicit
+        // delay remains useful for hosts/tests that want a tighter cadence.
+        const current = new Date()
+        const nextMinute =
+          customDelay ??
+          Math.max(1, DEFAULT_CLOCK_INTERVAL - (current.getTime() % DEFAULT_CLOCK_INTERVAL))
+        const timer = setTimeout(() => {
+          if (clockGeneration !== generation || clockTimer !== timer) return
+          clockTimer = undefined
+          refreshNow()
+          if (clockGeneration === generation) schedule()
+        }, nextMinute)
+        clockTimer = timer
+      }
+
+      schedule()
+      return () => {
+        if (clockGeneration !== generation) return
+        clockGeneration += 1
+        stopNow()
+      }
     }
 
     const addEvent = (event: CalendarEvent): void => {
@@ -134,6 +272,9 @@ class CalendarStoreEngine {
       prevMonth,
       nextMonth,
       goToMonth,
+      setNow,
+      refreshNow,
+      startNow,
       addEvent,
       removeEvent,
       eventsForDate,

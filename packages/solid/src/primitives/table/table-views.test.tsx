@@ -244,4 +244,22 @@ describe('IrisTable named-view snapshot channels', () => {
     ))
     expect(container.querySelectorAll('[data-iris-table-views] option')).toHaveLength(2)
   })
+
+  it('storage read errors fall back to the default view list', () => {
+    const { container } = render(() => (
+      <IrisTable
+        columns={fullColumns}
+        data={fullData}
+        views={{
+          storage: {
+            getItem: vi.fn(() => {
+              throw new Error('storage blocked')
+            }),
+            setItem: vi.fn(),
+          },
+        }}
+      />
+    ))
+    expect(container.querySelectorAll('[data-iris-table-views] option')).toHaveLength(2)
+  })
 })

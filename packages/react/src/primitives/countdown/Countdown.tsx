@@ -5,6 +5,11 @@ export type IrisCountdownSize = 'sm' | 'md' | 'lg'
 export interface IrisCountdownProps {
   /** Target time as an epoch timestamp (ms). */
   value: number
+  /**
+   * Optional epoch snapshot for the first render. Without it, the first render
+   * intentionally has no remaining text; the runtime clock starts after mount.
+   */
+  now?: number
   /** Token format: DD / HH / mm / ss / SSS. */
   format?: string
   title?: React.ReactNode
@@ -43,9 +48,12 @@ export function formatRemaining(ms: number, format: string): string {
  * and fires `onFinish` once at zero.
  *
  * React port of {@link import('@iris-ui-kit/vue').IrisCountdown}.
+ * `value` and `now` are epoch milliseconds, so the countdown is timezone
+ * independent; the host's timezone only affects unrelated date formatting.
  */
 export function IrisCountdown({
   value,
+  now: injectedNow,
   format = 'HH:mm:ss',
   title,
   prefix,
@@ -56,7 +64,7 @@ export function IrisCountdown({
   className,
   ...rest
 }: IrisCountdownProps): React.ReactElement {
-  const [now, setNow] = React.useState(() => Date.now())
+  const [currentTime, setCurrentTime] = React.useState<number | null>(() => injectedNow ?? null)
   const onFinishRef = React.useRef(onFinish)
   onFinishRef.current = onFinish
   const finishedRef = React.useRef(false)
@@ -71,18 +79,19 @@ export function IrisCountdown({
         if (id) clearInterval(id)
       }
     }
-    setNow(Date.now())
+    const initial = injectedNow ?? Date.now()
+    setCurrentTime(initial)
     const id = setInterval(() => {
       const n = Date.now()
-      setNow(n)
+      setCurrentTime(n)
       finishIfDue(n, id)
     }, tick)
-    finishIfDue(Date.now(), id)
+    finishIfDue(initial, id)
     return () => clearInterval(id)
-  }, [value, format])
+  }, [value, format, injectedNow])
 
-  const remaining = Math.max(0, value - now)
-  const finished = remaining <= 0
+  const remaining = currentTime === null ? null : Math.max(0, value - currentTime)
+  const finished = remaining !== null && remaining <= 0
   const affix: React.CSSProperties = { fontSize: '0.6em', color: 'var(--iris-muted)' }
 
   return (
@@ -114,7 +123,9 @@ export function IrisCountdown({
         }}
       >
         {prefix != null ? <span style={affix}>{prefix}</span> : null}
-        <span data-iris-countdown-time="">{formatRemaining(remaining, format)}</span>
+        <span data-iris-countdown-time="">
+          {remaining === null ? null : formatRemaining(remaining, format)}
+        </span>
         {suffix != null ? <span style={affix}>{suffix}</span> : null}
       </div>
     </div>

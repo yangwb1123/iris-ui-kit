@@ -103,6 +103,29 @@ describe('IrisCascader', () => {
     expect(root.attributes('data-state')).toBe('closed')
   })
 
+  it('supports Tab entry, roving arrow navigation, Enter selection, and column labels', async () => {
+    const keyboardOptions: IrisCascaderNode[] = [
+      { label: 'Disabled', value: 'disabled', disabled: true },
+      { label: 'First', value: 'first' },
+      { label: 'Second', value: 'second' },
+    ]
+    const w = mount(IrisCascader, { props: { options: keyboardOptions } })
+    await trigger(w).trigger('click')
+    const listbox = columns(w)[0]!
+    const options = listbox.findAll('[role="option"]')
+    expect(listbox.attributes('aria-label')).toBe('Level 1')
+    expect(options.map((option) => option.attributes('tabindex'))).toEqual(['-1', '0', '-1'])
+
+    // The single tabindex=0 item is the native Tab entry point.
+    expect(options[1]!.attributes('tabindex')).toBe('0')
+    await options[1]!.trigger('keydown', { key: 'ArrowDown' })
+    expect(options[2]!.attributes('tabindex')).toBe('0')
+
+    await options[2]!.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('update:modelValue')?.at(-1)).toEqual([['second']])
+    expect(panel(w).exists()).toBe(false)
+  })
+
   it('ArrowDown opens the panel when closed', async () => {
     const w = mount(IrisCascader, { props: { options: OPTIONS } })
     expect(panel(w).exists()).toBe(false)

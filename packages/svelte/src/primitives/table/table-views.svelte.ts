@@ -1,3 +1,4 @@
+import { onMount } from 'svelte'
 import { readTableViews, writeTableViews } from '@iris-ui-kit/core'
 import type { IrisTableProps } from './props'
 import type {
@@ -28,7 +29,12 @@ export function createTableViewsController(options: {
   deleteView: (key: string) => void
   applyTableTab: (tab: IrisTableTab) => void
 } {
-  let viewList = $state<IrisTableNamedView[]>(readTableViews(options.config()))
+  // Keep SSR and the client's hydration render on the default empty list;
+  // storage is read only after the component mounts.
+  let viewList = $state<IrisTableNamedView[]>([])
+  onMount(() => {
+    viewList = readTableViews(options.config())
+  })
   let internalActiveView = $state<string | null>(null)
   let activeTab = $state<string | null>(null)
   const activeViewConfig = $derived(options.config())

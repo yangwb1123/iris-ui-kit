@@ -42,20 +42,17 @@
  *       markup carrying Svelte 5 hydration markers, with NO console.error /
  *       console.warn (an SSR-time crash is the most common invisible failure);
  *   (b) the markup is DETERMINISTIC across two independent server renders of the
- *       same tree, modulo the monotonic `generateId()` counter — if structure
- *       drifted run-to-run, a client hydrate could never match it;
+ *       same tree — Svelte's `$props.id()` must produce the same ids for the
+ *       same component order, otherwise a client hydrate could never match it;
  *   (c) the id wiring is INTERNALLY CONSISTENT — every `for` / `aria-describedby`
  *       / `aria-controls` / `aria-labelledby` reference in the SSR output points
  *       at an element that actually exists in that same output (a mismatch here
  *       is exactly what a hydration drift surfaces as), and sibling fields get
  *       distinct, non-colliding ids.
  *
- * NOTE on `generateId()`: `@iris-ui-kit/core`'s `generateId()` is a process-global
- * monotonic counter (`iris-1`, `iris-2`, …) that is NOT reset per render. That
- * is itself a real cross-render-drift consideration; the determinism check
- * below normalizes `iris-\d+` tokens so it asserts *structural* determinism
- * while the internal-consistency check (c) proves every generated id resolves
- * within its own render regardless of the counter's absolute value.
+ * DOM-producing Svelte components use the framework-provided `$props.id()`.
+ * Unlike the core runtime-id helper, it is scoped to the component tree and
+ * is designed to match between SSR and hydration.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render } from 'svelte/server'
@@ -83,8 +80,8 @@ import IrisTable from './primitives/table/IrisTable.svelte'
 
 // Each case is an SSR-safe, non-overlay component (no portal / floating-ui /
 // document-dependent render path). FormField + Accordion are included
-// deliberately: they read `generateId()` and wire `for` / `aria-*`, so they are
-// the headline drift risk.
+// deliberately: they derive framework-stable ids and wire `for` / `aria-*`,
+// so they are the headline drift risk.
 const cases: { name: string; Comp: Component<never>; props: Record<string, unknown> }[] = [
   { name: 'Button', Comp: ButtonHarness as Component<never>, props: {} },
   { name: 'Badge', Comp: Badge as unknown as Component<never>, props: {} },
@@ -212,12 +209,6 @@ function hasId(html: string, id: string): boolean {
   return new RegExp(`\\sid="${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`).test(html)
 }
 
-/** Normalize the process-global `generateId()` counter so structural
- * determinism can be compared byte-for-byte across two renders. */
-function normalizeIds(html: string): string {
-  return html.replace(/iris-\d+/g, 'iris-N')
-}
-
 describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overlay subset)', () => {
   it('the SSR build exposes a working svelte/server render (sanity)', () => {
     const { body } = ssr(ButtonHarness as Component<never>, {})
@@ -297,21 +288,18 @@ describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overl
 
   for (const c of cases) {
     it(`<${c.name}/> renders identical markup across two independent SSR passes (determinism)`, () => {
-      // Two independent render() calls of the SAME tree. If structure drifted
-      // run-to-run, the generated markup (and therefore a client hydrate's
-      // target) would differ. `generateId()` is a monotonic global counter, so
-      // the `iris-N` tokens legitimately advance between renders; normalize them
-      // and assert the rest of the markup is byte-identical.
-      const a = normalizeIds(ssr(c.Comp, c.props).body)
-      const b = normalizeIds(ssr(c.Comp, c.props).body)
+      // Two independent render() calls of the SAME tree. Framework-scoped ids
+      // must be byte-identical, not merely structurally equivalent.
+      const a = ssr(c.Comp, c.props).body
+      const b = ssr(c.Comp, c.props).body
       expect(a).toBe(b)
     })
   }
 
   it('FormField wires <label for> and aria-describedby to ids that exist in the SSR output', () => {
-    // FormField is the headline drift risk: it derives `${generateId()}-control`,
-    // `-hint`, `-error` and wires them onto <label for>, the control id, and
-    // aria-describedby. Every referenced id must resolve within the same render.
+    // FormField derives one framework-scoped id and uses its `-control`, `-hint`,
+    // and `-error` variants for <label for>, the control id, and aria-describedby.
+    // Every referenced id must resolve within the same render.
     const { body } = ssr(FormFieldHarness as Component<never>, {
       label: 'Email',
       hint: 'We never share it.',
@@ -329,6 +317,15 @@ describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overl
         ).toBe(true)
       }
     }
+  })
+
+  it('keeps generated FormField ids identical across independent SSR requests', () => {
+    const props = { label: 'Email', hint: 'We never share it.' }
+    const first = ssr(FormFieldHarness as Component<never>, props).body
+    const second = ssr(FormFieldHarness as Component<never>, props).body
+
+    expect(attrValues(second, 'for')).toEqual(attrValues(first, 'for'))
+    expect(attrValues(second, 'aria-describedby')).toEqual(attrValues(first, 'aria-describedby'))
   })
 
   it('Accordion wires the open panel aria-controls / aria-labelledby to ids that exist in the SSR output', () => {
@@ -355,9 +352,8 @@ describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overl
   })
 
   it('two FormFields in one tree get distinct (non-colliding) generated ids', () => {
-    // Within a single server render, generateId() must hand out unique ids so
-    // sibling fields do not cross-wire — and those ids are what a client hydrate
-    // must reproduce.
+    // Svelte must give sibling component instances distinct ids while retaining
+    // the same component-order mapping that a client hydrate reproduces.
     const { body } = ssr(TwoFormFieldsHarness as Component<never>, {})
     const forIds = attrValues(body, 'for')
     expect(forIds.length).toBe(2)

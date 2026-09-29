@@ -31,4 +31,22 @@ describe('@iris-ui-kit/react IrisTable persistState SSR guard (batch AG)', () =>
     expect(getItem).not.toHaveBeenCalled()
     expect(setItem).not.toHaveBeenCalled()
   })
+
+  it('renders the default named-view list during SSR', () => {
+    const getItem = vi.fn(() => JSON.stringify([{ name: 'Fav', snapshot: {} }]))
+    const setItem = vi.fn()
+    const html = renderToString(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        views={{ storage: { getItem, setItem } }}
+      />,
+    )
+
+    expect(html).toContain('data-iris-table-views')
+    expect(html).toContain('value=""')
+    expect(html).not.toContain('Fav')
+    expect(getItem).not.toHaveBeenCalled()
+  })
 })

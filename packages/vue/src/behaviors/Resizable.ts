@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType, type Ref } from 'vue'
+import { useI18n } from '../i18n'
 import { useDrag } from '../primitives/drag/useDrag'
 
 export type IrisResizableHandle =
@@ -58,6 +59,57 @@ function handlePosition(handle: IrisResizableHandle): Record<string, string> {
   return s
 }
 
+function resizeFromKeyboard(
+  base: IrisResizableSize,
+  handle: IrisResizableHandle,
+  key: string,
+  step: number,
+  minWidth: number,
+  minHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+  keepAspect: boolean,
+): IrisResizableSize | null {
+  let dx = 0
+  let dy = 0
+  const isBoundary = key === 'Home' || key === 'End'
+
+  if (key === 'ArrowLeft') dx = -step
+  else if (key === 'ArrowRight') dx = step
+  else if (key === 'ArrowUp') dy = -step
+  else if (key === 'ArrowDown') dy = step
+  else if (!isBoundary) return null
+
+  let width = base.width
+  let height = base.height
+  const hasHorizontalHandle = handle.includes('left') || handle.includes('right')
+  const hasVerticalHandle = handle.includes('top') || handle.includes('bottom')
+
+  if (isBoundary) {
+    if (hasHorizontalHandle) {
+      width = key === 'Home' ? minWidth : Number.isFinite(maxWidth) ? maxWidth : base.width
+    }
+    if (hasVerticalHandle) {
+      height = key === 'Home' ? minHeight : Number.isFinite(maxHeight) ? maxHeight : base.height
+    }
+  } else {
+    if (handle.includes('right')) width = base.width + dx
+    if (handle.includes('left')) width = base.width - dx
+    if (handle.includes('bottom')) height = base.height + dy
+    if (handle.includes('top')) height = base.height - dy
+
+    if (keepAspect && hasHorizontalHandle && hasVerticalHandle) {
+      height = width / (base.width / Math.max(1, base.height))
+    }
+  }
+
+  const next = {
+    width: Math.max(minWidth, Math.min(maxWidth, width)),
+    height: Math.max(minHeight, Math.min(maxHeight, height)),
+  }
+  return next.width === base.width && next.height === base.height ? null : next
+}
+
 /**
  * Internal per-handle sub-component (NOT exported). Declared at module level
  * so its type identity is stable across parent re-renders: each handle
@@ -85,13 +137,38 @@ const ResizableHandle = defineComponent({
       type: Function as PropType<(s: IrisResizableSize) => void>,
       default: undefined,
     },
-    onResizeEnd: { type: Function as PropType<() => void>, default: undefined },
+    onResizeEnd: {
+      type: Function as PropType<(s: IrisResizableSize) => void>,
+      default: undefined,
+    },
   },
   setup(props) {
+    const { t } = useI18n()
     // Created ONCE per handle instance (not per render):
     const handleRef = ref<HTMLElement | null>(null)
     let startSize: IrisResizableSize = { width: 0, height: 0 }
     let aspect = 1
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (props.disabled) return
+      const base = { ...props.sizeRef.value }
+      const next = resizeFromKeyboard(
+        base,
+        props.handle,
+        event.key,
+        event.shiftKey ? 1 : 10,
+        props.minWidth,
+        props.minHeight,
+        props.maxWidth,
+        props.maxHeight,
+        props.keepAspect,
+      )
+      if (!next) return
+      event.preventDefault()
+      props.onResizeStart?.(base)
+      props.onUpdate(next)
+      props.onResizeEnd?.(next)
+    }
 
     useDrag({
       handle: handleRef,
@@ -119,18 +196,24 @@ const ResizableHandle = defineComponent({
         nextH = Math.max(props.minHeight, Math.min(props.maxHeight, nextH))
         props.onUpdate({ width: nextW, height: nextH })
       },
-      onEnd: () => props.onResizeEnd?.(),
+      onEnd: () => props.onResizeEnd?.(props.sizeRef.value),
     })
 
     return () =>
-      h('div', {
+      h('button', {
         ref: (el: unknown) => {
           handleRef.value = (el ?? null) as HTMLElement | null
         },
+        type: 'button',
+        disabled: props.disabled || undefined,
+        'aria-label': t('resizer.handle', { handle: props.handle }),
         'data-iris-resizable-handle': props.handle,
+        onKeydown: onKeyDown,
         style: {
           ...handlePosition(props.handle),
           touchAction: 'none',
+          border: '0',
+          padding: '0',
           background: 'transparent',
           zIndex: '1',
         },
@@ -187,7 +270,7 @@ export const IrisResizable = defineComponent({
     // Stable setup-level bindings: passed as props to the keyed handle
     // instances so they never trigger re-invocation of the child setup.
     const emitResizeStart = (s: IrisResizableSize) => emit('resizeStart', s)
-    const emitResizeEnd = () => emit('resizeEnd', size.value)
+    const emitResizeEnd = (s: IrisResizableSize) => emit('resizeEnd', s)
 
     return () =>
       h(

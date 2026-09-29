@@ -24,6 +24,7 @@
 
   let {
     value,
+    now,
     format = 'HH:mm:ss',
     title,
     prefix,
@@ -34,6 +35,8 @@
     ...rest
   }: {
     value: number
+    /** Optional epoch snapshot for the first render; otherwise text waits for mount. */
+    now?: number
     format?: string
     title?: string | number
     prefix?: string | number
@@ -44,11 +47,12 @@
     [key: string]: unknown
   } = $props()
 
-  let now = $state(Date.now())
+  // svelte-ignore state_referenced_locally
+  let currentTime = $state<number | null>(now ?? null)
   let finished = false
   let timer: ReturnType<typeof setInterval> | undefined
 
-  const remaining = $derived(Math.max(0, value - now))
+  const remaining = $derived(currentTime === null ? null : Math.max(0, value - currentTime))
 
   function stop(): void {
     if (timer) {
@@ -68,20 +72,22 @@
   function start(): void {
     stop()
     finished = false
-    now = Date.now()
+    const initial = now ?? Date.now()
+    currentTime = initial
     const tick = format.includes('SSS') ? 100 : 1000
     timer = setInterval(() => {
       const n = Date.now()
-      now = n
+      currentTime = n
       checkDue(n)
     }, tick)
-    checkDue(Date.now())
+    checkDue(initial)
   }
 
   $effect(() => {
-    // Re-run whenever value or format changes
+    // Effects run after mount, so an un-injected SSR render never reads time.
     void value
     void format
+    void now
     start()
     return stop
   })
@@ -90,7 +96,7 @@
 <div
   {...rest}
   data-iris-countdown
-  data-finished={remaining <= 0 ? 'true' : undefined}
+  data-finished={remaining !== null && remaining <= 0 ? 'true' : undefined}
   style="display:flex; flex-direction:column; gap:4px;{style ? ' ' + style : ''}"
 >
   {#if title != null}
@@ -110,7 +116,9 @@
     {#if prefix != null}
       <span style="font-size:0.6em; color:var(--iris-muted);">{String(prefix)}</span>
     {/if}
-    <span data-iris-countdown-time>{formatRemaining(remaining, format)}</span>
+    <span data-iris-countdown-time
+      >{remaining === null ? '' : formatRemaining(remaining, format)}</span
+    >
     {#if suffix != null}
       <span style="font-size:0.6em; color:var(--iris-muted);">{String(suffix)}</span>
     {/if}

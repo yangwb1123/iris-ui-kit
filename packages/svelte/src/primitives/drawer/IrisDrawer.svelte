@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createFloatingMachine, generateId } from '@iris-ui-kit/core'
+  import { createFloatingMachine } from '@iris-ui-kit/core'
   import { toMachine } from '../../useMachine'
   import { setDrawerContext, type IrisDrawerSide } from './context'
 
@@ -48,7 +48,7 @@
 
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
-  const baseId = generateId()
+  const baseId = $props.id()
 
   // Refcount mounted Title so the content wires aria-labelledby only when one
   // is present (mirrors React). Drawers have no Description component.

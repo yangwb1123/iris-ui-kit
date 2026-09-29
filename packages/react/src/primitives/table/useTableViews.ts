@@ -1,5 +1,10 @@
 import * as React from 'react'
-import { defaultStorage } from './usePersistState'
+import {
+  readTableViews,
+  TABLE_VIEWS_DEFAULT_KEY,
+  TABLE_VIEWS_SAVE_ITEM,
+  writeTableViews,
+} from '@iris-ui-kit/core'
 import type { IrisTablePersistedState } from './types'
 
 /**
@@ -41,54 +46,14 @@ export interface IrisTableViewConfig {
 }
 
 /** Default storage key for named views (batch AH, iris 独有 naming). */
-export const IRIS_TABLE_VIEWS_DEFAULT_KEY = 'iris-table-views'
+export const IRIS_TABLE_VIEWS_DEFAULT_KEY = TABLE_VIEWS_DEFAULT_KEY
 
 /**
  * Sentinel select value that opens the save input — never a real view name.
  * Views named like the sentinel are dropped at read time and refused at save
  * time (they would otherwise render unselectable in the toolbar).
  */
-export const IRIS_TABLE_VIEWS_SAVE_ITEM = '__iris-save-view'
-
-/**
- * Read + parse + sanitize the stored view list. Any failure → null (missing
- * key / corrupt JSON / non-array value are all ignored); entries that are not
- * `{ name: string, snapshot: object }` are dropped individually. The window
- * guard makes the parse a strict no-op during SSR — the load happens in the
- * first render's lazy ref (guarded, idempotent), effects never run
- * server-side.
- */
-function readViews(config: IrisTableViewConfig | undefined): IrisTableNamedView[] | null {
-  if (!config || config.storage === false) return null
-  if (typeof window === 'undefined') return null
-  const store = config.storage ?? defaultStorage()
-  if (!store) return null
-  let raw: string | null
-  try {
-    raw = store.getItem(config.key ?? IRIS_TABLE_VIEWS_DEFAULT_KEY)
-  } catch {
-    return null
-  }
-  if (!raw) return null
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  if (!Array.isArray(parsed)) return null
-  const out: IrisTableNamedView[] = []
-  for (const entry of parsed) {
-    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
-    const name = (entry as Record<string, unknown>).name
-    const snapshot = (entry as Record<string, unknown>).snapshot
-    if (typeof name !== 'string' || name.trim() === '') continue
-    if (name === IRIS_TABLE_VIEWS_SAVE_ITEM) continue
-    if (typeof snapshot !== 'object' || snapshot === null || Array.isArray(snapshot)) continue
-    out.push({ name, snapshot: snapshot as IrisTablePersistedState })
-  }
-  return out
-}
+export const IRIS_TABLE_VIEWS_SAVE_ITEM = TABLE_VIEWS_SAVE_ITEM
 
 export interface UseTableViewsOptions {
   /** The `views` prop (undefined → views fully off). */
@@ -121,15 +86,18 @@ export function useTableViews(options: UseTableViewsOptions): {
 } {
   const { config, snapshot, applySnapshot, activeKey, onActiveViewChange } = options
 
-  // Parse ONCE (same lazy-ref guard as usePersistState — StrictMode-safe and
-  // SSR-safe; the parse is a guarded idempotent read).
-  const parsedRef = React.useRef<IrisTableNamedView[] | null>(null)
-  const parsedLoadedRef = React.useRef(false)
-  if (!parsedLoadedRef.current) {
-    parsedLoadedRef.current = true
-    parsedRef.current = readViews(config)
-  }
-  const [views, setViews] = React.useState<IrisTableNamedView[]>(parsedRef.current ?? [])
+  // Keep the first render on the default empty list. The storage read belongs
+  // to the mount effect so server markup and the client's hydration render use
+  // the same view list; the ref also keeps StrictMode from reading twice.
+  const configRef = React.useRef(config)
+  configRef.current = config
+  const viewsLoadedRef = React.useRef(false)
+  const [views, setViews] = React.useState<IrisTableNamedView[]>([])
+  React.useEffect(() => {
+    if (viewsLoadedRef.current) return
+    viewsLoadedRef.current = true
+    setViews(readTableViews<IrisTablePersistedState>(configRef.current))
+  }, [])
   const [internalKey, setInternalKey] = React.useState<string | null>(null)
   const activeKeyRef = React.useRef(activeKey)
   activeKeyRef.current = activeKey
@@ -151,14 +119,7 @@ export function useTableViews(options: UseTableViewsOptions): {
   const persistViews = React.useCallback(
     (next: IrisTableNamedView[]): void => {
       setViews(next)
-      if (!config || config.storage === false) return
-      const store = config.storage ?? defaultStorage()
-      if (!store) return
-      try {
-        store.setItem(config.key ?? IRIS_TABLE_VIEWS_DEFAULT_KEY, JSON.stringify(next))
-      } catch {
-        // Quota / security errors must never break the table.
-      }
+      writeTableViews(config, next)
     },
     [config],
   )

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui-kit/core'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { setFormFieldContext, type FormFieldControl } from './context'
   import type { IrisFormFieldProps } from './types'
@@ -16,7 +15,7 @@
     ...rest
   }: IrisFormFieldProps = $props()
 
-  const generated = generateId()
+  const generated = $props.id()
   const controlId = $derived(labelFor || `${generated}-control`)
   const hintId = `${generated}-hint`
   const errorId = `${generated}-error`

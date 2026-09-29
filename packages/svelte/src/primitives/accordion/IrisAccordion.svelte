@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    generateId,
     createKeyboardNav,
     type KeyboardNavAction,
     type KeyboardNavController,
@@ -28,7 +27,7 @@
   } = $props()
 
   const isControlled = $derived(valueProp !== undefined)
-  const rootId = generateId()
+  const rootId = $props.id()
 
   // svelte-ignore state_referenced_locally
   let internal = $state<AccordionValue>(

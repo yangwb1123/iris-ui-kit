@@ -1,4 +1,4 @@
-import { computed, h, ref, type Ref, type VNode } from 'vue'
+import { computed, h, onMounted, ref, type Ref, type VNode } from 'vue'
 import {
   readTableViews,
   TABLE_VIEWS_SAVE_ITEM,
@@ -30,7 +30,12 @@ export function createTableViewsController(options: {
   renderTabs: (tabs: readonly TableTab[] | undefined) => VNode | null
   renderViews: () => VNode | null
 } {
-  const views = ref<NamedView[]>(readTableViews(options.config()))
+  // Keep SSR and the client's hydration render on the default empty list;
+  // storage is read only from the mounted lifecycle hook.
+  const views = ref<NamedView[]>([])
+  onMounted(() => {
+    views.value = readTableViews(options.config())
+  })
   const internalActiveKey = ref<string | null>(null)
   const activeKey = computed<string | null>(() => {
     const config = options.config()

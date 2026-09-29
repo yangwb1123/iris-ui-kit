@@ -71,4 +71,24 @@ describe('IrisTable SSR (proxyConfig, batch X)', () => {
     const html = await renderToString(app)
     expect(html).toContain('data-printable="true"')
   })
+
+  it('renders the default named-view list during SSR', async () => {
+    const getItem = vi.fn(() => JSON.stringify([{ name: 'Fav', snapshot: {} }]))
+    const setItem = vi.fn()
+    const app = createSSRApp({
+      render: () =>
+        h(IrisTable, {
+          columns,
+          data: [],
+          rowKey: 'id',
+          views: { storage: { getItem, setItem } },
+        }),
+    })
+    const html = await renderToString(app)
+
+    expect(html).toContain('data-iris-table-views')
+    expect(html).toContain('<option value disabled>')
+    expect(html).not.toContain('Fav')
+    expect(getItem).not.toHaveBeenCalled()
+  })
 })

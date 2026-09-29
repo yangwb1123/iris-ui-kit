@@ -1,6 +1,25 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisResizer } from './Resizer'
+
+function makePointerEvent(type: string, init: PointerEventInit = {}): Event {
+  const PointerCtor = (globalThis as Record<string, unknown>).PointerEvent
+  if (typeof PointerCtor === 'function') {
+    return new (PointerCtor as new (type: string, init?: EventInit) => Event)(type, {
+      bubbles: true,
+      ...init,
+    })
+  }
+  const event = new Event(type, { bubbles: true })
+  Object.assign(event, {
+    button: init.button ?? 0,
+    buttons: init.buttons ?? 1,
+    clientX: init.clientX ?? 0,
+    clientY: init.clientY ?? 0,
+    pointerId: init.pointerId ?? 1,
+  })
+  return event
+}
 
 afterEach(() => cleanup())
 
@@ -49,6 +68,49 @@ describe('@iris-ui-kit/react IrisResizer', () => {
     expect(container.querySelector('[data-iris-resizer]')?.getAttribute('data-state')).toBe(
       'disabled',
     )
+  })
+
+  it('provides named keyboard handles without regressing pointer dragging', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <IrisResizer
+        value={{ width: 100, height: 100 }}
+        onValueChange={onValueChange}
+        handles={['right']}
+        maxWidth={300}
+      >
+        <div>x</div>
+      </IrisResizer>,
+    )
+    const handle = container.querySelector('[data-iris-resizer-handle=right]') as HTMLButtonElement
+
+    expect(handle.tagName).toBe('BUTTON')
+    expect(handle.getAttribute('aria-label')).toBe('Resize right')
+    handle.focus()
+    expect(document.activeElement).toBe(handle)
+
+    handle.dispatchEvent(
+      makePointerEvent('pointerdown', {
+        button: 0,
+        pointerId: 1,
+        clientX: 100,
+        clientY: 100,
+      }),
+    )
+    handle.dispatchEvent(
+      makePointerEvent('pointermove', { pointerId: 1, clientX: 120, clientY: 100 }),
+    )
+    handle.dispatchEvent(
+      makePointerEvent('pointerup', { pointerId: 1, clientX: 120, clientY: 100 }),
+    )
+    expect(onValueChange).toHaveBeenLastCalledWith({ width: 120, height: 100 })
+
+    fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(onValueChange).toHaveBeenLastCalledWith({ width: 110, height: 100 })
+    fireEvent.keyDown(handle, { key: 'Home' })
+    expect(onValueChange).toHaveBeenLastCalledWith({ width: 40, height: 100 })
+    fireEvent.keyDown(handle, { key: 'End' })
+    expect(onValueChange).toHaveBeenLastCalledWith({ width: 300, height: 100 })
   })
 
   it('cursor on side handles is ew-resize / ns-resize', () => {

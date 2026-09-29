@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createKeyboardNav, type KeyboardNavController } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 
@@ -79,6 +80,17 @@ function buildColumns(options: IrisCascaderNode[], activePath: string[]): IrisCa
   return cols
 }
 
+function firstEnabledIndex(options: IrisCascaderNode[]): number {
+  return options.findIndex((node) => !node.disabled)
+}
+
+function initialFocusIndices(options: IrisCascaderNode[], path: string[]): number[] {
+  return buildColumns(options, path).map((column, columnIndex) => {
+    const selected = column.findIndex((node) => node.value === path[columnIndex] && !node.disabled)
+    return selected >= 0 ? selected : firstEnabledIndex(column)
+  })
+}
+
 /**
  * Cascader: a hierarchical select that drills down through columns — choosing a
  * branch reveals its children in the next column; choosing a leaf commits the
@@ -113,14 +125,73 @@ export function IrisCascader({
   const [activePath, setActivePath] = React.useState<string[]>(defaultValue)
   const [focused, setFocused] = React.useState(false)
   const [hoveredValue, setHoveredValue] = React.useState<string | null>(null)
+  const [focusedIndices, setFocusedIndices] = React.useState<number[]>([])
+  const columnNavsRef = React.useRef<
+    Map<number, { controller: KeyboardNavController; count: number }>
+  >(new Map())
 
   const columns = buildColumns(options, activePath)
   const labels = pathLabels(options, currentValue)
+  const columnsRef = React.useRef<IrisCascaderNode[][]>([])
+  columnsRef.current = columns
+
+  const getRovingIndex = (columnIndex: number, column: IrisCascaderNode[]): number => {
+    const focusedIndex = focusedIndices[columnIndex]
+    if (focusedIndex !== undefined && !column[focusedIndex]?.disabled) return focusedIndex
+    const selected = column.findIndex(
+      (node) => node.value === activePath[columnIndex] && !node.disabled,
+    )
+    return selected >= 0 ? selected : firstEnabledIndex(column)
+  }
+
+  const setColumnFocus = (columnIndex: number, optionIndex: number): void => {
+    setFocusedIndices((current) => {
+      if (current[columnIndex] === optionIndex) return current
+      const next = [...current]
+      next[columnIndex] = optionIndex
+      return next
+    })
+  }
+
+  const getColumnNav = (columnIndex: number, column: IrisCascaderNode[]): KeyboardNavController => {
+    let entry = columnNavsRef.current.get(columnIndex)
+    if (!entry) {
+      entry = {
+        controller: createKeyboardNav({
+          count: column.length,
+          initialIndex: getRovingIndex(columnIndex, column),
+          isEnabled: (index) => !columnsRef.current[columnIndex]?.[index]?.disabled,
+        }),
+        count: column.length,
+      }
+      columnNavsRef.current.set(columnIndex, entry)
+    } else if (entry.count !== column.length) {
+      entry.controller.reset(column.length)
+      entry.count = column.length
+    }
+    const current = getRovingIndex(columnIndex, column)
+    if (current >= 0) entry.controller.focus(current)
+    return entry.controller
+  }
+
+  const focusColumnOption = (columnIndex: number, optionIndex: number): void => {
+    const column = rootRef.current?.querySelector<HTMLElement>(
+      `[data-iris-cascader-column][data-level="${columnIndex}"]`,
+    )
+    column
+      ?.querySelector<HTMLElement>(
+        `[data-iris-cascader-option][data-iris-cascader-index="${optionIndex}"]`,
+      )
+      ?.focus()
+  }
 
   const toggleOpen = () => {
     if (disabled) return
     setOpen((o) => {
-      if (!o) setActivePath(currentValue)
+      if (!o) {
+        setActivePath(currentValue)
+        setFocusedIndices(initialFocusIndices(options, currentValue))
+      }
       return !o
     })
   }
@@ -157,18 +228,54 @@ export function IrisCascader({
   // paths so the a11y attribute surface is structurally identical. When
   // virtual, the virtualizer pins each row's height, so the option fills the
   // row (height 100% + border-box keeps the padding inside the pinned height).
-  const renderOption = (node: IrisCascaderNode, ci: number): React.ReactElement => {
+  const renderOption = (
+    node: IrisCascaderNode,
+    ci: number,
+    optionIndex: number,
+  ): React.ReactElement => {
+    const column = columns[ci] ?? []
     const isActive = activePath[ci] === node.value
     const hasChildren = !!node.children && node.children.length > 0
+    const rovingIndex = getRovingIndex(ci, column)
     return (
       <li
         key={node.value}
         role="option"
+        tabIndex={node.disabled ? -1 : rovingIndex === optionIndex ? 0 : -1}
         aria-selected={isActive}
         aria-disabled={node.disabled ? 'true' : undefined}
         data-iris-cascader-option=""
+        data-iris-cascader-index={optionIndex}
         data-value={node.value}
-        onClick={() => selectOption(ci, node)}
+        onClick={() => {
+          if (node.disabled) return
+          setColumnFocus(ci, optionIndex)
+          getColumnNav(ci, column).focus(optionIndex)
+          selectOption(ci, node)
+        }}
+        onFocus={() => {
+          if (node.disabled) return
+          setColumnFocus(ci, optionIndex)
+          getColumnNav(ci, column).focus(optionIndex)
+        }}
+        onKeyDown={(event) => {
+          const nav = getColumnNav(ci, column)
+          nav.focus(optionIndex)
+          const action = nav.handleKeyDown({
+            key: event.key,
+            preventDefault: () => event.preventDefault(),
+          })
+          if (action.type === 'focus' || action.type === 'typeahead') {
+            setColumnFocus(ci, action.target)
+            focusColumnOption(ci, action.target)
+          } else if (action.type === 'select') {
+            const target = column[action.target]
+            if (target && !target.disabled) {
+              setColumnFocus(ci, action.target)
+              selectOption(ci, target)
+            }
+          }
+        }}
         onMouseEnter={() => setHoveredValue(node.value)}
         onMouseLeave={() => setHoveredValue((current) => (current === node.value ? null : current))}
         style={{
@@ -295,6 +402,7 @@ export function IrisCascader({
                   role="listbox"
                   data-iris-cascader-column=""
                   data-level={ci}
+                  aria-label={t('cascader.level', { level: ci + 1 })}
                   style={{
                     listStyle: 'none',
                     margin: 0,
@@ -304,7 +412,7 @@ export function IrisCascader({
                     overflowY: 'auto',
                   }}
                 >
-                  {col.map((node) => renderOption(node, ci))}
+                  {col.map((node, optionIndex) => renderOption(node, ci, optionIndex))}
                 </ul>
               )
             }
@@ -316,8 +424,11 @@ export function IrisCascader({
                 height={CASCADER_COLUMN_VIEWPORT}
                 buffer={CASCADER_VIRTUAL_BUFFER}
                 keyOf={(node: IrisCascaderNode) => node.value}
-                renderItem={(node: IrisCascaderNode) => renderOption(node, ci)}
+                renderItem={(node: IrisCascaderNode, optionIndex: number) =>
+                  renderOption(node, ci, optionIndex)
+                }
                 role="listbox"
+                aria-label={t('cascader.level', { level: ci + 1 })}
                 data-iris-cascader-column=""
                 data-level={ci}
                 style={columnStyle(ci)}

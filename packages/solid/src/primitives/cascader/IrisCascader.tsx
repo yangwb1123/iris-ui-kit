@@ -8,6 +8,7 @@ import {
   onCleanup,
   type JSX,
 } from 'solid-js'
+import { createKeyboardNav, type KeyboardNavController } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 
@@ -40,6 +41,17 @@ function buildColumns(options: IrisCascaderNode[], activePath: string[]): IrisCa
     cols.push(level)
   }
   return cols
+}
+
+function firstEnabledIndex(options: IrisCascaderNode[]): number {
+  return options.findIndex((node) => !node.disabled)
+}
+
+function initialFocusIndices(options: IrisCascaderNode[], path: string[]): number[] {
+  return buildColumns(options, path).map((column, columnIndex) => {
+    const selected = column.findIndex((node) => node.value === path[columnIndex] && !node.disabled)
+    return selected >= 0 ? selected : firstEnabledIndex(column)
+  })
 }
 
 /** Matches the current `maxHeight: 240` of a column. */
@@ -111,12 +123,63 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
   })
 
   const columns = createMemo(() => buildColumns(local.options, activePath()))
+  const [focusedIndices, setFocusedIndices] = createSignal<number[]>([])
+  const columnNavs = new Map<number, { controller: KeyboardNavController; count: number }>()
+  let rootEl: HTMLDivElement | undefined
+
+  const getRovingIndex = (columnIndex: number, column: IrisCascaderNode[]): number => {
+    const focusedIndex = focusedIndices()[columnIndex]
+    if (focusedIndex !== undefined && !column[focusedIndex]?.disabled) return focusedIndex
+    const selected = column.findIndex(
+      (node) => node.value === activePath()[columnIndex] && !node.disabled,
+    )
+    return selected >= 0 ? selected : firstEnabledIndex(column)
+  }
+
+  const setColumnFocus = (columnIndex: number, optionIndex: number): void => {
+    if (focusedIndices()[columnIndex] === optionIndex) return
+    const next = [...focusedIndices()]
+    next[columnIndex] = optionIndex
+    setFocusedIndices(next)
+  }
+
+  const getColumnNav = (columnIndex: number, column: IrisCascaderNode[]): KeyboardNavController => {
+    let entry = columnNavs.get(columnIndex)
+    if (!entry) {
+      entry = {
+        controller: createKeyboardNav({
+          count: column.length,
+          initialIndex: getRovingIndex(columnIndex, column),
+          isEnabled: (index) => !columns()[columnIndex]?.[index]?.disabled,
+        }),
+        count: column.length,
+      }
+      columnNavs.set(columnIndex, entry)
+    } else if (entry.count !== column.length) {
+      entry.controller.reset(column.length)
+      entry.count = column.length
+    }
+    const current = getRovingIndex(columnIndex, column)
+    if (current >= 0) entry.controller.focus(current)
+    return entry.controller
+  }
+
+  const focusColumnOption = (columnIndex: number, optionIndex: number): void => {
+    const column = rootEl?.querySelector<HTMLElement>(
+      `[data-iris-cascader-column="${columnIndex}"]`,
+    )
+    column?.querySelector<HTMLElement>(`[data-iris-cascader-index="${optionIndex}"]`)?.focus()
+  }
 
   const onTriggerClick = () => {
     if (local.disabled) return
     const next = !open()
     setOpen(next)
-    if (next) setActivePath([...currentValue()])
+    if (next) {
+      const path = [...currentValue()]
+      setActivePath(path)
+      setFocusedIndices(initialFocusIndices(local.options, path))
+    }
   }
 
   const onOptionClick = (colIdx: number, node: IrisCascaderNode) => {
@@ -138,17 +201,53 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
   const renderOption = (
     colIdx: () => number,
     node: IrisCascaderNode,
+    optionIndex: number,
     fill: boolean,
   ): JSX.Element => {
     const isActive = () => activePath()[colIdx()] === node.value
     const hasChildren = () => (node.children?.length ?? 0) > 0
+    const rovingIndex = () => getRovingIndex(colIdx(), columns()[colIdx()] ?? [])
     return (
       <li
         role="option"
+        tabIndex={node.disabled ? -1 : rovingIndex() === optionIndex ? 0 : -1}
         aria-selected={isActive()}
         aria-disabled={node.disabled ? 'true' : undefined}
         data-iris-cascader-option={node.value}
-        onClick={() => onOptionClick(colIdx(), node)}
+        data-iris-cascader-index={optionIndex}
+        onClick={() => {
+          if (node.disabled) return
+          const ci = colIdx()
+          setColumnFocus(ci, optionIndex)
+          getColumnNav(ci, columns()[ci] ?? []).focus(optionIndex)
+          onOptionClick(ci, node)
+        }}
+        onFocus={() => {
+          if (node.disabled) return
+          const ci = colIdx()
+          setColumnFocus(ci, optionIndex)
+          getColumnNav(ci, columns()[ci] ?? []).focus(optionIndex)
+        }}
+        onKeyDown={(event) => {
+          const ci = colIdx()
+          const column = columns()[ci] ?? []
+          const nav = getColumnNav(ci, column)
+          nav.focus(optionIndex)
+          const action = nav.handleKeyDown({
+            key: event.key,
+            preventDefault: () => event.preventDefault(),
+          })
+          if (action.type === 'focus' || action.type === 'typeahead') {
+            setColumnFocus(ci, action.target)
+            focusColumnOption(ci, action.target)
+          } else if (action.type === 'select') {
+            const target = column[action.target]
+            if (target && !target.disabled) {
+              setColumnFocus(ci, action.target)
+              onOptionClick(ci, target)
+            }
+          }
+        }}
         style={{
           display: 'flex',
           'align-items': 'center',
@@ -188,6 +287,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
 
   return (
     <div
+      ref={(el) => (rootEl = el)}
       data-iris-cascader=""
       data-disabled={local.disabled ? '' : undefined}
       style={{ position: 'relative', display: 'inline-block' }}
@@ -209,8 +309,10 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
           } else if ((e.key === 'ArrowDown' || e.key === 'Enter') && !open()) {
             e.preventDefault()
             if (!local.disabled) {
+              const path = [...currentValue()]
               setOpen(true)
-              setActivePath([...currentValue()])
+              setActivePath(path)
+              setFocusedIndices(initialFocusIndices(local.options, path))
             }
           }
         }}
@@ -261,8 +363,11 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                   height={CASCADER_COLUMN_VIEWPORT}
                   buffer={CASCADER_VIRTUAL_BUFFER}
                   keyOf={(node: IrisCascaderNode) => node.value}
-                  renderItem={(node: IrisCascaderNode) => renderOption(colIdx, node, true)}
+                  renderItem={(node: IrisCascaderNode, optionIndex: number) =>
+                    renderOption(colIdx, node, optionIndex, true)
+                  }
                   role="listbox"
+                  aria-label={t('cascader.level', { level: colIdx() + 1 })}
                   data-iris-cascader-column={colIdx()}
                   style={{
                     'min-width': '140px',
@@ -274,6 +379,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                 <ul
                   data-iris-cascader-column={colIdx()}
                   role="listbox"
+                  aria-label={t('cascader.level', { level: colIdx() + 1 })}
                   style={{
                     'list-style': 'none',
                     margin: '0',
@@ -285,7 +391,9 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                       colIdx() < columns().length - 1 ? '1px solid var(--iris-border)' : 'none',
                   }}
                 >
-                  <For each={col}>{(node) => renderOption(colIdx, node, false)}</For>
+                  <For each={col}>
+                    {(node, optionIndex) => renderOption(colIdx, node, optionIndex(), false)}
+                  </For>
                 </ul>
               )
             }

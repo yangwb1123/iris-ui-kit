@@ -46,8 +46,8 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
 - Of 152 comparable components: 5 have identical prop names in all 4 frameworks, 8 are near-identical, 139 diverge.
 - 5 components are excluded from those counts because at least one adapter forwards its whole HTML attribute set (contract `propsSource: "intrinsic-spread"`), so its prop list is not enumerable. An empty `props` array there does NOT mean the component accepts no attributes — read `intrinsicAttributes`.
 - Mean shared prop names: 45% (lowest 0%).
-- Prop declarations per framework: react 1267, vue 850, solid 1178, svelte 1208.
-- Prop names declared by exactly one framework (capability that exists on one adapter only): react 218, vue 69, solid 113, svelte 124.
+- Prop declarations per framework: react 1268, vue 851, solid 1180, svelte 1211.
+- Prop names declared by exactly one framework (capability that exists on one adapter only): react 217, vue 69, solid 113, svelte 124.
 - Widest surface gap: `IrisToggleGroupItem` — 5x (react 1, vue 2, solid 5, svelte 4 props).
 - Most divergent components (shared/union prop names):
   - `IrisDialogContent` 0% shared — react 2, vue 1, solid 2, svelte 3
@@ -61,7 +61,7 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   - `IrisPasswordInput` 13% shared — react 7, vue 8, solid 15, svelte 14; react-only: prefix, suffix, type
   - `IrisDragger` 17% shared — react 8, vue 3, solid 10, svelte 10
   - `IrisMenuItem` 17% shared — react 3, vue 1, solid 3, svelte 3; react-only: keepOpen, onSelect
-  - `IrisRadio` 17% shared — react 6, vue 5, solid 9, svelte 7; react-only: defaultChecked
+  - `IrisRadio` 17% shared — react 6, vue 5, solid 10, svelte 9
 
 ## Components (157 total — 157 in all 4 frameworks; react 157, vue 157, solid 157, svelte 157)
 
@@ -502,11 +502,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 9 props, 1 events
 - IrisCountdown [react/solid/svelte/vue] — layer-1
   Live countdown to a target timestamp. Ticks every second (or every 100ms when the format shows milliseconds), formats the remaining time via tokens, and fires `onFinish` once at zero.
-  react: props value, format?, title?, prefix?, suffix?, onFinish?, size?, style?, className?; events onFinish; slots prefix, suffix, title; types IrisCountdownProps, IrisCountdownSize
-  solid: props value, format?, title?, prefix?, suffix?, size?, onFinish?, style?, class?; events onFinish; types IrisCountdownProps, IrisCountdownSize
-  svelte: props value, format?, title?, prefix?, suffix?, size?, onfinish?, style?; events onfinish
-  vue: props value, format?, title?, prefix?, suffix?, size?; events finish; types IrisCountdownSize
-  quality: 9 props, 1 events
+  react: props value, now?, format?, title?, prefix?, suffix?, onFinish?, size?, style?, className?; events onFinish; slots prefix, suffix, title; types IrisCountdownProps, IrisCountdownSize
+  solid: props value, now?, format?, title?, prefix?, suffix?, size?, onFinish?, style?, class?; events onFinish; types IrisCountdownProps, IrisCountdownSize
+  svelte: props value, now?, format?, title?, prefix?, suffix?, size?, onfinish?, style?; events onfinish
+  vue: props value, now?, format?, title?, prefix?, suffix?, size?; events finish; types IrisCountdownSize
+  quality: 10 props, 1 events
 - IrisDatePicker [react/solid/svelte/vue] — layer-2
   Date picker: button-styled trigger + Popover + Calendar. On selection the popover auto-closes. Use `IrisCalendar` directly when you want it inline.
   react: props value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisDatePickerProps
@@ -870,8 +870,8 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
 - IrisRadio [react/solid/svelte/vue] — layer-1
   Single radio button. Works standalone or inside an `IrisRadioGroup`.
   react: props value, checked?, defaultChecked?, onChange?, size?, children?; events onChange; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
-  solid: props value, checked?, size?, disabled?, id?, onChange?, children?, style?, class?; events onChange; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
-  svelte: props value, modelValue?, size?, disabled?, id?, onchange?, children?; events onchange; slots default
+  solid: props value, checked?, defaultChecked?, size?, disabled?, id?, onChange?, children?, style?, class?; events onChange; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
+  svelte: props value, modelValue?, defaultChecked?, onChange?, size?, disabled?, id?, onchange?, children?; events onChange, onchange; slots default
   vue: props value, modelValue?, size?, disabled?, id?; events update:modelValue; slots default; types IrisRadioSize
   quality: 6 props, 1 events
 - IrisRadioGroup [react/solid/svelte/vue] — layer-1

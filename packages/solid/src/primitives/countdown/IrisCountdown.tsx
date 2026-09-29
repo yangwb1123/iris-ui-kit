@@ -1,4 +1,13 @@
-import { createEffect, createSignal, mergeProps, onCleanup, splitProps, type JSX } from 'solid-js'
+import {
+  createEffect,
+  createSignal,
+  mergeProps,
+  on,
+  onCleanup,
+  onMount,
+  splitProps,
+  type JSX,
+} from 'solid-js'
 
 export type IrisCountdownSize = 'sm' | 'md' | 'lg'
 
@@ -26,6 +35,8 @@ export function formatRemaining(ms: number, format: string): string {
 export interface IrisCountdownProps {
   /** Target epoch timestamp (ms). */
   value: number
+  /** Optional epoch snapshot for the first render; otherwise text waits for mount. */
+  now?: number
   format?: string
   title?: string | number
   prefix?: string | number
@@ -43,6 +54,7 @@ export function IrisCountdown(props: IrisCountdownProps): JSX.Element {
   const merged = mergeProps({ format: 'HH:mm:ss', size: 'md' as IrisCountdownSize }, props)
   const [local, rest] = splitProps(merged, [
     'value',
+    'now',
     'format',
     'title',
     'prefix',
@@ -51,13 +63,21 @@ export function IrisCountdown(props: IrisCountdownProps): JSX.Element {
     'onFinish',
   ])
 
-  const [now, setNow] = createSignal(Date.now())
+  const [currentTime, setCurrentTime] = createSignal<number | null>(local.now ?? null)
+  let timer: ReturnType<typeof setInterval> | undefined
 
-  createEffect(() => {
+  const stop = (): void => {
+    if (timer !== undefined) {
+      clearInterval(timer)
+      timer = undefined
+    }
+  }
+
+  const start = (): void => {
+    stop()
+    let finished = false
     const target = local.value
     const fmt = local.format
-    let finished = false
-
     const check = (n: number): void => {
       if (target - n <= 0 && !finished) {
         finished = true
@@ -65,30 +85,49 @@ export function IrisCountdown(props: IrisCountdownProps): JSX.Element {
       }
     }
 
+    const initial = local.now ?? Date.now()
+    setCurrentTime(initial)
     const tick = fmt.includes('SSS') ? 100 : 1000
-    const n = Date.now()
-    setNow(n)
-    check(n)
-
-    const timer = setInterval(() => {
-      const n2 = Date.now()
-      setNow(n2)
-      check(n2)
-      if (finished) clearInterval(timer)
+    timer = setInterval(() => {
+      const n = Date.now()
+      setCurrentTime(n)
+      check(n)
+      if (finished) stop()
     }, tick)
+    check(initial)
+    if (finished) stop()
+  }
 
-    onCleanup(() => clearInterval(timer))
-  })
+  onMount(start)
+  createEffect(
+    on(
+      () => [local.value, local.format, local.now],
+      () => start(),
+      { defer: true },
+    ),
+  )
+  onCleanup(stop)
 
-  const remaining = (): number => Math.max(0, local.value - now())
+  const remaining = (): number | null => {
+    const current = currentTime()
+    return current === null ? null : Math.max(0, local.value - current)
+  }
 
+  const isFinished = (): boolean => {
+    const current = remaining()
+    return current !== null && current <= 0
+  }
+  const displayTime = (): string => {
+    const current = remaining()
+    return current === null ? '' : formatRemaining(current, local.format)
+  }
   const affix: JSX.CSSProperties = { 'font-size': '0.6em', color: 'var(--iris-muted)' }
 
   return (
     <div
       {...rest}
       data-iris-countdown=""
-      data-finished={remaining() <= 0 ? 'true' : undefined}
+      data-finished={isFinished() ? 'true' : undefined}
       style={{
         display: 'flex',
         'flex-direction': 'column',
@@ -117,7 +156,7 @@ export function IrisCountdown(props: IrisCountdownProps): JSX.Element {
         }}
       >
         {local.prefix != null && <span style={affix}>{String(local.prefix)}</span>}
-        <span data-iris-countdown-time="">{formatRemaining(remaining(), local.format)}</span>
+        <span data-iris-countdown-time="">{displayTime()}</span>
         {local.suffix != null && <span style={affix}>{String(local.suffix)}</span>}
       </div>
     </div>

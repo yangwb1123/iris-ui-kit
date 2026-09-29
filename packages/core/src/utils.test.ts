@@ -67,16 +67,16 @@ describe('mergeProps', () => {
 })
 
 describe('generateId', () => {
-  it('generates incrementing ids with default prefix', () => {
+  it('generates unique ids with the default prefix', () => {
     const id1 = generateId()
     const id2 = generateId()
-    expect(id1).toBe('iris-1')
-    expect(id2).toBe('iris-2')
+    expect(id1).toMatch(/^iris-/)
+    expect(id2).toMatch(/^iris-/)
+    expect(id2).not.toBe(id1)
   })
 
-  it('uses custom prefix', () => {
-    const id = generateId('custom')
-    expect(id).toBe('custom-3')
+  it('uses a custom prefix', () => {
+    expect(generateId('custom')).toMatch(/^custom-/)
   })
 })
 

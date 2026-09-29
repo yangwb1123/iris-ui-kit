@@ -8,6 +8,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisResizerHandle =
@@ -69,6 +70,57 @@ function handlePosition(handle: IrisResizerHandle): Record<string, string> {
   return s
 }
 
+function resizeFromKeyboard(
+  base: IrisResizerSize,
+  handle: IrisResizerHandle,
+  key: string,
+  step: number,
+  minWidth: number,
+  minHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+  keepAspect: boolean,
+): IrisResizerSize | null {
+  let dx = 0
+  let dy = 0
+  const isBoundary = key === 'Home' || key === 'End'
+
+  if (key === 'ArrowLeft') dx = -step
+  else if (key === 'ArrowRight') dx = step
+  else if (key === 'ArrowUp') dy = -step
+  else if (key === 'ArrowDown') dy = step
+  else if (!isBoundary) return null
+
+  let width = base.width
+  let height = base.height
+  const hasHorizontalHandle = handle.includes('left') || handle.includes('right')
+  const hasVerticalHandle = handle.includes('top') || handle.includes('bottom')
+
+  if (isBoundary) {
+    if (hasHorizontalHandle) {
+      width = key === 'Home' ? minWidth : Number.isFinite(maxWidth) ? maxWidth : base.width
+    }
+    if (hasVerticalHandle) {
+      height = key === 'Home' ? minHeight : Number.isFinite(maxHeight) ? maxHeight : base.height
+    }
+  } else {
+    if (handle.includes('right')) width = base.width + dx
+    if (handle.includes('left')) width = base.width - dx
+    if (handle.includes('bottom')) height = base.height + dy
+    if (handle.includes('top')) height = base.height - dy
+
+    if (keepAspect && hasHorizontalHandle && hasVerticalHandle) {
+      height = width / (base.width / Math.max(1, base.height))
+    }
+  }
+
+  const next = {
+    width: Math.max(minWidth, Math.min(maxWidth, width)),
+    height: Math.max(minHeight, Math.min(maxHeight, height)),
+  }
+  return next.width === base.width && next.height === base.height ? null : next
+}
+
 /**
  * 8-direction resizer wrapping a single child element. The child is rendered
  * in a relative-positioned wrapper; handles overlay each side and corner.
@@ -104,6 +156,7 @@ export const IrisResizer = defineComponent({
     resizeEnd: (_value: IrisResizerSize) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     const wrapperStyle = computed<Record<string, string>>(() => ({
       position: 'relative',
       display: 'inline-block',
@@ -174,17 +227,44 @@ export const IrisResizer = defineComponent({
       handleScopes.clear()
     })
 
+    const onKeyDown = (event: KeyboardEvent, handle: IrisResizerHandle) => {
+      if (props.disabled) return
+      const base = { ...props.modelValue }
+      const next = resizeFromKeyboard(
+        base,
+        handle,
+        event.key,
+        event.shiftKey ? 1 : 10,
+        props.minWidth,
+        props.minHeight,
+        props.maxWidth,
+        props.maxHeight,
+        props.keepAspect,
+      )
+      if (!next) return
+      event.preventDefault()
+      emit('resizeStart', base)
+      emit('update:modelValue', next)
+      emit('resizeEnd', next)
+    }
+
     const renderHandle = (handle: IrisResizerHandle): VNode => {
       wireHandle(handle)
       const handleRef = getHandleRef(handle)
-      return h('div', {
+      return h('button', {
         ref: (el: unknown) => {
           handleRef.value = (el ?? null) as HTMLElement | null
         },
+        type: 'button',
+        disabled: props.disabled || undefined,
+        'aria-label': t('resizer.handle', { handle }),
         'data-iris-resizer-handle': handle,
+        onKeydown: (event: KeyboardEvent) => onKeyDown(event, handle),
         style: {
           ...handlePosition(handle),
           touchAction: 'none',
+          border: '0',
+          padding: '0',
           background: 'transparent',
           zIndex: '1',
         },

@@ -108,6 +108,33 @@ describe('@iris-ui-kit/react IrisCascader', () => {
     expect(trigger(container).getAttribute('aria-invalid')).toBe('true')
   })
 
+  it('supports Tab entry, roving arrow navigation, Enter selection, and column labels', () => {
+    const onValueChange = vi.fn()
+    const keyboardOptions: IrisCascaderNode[] = [
+      { label: 'Disabled', value: 'disabled', disabled: true },
+      { label: 'First', value: 'first' },
+      { label: 'Second', value: 'second' },
+    ]
+    const { container } = render(
+      <IrisCascader options={keyboardOptions} onValueChange={onValueChange} />,
+    )
+    fireEvent.click(trigger(container))
+    const listbox = columns(container)[0]!
+    const options = Array.from(listbox.querySelectorAll<HTMLElement>('[role="option"]'))
+    expect(listbox.getAttribute('aria-label')).toBe('Level 1')
+    expect(options.map((option) => option.getAttribute('tabindex'))).toEqual(['-1', '0', '-1'])
+
+    // The single tabindex=0 item is the native Tab entry point.
+    options[1]!.focus()
+    expect(document.activeElement).toBe(options[1])
+    fireEvent.keyDown(options[1]!, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(options[2])
+
+    fireEvent.keyDown(options[2]!, { key: 'Enter' })
+    expect(onValueChange).toHaveBeenCalledWith(['second'])
+    expect(panel(container)).toBeNull()
+  })
+
   it('ArrowDown opens the panel when closed', () => {
     const { container } = render(<IrisCascader options={OPTIONS} />)
     expect(panel(container)).toBeNull()

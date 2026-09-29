@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render } from 'svelte/server'
 import IrisTable from './IrisTable.svelte'
 import type { IrisTableColumn, IrisTableFormulaTables } from './types'
@@ -41,5 +41,22 @@ describe('Svelte IrisTable cross-table formulas SSR', () => {
 
   it('is deterministic across two server renders with the same table identity', () => {
     expect(renderTable(formulaTables)).toBe(renderTable(formulaTables))
+  })
+
+  it('renders the default named-view list during SSR', () => {
+    const getItem = vi.fn(() => JSON.stringify([{ name: 'Fav', snapshot: {} }]))
+    const setItem = vi.fn()
+    const html = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        rowKey: 'id',
+        views: { storage: { getItem, setItem } },
+      },
+    }).body
+
+    expect(html).toContain('data-iris-table-views')
+    expect(html).not.toContain('Fav')
+    expect(getItem).not.toHaveBeenCalled()
   })
 })

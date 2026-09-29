@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    createVirtualizer,
-    generateId,
-    type Virtualizer,
-    type VirtualizerState,
-  } from '@iris-ui-kit/core'
+  import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
 
   export type IrisComboboxSize = 'sm' | 'md' | 'lg'
@@ -60,8 +55,9 @@
     }
   })
 
-  const baseId = generateId()
-  const listboxId = `${baseId}-listbox`
+  const generatedId = $props.id()
+  const baseId = $derived(id ?? generatedId)
+  const listboxId = $derived(`${baseId}-listbox`)
   const optionId = (i: number) => `${baseId}-opt-${i}`
 
   let query = $state('')

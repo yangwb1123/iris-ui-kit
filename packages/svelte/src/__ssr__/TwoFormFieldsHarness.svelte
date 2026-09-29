@@ -1,6 +1,6 @@
 <script lang="ts">
   // SSR fixture: two IrisFormField + control pairs in one tree, to prove that
-  // generateId() hands out non-colliding ids within a single server render.
+  // Svelte's component-scoped ids remain distinct for sibling fields.
   import IrisFormField from '../primitives/form-field/FormField.svelte'
   import IrisInput from '../primitives/input/Input.svelte'
 </script>

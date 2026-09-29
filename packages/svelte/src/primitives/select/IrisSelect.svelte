@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    generateId,
     createKeyboardNav,
     createVirtualizer,
     type KeyboardNavAction,
@@ -78,8 +77,9 @@
     }
   })
 
-  const baseId = generateId()
-  const listboxId = `${baseId}-listbox`
+  const generatedId = $props.id()
+  const baseId = $derived(id ?? generatedId)
+  const listboxId = $derived(`${baseId}-listbox`)
 
   const isControlled = $derived(value !== undefined)
   // svelte-ignore state_referenced_locally — `defaultValue` is an initial seed.

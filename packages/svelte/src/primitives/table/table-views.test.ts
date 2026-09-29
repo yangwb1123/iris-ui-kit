@@ -255,4 +255,22 @@ describe('IrisTable named-view snapshot channels', () => {
       expect(last.pageSize).toBe(3)
     })
   })
+
+  it('storage read errors fall back to the default view list', () => {
+    const { container } = render(IrisTable, {
+      props: {
+        columns: fullColumns,
+        data: fullData,
+        views: {
+          storage: {
+            getItem: vi.fn(() => {
+              throw new Error('storage blocked')
+            }),
+            setItem: vi.fn(),
+          },
+        },
+      },
+    })
+    expect(viewNames(container)).toEqual([])
+  })
 })

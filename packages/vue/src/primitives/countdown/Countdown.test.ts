@@ -8,10 +8,11 @@ afterEach(() => vi.useRealTimers())
 const time = (w: ReturnType<typeof mount>) => w.find('[data-iris-countdown-time]').text()
 
 describe('IrisCountdown', () => {
-  it('renders the remaining time', () => {
+  it('renders the remaining time after mount starts the clock', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const w = mount(IrisCountdown, { props: { value: 3661000 } })
+    await nextTick()
     expect(time(w)).toBe('01:01:01')
   })
 
@@ -19,6 +20,7 @@ describe('IrisCountdown', () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const w = mount(IrisCountdown, { props: { value: 5000 } })
+    await nextTick()
     expect(time(w)).toBe('00:00:05')
     vi.advanceTimersByTime(2000)
     await nextTick()
@@ -35,10 +37,11 @@ describe('IrisCountdown', () => {
     expect(time(w)).toBe('00:00:00')
   })
 
-  it('supports a custom format with days', () => {
+  it('supports a custom format with days', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const w = mount(IrisCountdown, { props: { value: 90061000, format: 'DD HH:mm:ss' } })
+    await nextTick()
     expect(time(w)).toBe('01 01:01:01')
   })
 
@@ -61,10 +64,11 @@ describe('IrisCountdown', () => {
     expect(w.find('[data-iris-countdown]').classes()).toContain('my-counter')
   })
 
-  it('shows finished state with past date', () => {
+  it('shows finished state with past date after mount', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(1000000)
     const w = mount(IrisCountdown, { props: { value: 500 } })
+    await nextTick()
     expect(w.find('[data-iris-countdown]').attributes('data-finished')).toBe('true')
   })
 })

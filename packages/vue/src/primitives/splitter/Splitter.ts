@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisSplitterOrientation = 'horizontal' | 'vertical'
@@ -36,6 +37,7 @@ export const IrisSplitter = defineComponent({
     'update:modelValue': (_value: number) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     const containerRef = ref<HTMLElement | null>(null)
     const handleRef = ref<HTMLElement | null>(null)
     const dragging = ref(false)
@@ -104,6 +106,38 @@ export const IrisSplitter = defineComponent({
       touchAction: 'none',
     }))
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (props.disabled) return
+      const rect = containerRef.value?.getBoundingClientRect()
+      const size = isHorizontal.value ? rect?.width : rect?.height
+      const min = size && size > 0 ? props.minStart / size : 0
+      const max = size && size > 0 ? 1 - props.minEnd / size : 1
+      const step = event.shiftKey ? 0.01 : 0.05
+      let next: number | null = null
+
+      switch (event.key) {
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          next = props.modelValue - step
+          break
+        case 'ArrowRight':
+        case 'ArrowDown':
+          next = props.modelValue + step
+          break
+        case 'Home':
+          next = min
+          break
+        case 'End':
+          next = max
+          break
+        default:
+          return
+      }
+
+      event.preventDefault()
+      emit('update:modelValue', Math.max(min, Math.min(max, next)))
+    }
+
     return () =>
       h(
         'div',
@@ -129,11 +163,14 @@ export const IrisSplitter = defineComponent({
             },
             'data-iris-splitter-handle': '',
             role: 'separator',
+            'aria-label': t('splitter.resize'),
             'aria-orientation': props.orientation,
             'aria-valuenow': Math.round(props.modelValue * 100),
             'aria-valuemin': 0,
             'aria-valuemax': 100,
+            'aria-disabled': props.disabled ? 'true' : undefined,
             tabindex: props.disabled ? -1 : 0,
+            onKeydown: onKeyDown,
             style: handleStyle.value,
           }),
           h('div', { 'data-iris-splitter-pane': 'end', style: endStyle.value }, slots.end?.()),

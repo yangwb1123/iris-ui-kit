@@ -62,6 +62,33 @@ describe('IrisCascader', () => {
     expect(dropdownEl(container)).toBeNull()
   })
 
+  it('supports Tab entry, roving arrow navigation, Enter selection, and column labels', () => {
+    const onChange = vi.fn()
+    const keyboardOptions: IrisCascaderNode[] = [
+      { label: 'Disabled', value: 'disabled', disabled: true },
+      { label: 'First', value: 'first' },
+      { label: 'Second', value: 'second' },
+    ]
+    const { container } = render(() => (
+      <IrisCascader options={keyboardOptions} onChange={onChange} />
+    ))
+    fireEvent.click(triggerEl(container))
+    const listbox = container.querySelector('[data-iris-cascader-column="0"]')!
+    const opts = Array.from(listbox.querySelectorAll<HTMLElement>('[role="option"]'))
+    expect(listbox.getAttribute('aria-label')).toBe('Level 1')
+    expect(opts.map((option) => option.getAttribute('tabindex'))).toEqual(['-1', '0', '-1'])
+
+    // The single tabindex=0 item is the native Tab entry point.
+    opts[1]!.focus()
+    expect(document.activeElement).toBe(opts[1])
+    fireEvent.keyDown(opts[1]!, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(opts[2])
+
+    fireEvent.keyDown(opts[2]!, { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith(['second'])
+    expect(dropdownEl(container)).toBeNull()
+  })
+
   it('shows first level options when open', () => {
     const { container } = render(() => <IrisCascader options={options} />)
     fireEvent.click(triggerEl(container))

@@ -9,7 +9,13 @@ import {
   type CalendarEvent,
 } from '../core'
 
-export type { CalendarEvent, CalendarConfig, CalendarState, CalendarStore } from '../core'
+export type {
+  CalendarEvent,
+  CalendarConfig,
+  CalendarState,
+  CalendarStore,
+  CalendarNow,
+} from '../core'
 
 export interface IrisEventCalendarProps {
   config: CalendarConfig
@@ -33,10 +39,12 @@ export function IrisEventCalendar({ config, class: className, style }: IrisEvent
 
   const calendarState = React.useSyncExternalStore(store.subscribe, store.getState, store.getState)
 
+  React.useEffect(() => store.startNow(), [store])
+
   const currentDate = new Date(calendarState.year, calendarState.month, 1)
   const matrix = buildMonthMatrix(currentDate, 0) // weekStartsOn=0 (Sunday)
   const weekdayNames = getWeekdayNames(0)
-  const today = formatLocalISO(new Date())
+  const today = calendarState.today ?? null
   const monthLabel = formatMonthYear(currentDate)
 
   return (
@@ -106,7 +114,7 @@ export function IrisEventCalendar({ config, class: className, style }: IrisEvent
         {matrix.flat().map((date) => {
           const iso = formatLocalISO(date)
           const isCurrentMonth = date.getMonth() === calendarState.month
-          const isToday = iso === today
+          const isToday = today !== null && iso === today
           const dayEvents = calendarState.events.filter((e) => e.date === iso)
 
           return (

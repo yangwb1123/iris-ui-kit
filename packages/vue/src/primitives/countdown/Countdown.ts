@@ -1,4 +1,13 @@
-import { computed, defineComponent, h, onBeforeUnmount, ref, watch, type PropType } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type PropType,
+} from 'vue'
 
 export type IrisCountdownSize = 'sm' | 'md' | 'lg'
 
@@ -33,6 +42,8 @@ export const IrisCountdown = defineComponent({
   props: {
     /** Target time as an epoch timestamp (ms). */
     value: { type: Number, required: true },
+    /** Optional epoch snapshot for the first render; otherwise text waits for mount. */
+    now: { type: Number, default: undefined },
     /** Token format: DD / HH / mm / ss / SSS. */
     format: { type: String, default: 'HH:mm:ss' },
     title: { type: [String, Number], default: undefined },
@@ -44,9 +55,10 @@ export const IrisCountdown = defineComponent({
     finish: () => true,
   },
   setup(props, { attrs, emit }) {
-    const now = ref(Date.now())
+    const currentTime = ref<number | null>(props.now ?? null)
     let finished = false
     let timer: ReturnType<typeof setInterval> | undefined
+    let mounted = false
 
     const stop = () => {
       if (timer) {
@@ -64,19 +76,31 @@ export const IrisCountdown = defineComponent({
     const start = () => {
       stop()
       finished = false
-      now.value = Date.now()
+      const initial = props.now ?? Date.now()
+      currentTime.value = initial
       const tick = props.format.includes('SSS') ? 100 : 1000
       timer = setInterval(() => {
         const n = Date.now()
-        now.value = n
+        currentTime.value = n
         due(n)
       }, tick)
-      due(Date.now())
+      due(initial)
     }
-    watch(() => [props.value, props.format], start, { immediate: true })
+    onMounted(() => {
+      mounted = true
+      start()
+    })
+    watch(
+      () => [props.value, props.format, props.now],
+      () => {
+        if (mounted) start()
+      },
+    )
     onBeforeUnmount(stop)
 
-    const remaining = computed(() => Math.max(0, props.value - now.value))
+    const remaining = computed(() =>
+      currentTime.value === null ? null : Math.max(0, props.value - currentTime.value),
+    )
 
     return () => {
       const affix = { fontSize: '0.6em', color: 'var(--iris-muted)' }
@@ -85,7 +109,7 @@ export const IrisCountdown = defineComponent({
         {
           ...attrs,
           'data-iris-countdown': '',
-          'data-finished': remaining.value <= 0 ? 'true' : undefined,
+          'data-finished': remaining.value !== null && remaining.value <= 0 ? 'true' : undefined,
           style: {
             display: 'flex',
             flexDirection: 'column',
@@ -123,7 +147,7 @@ export const IrisCountdown = defineComponent({
               h(
                 'span',
                 { 'data-iris-countdown-time': '' },
-                formatRemaining(remaining.value, props.format),
+                remaining.value === null ? '' : formatRemaining(remaining.value, props.format),
               ),
               props.suffix != null ? h('span', { style: affix }, String(props.suffix)) : null,
             ],

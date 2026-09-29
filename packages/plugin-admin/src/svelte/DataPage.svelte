@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, untrack } from 'svelte'
+  import { onDestroy, onMount, untrack } from 'svelte'
   import { IrisButton, IrisInput, useI18n } from '@iris-ui-kit/svelte'
   import {
     adminFieldName,
@@ -28,11 +28,14 @@
 
   // The parent keys this component by page key. `untrack` makes that intentional
   // mount-lifetime ownership explicit while the page's live state stays in core.
-  const controller = untrack(() => createAdminDataController(page))
+  const controller = untrack(() => createAdminDataController(page, { immediate: false }))
   let resource = $state(controller.resource.getState())
   let editor = $state(controller.editor.getState())
   const unsubscribeResource = controller.resource.subscribe((next) => (resource = next))
   const unsubscribeEditor = controller.editor.subscribe((next) => (editor = next))
+  onMount(() => {
+    void controller.resource.load()
+  })
   onDestroy(() => {
     unsubscribeResource()
     unsubscribeEditor()

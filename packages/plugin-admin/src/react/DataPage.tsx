@@ -25,7 +25,10 @@ export function AdminDataPageView({
   messages,
   onAction,
 }: AdminDataPageViewProps): React.ReactElement {
-  const [controller] = React.useState(() => createAdminDataController(page))
+  const controller = React.useMemo(
+    () => createAdminDataController(page, { immediate: false }),
+    [page],
+  )
   const resource = React.useSyncExternalStore(
     controller.resource.subscribe,
     controller.resource.getState,
@@ -38,7 +41,10 @@ export function AdminDataPageView({
   )
   const { t } = useI18n()
   const id = React.useId()
-  React.useEffect(() => () => controller.destroy(), [controller])
+  React.useEffect(() => {
+    void controller.resource.load()
+    return () => controller.destroy()
+  }, [controller])
 
   const message = React.useCallback(
     (key: AdminMessageKey, params: Record<string, string | number> = {}) =>

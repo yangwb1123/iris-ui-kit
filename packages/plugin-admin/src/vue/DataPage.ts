@@ -1,4 +1,12 @@
-import { defineComponent, h, onBeforeUnmount, shallowRef, type PropType, type VNode } from 'vue'
+import {
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  shallowRef,
+  type PropType,
+  type VNode,
+} from 'vue'
 import { IrisButton, IrisInput, useI18n } from '@iris-ui-kit/vue'
 import {
   adminFieldName,
@@ -45,7 +53,7 @@ export const AdminDataPageView = defineComponent({
     onAction: { type: Function as PropType<AdminActionHandler>, default: undefined },
   },
   setup(props) {
-    const controller = createAdminDataController(props.page)
+    const controller = createAdminDataController(props.page, { immediate: false })
     const resource = shallowRef(controller.resource.getState())
     const editor = shallowRef(controller.editor.getState())
     const unsubResource = controller.resource.subscribe((state) => {
@@ -53,6 +61,9 @@ export const AdminDataPageView = defineComponent({
     })
     const unsubEditor = controller.editor.subscribe((state) => {
       editor.value = state
+    })
+    onMounted(() => {
+      void controller.resource.load()
     })
     onBeforeUnmount(() => {
       unsubResource()

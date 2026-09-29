@@ -53,6 +53,7 @@ export interface AdminRowAction {
 
 export type AdminDataFetcher<Row extends AdminRow = AdminRow> = (
   query: ResourceQuery,
+  signal?: AbortSignal,
 ) => Promise<{ rows: Row[]; total: number }>
 
 /**

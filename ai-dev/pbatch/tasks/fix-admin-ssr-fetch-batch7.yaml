@@ -1,0 +1,46 @@
+# pbatch 批次：避免 Admin DataPage 在 SSR / render 阶段启动请求
+# 来源：docs/auto/reviews/core-lifecycle.md finding #1。
+#
+# 运行：
+#   python3 -m pbatch ai-dev/pbatch/tasks/fix-admin-ssr-fetch-batch7.yaml --retries 2
+#
+# 串行执行。provider 显式指定；禁止嵌套 batch runner；禁止 agent stage/commit。
+
+tasks:
+  - prompt: |
+      硬约束：本任务只处理 plugin-admin 的 AdminDataPage 初始加载生命周期。允许修改：
+      `packages/plugin-admin/src/core/controller.ts`、它的 core tests，以及
+      React/Vue/Solid/Svelte Admin DataPage source/tests。不要改 resource/data-source
+      通用默认值、其他插件、docs、scripts、CI、release/size budgets；不要启动 runner；
+      不要 git add / commit。
+
+      先读 AGENTS.md 和 `docs/auto/reviews/core-lifecycle.md` finding #1。
+      当前四框架 Admin DataPage 创建 controller 时会立即请求：
+      `createAdminDataController()` -> `createResourceController()` 默认 immediate，
+      而 controller 在 React render/lazy state initializer、Vue setup、Solid component
+      body、Svelte component initialization 创建。SSR 会发出不应有的网络请求，React
+      StrictMode/中断渲染也可能重复请求。
+
+      任务：
+      1. 为 `createAdminDataController` 增加向后兼容的可选选项 `{ immediate?: boolean }`，
+         默认仍为 true；把该选项传给 resource factory。既有非 UI core consumers 的默认行为
+         必须保持。
+      2. React/Vue/Solid/Svelte 的 AdminDataPage 均以 `{ immediate: false }` 创建 controller；
+         只在框架客户端 mount/commit 生命周期中执行一次 `controller.resource.load()`：
+         React `useEffect`、Vue `onMounted`、Solid `onMount`、Svelte `onMount`；不要在
+         setup/render 阶段手动调用。卸载时沿用并确保 cleanup/destroy 仍 abort 请求。
+         React StrictMode effect replay 应可安全 abort + reload；不允许组件换页后加载旧 page。
+      3. 为 core 增加回归测试：`immediate:false` 构造时 fetcher 调用 0 次，显式 `load()` 后
+         调用 1 次；验证默认 immediate 行为未改变（调用计数/flush 微任务）。
+      4. 在四端 Admin app tests 中增加 SSR 回归（或最小可行的框架级 SSR test）：使用 server
+         page 的 spy fetcher，render-to-string 期间调用次数必须为 0；保留已有 client integration
+         test 确认 mount 后数据仍能加载。若某框架仓库 test harness 无法在该文件 SSR，解释并
+         用对应 server renderer 的 node-environment test，而不是省略断言。
+
+      不改公开组件 API以外的行为；不把 immediate 默认全局改成 false。所有监听/订阅仍须
+      在 unmount 清理。完成后运行 plugin-admin tests、typecheck、lint，并确保 SSR tests
+      实际走 server renderer、不是 jsdom mount 的替代断言。
+    provider: openai-codex
+    timeout: 5400
+    validate: irischeck
+    output: docs/auto/reviews/batch7-admin-ssr-fetch.md

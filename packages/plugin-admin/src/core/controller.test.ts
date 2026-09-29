@@ -29,6 +29,56 @@ const page = (): AdminDataPage<User> => ({
 })
 
 describe('createAdminDataController', () => {
+  it('supports deferred initial loading while preserving immediate defaults', async () => {
+    const deferredFetcher = vi.fn(async () => ({ rows: page().data!, total: page().data!.length }))
+    const serverPage: AdminDataPage<User> = {
+      ...page(),
+      data: undefined,
+      fetcher: deferredFetcher,
+    }
+    const deferred = createAdminDataController(serverPage, { immediate: false })
+
+    expect(deferredFetcher).not.toHaveBeenCalled()
+    await deferred.resource.load()
+    expect(deferredFetcher).toHaveBeenCalledTimes(1)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(deferred.resource.getState().rows).toHaveLength(2)
+    deferred.destroy()
+
+    const immediateFetcher = vi.fn(async () => ({ rows: page().data!, total: page().data!.length }))
+    const immediate = createAdminDataController({ ...serverPage, fetcher: immediateFetcher })
+    expect(immediateFetcher).toHaveBeenCalledTimes(1)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(immediate.resource.getState().rows).toHaveLength(2)
+    immediate.destroy()
+  })
+
+  it('forwards destroy abort to a server fetcher signal', async () => {
+    let signal: AbortSignal | undefined
+    let resolveFetch!: (value: { rows: User[]; total: number }) => void
+    const fetcher = vi.fn((_query: unknown, nextSignal?: AbortSignal) => {
+      signal = nextSignal
+      return new Promise<{ rows: User[]; total: number }>((resolve) => {
+        resolveFetch = resolve
+      })
+    })
+    const controller = createAdminDataController<User>(
+      { ...page(), data: undefined, fetcher },
+      { immediate: false },
+    )
+    const pending = controller.resource.load()
+
+    expect(signal).toBeInstanceOf(AbortSignal)
+    controller.destroy()
+    expect(signal?.aborted).toBe(true)
+
+    resolveFetch({ rows: page().data!, total: page().data!.length })
+    await pending
+    expect(controller.resource.getState().rows).toEqual([])
+  })
+
   it('shares client filtering, sorting, pagination and stable row keys', async () => {
     const controller = createAdminDataController(page())
     await controller.resource.reload()

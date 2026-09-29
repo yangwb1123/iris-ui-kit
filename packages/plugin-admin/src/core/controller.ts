@@ -5,6 +5,7 @@ import {
   readCell,
   type DataViewColumn,
   type ResourceController,
+  type ResourceQuery,
   type Store,
 } from '@iris-ui-kit/core'
 import { resolveAdminMessage } from './schema'
@@ -178,16 +179,21 @@ export function adminOperationCapabilities<Row extends AdminRow>(
  * render framework-native DOM/components; validation, mutation ordering,
  * stable keys and server/client behavior stay here.
  */
+interface AdminDataControllerOptions {
+  immediate?: boolean
+}
+
 class AdminDataControllerEngine<Row extends AdminRow> {
   readonly controller: AdminDataController<Row>
 
-  constructor(page: AdminDataPage<Row>) {
+  constructor(page: AdminDataPage<Row>, options: AdminDataControllerOptions = {}) {
     const clientRows = [...(page.data ?? [])]
     const columns = adminDataViewColumns<Row>(page.columns)
     const fetcher = page.fetcher ?? createClientFetcher(clientRows, columns)
     const resource = createResourceController<Row>({
-      fetcher,
+      fetcher: (query: ResourceQuery, signal?: AbortSignal) => fetcher(query, signal),
       pageSize: page.pageSize ?? 10,
+      immediate: options.immediate ?? true,
     })
     const editor = createStore<AdminEditorState<Row>>(idleState<Row>())
     const capabilities = adminOperationCapabilities(page)
@@ -375,6 +381,7 @@ class AdminDataControllerEngine<Row extends AdminRow> {
 
 export function createAdminDataController<Row extends AdminRow>(
   page: AdminDataPage<Row>,
+  options: { immediate?: boolean } = {},
 ): AdminDataController<Row> {
-  return new AdminDataControllerEngine(page).controller
+  return new AdminDataControllerEngine(page, options).controller
 }

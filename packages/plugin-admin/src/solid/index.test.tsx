@@ -148,6 +148,7 @@ describe('IrisAdminApp (solid)', () => {
           page: 1,
           sort: { key: 'name', direction: 'asc' },
         }),
+        expect.any(AbortSignal),
       ),
     )
 
@@ -160,6 +161,7 @@ describe('IrisAdminApp (solid)', () => {
           page: 1,
           filters: expect.objectContaining({ name: 'Ada' }),
         }),
+        expect.any(AbortSignal),
       ),
     )
   })

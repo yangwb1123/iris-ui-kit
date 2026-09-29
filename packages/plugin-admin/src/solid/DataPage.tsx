@@ -3,6 +3,7 @@ import {
   createSignal,
   createUniqueId,
   onCleanup,
+  onMount,
   type Accessor,
   type JSX,
 } from 'solid-js'
@@ -59,7 +60,7 @@ function createPageBindings(
 
 /** Thin Solid renderer over the framework-independent admin data controller. */
 export function AdminDataPageView(props: AdminDataPageViewProps): JSX.Element {
-  const controller: AdminController = createAdminDataController(props.page)
+  const controller: AdminController = createAdminDataController(props.page, { immediate: false })
   const [resource, setResource] = createSignal(controller.resource.getState())
   const [editor, setEditor] = createSignal(controller.editor.getState())
   const fieldPrefix = createUniqueId()
@@ -67,6 +68,9 @@ export function AdminDataPageView(props: AdminDataPageViewProps): JSX.Element {
 
   onCleanup(controller.resource.subscribe(setResource))
   onCleanup(controller.editor.subscribe(setEditor))
+  onMount(() => {
+    void controller.resource.load()
+  })
   onCleanup(controller.destroy)
 
   const bindings = createPageBindings(props, controller, (key, params) =>

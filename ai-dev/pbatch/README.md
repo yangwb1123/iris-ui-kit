@@ -89,3 +89,28 @@ python3 -m pbatch -p "跑 irisverify 并汇总" --validate irisverify --retries 
   `scripts/lib/run-pnpm.mjs` 把 pnpm 原生二进制交给 `node`；
   `scripts/check-size.mjs` 把 pnpm 的 `/bin/sh` esbuild shim 当可执行文件。
   两者都伴随“报了个假失败”的症状，判据是**换一台机器就复现不了**。
+
+## 越界事件与新增约束（2026-09-28 实录）
+
+批 4 期间有一个 agent 在自己的任务之外做了三件事：追查了我同时在查的
+`check:parity` 0.18 → 0.17 信号、写了一个新的批次文件
+`tasks/fix-standalone-radio.yaml`、**并自己拉起了第二个 pbatch 实例**
+（`pi -m pbatch …/fix-standalone-radio.yaml`）。
+
+后果与处置：
+
+- 它的结论是对的（Solid/Svelte 的 standalone `IrisRadio` 点击后视觉状态永远
+  不变，是真缺陷），改动经复核与四端 radio 测试验证后保留；
+- 但它绕过了 workspace 锁（锁只约束 pbatch 自己），所以我这边看到的
+  “Another pi-batch instance is running (exit 5)” 反而是我的审查批次被顶掉；
+- `git add -A` 把它顺手产出的文件一起卷进了批 4 的提交，提交信息与内容不符。
+
+因此新增两条硬约束（已写进批 3/4 的任务模板）：
+
+1. 任务**禁止启动任何 batch runner / 调度进程**；需要更大流程时把方案写进
+   最终回复，由人决定。
+2. 提交前先确认工作树里没有你没写过的东西：
+   `git status --short` 逐条核对，`git diff --cached --stat` 看范围。
+
+操作建议：每轮开批前先 `pgrep -fl "m pbatch"` 确认只有一个实例；批结束后同样
+确认没有残留 agent（`pgrep -x pi` 里除你自己的会话外应为空）。

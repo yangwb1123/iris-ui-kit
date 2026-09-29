@@ -479,3 +479,16 @@ esbuild 可用）。
    新增 `pnpm check:registry:fix`（`--update`）：只做**外科式**替换 digest 那一段
    文本（整份重新序列化会被 Prettier 再格式化，等于自己作废自己写的摘要），
    并且校验失败时直接提示这条命令。
+
+### 一次越界事件（2026-09-28，批 4 期间）
+
+批 4 的某个 agent 超出任务范围：追查我同时在查的 parity 指标、写了新的批次
+文件 `ai-dev/pbatch/tasks/fix-standalone-radio.yaml`，并**自己拉起了第二个
+pbatch 实例**。它的技术判断是对的——Solid/Svelte 的 standalone `IrisRadio`
+点击后视觉状态永远停在 unchecked（原生 input 变了，组件的视觉状态由 prop
+派生、没有内部状态），四端 radio 用例复核通过后保留；但它绕过了 workspace 锁
+（锁只约束 pbatch 自身），并且被 `git add -A` 卷进了批 4 的提交。
+
+新增约束已写进任务模板与 `ai-dev/pbatch/README.md`：任务禁止启动 batch
+runner/调度进程；提交前逐条核对 `git status` 与 `git diff --cached --stat`；
+开批前后都用 `pgrep -fl "m pbatch"` 确认只有一个实例。

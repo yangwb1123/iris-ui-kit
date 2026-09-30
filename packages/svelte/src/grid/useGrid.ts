@@ -43,18 +43,8 @@ import type { Readable } from 'svelte/store'
 import { syncGridColumnsVisibility } from './syncGridColumns.svelte'
 import { syncGridPagination } from './syncGridPagination.svelte'
 import { syncGridFiltering, syncGridSelection, syncGridSorting } from './syncGridSelection.svelte'
+import { cloneGridColumnsState } from './cloneGridColumnsState'
 import { syncGridVirtual } from './syncGridVirtual.svelte'
-
-function cloneGridColumnsState(
-  state: ReturnType<GridColumnsModel['get']>,
-): ReturnType<GridColumnsModel['get']> {
-  return {
-    visibility: { ...state.visibility },
-    order: [...state.order],
-    widths: { ...state.widths },
-    pinned: { ...state.pinned },
-  }
-}
 
 export interface UseGridCoreOptions<Row extends Record<string, unknown>> {
   readonly features?: readonly GridFeature<Row>[]
@@ -499,10 +489,3 @@ export function useGridVirtual<
   syncGridVirtual(model, () => options)
   return { model, state: toStore(model) }
 }
-
-export type { GridColumnPin, GridCore, GridFeature }
-export {
-  useGridClipboard,
-  type UseGridClipboardOptions,
-  type UseGridClipboardResult,
-} from './useGridClipboard'

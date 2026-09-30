@@ -53,7 +53,9 @@ describe('IrisTable parity-AD: context menu', () => {
     [...document.querySelectorAll<HTMLElement>('[data-iris-table-row=""]')][rowIdx]!.querySelector(
       `[data-iris-table-cell="${key}"]`,
     ) as HTMLElement
-  function renderMenu(onSelect: ReturnType<typeof vi.fn>): ReturnType<typeof render> {
+  function renderMenu(
+    onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void,
+  ): ReturnType<typeof render> {
     return render(() => (
       <IrisTable
         columns={cols}
@@ -71,7 +73,7 @@ describe('IrisTable parity-AD: context menu', () => {
   }
 
   it('right-clicking a body cell opens the menu at the cursor; an item click fires onSelect and closes', async () => {
-    const onSelect = vi.fn()
+    const onSelect = vi.fn<(key: string, params: IrisTableContextMenuParams<Row>) => void>()
     renderMenu(onSelect)
     fireEvent.contextMenu(bodyCell(0, 'name'), { clientX: 120, clientY: 80 })
     expect(menu()).not.toBeNull()
@@ -88,7 +90,7 @@ describe('IrisTable parity-AD: context menu', () => {
   })
 
   it('Escape closes the menu; the header never opens it', () => {
-    const onSelect = vi.fn()
+    const onSelect = vi.fn<(key: string, params: IrisTableContextMenuParams<Row>) => void>()
     const { container } = renderMenu(onSelect)
     fireEvent.contextMenu(bodyCell(1, 'status'), { clientX: 10, clientY: 10 })
     expect(menu()).not.toBeNull()

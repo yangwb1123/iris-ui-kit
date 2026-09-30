@@ -13,7 +13,7 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { pnpmCommand } from './run-pnpm.mjs'
+import { pnpmCommand, pnpmSpawnArgs } from './run-pnpm.mjs'
 
 const SHELL_COMMAND = process.platform === 'win32' ? process.env.ComSpec || 'cmd.exe' : '/bin/sh'
 
@@ -29,6 +29,26 @@ test('mjs pnpm entry point is also reused through Node', () => {
   const { command, args } = pnpmCommand({ npm_execpath: '/opt/pnpm/bin/pnpm.mjs' })
   assert.equal(command, process.execPath)
   assert.deepEqual(args, ['/opt/pnpm/bin/pnpm.mjs'])
+})
+
+test('JS entry receives each pnpm CLI argument as a separate argv item', () => {
+  const { args } = pnpmCommand({ npm_execpath: '/opt/pnpm/bin/pnpm.mjs' })
+  assert.deepEqual(pnpmSpawnArgs(args, ['--filter', 'ssr-nuxt', 'build']), [
+    '/opt/pnpm/bin/pnpm.mjs',
+    '--filter',
+    'ssr-nuxt',
+    'build',
+  ])
+})
+
+test('shell fallback keeps a single quoted command string', () => {
+  const { args } = pnpmCommand({})
+  assert.deepEqual(
+    pnpmSpawnArgs(args, ['--filter', 'ssr-nuxt', 'build']),
+    process.platform === 'win32'
+      ? [args[0], 'pnpm --filter ssr-nuxt build']
+      : [args[0], "'pnpm' '--filter' 'ssr-nuxt' 'build'"],
+  )
 })
 
 test('native pnpm binary is NOT handed to node (it would be a SyntaxError)', () => {

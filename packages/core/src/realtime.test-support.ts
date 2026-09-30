@@ -1,11 +1,24 @@
-import { vi } from 'vitest'
+import { vi, type Mock } from 'vitest'
 import type { RealtimeSink } from './realtime'
 
+type Disconnect = () => void
+type Connect = (sink: RealtimeSink<number>) => Disconnect
+
+type RealtimeHarness = {
+  sinks: RealtimeSink<number>[]
+  connect: Mock<Connect>
+  disconnect: Mock<Disconnect>
+  schedule: (fn: () => void, ms: number) => Disconnect
+  pending: Array<{ fn: () => void; ms: number }>
+  runNext: () => number | undefined
+  last: () => RealtimeSink<number>
+}
+
 /** A controllable fake transport + a manual scheduler for deterministic tests. */
-export function harness() {
+export function harness(): RealtimeHarness {
   const sinks: RealtimeSink<number>[] = []
-  const disconnect = vi.fn()
-  const connect = vi.fn((sink: RealtimeSink<number>) => {
+  const disconnect = vi.fn<Disconnect>()
+  const connect = vi.fn<Connect>((sink) => {
     sinks.push(sink)
     return disconnect
   })

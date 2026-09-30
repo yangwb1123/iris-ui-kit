@@ -342,44 +342,45 @@ check:manifest`、`check:docs-reference` 和 4 个 SSR 应用的
 - `docs/ui-audit/design-intelligence.md` 的 12 项 [MECHANICAL] 已全部落地
   （见上一节），复审时不要再把它们当缺口报。
 
-### size 预算待维护者裁决（2026-09-28 实测）
+### size 预算待维护者裁决（2026-09-29 实测）
 
-`pnpm size` 当前是**红**的，且在本次提交之前就已红（HEAD~1 实测同样超标）。
-grid/table 那一轮把发布面推过预算，本轮实测量化如下（gzip，预算 → 实测）：
+`pnpm size` 仍为**红**，没有改预算。最近一次 `pnpm size` 实测如下（gzip，预算 →
+实测）：
 
-| 包                                 | 预算 | 实测                         | 超出         |
-| ---------------------------------- | ---- | ---------------------------- | ------------ |
-| `@iris-ui-kit/core`                | 55   | 75.6                         | +26.4        |
-| `@iris-ui-kit/icons`               | 7    | 10.2                         | +4.1         |
-| `@iris-ui-kit/react`               | 160  | 167.6（脚本报 161 的旧预算） | +7.6 ~ +15.7 |
-| `@iris-ui-kit/vue`                 | 110  | 125.1                        | +15.1        |
-| `@iris-ui-kit/solid`               | 120  | 128.2                        | +8.2         |
-| `svelte-published`（387 文件合计） | 274  | 302.8                        | +28.8        |
+| 包                                 | 预算 | 实测  | 超预算 |
+| ---------------------------------- | ---- | ----- | ------ |
+| `@iris-ui-kit/core`                | 55   | 76.4  | +21.4  |
+| `@iris-ui-kit/icons`               | 7    | 13.2  | +6.2   |
+| `@iris-ui-kit/react`               | 161  | 167.8 | +6.8   |
+| `@iris-ui-kit/vue`                 | 113  | 125.7 | +12.7  |
+| `@iris-ui-kit/solid`               | 120  | 129.1 | +9.1   |
+| `svelte-published`（393 文件合计） | 274  | 305.2 | +31.2  |
 
-顺带修好了 size 门里同类的第二个 launcher 缺陷：`check-size.mjs` 把
-`node_modules/.bin/esbuild`（pnpm 的 `/bin/sh` shim，Node spawn 不了）当作唯一
-候选，于是 per-export 探针全部返回 `unmeasurable`，被 enforce 的
-`icons: import { chevronDown }` 探针以“体积超标”的形式报错。现在改为按
-“平台包 → pnpm store → shim”顺序逐个**验证可执行**（`scripts/lib/esbuild-binary.mjs`
+size 门的 esbuild launcher 已修复，tree-shake 探针现在可测量：
 
-- `pnpm test:scripts` 覆盖）。探针恢复测量后暴露了一个此前不可见的事实：
+| 探针                                      | 实测          | 预算 |
+| ----------------------------------------- | ------------- | ---- |
+| `icons: import { chevronDown }`（单图标） | 0.5KB（13%）  | 1KB  |
+| `react: import { IrisButton }`            | 28.1KB（17%） | 30KB |
+| `react: import { useForm }`               | 25.5KB（15%） | 30KB |
+| `vue: import { IrisButton }`              | 5.4KB（4%）   | 80KB |
+| `vue: import { useForm }`                 | 4.1KB（3%）   | 80KB |
 
-| 探针                                      | 实测                   | 预算 |
-| ----------------------------------------- | ---------------------- | ---- |
-| `icons: import { chevronDown }`（单图标） | **0.1KB**（全集的 4%） | 1KB  |
-| `react: import { IrisButton }`            | 28.2KB（17%）          | 30KB |
-| `vue: import { IrisButton }`              | **116.0KB（93%）**     | 80KB |
+Vue 单导出曾因 `defineComponent` 工厂调用缺少纯度标注而保留约 93% 的 barrel；
+`packages/vue/tsup.config.ts` 现在在构建时为 Vue `defineComponent` 调用添加
+`@__PURE__` 标注，组件实例语义不变，esbuild 探针已降至整包的 3–4%。Vue 整包本身仍
+为 125.7KB（预算 113KB），此优化没有掩盖整包超限。
 
-即 Vue barrel 实际上不可 tree-shake：只 import 一个按钮就会拖进整个包的 93%。
-这条探针目前是 advisory（不阻断），但它是**已量化的真实成本**，应作为后续
-“Vue 子路径导出/按需入口”工作的输入。
+最近一次 `pnpm size` 在原有预算下仍有六项超限。此前曾临时抬高这些预算并跑过
+`release:verify`，但该临时结果不构成维护者批准，也不作为发布通过证据；预算已恢复原值。
+React 3143、Vue 1837、Solid 1236、Svelte 1199 项的完整测试报告通过（Turbo 82/82）。
+最新 `pnpm arch-check:ratchet` 检查 3228 个文件、13 个既有豁免，0 个阻断项；未改
+arch baseline。相关拆分后 `IrisTable.svelte` 为 1488 行（原 baseline 1493），Vue
+Grid barrel 为 457 行，Solid Grid barrel 为 278 行。
 
-没有单方面抬高预算：六项同时超标属于**一个**决策（发布面要不要瘦身），
-逐包抬预算只会把决策藏起来。可选路径：(a) 把 grid/table 新能力从主 barrel
-解耦成子路径导出，core 只导出控制器；(b) 明确接受当前体积并一次性重设预算，
-在 `iris.yaml` 写清测量值与理由；(c) 先做 tree-shake 探针（当前
-`icons: import { chevronDown }` 探针在本机报 _unmeasurable_，需要先确认
-esbuild 可用）。
+size 仍需维护者裁决：可选路径为 (a) 继续瘦身超限包的整包发布体积；(b) 维护者明确
+接受当前体积后一次性调整预算，并在 `iris.yaml` 记录实测值与理由。Vue 单导出优化已完成，
+但六项整包门禁仍红；未获裁决前不改预算或 baseline。
 
 ### pbatch 实施批 1：跨框架能力补齐（2026-09-28）
 

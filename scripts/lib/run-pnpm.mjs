@@ -63,6 +63,18 @@ export function pnpmCommand(env = process.env) {
   return { command: shell, args: [shellFlag] }
 }
 
+/** Build argv without collapsing arguments into one pnpm CLI token. */
+export function pnpmSpawnArgs(prefix, args) {
+  // When pnpm's JS entry point is launched through Node, pass pnpm arguments
+  // as ordinary argv elements. Shell-quoting them into one string makes pnpm
+  // interpret e.g. "pnpm build" as a single, nonexistent command.
+  if (prefix.length === 1 && JS_ENTRYPOINT.test(prefix[0])) {
+    return [...prefix, ...args]
+  }
+  if (isWindows) return [prefix, ['pnpm', ...args].join(' ')]
+  return [...prefix, ['pnpm', ...args].map(quote).join(' ')]
+}
+
 /**
  * Run `pnpm <args...>` and report *how* it ended.
  *
@@ -74,9 +86,7 @@ export function pnpmCommand(env = process.env) {
  */
 export function runPnpm(args, options = {}) {
   const { command, args: prefix } = pnpmCommand()
-  const finalArgs = isWindows
-    ? [prefix, ['pnpm', ...args].join(' ')]
-    : [...prefix, ['pnpm', ...args].map(quote).join(' ')]
+  const finalArgs = pnpmSpawnArgs(prefix, args)
 
   const result = spawnSync(command, finalArgs, { cwd: process.cwd(), ...options })
 
@@ -104,9 +114,7 @@ export function runPnpm(args, options = {}) {
  */
 export function runPnpmOrExit(args, options = {}) {
   const { command, args: prefix } = pnpmCommand()
-  const finalArgs = isWindows
-    ? [prefix, ['pnpm', ...args].join(' ')]
-    : [...prefix, ['pnpm', ...args].map(quote).join(' ')]
+  const finalArgs = pnpmSpawnArgs(prefix, args)
 
   const result = spawnSync(command, finalArgs, { cwd: process.cwd(), ...options })
   if (result.error) {

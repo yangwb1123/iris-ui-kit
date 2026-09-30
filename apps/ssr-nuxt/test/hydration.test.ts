@@ -188,7 +188,7 @@ describe('ssr-nuxt app composition · SSR hydration', () => {
       // Format defensively: Vue's mismatch warnings include non-string args
       // (vnodes, Symbols), so String()-map each arg rather than `.join`-ing raw.
       const offendingMsg = offending
-        .map((call) => call.map((a) => (typeof a === 'string' ? a : String(a))).join(' '))
+        .map((call) => call.map((a: unknown) => (typeof a === 'string' ? a : String(a))).join(' '))
         .join('\n')
       expect(offending, `hydration mismatch:\n${offendingMsg}`).toHaveLength(0)
 

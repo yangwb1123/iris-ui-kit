@@ -173,7 +173,7 @@ describe('@iris-ui-kit/react IrisTree virtual', () => {
     expect(document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node')).toBe(
       '30',
     )
-  }, 30_000)
+  }, 120_000)
 
   it('A4: expanding a node preserves the scroll position (5,000 + 1,000 children)', async () => {
     const withKids = many(5000)

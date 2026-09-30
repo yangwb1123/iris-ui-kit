@@ -16,21 +16,16 @@
     createRemoteTableSource,
     detectColumnType,
     flattenLeafColumns,
-    projectTableBodyRows,
     mergeFormFilters,
-    reconcileProjectedRows,
     reorderRowsInList,
     resolveRowDragProjection,
     resolveTableRowKey,
     reorderTreeRows,
     toCsvRows,
-    withSortedChildren,
     type DetectedColumnType,
     type GridSpanPlan,
     type RemoteTableSource,
     type RemoteTableSourceState,
-    type TableBodyRowView,
-    type TreeRow,
   } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
   import {
@@ -58,13 +53,17 @@
   import { createTableFormController } from './table-form.svelte'
   import { buildTableGridTemplate } from './table-grid.svelte'
   import { createTableHandle } from './table-handle'
+  import { createTableLazyLoadController } from './table-lazy-load.svelte'
+  import { createTableTreeChildren, createTableTreeProjection } from './table-tree.svelte'
   import { createTableKeyboard } from './table-keyboard'
   import { createTablePersistController } from './table-persist.svelte'
+  import { createTableClipboardRowReconciler } from './table-projection'
   import { captureTablePersistSnapshot, restoreTablePersistPiece } from './table-persist-helpers'
   import { createPinnedDragMath } from './table-pinned-drag'
   import { createTableRowEditController } from './table-row-edit.svelte'
   import { createTableSelectionController } from './table-selection.svelte'
   import { ensureTableStyles } from './table-styles'
+  import { createTableResizeHandleController } from './table-resize-handles'
   import { createTableUndoController } from './table-undo.svelte'
   import { createTableViewsController } from './table-views.svelte'
   import { applyTableViewSnapshot, captureTableViewSnapshot } from './table-view-snapshot'
@@ -81,7 +80,6 @@
     getCellValue as resolveTableCellValue,
     mergeFilterValues,
     resolveResponsiveWidth,
-    TABLE_CONST,
     cellId,
     isEditableColumn,
     withComputedFormulaCells,
@@ -670,21 +668,9 @@
   let liveRowsRef: Array<Record<string, unknown>> = baseData
   let liveRevision = $state(0)
 
-  const readRowChildren = (
-    row: Record<string, unknown>,
-  ): readonly Record<string, unknown>[] | undefined => {
-    if (lazyLoad !== undefined) {
-      const children = row.children
-      if (Array.isArray(children)) return children as Record<string, unknown>[]
-    }
-    return getSubRows?.(row)
-  }
-  const writeLazyChildren = (
-    row: Record<string, unknown>,
-    children: Record<string, unknown>[],
-  ): Record<string, unknown> => ({
-    ...row,
-    children,
+  const { readRowChildren, writeLazyChildren } = createTableTreeChildren({
+    getLazyLoad: () => lazyLoad,
+    getSubRows: () => getSubRows,
   })
 
   // svelte-ignore state_referenced_locally — the initial rows seed the core;
@@ -858,114 +844,42 @@
     if (beforeCurrentRowChange?.(key, row) !== false) onCurrentRowChange?.(key, row)
   }
 
-  let lazyLoading = $state<Set<string>>(new Set())
-  let lazyLoaded = $state<Set<string>>(new Set())
-  let lazyEpoch = 0
-  let lastLazySource: Array<Record<string, unknown>> | undefined
-  let lazyWriteSource: Array<Record<string, unknown>> | undefined
-  $effect(() => {
-    const source = baseData
-    if (source !== lastLazySource) {
-      const isLazyWrite = source === lazyWriteSource
-      lastLazySource = source
-      lazyEpoch += 1
-      lazyLoading = new Set()
-      if (!isLazyWrite) lazyLoaded = new Set()
-      lazyWriteSource = undefined
-    }
+  const treeProjection = createTableTreeProjection({
+    getSubRows: () => getSubRows,
+    getLazyLoad: () => lazyLoad,
+    getFilteredRows: () => filteredRows(),
+    getRowKey: rowId,
+    getChildren: readRowChildren,
+    getComparator: () => (multiSort ? multiSortComparator() : sortComparator()),
+    getExpandedKeys: () => $expandedKeys,
+    getRevision: () => liveRevision,
+    findRow: (key) => gridRows.find(key),
+    getLiveRows: () => liveRowsRef,
   })
-  const hasLazyChildren = (row: Record<string, unknown>, key: string): boolean => {
-    if (lazyLoad === undefined || !Array.isArray(row.children)) return false
-    return row.children.length > 0 || lazyLoaded.has(key)
-  }
-
-  function loadLazyChildren(
-    row: Record<string, unknown>,
-    key: string,
-    effectiveKey: string | number,
-  ): void {
-    if (lazyLoad === undefined || hasLazyChildren(row, key) || lazyLoading.has(key)) return
-    const requestEpoch = lazyEpoch
-    lazyLoading = new Set(lazyLoading).add(key)
-    let loaded = false
-    const load = (children: Record<string, unknown>[]): void => {
-      if (loaded || requestEpoch !== lazyEpoch) return
-      loaded = true
-      const committed = gridRows.setChildren(effectiveKey, children)
-      if (!committed) {
-        const current = gridRows.find(effectiveKey)
-        const loadedEmpty =
-          current !== undefined && Array.isArray(current.children) && current.children.length === 0
-        if (!loadedEmpty) {
-          if (requestEpoch === lazyEpoch) {
-            const next = new Set(lazyLoading)
-            next.delete(key)
-            lazyLoading = next
-          }
-          return
-        }
-      }
-      lazyLoaded = new Set(lazyLoaded).add(key)
-      lazyWriteSource = liveRowsRef
-      void bodyData
-      expansion.toggle(key)
-      const next = new Set(lazyLoading)
-      next.delete(key)
-      lazyLoading = next
-    }
-    try {
-      lazyLoad(row, load)
-    } catch {
-      if (requestEpoch === lazyEpoch) {
-        const next = new Set(lazyLoading)
-        next.delete(key)
-        lazyLoading = next
-      }
-    }
-  }
-
-  const treeMode = $derived(getSubRows !== undefined || lazyLoad !== undefined)
-  const treeComparator = $derived(() => (multiSort ? multiSortComparator() : sortComparator()))
-  const treeProjection = $derived.by<TableBodyRowView<Record<string, unknown>>[] | null>(() => {
-    void liveRevision
-    return treeMode
-      ? projectTableBodyRows(filteredRows(), {
-          getKey: (r) => String(rowId(r, 0)),
-          getChildren: treeComparator()
-            ? withSortedChildren(readRowChildren, treeComparator()!)
-            : readRowChildren,
-          isExpanded: (k) => $expandedKeys.includes(k),
-        })
-      : null
+  const treeMode = $derived(treeProjection.treeMode)
+  const flatTree = $derived(treeProjection.flatTree)
+  const bodyData = $derived(treeProjection.bodyData)
+  const lazyTree = createTableLazyLoadController({
+    getBaseData: () => baseData,
+    getLiveRows: () => liveRowsRef,
+    getLoader: () => lazyLoad,
+    rows: gridRows,
+    getBodyData: () => bodyData,
+    toggleExpanded: (key) => expansion.toggle(key),
   })
-  const flatTree = $derived<Array<TreeRow<Record<string, unknown>>> | null>(
-    treeProjection?.map((view) => view.treeMeta!) ?? null,
-  )
-  const bodyData = $derived(
-    treeProjection ? treeProjection.map((view) => view.row) : filteredRows(),
-  )
+  const lazyLoading = $derived(lazyTree.lazyLoading)
+  const hasLazyChildren = lazyTree.hasLazyChildren
+  const loadLazyChildren = lazyTree.loadLazyChildren
 
-  function liveRowFor(row: Record<string, unknown>, index: number): Record<string, unknown> {
-    void liveRevision
-    const key = rowId(row, index)
-    return (
-      gridRows.find(key) ??
-      liveRowsRef.find((candidate, candidateIndex) => rowId(candidate, candidateIndex) === key) ??
-      row
-    )
-  }
+  const liveRowFor = treeProjection.liveRowFor
 
-  const reconcileClipboardRows = (
-    sourceRows: readonly Record<string, unknown>[],
-    previousRows: readonly Record<string, unknown>[],
-    rows: readonly Record<string, unknown>[],
-  ): Record<string, unknown>[] =>
-    reconcileProjectedRows(sourceRows, previousRows, rows, {
-      visibleRows: bodyData,
-      getRowKey: rowId,
-      getChildren: getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
-      setChildren: lazyLoad !== undefined ? writeLazyChildren : undefined,
-    })
+  const reconcileClipboardRows = createTableClipboardRowReconciler({
+    getVisibleRows: () => bodyData,
+    getRowKey: rowId,
+    getChildren: () =>
+      getSubRows !== undefined || lazyLoad !== undefined ? readRowChildren : undefined,
+    setChildren: () => (lazyLoad !== undefined ? writeLazyChildren : undefined),
+  })
 
   const selectionController = createTableSelectionController({
     rowIds: () => bodyData.map((row, index) => rowId(row, index)),
@@ -989,6 +903,11 @@
   }
 
   const resizeHandleEls = $state<Record<string, HTMLElement | undefined>>({})
+  const resizeHandles = createTableResizeHandleController({
+    handleElements: resizeHandleEls,
+    getWidths: () => effectiveWidths,
+    setColumnWidth,
+  })
   // svelte-ignore state_referenced_locally
   for (const col of leafColumns) {
     let startWidth = 0
@@ -1003,22 +922,8 @@
       },
     })
   }
-  function registerResizeHandle(node: HTMLElement, key: string): { destroy: () => void } {
-    resizeHandleEls[key] = node
-    return {
-      destroy: () => {
-        resizeHandleEls[key] = undefined
-      },
-    }
-  }
-  function onResizeHandleKeydown(e: KeyboardEvent, col: IrisTableColumn): void {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-    e.preventDefault()
-    e.stopPropagation()
-    const cur = resolveColumnWidth(col, effectiveWidths)
-    const delta = e.key === 'ArrowRight' ? TABLE_CONST.RESIZE_STEP : -TABLE_CONST.RESIZE_STEP
-    setColumnWidth(col.key, clampWidth(col, cur + delta))
-  }
+  const registerResizeHandle = resizeHandles.register
+  const onResizeHandleKeydown = resizeHandles.onKeydown
 
   const persistSnapshot = $derived(() => {
     const proxy = proxyState

@@ -132,19 +132,25 @@ describe('createI18n', () => {
     })
 
     it('caches formatters: repeated same-key calls construct Intl once', () => {
-      const spy = vi.spyOn(Intl, 'NumberFormat')
-      const i18n = createI18n({ locale: 'en-US' })
-      const opts = { style: 'currency', currency: 'USD' } as const
-      const before = spy.mock.calls.length
-      i18n.formatNumber(1, opts)
-      i18n.formatNumber(2, opts)
-      i18n.formatNumber(3, opts)
-      expect(spy.mock.calls.length - before).toBe(1) // one construction, three formats
-      // a different locale or option set is a distinct cache key
-      i18n.setLocale('de-DE')
-      i18n.formatNumber(4, opts)
-      expect(spy.mock.calls.length - before).toBe(2)
-      spy.mockRestore()
+      const RealNumberFormat = Intl.NumberFormat
+      const spy = vi.spyOn(Intl, 'NumberFormat').mockImplementation(function (...args) {
+        return Reflect.construct(RealNumberFormat, args)
+      })
+      try {
+        const i18n = createI18n({ locale: 'en-US' })
+        const opts = { style: 'currency', currency: 'USD' } as const
+        const before = spy.mock.calls.length
+        i18n.formatNumber(1, opts)
+        i18n.formatNumber(2, opts)
+        i18n.formatNumber(3, opts)
+        expect(spy.mock.calls.length - before).toBe(1) // one construction, three formats
+        // a different locale or option set is a distinct cache key
+        i18n.setLocale('de-DE')
+        i18n.formatNumber(4, opts)
+        expect(spy.mock.calls.length - before).toBe(2)
+      } finally {
+        spy.mockRestore()
+      }
     })
 
     it('does not let option serialization alias formatter behavior', () => {

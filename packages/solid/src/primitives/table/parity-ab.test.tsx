@@ -141,7 +141,9 @@ describe('IrisTable parity-AB: context menu', () => {
     [...document.querySelectorAll<HTMLElement>('[data-iris-table-row=""]')][rowIdx]!.querySelector(
       `[data-iris-table-cell="${key}"]`,
     ) as HTMLElement
-  function renderMenu(onSelect: ReturnType<typeof vi.fn>): void {
+  function renderMenu(
+    onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void,
+  ): void {
     render(() => (
       <IrisTable
         columns={cols}
@@ -159,7 +161,7 @@ describe('IrisTable parity-AB: context menu', () => {
   }
 
   it('right-clicking a body cell opens the menu at the cursor; an item click fires onSelect and closes', async () => {
-    const onSelect = vi.fn()
+    const onSelect = vi.fn<(key: string, params: IrisTableContextMenuParams<Row>) => void>()
     renderMenu(onSelect)
     fireEvent.contextMenu(bodyCell(0, 'name'), { clientX: 120, clientY: 80 })
     const el = menu()
@@ -186,7 +188,7 @@ describe('IrisTable parity-AB: context menu', () => {
   })
 
   it('Escape closes the menu; a disabled item is inert', () => {
-    const onSelect = vi.fn()
+    const onSelect = vi.fn<(key: string, params: IrisTableContextMenuParams<Row>) => void>()
     renderMenu(onSelect)
     fireEvent.contextMenu(bodyCell(1, 'status'), { clientX: 10, clientY: 10 })
     const deleteItem = document.querySelector(

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@solidjs/testing-library'
 import { IrisTable } from './IrisTable'
-import { TABLE_VIEWS_SAVE_ITEM } from '@iris-ui-kit/core'
+import { TABLE_VIEWS_SAVE_ITEM, type TableViewStorage } from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableViewConfig } from './types'
 
 afterEach(cleanup)
@@ -17,12 +17,15 @@ const columns: IrisTableColumn<Row>[] = [
 ]
 const data: Row[] = [{ id: 1, name: 'A', age: 1 }]
 
-function storage(): { getItem: ReturnType<typeof vi.fn>; setItem: ReturnType<typeof vi.fn> } {
+function storage(): TableViewStorage {
   const seed = JSON.stringify([
     { name: 'NameAsc', snapshot: { sort: { key: 'name', direction: 'asc' } } },
     { name: 'AgeDesc', snapshot: { sort: { key: 'age', direction: 'desc' } } },
   ])
-  return { getItem: vi.fn(() => seed), setItem: vi.fn() }
+  return {
+    getItem: vi.fn<(key: string) => string | null>(() => seed),
+    setItem: vi.fn<(key: string, value: string) => void>(),
+  }
 }
 
 describe('IrisTable named views and table tabs', () => {
@@ -86,7 +89,10 @@ const fullSnapshot = {
 
 function fullStorage(): ReturnType<typeof storage> {
   const seed = JSON.stringify([{ name: 'Full', snapshot: fullSnapshot }])
-  return { getItem: vi.fn(() => seed), setItem: vi.fn() }
+  return {
+    getItem: vi.fn<(key: string) => string | null>(() => seed),
+    setItem: vi.fn<(key: string, value: string) => void>(),
+  }
 }
 
 const fullColumns: IrisTableColumn<Row>[] = [
@@ -182,7 +188,7 @@ describe('IrisTable named-view snapshot channels', () => {
   })
 
   it('captures owned channels on save and upserts duplicate names', () => {
-    const setItem = vi.fn()
+    const setItem = vi.fn<(key: string, value: string) => void>()
     const { container } = render(() => (
       <IrisTable
         columns={fullColumns}
@@ -190,7 +196,9 @@ describe('IrisTable named-view snapshot channels', () => {
         multiSort
         onFiltersChange={vi.fn()}
         onColumnWidthsChange={vi.fn()}
-        views={{ storage: { getItem: vi.fn(() => null), setItem } }}
+        views={{
+          storage: { getItem: vi.fn<(key: string) => string | null>(() => null), setItem },
+        }}
       />
     ))
     fireEvent.click(container.querySelector('[data-iris-table-header="name"]') as HTMLElement)
@@ -221,7 +229,12 @@ describe('IrisTable named-view snapshot channels', () => {
         columns={fullColumns}
         data={fullData}
         proxyConfig={{ query, pageSize: 10, onPageChange }}
-        views={{ storage: { getItem: vi.fn(() => seed), setItem: vi.fn() } }}
+        views={{
+          storage: {
+            getItem: vi.fn<(key: string) => string | null>(() => seed),
+            setItem: vi.fn<(key: string, value: string) => void>(),
+          },
+        }}
       />
     ))
     await waitFor(() => expect(query).toHaveBeenCalled())
@@ -239,7 +252,12 @@ describe('IrisTable named-view snapshot channels', () => {
       <IrisTable
         columns={fullColumns}
         data={fullData}
-        views={{ storage: { getItem: vi.fn(() => '{broken'), setItem: vi.fn() } }}
+        views={{
+          storage: {
+            getItem: vi.fn<(key: string) => string | null>(() => '{broken'),
+            setItem: vi.fn<(key: string, value: string) => void>(),
+          },
+        }}
       />
     ))
     expect(container.querySelectorAll('[data-iris-table-views] option')).toHaveLength(2)

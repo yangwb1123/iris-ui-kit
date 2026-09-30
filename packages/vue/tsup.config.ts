@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup'
-import { existsSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative } from 'node:path'
 
 /**
  * Build the full barrel (`index`) plus a flattened entry per top-level group
@@ -30,8 +30,33 @@ function buildEntries(): Record<string, string> {
   return entries
 }
 
+/**
+ * Vue's defineComponent is a type-inference helper with no call-time effects;
+ * annotate it so consumer bundlers can remove unused siblings from the barrel.
+ * Keep this transform scoped to Vue source because purity is framework-specific.
+ */
+const vuePureDefineComponentPlugin = {
+  name: 'vue-define-component-purity',
+  setup(build: import('esbuild').PluginBuild) {
+    const sourceRoot = join(process.cwd(), 'src')
+    build.onLoad({ filter: /\.[jt]sx?$/ }, ({ path }) => {
+      const relativePath = relative(sourceRoot, path)
+      if (relativePath.startsWith('..') || isAbsolute(relativePath)) return
+      const source = readFileSync(path, 'utf8')
+      const contents = source.replace(/\bdefineComponent\s*\(/g, '/* @__PURE__ */ defineComponent(')
+      if (contents === source) return
+      return {
+        contents,
+        loader: path.endsWith('.tsx') ? 'tsx' : 'ts',
+        resolveDir: dirname(path),
+      }
+    })
+  },
+}
+
 export default defineConfig({
   entry: buildEntries(),
+  esbuildPlugins: [vuePureDefineComponentPlugin],
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,

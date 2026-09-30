@@ -292,20 +292,32 @@ describe('IrisNavMenu interactions (A-series, antd parity)', () => {
   })
 
   it('A7: scrolls the active item into view when the active key changes', async () => {
-    const scrollIntoView = vi.fn()
-    if (typeof HTMLElement.prototype.scrollIntoView !== 'function') {
-      ;(HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView = scrollIntoView
+    const prototype = HTMLElement.prototype
+    const originalScrollIntoView = prototype.scrollIntoView
+    const fallback = vi.fn()
+    if (typeof originalScrollIntoView !== 'function') {
+      Object.defineProperty(prototype, 'scrollIntoView', {
+        configurable: true,
+        value: fallback,
+      })
     }
-    const spy = vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView)
+    const spy = vi.spyOn(prototype, 'scrollIntoView')
     const w = mount(IrisNavMenu, {
       props: { items, activeKey: 'dash', defaultExpandedKeys: ['sys'] },
     })
-    spy.mockClear()
-    await w.setProps({ activeKey: 'users' })
-    expect(spy).toHaveBeenCalledTimes(1)
-    expect(spy.mock.calls[0]![0]).toMatchObject({ block: 'nearest', inline: 'nearest' })
-    spy.mockRestore()
-    w.unmount()
+    try {
+      spy.mockClear()
+      await w.setProps({ activeKey: 'users' })
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(spy.mock.calls[0]![0]).toMatchObject({ block: 'nearest', inline: 'nearest' })
+    } finally {
+      spy.mockRestore()
+      if (typeof originalScrollIntoView !== 'function') {
+        delete (prototype as { scrollIntoView?: typeof HTMLElement.prototype.scrollIntoView })
+          .scrollIntoView
+      }
+      w.unmount()
+    }
   })
 
   it('A8: vertical children stay in the DOM and animate height', () => {

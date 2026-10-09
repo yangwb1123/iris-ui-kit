@@ -307,10 +307,17 @@ export function createOutbox<M, S = M>(options: OutboxOptions<M, S>): AdvancedOu
   const commit = (next: OutboxItem<M>[]): void => {
     // Encode before changing the live queue. A closure sent to durable storage
     // therefore fails closed without leaving a phantom item in memory.
-    const stored = next.map((item) => ({
-      ...item,
-      payload: encodePayload(item.payload),
-    })) as OutboxItem<S>[]
+    // The default private memory store has no external persistence boundary.
+    // Incoming payloads and observer snapshots are already detached. Re-cloning
+    // its entire queue on every change adds quadratic work without isolation.
+    // A supplied codec still owns an encode/validation boundary even in memory.
+    const stored =
+      durable || codec
+        ? (next.map((item) => ({
+            ...item,
+            payload: encodePayload(item.payload),
+          })) as OutboxItem<S>[])
+        : undefined
     const previous = items
     const previousVersion = queueVersion
     items = next
@@ -319,7 +326,9 @@ export function createOutbox<M, S = M>(options: OutboxOptions<M, S>): AdvancedOu
       // `stored` is already a fresh JSON-safe graph, but give storage one more
       // private snapshot so a save implementation cannot mutate the live
       // runtime payload through an accidental alias.
-      storage.save(stored.map((item) => ({ ...item, payload: cloneRuntimeValue(item.payload) })))
+      if (stored) {
+        storage.save(stored.map((item) => ({ ...item, payload: cloneRuntimeValue(item.payload) })))
+      }
     } catch (error) {
       // A re-entrant storage adapter may have committed a newer queue while
       // this save was running. Only roll back this commit if it is still the

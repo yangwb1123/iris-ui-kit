@@ -99,7 +99,9 @@ describe('useGridCore concurrent rendering', () => {
           root.render(<harness.App />)
         })
         await vi.waitFor(() => {
-          expect(harness.core()?.status).not.toBe('created')
+          // `undefined` is also "not created" before the consumer renders.
+          // Wait for an actual commit, not that vacuously satisfied condition.
+          expect(harness.core()?.status).toBe('ready')
         })
         await flushMacrotasks()
 

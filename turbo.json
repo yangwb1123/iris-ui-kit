@@ -1,10 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalDependencies": ["scripts/compact-published-js.mjs"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".vitepress/dist/**"]
+    },
+    "@iris-ui-kit/dev-certificate#build": {
+      "cache": false,
+      "outputs": []
     },
     "dev": {
       "cache": false,

@@ -1,4 +1,15 @@
-import { Fragment, cloneVNode, computed, defineComponent, h, useId, type VNode } from 'vue'
+import {
+  Fragment,
+  cloneVNode,
+  computed,
+  defineComponent,
+  h,
+  useId,
+  type PropType,
+  type VNode,
+} from 'vue'
+import { resolveFormFieldLayout, type FormFieldLabelPlacement } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
 
 /**
  * Form-field wrapper that handles the label / hint / error trio with the
@@ -19,6 +30,12 @@ import { Fragment, cloneVNode, computed, defineComponent, h, useId, type VNode }
  * Pass `labelFor` if you want to pin the rendered `<label for>` to a
  * specific id (e.g. when the wrapped control is a custom non-`<input>`
  * widget).
+ *
+ * Layout is declarative — `labelPlacement`, `labelWidth`, `controlWidth` and
+ * `fullWidth` exist in all four adapters and the decisions live in core
+ * (`resolveFormFieldLayout`). Horizontal fields group the control with its
+ * hint/error in a `data-iris-form-field-control` wrapper; that wrapper is only
+ * emitted when a layout prop asks for it, so a plain field keeps its DOM.
  */
 export const IrisFormField = defineComponent({
   name: 'IrisFormField',
@@ -32,6 +49,14 @@ export const IrisFormField = defineComponent({
     labelFor: { type: String, default: '' },
     /** Visual size of the label. */
     size: { type: String as () => 'sm' | 'md', default: 'md' },
+    /** Label above the control (default) or beside it. */
+    labelPlacement: { type: String as () => FormFieldLabelPlacement, default: 'top' },
+    /** Width of the label column — a number is read as px. Labels wrap inside it. */
+    labelWidth: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Width of the control area (control + hint/error); a number is read as px. */
+    controlWidth: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Stretch the field (and its control area) to the container width. */
+    fullWidth: { type: Boolean, default: false },
   },
   setup(props, { slots, attrs }) {
     const baseId = useId()
@@ -49,14 +74,55 @@ export const IrisFormField = defineComponent({
       return ids.length > 0 ? ids.join(' ') : undefined
     })
 
+    const layout = computed(() =>
+      resolveFormFieldLayout({
+        labelPlacement: props.labelPlacement,
+        labelWidth: props.labelWidth,
+        controlWidth: props.controlWidth,
+        fullWidth: props.fullWidth,
+      }),
+    )
+
     const labelStyle = computed<Record<string, string>>(() => ({
-      fontSize: props.size === 'sm' ? '12px' : '14px',
+      fontSize:
+        props.size === 'sm' ? 'var(--iris-font-size-xs, 12px)' : 'var(--iris-font-size-md, 14px)',
       fontWeight: '500',
       color: props.error ? 'var(--iris-danger)' : 'var(--iris-foreground)',
       display: 'inline-flex',
       alignItems: 'center',
       gap: '4px',
+      ...layout.value.label,
     }))
+
+    const hintNode = () =>
+      props.hint && !props.error
+        ? h(
+            'div',
+            {
+              id: hintId,
+              'data-iris-form-field-hint': '',
+              style: {
+                fontSize: 'var(--iris-font-size-xs, 12px)',
+                color: 'var(--iris-muted)',
+              },
+            },
+            props.hint,
+          )
+        : null
+
+    const errorNode = () =>
+      props.error
+        ? h(
+            'div',
+            {
+              id: errorId,
+              'data-iris-form-field-error': '',
+              role: 'alert',
+              style: { fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-danger)' },
+            },
+            props.error,
+          )
+        : null
 
     return () => {
       const children = (slots.default?.() ?? []) as VNode[]
@@ -87,11 +153,12 @@ export const IrisFormField = defineComponent({
           ...attrs,
           'data-iris-form-field': '',
           'data-iris-form-field-state': props.error ? 'invalid' : 'valid',
+          ...(layout.value.placement === 'top'
+            ? {}
+            : { 'data-iris-form-field-placement': layout.value.placement }),
           style: {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...layout.value.root,
+            ...normalizeHostStyle(attrs.style),
           },
         },
         [
@@ -119,34 +186,21 @@ export const IrisFormField = defineComponent({
                 ],
               )
             : null,
-          // The wrapped control + any trailing siblings.
-          h(Fragment, null, [injected, ...restChildren]),
-          props.hint && !props.error
-            ? h(
-                'div',
-                {
-                  id: hintId,
-                  'data-iris-form-field-hint': '',
-                  style: { fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' },
-                },
-                props.hint,
-              )
-            : null,
-          props.error
-            ? h(
-                'div',
-                {
-                  id: errorId,
-                  'data-iris-form-field-error': '',
-                  role: 'alert',
-                  style: {
-                    fontSize: 'var(--iris-font-size-xs, 12px)',
-                    color: 'var(--iris-danger)',
-                  },
-                },
-                props.error,
-              )
-            : null,
+          // The control area: grouped under its own wrapper when a layout prop
+          // asks for one (horizontal fields keep help/error under the control).
+          layout.value.grouped
+            ? h('div', { 'data-iris-form-field-control': '', style: { ...layout.value.control } }, [
+                // The wrapped control + any trailing siblings.
+                h(Fragment, null, [injected, ...restChildren]),
+                hintNode(),
+                errorNode(),
+              ])
+            : h(Fragment, null, [
+                // The wrapped control + any trailing siblings.
+                h(Fragment, null, [injected, ...restChildren]),
+                hintNode(),
+                errorNode(),
+              ]),
         ],
       )
     }

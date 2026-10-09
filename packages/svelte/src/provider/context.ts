@@ -2,6 +2,7 @@ import type { Snippet } from 'svelte'
 import type { I18nMessages, IrisPlugin } from '@iris-ui-kit/core'
 import type { Direction, ThemeStore } from '@iris-ui-kit/theme'
 import type { SkinEngine } from '@iris-ui-kit/skins'
+import type { IrisComponentSize } from './componentSize'
 
 /**
  * Context key for the collected plugin layer — a module-singleton Symbol. Named
@@ -33,5 +34,12 @@ export interface IrisProviderProps {
   plugins?: IrisPlugin[]
   /** Token apply target; defaults to `document.documentElement`. */
   target?: HTMLElement | null
+  /**
+   * Default size for every size-bearing control below this provider. Controls
+   * with an explicit `size` prop always win; a nested provider without
+   * `componentSize` inherits this one; with no provider at all controls are
+   * `md`.
+   */
+  componentSize?: IrisComponentSize
   children?: Snippet
 }

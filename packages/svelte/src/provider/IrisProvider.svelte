@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { setContext } from 'svelte'
+  import { getContext, setContext } from 'svelte'
   import { runPlugins } from '@iris-ui-kit/core'
   import { applyCssVars } from '@iris-ui-kit/theme'
   import ThemeProvider from '../theme/ThemeProvider.svelte'
   import SkinProvider from '../skins/SkinProvider.svelte'
   import IrisI18nProvider from '../i18n/IrisI18nProvider.svelte'
   import { PLUGIN_STORE_KEY, type IrisProviderProps, type PluginStoreContextValue } from './context'
+  import {
+    COMPONENT_SIZE_KEY,
+    resolveComponentSize,
+    type ComponentSizeContextValue,
+  } from './componentSize'
 
   const {
     theme,
@@ -15,6 +20,7 @@
     messages,
     plugins = [],
     target,
+    componentSize,
     children,
   }: IrisProviderProps = $props()
 
@@ -36,6 +42,17 @@
     },
     get installed() {
       return installed
+    },
+  })
+
+  // Component size: this provider's prop, else the size it inherits from an
+  // outer provider, else `md`. A getter keeps it reactive; setContext adds no
+  // DOM node.
+  const inheritedSize = getContext<ComponentSizeContextValue | undefined>(COMPONENT_SIZE_KEY)
+  const size = $derived(resolveComponentSize(componentSize, inheritedSize?.current))
+  setContext<ComponentSizeContextValue>(COMPONENT_SIZE_KEY, {
+    get current() {
+      return size
     },
   })
 

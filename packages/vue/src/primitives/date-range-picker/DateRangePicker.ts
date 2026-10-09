@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import type { Placement } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
@@ -124,7 +125,7 @@ export const IrisDateRangePicker = defineComponent({
                     minHeight: '34px',
                     minWidth: '260px',
                     textAlign: 'start',
-                    ...((attrs.style as Record<string, string> | undefined) ?? {}),
+                    ...normalizeHostStyle(attrs.style),
                   },
                 },
                 display.value || (props.placeholder ?? t('dateRangePicker.placeholder')),

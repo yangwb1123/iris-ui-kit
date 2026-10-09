@@ -6,27 +6,28 @@ on:
     types: [completed]
     branches: [main]
 
-# Serialize releases so a Version PR and a publish never race.
+# Publication, version preparation, and application upgrades are separate.
+# Never automatically replay a failed/unknown release. Inspect its receipt first.
 concurrency: release-${{ github.event.workflow_run.head_branch }}
 
 jobs:
   release:
-    # A pull-request CI run must never expose release credentials, and a failed
-    # main build must never race ahead into Changesets. Publishing is also
-    # default-deny: a maintainer must explicitly set the repository variable
-    # IRIS_NPM_RELEASE_ENABLED=true after approving the first release/version.
+    # Explicitly approve this exact versioned SHA and source digest only after
+    # qualification. A new main push, PR CI, or a failed run grants no release.
     if: >-
       vars.IRIS_NPM_RELEASE_ENABLED == 'true' &&
+      vars.IRIS_APPROVED_RELEASE_SHA == github.event.workflow_run.head_sha &&
+      vars.IRIS_APPROVED_SOURCE_SHA256 != '' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
-      contents: write # create the "Version Packages" PR / push tags
-      pull-requests: write
-      id-token: write # npm provenance
+      contents: read
+      actions: read
+      id-token: write
     steps:
-      - name: Checkout
+      - name: Checkout approved immutable source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -39,51 +40,47 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Dependency audit (all severities)
+      - name: Install the locked browser launcher and native Chromium
         run: |
-          pnpm check:brace-expansion-compat
-          pnpm audit:security
-          pnpm check:brace-expansion-compat
-
-      # CI already passed for this exact immutable SHA. Re-run the compact
-      # release-critical surface to defend against packaging/environment drift.
-      - name: Verify release candidate
-        run: |
-          pnpm format:check
-          pnpm turbo run test typecheck lint build
-          pnpm check:manifest
-          pnpm check:doc-facts
-          pnpm check:parity
-          pnpm check:docs-reference
-          pnpm check:registry
-          pnpm audit:tokens
-          pnpm size
-          pnpm check:rsc
-          pnpm check:desktop-parity
-          pnpm check:pack-install
-          pnpm arch-check:ratchet
-
-      # Opens/updates a "Version Packages" PR when changesets are pending, and
-      # publishes to npm once that PR is merged (versions bumped, changelogs
-      # written). `release` builds before `changeset publish`.
-      - name: Create Release PR or publish
-        uses: changesets/action@v1
-        with:
-          version: pnpm changeset:version
-          publish: pnpm release:publish
-          commit: 'chore: release'
-          title: 'chore: release'
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CI: '1'
+          HUSKY: '0'
+
+      # This standalone publisher freezes clean source, installs/builds/tests in
+      # a private stage, validates all 27 actual tarballs before ANY write, checks
+      # all immutable registry versions, and reconciles every write outcome.
+      # It never bumps versions, restores source, commits, pushes, or upgrades apps.
+      - name: Qualify and publish the exact whole graph with provenance
+        run: >-
+          python3 -B scripts/release/iris_publish.py --publish
+          --iris-ui-dir "$GITHUB_WORKSPACE"
+          --output-dir "$RUNNER_TEMP/iris-publication"
+          --expected-head "$APPROVED_RELEASE_SHA"
+          --expected-source-sha256 "$APPROVED_SOURCE_SHA256"
+          --ci-run-id "$QUALIFIED_CI_RUN_ID"
+        env:
+          CI: '1'
+          HUSKY: '0'
+          PYTHONDONTWRITEBYTECODE: '1'
+          NEXT_TELEMETRY_DISABLED: '1'
+          NUXT_TELEMETRY_DISABLED: '1'
+          IRIS_NPM_RELEASE_ENABLED: ${{ vars.IRIS_NPM_RELEASE_ENABLED }}
+          APPROVED_RELEASE_SHA: ${{ vars.IRIS_APPROVED_RELEASE_SHA }}
+          APPROVED_SOURCE_SHA256: ${{ vars.IRIS_APPROVED_SOURCE_SHA256 }}
+          QUALIFIED_CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # `changesets publish` invokes npm internally. npm reads this standard
-          # config environment variable and emits a Sigstore provenance
-          # attestation using the job's OIDC token.
           NPM_CONFIG_PROVENANCE: 'true'
+
+      - name: Preserve partial or unknown publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iris-publication-${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/iris-publication
+          if-no-files-found: warn
+          retention-days: 14

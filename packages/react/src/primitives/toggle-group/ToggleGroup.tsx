@@ -6,6 +6,7 @@ import {
   type KeyboardNavController,
 } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
+import { useComponentSize } from '../../provider'
 import {
   ToggleGroupContext,
   type IrisToggleGroupOrientation,
@@ -53,7 +54,7 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
   const {
     type = 'single',
     orientation = 'horizontal',
-    size = 'md',
+    size: sizeProp,
     variant = 'outline',
     disabled = false,
     value: valueProp,
@@ -67,7 +68,11 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
     value?: IrisToggleGroupValue
     defaultValue?: IrisToggleGroupValue
     onValueChange?: (next: IrisToggleGroupValue) => void
+    size?: IrisToggleGroupSize
   }
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(sizeProp)
 
   const isMultiple = type === 'multiple'
   const isControlled = valueProp !== undefined

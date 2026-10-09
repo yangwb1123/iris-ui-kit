@@ -1,0 +1,26 @@
+{
+  "name": "@iris-ui-kit/dev-certificate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internal Node-native certificate bridge for development listeners",
+  "license": "MIT",
+  "main": "index.cjs",
+  "module": "index.mjs",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./index.cjs"
+    }
+  },
+  "engines": {
+    "node": "^20.9.0 || >=22.0.0"
+  },
+  "scripts": {
+    "build": "node --check index.mjs && node --check index.cjs",
+    "test": "node --test index.test.mjs",
+    "lint": "eslint index.mjs index.cjs index.test.mjs"
+  },
+  "dependencies": {
+    "selfsigned": "5.5.0"
+  }
+}

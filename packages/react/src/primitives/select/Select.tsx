@@ -9,6 +9,7 @@ import {
   type Virtualizer,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 import { useStore } from '../../useStore'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
@@ -58,7 +59,7 @@ const SIZE_STYLES: Record<
     paddingInlineStart: string
     paddingInlineEnd: string
     fontSize: string
-    minHeight: number
+    minHeight: string
   }
 > = {
   sm: {
@@ -66,23 +67,26 @@ const SIZE_STYLES: Record<
     paddingInlineStart: '8px',
     paddingInlineEnd: '24px',
     fontSize: 'var(--iris-font-size-xs, 12px)',
-    minHeight: 28,
+    minHeight: 'var(--iris-control-height-sm, 28px)',
   },
   md: {
     paddingBlock: 'var(--iris-padding-sm, 6px)',
     paddingInlineStart: 'var(--iris-padding-md, 12px)',
     paddingInlineEnd: 'var(--iris-space-xl, 24px)',
     fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: 34,
+    minHeight: 'var(--iris-control-height-md, 34px)',
   },
   lg: {
     paddingBlock: '8px',
     paddingInlineStart: '12px',
     paddingInlineEnd: '32px',
     fontSize: 'var(--iris-font-size-lg, 16px)',
-    minHeight: 40,
+    minHeight: 'var(--iris-control-height-lg, 40px)',
   },
 }
+
+/** Intrinsic floor for the trigger — narrow enough for a short label. */
+const TRIGGER_MIN_WIDTH = '140px'
 
 export interface IrisSelectProps<T = unknown> {
   items: IrisSelectItem<T>[]
@@ -93,6 +97,10 @@ export interface IrisSelectProps<T = unknown> {
   /** Allow selecting multiple options (values become arrays). */
   multiple?: boolean
   placeholder?: string
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisSelectSize
   disabled?: boolean
   placement?: Placement
@@ -106,6 +114,10 @@ export interface IrisSelectProps<T = unknown> {
   renderTrigger?: (state: IrisSelectTriggerState<T>) => React.ReactNode
   style?: React.CSSProperties
   className?: string
+  /** Trigger width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the trigger to its container (`width: 100%`). */
+  fullWidth?: boolean
   /**
    * Opt-in windowed rendering of the listbox via the core virtualizer.
    * When true, only the visible window (+ buffer) of options is rendered;
@@ -134,7 +146,7 @@ export function IrisSelect<T = unknown>({
   onValueChange,
   multiple = false,
   placeholder,
-  size = 'md',
+  size: sizeProp,
   disabled = false,
   placement = 'bottom-start',
   invalid = false,
@@ -143,10 +155,14 @@ export function IrisSelect<T = unknown>({
   renderTrigger,
   style,
   className,
+  width,
+  fullWidth = false,
   virtual = false,
   ...rest
 }: IrisSelectProps<T>): React.ReactElement {
   const { t } = useI18n()
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(sizeProp)
   const safeItems = items ?? []
   const resolvedPlaceholder = placeholder ?? t('select.placeholder')
   const isControlled = valueProp !== undefined
@@ -358,12 +374,15 @@ export function IrisSelect<T = unknown>({
     fontFamily: 'inherit',
     position: 'relative',
     width: 'auto',
-    minWidth: 140,
+    minWidth: TRIGGER_MIN_WIDTH,
+    boxSizing: 'border-box',
     paddingBlock: sizeStyles.paddingBlock,
     paddingInlineStart: sizeStyles.paddingInlineStart,
     paddingInlineEnd: sizeStyles.paddingInlineEnd,
     fontSize: sizeStyles.fontSize,
     minHeight: sizeStyles.minHeight,
+    ...(fullWidth ? { width: '100%' } : null),
+    ...(width !== undefined ? { width: typeof width === 'number' ? `${width}px` : width } : null),
     ...style,
   }
 

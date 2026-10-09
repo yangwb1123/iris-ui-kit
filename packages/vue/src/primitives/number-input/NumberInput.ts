@@ -1,8 +1,48 @@
 import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
-import type { Size } from '@iris-ui-kit/core'
+import { resolveGrowableControlHeight, type Size } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
+import { splitControlAttrs } from '../../internal/control-attrs'
 
 export type IrisNumberInputSize = Size
+
+const SIZE_MAP: Record<
+  IrisNumberInputSize,
+  { padding: string; paddingInline: string; fontSize: string; minHeight: string }
+> = {
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
+    paddingInline: 'var(--iris-padding-sm)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    paddingInline: 'var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    paddingInline: 'var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
+/** Width of one stepper button (px). */
+const STEPPER_WIDTH = 22
+/** Space between a stepper and the text field (px, inline). */
+const STEPPER_GAP = 4
+/** Space the text field needs on its own for a number (px) — matches 4ch. */
+const FIELD_MIN_WIDTH = 40
+/** Border width added once per side of the host box (px). */
+const BORDER_WIDTH = 1
+
+/** CSS width value — numbers are px, strings pass through as authored. */
+function cssWidth(width: string | number): string {
+  return typeof width === 'number' ? `${width}px` : width
+}
 
 function decimalsOf(step: number): number {
   if (!Number.isFinite(step)) return 0
@@ -24,13 +64,16 @@ function roundToStep(value: number, step: number): number {
  * Numeric input with step buttons + min/max/step clamping + keyboard ↑/↓
  * controls. Emits `null` for invalid / empty input so consumers can apply
  * their own validation logic.
+ *
+ * `size` falls back to the nearest `<IrisProvider componentSize>`.
  */
 export const IrisNumberInput = defineComponent({
   name: 'IrisNumberInput',
   inheritAttrs: false,
   props: {
     modelValue: { type: Number as PropType<number | null>, default: null },
-    size: { type: String as PropType<IrisNumberInputSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisNumberInputSize>, default: undefined },
     min: { type: Number, default: -Infinity },
     max: { type: Number, default: Infinity },
     step: { type: Number, default: 1 },
@@ -43,6 +86,10 @@ export const IrisNumberInput = defineComponent({
     id: { type: String, default: undefined },
     /** Forwarded as `aria-describedby` on the inner <input>. Set by IrisFormField. */
     ariaDescribedby: { type: String, default: undefined },
+    /** Host width — any CSS length, or a number of px. */
+    width: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Stretch the host to its container (`width: 100%`). */
+    fullWidth: { type: Boolean, default: false },
   },
   emits: {
     'update:modelValue': (_value: number | null) => true,
@@ -52,6 +99,7 @@ export const IrisNumberInput = defineComponent({
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
     const focused = ref(false)
+    const size = useComponentSize(() => props.size)
     const rawText = ref<string>(
       props.modelValue === null || props.modelValue === undefined ? '' : String(props.modelValue),
     )
@@ -135,29 +183,7 @@ export const IrisNumberInput = defineComponent({
       }
     }
 
-    const sizeStyles = computed<{ padding: string; fontSize: string; minHeight: string }>(() => {
-      const map: Record<
-        IrisNumberInputSize,
-        { padding: string; fontSize: string; minHeight: string }
-      > = {
-        sm: {
-          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
-          fontSize: 'var(--iris-font-size-xs, 12px)',
-          minHeight: '28px',
-        },
-        md: {
-          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
-          fontSize: 'var(--iris-font-size-md, 14px)',
-          minHeight: '34px',
-        },
-        lg: {
-          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
-          fontSize: 'var(--iris-font-size-lg, 16px)',
-          minHeight: '40px',
-        },
-      }
-      return map[props.size]
-    })
+    const sizeStyles = computed(() => SIZE_MAP[size.value])
 
     const wrapperStyle = computed<Record<string, string>>(() => {
       const borderColor = props.invalid
@@ -168,9 +194,16 @@ export const IrisNumberInput = defineComponent({
       const boxShadow = focused.value
         ? `0 0 0 3px ${props.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
         : 'none'
+      // The host box is the WHOLE control (field + both steppers + gaps +
+      // padding + borders), so its minimum intrinsic width covers all of it.
+      const contentMinWidth = props.showControls
+        ? FIELD_MIN_WIDTH + STEPPER_GAP * 3 + STEPPER_WIDTH * 2
+        : FIELD_MIN_WIDTH
       return {
         display: 'inline-flex',
         alignItems: 'center',
+        gap: `${STEPPER_GAP}px`,
+        boxSizing: 'border-box',
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         border: `1px solid ${borderColor}`,
@@ -180,13 +213,18 @@ export const IrisNumberInput = defineComponent({
         boxShadow,
         padding: sizeStyles.value.padding,
         minHeight: sizeStyles.value.minHeight,
+        minWidth: `calc(${contentMinWidth}px + 2 * ${sizeStyles.value.paddingInline} + ${
+          BORDER_WIDTH * 2
+        }px)`,
         fontSize: sizeStyles.value.fontSize,
+        ...(props.fullWidth ? { width: '100%' } : null),
+        ...(props.width !== undefined ? { width: cssWidth(props.width) } : null),
       }
     })
 
     const inputStyle: Record<string, string> = {
       flex: '1',
-      minWidth: '40px',
+      minWidth: `${FIELD_MIN_WIDTH}px`,
       width: '4ch',
       border: 'none',
       outline: 'none',
@@ -202,14 +240,13 @@ export const IrisNumberInput = defineComponent({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '22px',
-      height: '22px',
+      width: `${STEPPER_WIDTH}px`,
+      ...resolveGrowableControlHeight(STEPPER_WIDTH),
       background: 'transparent',
       border: 'none',
       borderRadius: 'var(--iris-radius-sm, 4px)',
       cursor: 'pointer',
       color: 'var(--iris-muted)',
-      lineHeight: '1',
       flexShrink: '0',
     }
 
@@ -218,16 +255,17 @@ export const IrisNumberInput = defineComponent({
         props.modelValue !== null && props.modelValue !== undefined && props.modelValue <= props.min
       const atMax =
         props.modelValue !== null && props.modelValue !== undefined && props.modelValue >= props.max
+      const { aria, host } = splitControlAttrs(attrs)
       return h(
         'div',
         {
-          ...attrs,
+          ...host,
           'data-iris-number-input': '',
-          'data-iris-number-input-size': props.size,
+          'data-iris-number-input-size': size.value,
           'data-state': props.invalid ? 'invalid' : focused.value ? 'focused' : 'idle',
           style: {
             ...wrapperStyle.value,
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...((host.style as Record<string, string> | undefined) ?? {}),
           },
         },
         [
@@ -240,12 +278,13 @@ export const IrisNumberInput = defineComponent({
                   'aria-label': t('numberInput.decrement'),
                   disabled: props.disabled || atMin || undefined,
                   onClick: () => increment(-1),
-                  style: { ...controlBtnStyle, marginInlineEnd: '4px' },
+                  style: controlBtnStyle,
                 },
                 '−',
               )
             : null,
           h('input', {
+            ...aria,
             id: props.id,
             type: 'text',
             inputmode: 'decimal',
@@ -277,7 +316,7 @@ export const IrisNumberInput = defineComponent({
                   'aria-label': t('numberInput.increment'),
                   disabled: props.disabled || atMax || undefined,
                   onClick: () => increment(1),
-                  style: { ...controlBtnStyle, marginInlineStart: '4px' },
+                  style: controlBtnStyle,
                 },
                 '+',
               )

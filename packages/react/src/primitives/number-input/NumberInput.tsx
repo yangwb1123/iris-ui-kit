@@ -1,20 +1,42 @@
 import * as React from 'react'
+import { resolveGrowableControlHeight } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 
 export type IrisNumberInputSize = 'sm' | 'md' | 'lg'
 
 const SIZE_MAP: Record<
   IrisNumberInputSize,
-  { padding: string; fontSize: string; minHeight: string }
+  { padding: string; paddingInline: string; fontSize: string; minHeight: string }
 > = {
-  sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+  sm: {
+    padding: '4px 8px',
+    paddingInline: '8px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
   md: {
     padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    paddingInline: 'var(--iris-padding-md, 12px)',
     fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: '34px',
+    minHeight: 'var(--iris-control-height-md, 34px)',
   },
-  lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
+  lg: {
+    padding: '8px 12px',
+    paddingInline: '12px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
 }
+
+/** Width of one stepper button (px). */
+const STEPPER_WIDTH = 22
+/** Space between a stepper and the text field (px, inline). */
+const STEPPER_GAP = 4
+/** Space the text field needs on its own for a number (px) — matches 4ch. */
+const FIELD_MIN_WIDTH = 40
+/** Border width added once per side of the host box (px). */
+const BORDER_WIDTH = 1
 
 function decimalsOf(step: number): number {
   if (!Number.isFinite(step)) return 0
@@ -39,6 +61,10 @@ export interface IrisNumberInputProps extends Omit<
   value?: number | null
   defaultValue?: number | null
   onChange?: (next: number | null) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisNumberInputSize
   min?: number
   max?: number
@@ -46,6 +72,10 @@ export interface IrisNumberInputProps extends Omit<
   invalid?: boolean
   showControls?: boolean
   ariaDescribedby?: string
+  /** Host box width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the host box to its container (`width: 100%`). */
+  fullWidth?: boolean
 }
 
 /** React port of {@link import('@iris-ui-kit/vue').IrisNumberInput}. */
@@ -55,7 +85,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
       value,
       defaultValue = null,
       onChange,
-      size = 'md',
+      size: sizeProp,
       min = -Infinity,
       max = Infinity,
       step = 1,
@@ -64,12 +94,16 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
       invalid = false,
       showControls = true,
       ariaDescribedby,
+      width,
+      fullWidth = false,
       style,
       ...rest
     },
     ref,
   ) {
     const { t } = useI18n()
+    // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+    const size = useComponentSize(sizeProp)
     const isControlled = value !== undefined
     const [internal, setInternal] = React.useState<number | null>(defaultValue ?? null)
     const current = isControlled ? (value as number | null) : internal
@@ -168,16 +202,26 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 22,
-      height: 22,
+      width: STEPPER_WIDTH,
+      ...resolveGrowableControlHeight(STEPPER_WIDTH),
       background: 'transparent',
       border: 'none',
       borderRadius: 'var(--iris-radius-sm, 4px)',
       cursor: 'pointer',
       color: 'var(--iris-muted)',
-      lineHeight: 1,
       flexShrink: 0,
     }
+
+    // The host box is the WHOLE control (field + both steppers + gaps +
+    // padding + borders), so its minimum intrinsic width has to cover all of
+    // it. Sizing the bare `<input>` at 40px alone let a narrow layout squeeze
+    // the steppers out of the box.
+    const contentMinWidth = showControls
+      ? FIELD_MIN_WIDTH + STEPPER_GAP * 3 + STEPPER_WIDTH * 2
+      : FIELD_MIN_WIDTH
+    const hostMinWidth = `calc(${contentMinWidth}px + 2 * ${sizeStyles.paddingInline} + ${
+      BORDER_WIDTH * 2
+    }px)`
 
     return (
       <div
@@ -187,6 +231,8 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
         style={{
           display: 'inline-flex',
           alignItems: 'center',
+          gap: STEPPER_GAP,
+          boxSizing: 'border-box',
           background: 'var(--iris-background)',
           color: 'var(--iris-foreground)',
           border: `1px solid ${borderColor}`,
@@ -196,7 +242,12 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
           boxShadow,
           padding: sizeStyles.padding,
           minHeight: sizeStyles.minHeight,
+          minWidth: hostMinWidth,
           fontSize: sizeStyles.fontSize,
+          ...(fullWidth ? { width: '100%' } : null),
+          ...(width !== undefined
+            ? { width: typeof width === 'number' ? `${width}px` : width }
+            : null),
           ...style,
         }}
       >
@@ -207,7 +258,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
             aria-label={t('numberInput.decrement')}
             disabled={disabled || atMin}
             onClick={() => increment(-1)}
-            style={{ ...ctrlBtnStyle, marginInlineEnd: 4 }}
+            style={ctrlBtnStyle}
           >
             −
           </button>
@@ -232,7 +283,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
           onKeyDown={handleKeyDown}
           style={{
             flex: 1,
-            minWidth: 40,
+            minWidth: FIELD_MIN_WIDTH,
             width: '4ch',
             border: 'none',
             outline: 'none',
@@ -251,7 +302,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
             aria-label={t('numberInput.increment')}
             disabled={disabled || atMax}
             onClick={() => increment(1)}
-            style={{ ...ctrlBtnStyle, marginInlineStart: 4 }}
+            style={ctrlBtnStyle}
           >
             +
           </button>

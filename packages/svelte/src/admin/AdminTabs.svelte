@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isClosable, type TabItem } from '@iris-ui-kit/core'
+  import { adminChromePx, adminTabsChrome, isClosable, type TabItem } from '@iris-ui-kit/core'
   import { useTabsNav } from './useTabsNav'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
   import IrisDropdown from '../primitives/dropdown/Dropdown.svelte'
@@ -9,6 +9,7 @@
   import IrisDropdownSeparator from '../primitives/dropdown/DropdownSeparator.svelte'
   import IrisSortable from '../behaviors/IrisSortable.svelte'
   import { styleToString } from '../internal/style'
+  import { getComponentSize } from '../provider'
   import { useI18n } from '../i18n'
   import type { IrisAdminTabsProps } from './types'
 
@@ -29,10 +30,14 @@
     onRefresh,
     reorderable = true,
     onReorder,
+    size: sizeProp,
   }: IrisAdminTabsProps = $props()
   // svelte-ignore state_referenced_locally — `nav` is a stable store instance.
   const t = useTabsNav(nav)
   const { tabs, activeKey } = t
+  // Bar / chip geometry for the requested tier — one core table, bridged below.
+  const size = $derived(getComponentSize(sizeProp))
+  const chrome = $derived(adminTabsChrome(size))
 
   let tablistEl: HTMLDivElement | undefined = $state()
   let pendingFocus: string | null = null
@@ -93,13 +98,32 @@
     queueMicrotask(focusPending)
   }
 
+  function barStyle(): string {
+    return styleToString({
+      display: 'flex',
+      'align-items': 'center',
+      'box-sizing': 'border-box',
+      'min-width': adminChromePx(chrome.barMinWidth),
+      'min-height': adminChromePx(chrome.barMinHeight),
+      gap: adminChromePx(chrome.barGap),
+      'padding-block': adminChromePx(chrome.barPaddingBlock),
+      'padding-inline': adminChromePx(chrome.barPaddingInline),
+      'border-bottom': '1px solid var(--iris-border)',
+      background: 'var(--iris-background)',
+    })
+  }
+
   function chipStyle(active: boolean): string {
     return styleToString({
       display: 'inline-flex',
       'align-items': 'center',
-      gap: '4px',
-      padding:
-        'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+      gap: adminChromePx(chrome.chipGap),
+      'box-sizing': 'border-box',
+      // A floor, never a clip: a larger font grows the chip.
+      'min-height': adminChromePx(chrome.chipMinHeight),
+      'padding-block': adminChromePx(chrome.chipPaddingBlock),
+      'padding-inline-start': adminChromePx(chrome.chipPaddingInlineStart),
+      'padding-inline-end': adminChromePx(chrome.chipPaddingInlineEnd),
       'border-radius': 'var(--iris-radius-md, 6px)',
       border: `1px solid ${active ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
       background: active ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -108,17 +132,60 @@
     })
   }
 
-  const LABEL_STYLE =
-    'display: inline-flex; align-items: center; gap: var(--iris-space-xs, 8px); border: none; background: transparent; color: inherit; font: inherit; font-size: var(--iris-font-size-sm, 13px); cursor: pointer; padding: 0'
-  const CLOSE_STYLE =
-    'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: none; border-radius: var(--iris-radius-sm, 4px); background: transparent; color: inherit; cursor: pointer; padding: 0; opacity: 0.6'
-  const TRIGGER_STYLE =
-    'display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--iris-radius-md, 6px); border: 1px solid var(--iris-border); background: var(--iris-surface); color: var(--iris-foreground); cursor: pointer'
+  function labelStyle(): string {
+    return styleToString({
+      display: 'inline-flex',
+      'align-items': 'center',
+      gap: adminChromePx(chrome.labelGap),
+      border: 'none',
+      background: 'transparent',
+      color: 'inherit',
+      font: 'inherit',
+      'font-size': chrome.labelFontSize,
+      cursor: 'pointer',
+      padding: 0,
+    })
+  }
+
+  function closeStyle(): string {
+    return styleToString({
+      display: 'inline-flex',
+      'align-items': 'center',
+      'justify-content': 'center',
+      'box-sizing': 'border-box',
+      width: adminChromePx(chrome.closeSize),
+      height: adminChromePx(chrome.closeSize),
+      border: 'none',
+      'border-radius': 'var(--iris-radius-sm, 4px)',
+      background: 'transparent',
+      color: 'inherit',
+      cursor: 'pointer',
+      padding: 0,
+      opacity: '0.6',
+    })
+  }
+
+  function actionsStyle(): string {
+    return styleToString({
+      display: 'inline-flex',
+      'align-items': 'center',
+      'justify-content': 'center',
+      'box-sizing': 'border-box',
+      width: adminChromePx(chrome.actionsSize),
+      height: adminChromePx(chrome.actionsSize),
+      'border-radius': 'var(--iris-radius-md, 6px)',
+      border: '1px solid var(--iris-border)',
+      background: 'var(--iris-surface)',
+      color: 'var(--iris-foreground)',
+      cursor: 'pointer',
+    })
+  }
 </script>
 
 <div
   data-iris-admin-tabs
-  style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px); padding: var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px); border-bottom: 1px solid var(--iris-border); background: var(--iris-background)"
+  data-iris-size={sizeProp ?? (size === 'md' ? undefined : size)}
+  style={barStyle()}
 >
   <!-- svelte-ignore a11y_interactive_supports_focus — WAI-ARIA tabs: roving tabindex lives on the tabs -->
   <div
@@ -128,6 +195,7 @@
     aria-label={reactiveT('admin.openPages')}
     onkeydown={onKeyDown}
     style="overflow-x: auto; flex: 1"
+    style:min-width={adminChromePx(chrome.scrollMinWidth)}
   >
     <IrisSortable
       items={$tabs}
@@ -151,10 +219,10 @@
             aria-selected={active ? 'true' : 'false'}
             aria-current={active ? 'page' : undefined}
             tabindex={active ? 0 : -1}
-            style={LABEL_STYLE}
+            style={labelStyle()}
             onclick={() => activate(tab.key)}
           >
-            {#if tab.icon}<IrisIcon name={tab.icon} size={14} />{/if}
+            {#if tab.icon}<IrisIcon name={tab.icon} size={chrome.tabIconSize} />{/if}
             <span style="white-space: nowrap">{tab.title}</span>
           </button>
           {#if closable}
@@ -163,16 +231,16 @@
               tabindex={-1}
               data-iris-tab-close
               aria-label={reactiveT('admin.closeTab', { title: tab.title })}
-              style={CLOSE_STYLE}
+              style={closeStyle()}
               onclick={(e) => {
                 e.stopPropagation()
                 close(tab.key)
               }}
             >
-              <IrisIcon name="x" size={12} />
+              <IrisIcon name="x" size={chrome.closeIconSize} />
             </button>
           {:else if tab.pinned}
-            <IrisIcon name="check-circle" size={12} style="opacity: 0.5" />
+            <IrisIcon name="check-circle" size={chrome.closeIconSize} style="opacity: 0.5" />
           {/if}
         </div>
       {/snippet}
@@ -180,8 +248,8 @@
   </div>
 
   <IrisDropdown>
-    <IrisDropdownTrigger aria-label={reactiveT('admin.tabActions')} style={TRIGGER_STYLE}>
-      <IrisIcon name="more-horizontal" size={16} />
+    <IrisDropdownTrigger aria-label={reactiveT('admin.tabActions')} style={actionsStyle()}>
+      <IrisIcon name="more-horizontal" size={chrome.actionsIconSize} />
     </IrisDropdownTrigger>
     <IrisDropdownMenu>
       {#if $activeKey}

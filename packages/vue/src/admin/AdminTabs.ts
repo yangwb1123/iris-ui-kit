@@ -1,6 +1,14 @@
-import { defineComponent, h, nextTick, type PropType, type VNode } from 'vue'
-import { isClosable, type TabsNav, type TabItem } from '@iris-ui-kit/core'
+import { computed, defineComponent, h, nextTick, type PropType, type VNode } from 'vue'
+import {
+  adminChromePx,
+  adminTabsChrome,
+  isClosable,
+  type AdminChromeSize,
+  type TabsNav,
+  type TabItem,
+} from '@iris-ui-kit/core'
 import { useTabsNav } from './useTabsNav'
+import { normalizeHostStyle } from '../internal/control-attrs'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
@@ -8,6 +16,7 @@ import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
 import { IrisSortable } from '../behaviors/Sortable'
 import { useI18n } from '../i18n'
+import { useComponentSize } from '../provider'
 import { useAdminTabContextMenu, type TabAction, type TabShortcutMap } from './AdminTabContextMenu'
 
 /**
@@ -28,6 +37,12 @@ export const IrisAdminTabs = defineComponent({
     /** Shared tabs store (from `createTabsNav`). */
     nav: { type: Object as PropType<TabsNav>, required: true },
     reorderable: { type: Boolean, default: true },
+    /**
+     * Bounded bar / chip geometry (`md` = the default, so omitting it keeps the
+     * pre-`size` look). Resolved in core — this component only bridges the
+     * numbers into inline styles.
+     */
+    size: { type: String as PropType<AdminChromeSize>, default: undefined },
     /** Keyboard bindings for context-menu actions; Mod means Ctrl on Windows/Linux and Cmd on macOS. */
     shortcuts: { type: Object as PropType<TabShortcutMap>, default: undefined },
   },
@@ -40,6 +55,9 @@ export const IrisAdminTabs = defineComponent({
   setup(props, { emit, attrs }) {
     const { t: tr } = useI18n()
     const t = useTabsNav(props.nav)
+    // Bar / chip geometry for the requested tier — one core table, bridged below.
+    const size = useComponentSize(() => props.size)
+    const chrome = computed(() => adminTabsChrome(size.value))
 
     const activate = (key: string): void => {
       props.nav.activate(key)
@@ -131,7 +149,8 @@ export const IrisAdminTabs = defineComponent({
       const active = tab.key === t.activeKey.value
       const closable = isClosable(tab)
       const labelChildren: VNode[] = []
-      if (tab.icon) labelChildren.push(h(IrisIcon, { name: tab.icon, size: 14 }))
+      if (tab.icon)
+        labelChildren.push(h(IrisIcon, { name: tab.icon, size: chrome.value.tabIconSize }))
       labelChildren.push(h('span', { style: { whiteSpace: 'nowrap' } }, tab.title))
 
       const label = h(
@@ -147,12 +166,12 @@ export const IrisAdminTabs = defineComponent({
           style: {
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 'var(--iris-space-xs, 8px)',
+            gap: adminChromePx(chrome.value.labelGap),
             border: 'none',
             background: 'transparent',
             color: 'inherit',
             font: 'inherit',
-            fontSize: 'var(--iris-font-size-sm, 13px)',
+            fontSize: chrome.value.labelFontSize,
             cursor: 'pointer',
             padding: '0',
           },
@@ -173,8 +192,9 @@ export const IrisAdminTabs = defineComponent({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '16px',
-                height: '16px',
+                boxSizing: 'border-box',
+                width: adminChromePx(chrome.value.closeSize),
+                height: adminChromePx(chrome.value.closeSize),
                 border: 'none',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
                 background: 'transparent',
@@ -192,10 +212,14 @@ export const IrisAdminTabs = defineComponent({
                 void nextTick(() => focusTab(root, props.nav.getState().activeKey))
               },
             },
-            [h(IrisIcon, { name: 'x', size: 12 })],
+            [h(IrisIcon, { name: 'x', size: chrome.value.closeIconSize })],
           )
         : tab.pinned
-          ? h(IrisIcon, { name: 'check-circle', size: 12, style: { opacity: '0.5' } })
+          ? h(IrisIcon, {
+              name: 'check-circle',
+              size: chrome.value.closeIconSize,
+              style: { opacity: '0.5' },
+            })
           : null
 
       return h(
@@ -208,9 +232,13 @@ export const IrisAdminTabs = defineComponent({
           style: {
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px',
-            padding:
-              'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+            gap: adminChromePx(chrome.value.chipGap),
+            boxSizing: 'border-box',
+            // A floor, never a clip: a larger font grows the chip.
+            minHeight: adminChromePx(chrome.value.chipMinHeight),
+            paddingBlock: adminChromePx(chrome.value.chipPaddingBlock),
+            paddingInlineStart: adminChromePx(chrome.value.chipPaddingInlineStart),
+            paddingInlineEnd: adminChromePx(chrome.value.chipPaddingInlineEnd),
             borderRadius: 'var(--iris-radius-md, 6px)',
             border: `1px solid ${active ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
             background: active ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -237,8 +265,9 @@ export const IrisAdminTabs = defineComponent({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '28px',
-                height: '28px',
+                boxSizing: 'border-box',
+                width: adminChromePx(chrome.value.actionsSize),
+                height: adminChromePx(chrome.value.actionsSize),
                 borderRadius: 'var(--iris-radius-md, 6px)',
                 border: '1px solid var(--iris-border)',
                 background: 'var(--iris-surface)',
@@ -247,7 +276,8 @@ export const IrisAdminTabs = defineComponent({
               },
             },
             {
-              default: () => h(IrisIcon, { name: 'more-horizontal', size: 16 }),
+              default: () =>
+                h(IrisIcon, { name: 'more-horizontal', size: chrome.value.actionsIconSize }),
             },
           ),
           h(IrisDropdownMenu, null, {
@@ -274,14 +304,19 @@ export const IrisAdminTabs = defineComponent({
         {
           ...attrs,
           'data-iris-admin-tabs': '',
+          'data-iris-size': props.size ?? (size.value === 'md' ? undefined : size.value),
           style: {
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--iris-space-xs, 8px)',
-            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            boxSizing: 'border-box',
+            minWidth: adminChromePx(chrome.value.barMinWidth),
+            minHeight: adminChromePx(chrome.value.barMinHeight),
+            gap: adminChromePx(chrome.value.barGap),
+            paddingBlock: adminChromePx(chrome.value.barPaddingBlock),
+            paddingInline: adminChromePx(chrome.value.barPaddingInline),
             borderBottom: '1px solid var(--iris-border)',
             background: 'var(--iris-background)',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         [
@@ -293,6 +328,7 @@ export const IrisAdminTabs = defineComponent({
               'aria-label': tr('admin.openPages'),
               onKeydown: onTablistKeydown,
               style: {
+                minWidth: adminChromePx(chrome.value.scrollMinWidth),
                 overflowX: 'auto',
                 flex: '1',
               },

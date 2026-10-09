@@ -2,6 +2,7 @@ import {
   computed,
   defineComponent,
   h,
+  normalizeStyle,
   onBeforeUnmount,
   shallowRef,
   watch,
@@ -9,16 +10,22 @@ import {
   type VNode,
 } from 'vue'
 import {
+  adminChromePx,
+  adminNavChrome,
+  adminNavCssVars,
+  adminNavIndent,
   branchTrail,
   createExpansion,
   findNavPath,
   isBranch,
   visibleNav,
   firstLeaf,
+  type AdminChromeSize,
   type NavNode,
 } from '@iris-ui-kit/core'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
+import { useComponentSize } from '../provider'
 import { installNavMenuStyles } from './styles'
 import { createNavMenuFlyout } from './NavMenuFlyout'
 import { createNavMenuKeydownHandler } from './NavMenuKeyboard'
@@ -54,6 +61,12 @@ export const IrisNavMenu = defineComponent({
       type: String as PropType<'vertical' | 'horizontal'>,
       default: 'vertical',
     },
+    /**
+     * Bounded row geometry (`md` = the default, so omitting it keeps the
+     * pre-`size` look). Resolved in core: the values are injected as CSS
+     * custom properties into the nav stylesheet, plus one inline indent.
+     */
+    size: { type: String as PropType<AdminChromeSize>, default: undefined },
     ariaLabel: { type: String, default: undefined },
   },
   emits: {
@@ -63,6 +76,12 @@ export const IrisNavMenu = defineComponent({
   setup(props, { emit, attrs }) {
     installNavMenuStyles()
     const { t } = useI18n()
+    // Bounded geometry for the requested tier — one core table; this component
+    // only bridges it into the stylesheet (custom properties) + one inline
+    // indent. Omitting `size` emits nothing, so the stylesheet's own defaults
+    // (the pre-`size` look) still apply and remain CSS-overridable.
+    const size = useComponentSize(() => props.size)
+    const chrome = computed(() => adminNavChrome(size.value))
     const menuItems = computed(() => props.items)
     const tree = computed(() => visibleNav(props.items))
     const activePath = computed(() =>
@@ -172,8 +191,31 @@ export const IrisNavMenu = defineComponent({
       ].filter(Boolean) as string[]
     }
 
-    const iconNode = (node: NavNode, size = 18): VNode | null =>
-      node.icon ? h(IrisIcon, { name: node.icon, size }) : null
+    const iconNode = (node: NavNode, iconSize: number): VNode | null =>
+      node.icon ? h(IrisIcon, { name: node.icon, size: iconSize }) : null
+
+    /**
+     * Vertical nesting is the only place a row carries the core indent, and it
+     * is computed for ANY depth (no 0..9 ladder). The horizontal flyout and the
+     * collapsed rail keep the flat stylesheet padding (unchanged), and an
+     * inline declaration outranks the stylesheet's `:where()` rules.
+     */
+    const itemStyle = (depth: number): Record<string, string> | undefined => {
+      const vars = menuStyle.value
+      const style: Record<string, string> = {
+        ...(vars['--iris-nav-item-gap'] ? { gap: vars['--iris-nav-item-gap'] } : {}),
+        ...(vars['--iris-nav-item-font-size']
+          ? { fontSize: vars['--iris-nav-item-font-size'] }
+          : {}),
+        ...(props.collapsed && vars['--iris-nav-item-padding-collapsed']
+          ? { paddingInline: vars['--iris-nav-item-padding-collapsed'] }
+          : {}),
+      }
+      if (!props.collapsed && props.orientation === 'vertical') {
+        style.paddingInlineStart = adminChromePx(adminNavIndent(chrome.value, depth))!
+      }
+      return Object.keys(style).length ? style : undefined
+    }
 
     const badgeNode = (node: NavNode): VNode | null =>
       node.badge !== undefined && node.badge !== '' && !props.collapsed
@@ -244,6 +286,7 @@ export const IrisNavMenu = defineComponent({
           'data-orientation': props.orientation,
           disabled: node.disabled,
           title: props.collapsed ? node.title : undefined,
+          style: itemStyle(depth),
           'aria-label': props.collapsed
             ? branch
               ? t('admin.section', { title: node.title })
@@ -273,7 +316,8 @@ export const IrisNavMenu = defineComponent({
           },
         },
         [
-          iconNode(node),
+          // the collapsed rail is icon-only, so it uses the rail icon size
+          iconNode(node, props.collapsed ? chrome.value.collapsedIconSize : chrome.value.iconSize),
           h(
             'span',
             {
@@ -285,7 +329,7 @@ export const IrisNavMenu = defineComponent({
           branch && !(props.collapsed && depth === 0)
             ? h(IrisIcon, {
                 name: arrowName,
-                size: 16,
+                size: chrome.value.arrowSize,
                 class: 'iris-nav-menu-arrow',
                 'data-reversed': arrowReversed ? 'true' : undefined,
               })
@@ -418,11 +462,19 @@ export const IrisNavMenu = defineComponent({
       },
       collapsed: props.collapsed,
     })
-    const menuClass = [
+    const menuClass = computed(() => [
       'iris-nav-menu',
       `iris-nav-menu--${props.orientation}`,
       props.collapsed ? 'iris-nav-menu--collapsed' : 'iris-nav-menu--expanded',
-    ]
+    ])
+    // Explicit caller styles merge LAST, so a consumer override always wins.
+    const menuStyle = computed<Record<string, string>>(() => {
+      const vars =
+        props.size === undefined && size.value === 'md' ? {} : adminNavCssVars(size.value)
+      const caller = (normalizeStyle([attrs.style]) ?? {}) as Record<string, string>
+      const gap = caller['--iris-nav-menu-gap'] ?? vars['--iris-nav-menu-gap']
+      return { ...vars, ...(gap ? { gap } : {}), ...caller }
+    })
     return () =>
       h(
         'nav',
@@ -431,13 +483,14 @@ export const IrisNavMenu = defineComponent({
           ref: (el: unknown) => {
             rootRef.value = (el ?? null) as HTMLElement | null
           },
-          class: [...menuClass, attrs.class as unknown as string | string[] | undefined],
+          class: [...menuClass.value, attrs.class as unknown as string | string[] | undefined],
           'data-iris-nav-menu': '',
           'data-collapsed': props.collapsed ? 'true' : undefined,
           'data-orientation': props.orientation,
+          'data-iris-size': props.size ?? (size.value === 'md' ? undefined : size.value),
           'aria-label': props.ariaLabel ?? t('admin.nav'),
           onKeydown,
-          style: attrs.style as Record<string, string> | undefined,
+          style: menuStyle.value,
         },
         tree.value.map((node) => renderItem(node, 0)),
       )

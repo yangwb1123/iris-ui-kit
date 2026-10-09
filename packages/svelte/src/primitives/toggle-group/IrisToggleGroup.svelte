@@ -3,12 +3,17 @@
   import { toStore } from '../../useStore'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { setToggleGroupContext } from './context'
+  import { getComponentSize } from '../../provider'
   import type { ToggleGroupType, ToggleGroupOrientation, ToggleGroupVariant } from './context'
 
   interface Props {
     type?: ToggleGroupType
     value?: string | string[] | null
     orientation?: ToggleGroupOrientation
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: 'sm' | 'md' | 'lg'
     variant?: ToggleGroupVariant
     disabled?: boolean
@@ -22,7 +27,7 @@
     type = 'single',
     value = undefined,
     orientation = 'horizontal',
-    size = 'md',
+    size: sizeProp,
     variant = 'outline',
     disabled = false,
     style,
@@ -30,6 +35,9 @@
     onchange,
     ...rest
   }: Props = $props()
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   // Plain non-reactive array for focus movement registration
   interface ItemReg {

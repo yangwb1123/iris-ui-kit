@@ -1,11 +1,13 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import type { Placement } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisCalendar } from '../calendar/Calendar'
 import { safeLocale } from '../calendar/dateUtils'
 import { useI18n } from '../../i18n'
+import { useComponentSize, type IrisComponentSize } from '../../provider'
 
 function formatISODate(date: Date): string {
   const y = date.getFullYear()
@@ -19,11 +21,36 @@ function formatDisplay(date: Date | null, locale?: string): string {
   return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
 }
 
+/** Trigger metrics per size — the same scale the text controls use. */
+const TRIGGER_SIZE: Record<
+  IrisComponentSize,
+  { padding: string; fontSize: string; minHeight: string }
+> = {
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
 /**
  * Date picker: Input-styled trigger + Popover + Calendar. Two-way binds
  * via `v-model`. On selection, the popover auto-closes.
  *
  * Use `IrisCalendar` directly when you want the calendar inline (no popover).
+ *
+ * The trigger adopts the nearest `<IrisProvider componentSize>` unless given
+ * an explicit `size`.
  */
 export const IrisDatePicker = defineComponent({
   name: 'IrisDatePicker',
@@ -38,6 +65,12 @@ export const IrisDatePicker = defineComponent({
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
     placement: { type: String as PropType<Placement>, default: 'bottom-start' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisComponentSize>, default: undefined },
+    /** Trigger width — any CSS length, or a number of px. */
+    width: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Stretch the trigger to its container (`width: 100%`). */
+    fullWidth: { type: Boolean, default: false },
     /** id forwarded to the trigger. Set by IrisFormField. */
     id: { type: String, default: undefined },
     /** Forwarded as aria-describedby on the trigger. Set by IrisFormField. */
@@ -48,6 +81,7 @@ export const IrisDatePicker = defineComponent({
   },
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
+    const size = useComponentSize(() => props.size)
     const open = ref(false)
     const display = computed(() => formatDisplay(props.modelValue, props.locale))
 
@@ -77,6 +111,7 @@ export const IrisDatePicker = defineComponent({
                   'aria-invalid': props.invalid ? 'true' : undefined,
                   'aria-describedby': props.ariaDescribedby,
                   'data-iris-date-picker-trigger': '',
+                  'data-iris-date-picker-size': size.value,
                   'data-iris-date-picker-iso': props.modelValue
                     ? formatISODate(props.modelValue)
                     : undefined,
@@ -85,19 +120,26 @@ export const IrisDatePicker = defineComponent({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 'var(--iris-space-xs, 8px)',
-                    padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                    padding: TRIGGER_SIZE[size.value].padding,
                     background: 'var(--iris-background)',
                     color: props.modelValue ? 'var(--iris-foreground)' : 'var(--iris-muted)',
                     border: `1px solid ${props.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
                     borderRadius: 'var(--iris-radius-md, 6px)',
                     cursor: props.disabled ? 'not-allowed' : 'pointer',
                     opacity: props.disabled ? '0.6' : '1',
-                    fontSize: 'var(--iris-font-size-md, 14px)',
+                    fontSize: TRIGGER_SIZE[size.value].fontSize,
                     fontFamily: 'inherit',
-                    minHeight: '34px',
+                    minHeight: TRIGGER_SIZE[size.value].minHeight,
                     minWidth: '180px',
+                    boxSizing: 'border-box',
                     textAlign: 'start',
-                    ...((attrs.style as Record<string, string> | undefined) ?? {}),
+                    ...(props.fullWidth ? { width: '100%' } : null),
+                    ...(props.width !== undefined
+                      ? {
+                          width: typeof props.width === 'number' ? `${props.width}px` : props.width,
+                        }
+                      : null),
+                    ...normalizeHostStyle(attrs.style),
                   },
                 },
                 display.value || (props.placeholder ?? t('datePicker.placeholder')),

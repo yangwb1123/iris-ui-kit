@@ -56,7 +56,17 @@ export function renderIrisSelectTrigger<T>({
       {...rest}
       style={style}
     >
-      <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
       <svg
         aria-hidden="true"
         viewBox="0 0 16 16"

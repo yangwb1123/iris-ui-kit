@@ -24,17 +24,95 @@ function dismissButtonFor(toast: HTMLElement): HTMLButtonElement {
   return toast.querySelector('button[aria-label=Dismiss]') as HTMLButtonElement
 }
 
-// jsdom's PointerEvent drops clientX from its init, so build the event and
-// define clientX explicitly to drive the swipe handlers.
+// jsdom may omit pointer identity/primary fields as well as clientX.
 async function swipePointer(
   node: Element,
-  kind: 'pointerDown' | 'pointerMove' | 'pointerUp',
+  kind: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel' | 'lostPointerCapture',
   clientX: number,
+  options: Partial<{ pointerId: number; button: number; isPrimary: boolean }> = {},
 ): Promise<void> {
-  const ev = createEvent[kind](node, { pointerId: 1 })
-  Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+  const ev = createEvent[kind](node)
+  for (const [key, value] of Object.entries({
+    pointerId: 1,
+    button: 0,
+    isPrimary: true,
+    clientX,
+    ...options,
+  })) {
+    Object.defineProperty(ev, key, { value, configurable: true })
+  }
   await fireEvent(node, ev)
 }
+
+describe('Svelte swipe ownership', () => {
+  it('retains caller style priority over the viewport defaults', () => {
+    render(IrisToastViewport, { props: { style: 'max-width: 333px; box-sizing: content-box' } })
+    flushSync()
+    const viewport = document.querySelector('[data-iris-toast-viewport]') as HTMLElement
+    expect(viewport.style.maxWidth).toBe('333px')
+    expect(viewport.style.boxSizing).toBe('content-box')
+  })
+  it('serializes the core box budget as CSS properties without a host reset', () => {
+    render(IrisToastViewport)
+    pushToast({ title: 'Box budget', duration: 0 })
+    flushSync()
+    const viewport = document.querySelector('[data-iris-toast-viewport]') as HTMLElement
+    expect(viewport.style.boxSizing).toBe('border-box')
+    expect(toasts()[0]!.style.boxSizing).toBe('border-box')
+    expect(toasts()[0]!.style.minWidth).toBe('min(280px, 100%)')
+  })
+  for (const kind of ['pointerCancel', 'lostPointerCapture'] as const) {
+    it(`clears an owned ${kind} without dismissing`, async () => {
+      render(IrisToastViewport)
+      pushToast({ title: 'Owned gesture', duration: 0 })
+      flushSync()
+      const toast = toasts()[0]!
+      await swipePointer(toast, 'pointerDown', 0)
+      await swipePointer(toast, 'pointerMove', 140)
+      expect(toast.style.transform).toBe('translateX(140px)')
+      await swipePointer(toast, kind, 140)
+      await swipePointer(toast, 'pointerUp', 140)
+      expect(toasts()).toHaveLength(1)
+      expect(toast.style.transform).toBe('')
+    })
+  }
+  it('ignores a foreign release until its owner releases', async () => {
+    render(IrisToastViewport)
+    pushToast({ title: 'Pointer owner', duration: 0 })
+    flushSync()
+    const toast = toasts()[0]!
+    await swipePointer(toast, 'pointerDown', 0)
+    await swipePointer(toast, 'pointerMove', 140)
+    await swipePointer(toast, 'pointerUp', 140, { pointerId: 2 })
+    expect(toasts()).toHaveLength(1)
+    await swipePointer(toast, 'pointerUp', 140)
+    expect(toasts()).toHaveLength(0)
+  })
+  it('does not capture a non-primary down', async () => {
+    render(IrisToastViewport)
+    pushToast({ title: 'Secondary', duration: 0 })
+    flushSync()
+    const toast = toasts()[0]!
+    const capture = vi.fn()
+    Object.defineProperty(toast, 'setPointerCapture', { value: capture })
+    await swipePointer(toast, 'pointerDown', 0, { isPrimary: false })
+    expect(capture).not.toHaveBeenCalled()
+  })
+  it('does not carry a gesture into an item replaced under the same id', async () => {
+    render(IrisToastViewport)
+    pushToast({ id: 'same', title: 'Before', duration: 0 })
+    flushSync()
+    const toast = toasts()[0]!
+    await swipePointer(toast, 'pointerDown', 0)
+    await swipePointer(toast, 'pointerMove', 140)
+    pushToast({ id: 'same', title: 'After', duration: 0 })
+    flushSync()
+    await swipePointer(toasts()[0]!, 'pointerUp', 140)
+    expect(toasts()).toHaveLength(1)
+    expect(toasts()[0]!.textContent).toContain('After')
+    expect(toasts()[0]!.style.transform).toBe('')
+  })
+})
 
 describe('@iris-ui-kit/svelte IrisToast', () => {
   it('renders viewport and shows nothing when queue is empty', () => {
@@ -50,6 +128,20 @@ describe('@iris-ui-kit/svelte IrisToast', () => {
     const list = toasts()
     expect(list.length).toBe(1)
     expect(list[0]?.textContent).toContain('Hello')
+  })
+
+  it('does not capture the close button pointer sequence', async () => {
+    render(IrisToastViewport)
+    pushToast({ title: 'Close me', duration: Infinity })
+    flushSync()
+    const toast = toasts()[0]!
+    const capture = vi.fn()
+    Object.defineProperty(toast, 'setPointerCapture', { value: capture })
+    await swipePointer(dismissButtonFor(toast), 'pointerDown', 0)
+    expect(capture).not.toHaveBeenCalled()
+    await fireEvent.click(dismissButtonFor(toast))
+    flushSync()
+    expect(toasts()).toHaveLength(0)
   })
 
   it('swiping a toast past the threshold dismisses it', async () => {

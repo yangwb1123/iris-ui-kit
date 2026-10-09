@@ -1,38 +1,57 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
 import { useFormFieldControl } from '../form-field/context'
+import { useComponentSize } from '../../provider'
 
 export type IrisInputSize = 'sm' | 'md' | 'lg'
 export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' | 'tel' | 'url'
 
 const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
-  sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+  sm: {
+    padding: '4px 8px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
   md: {
     padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
     fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: '34px',
+    minHeight: 'var(--iris-control-height-md, 34px)',
   },
-  lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
+  lg: {
+    padding: '8px 12px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
+/** CSS width value — numbers are px, strings pass through as authored. */
+function cssWidth(width: string | number): string {
+  return typeof width === 'number' ? `${width}px` : width
 }
 
 export interface IrisInputProps extends Omit<
   JSX.InputHTMLAttributes<HTMLInputElement>,
   'size' | 'type' | 'prefix'
 > {
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisInputSize
   type?: IrisInputType
   invalid?: boolean
   ariaDescribedby?: string
   prefix?: JSX.Element
   suffix?: JSX.Element
+  /** Host box width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the host box to its container (`width: 100%`). */
+  fullWidth?: boolean
 }
 
 /** Solid port of the React/Vue IrisInput. Self-wires id/aria from IrisFormField. */
 export function IrisInput(props: IrisInputProps): JSX.Element {
   const field = useFormFieldControl()
-  const merged = mergeProps(
-    { size: 'md' as IrisInputSize, type: 'text' as IrisInputType, invalid: false },
-    props,
-  )
+  const merged = mergeProps({ type: 'text' as IrisInputType, invalid: false }, props)
   const [local, rest] = splitProps(merged, [
     'size',
     'type',
@@ -43,14 +62,19 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
     'readOnly',
     'style',
     'id',
+    'width',
+    'fullWidth',
   ])
   const [focused, setFocused] = createSignal(false)
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
 
   const invalid = (): boolean => local.invalid || (field?.invalid() ?? false)
   const describedBy = (): string | undefined => local.ariaDescribedby ?? field?.describedBy()
   const controlId = (): string | undefined => local.id ?? field?.id()
   const sizeStyles = (): { padding: string; fontSize: string; minHeight: string } =>
-    SIZE_MAP[local.size]
+    SIZE_MAP[size()]
 
   const borderColor = (): string =>
     invalid() ? 'var(--iris-danger)' : focused() ? 'var(--iris-primary)' : 'var(--iris-border)'
@@ -58,7 +82,7 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
   return (
     <label
       data-iris-input=""
-      data-iris-input-size={local.size}
+      data-iris-input-size={size()}
       data-state={
         invalid() ? 'invalid' : focused() ? 'focused' : local.readOnly ? 'readonly' : 'idle'
       }
@@ -66,6 +90,7 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
         display: 'inline-flex',
         'align-items': 'center',
         gap: 'var(--iris-space-xs, 8px)',
+        ...(local.fullWidth || local.width !== undefined ? { 'box-sizing': 'border-box' } : null),
         background: local.readOnly ? 'var(--iris-surface)' : 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         border: `1px solid ${borderColor()}`,
@@ -79,6 +104,8 @@ export function IrisInput(props: IrisInputProps): JSX.Element {
         padding: sizeStyles().padding,
         'min-height': sizeStyles().minHeight,
         'font-size': sizeStyles().fontSize,
+        ...(local.fullWidth ? { width: '100%' } : null),
+        ...(local.width !== undefined ? { width: cssWidth(local.width) } : null),
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
     >

@@ -9,6 +9,10 @@ export interface IrisSwitchProps extends Omit<
   checked?: boolean
   defaultChecked?: boolean
   onChange?: (next: boolean, event: Event) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisSwitchSize
   invalid?: boolean
   ariaDescribedby?: string

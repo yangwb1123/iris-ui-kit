@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte'
-import type { NavNode, TabItem, TabsNav } from '@iris-ui-kit/core'
+import type { AdminChromeSize, NavNode, TabItem, TabsNav } from '@iris-ui-kit/core'
 
 // ── NavMenu ─────────────────────────────────────────────────────────────────────
 export interface IrisNavMenuProps {
@@ -9,6 +9,12 @@ export interface IrisNavMenuProps {
   defaultExpandedKeys?: string[]
   collapsed?: boolean
   orientation?: 'vertical' | 'horizontal'
+  /**
+   * Bounded row geometry (`md` = the default, so omitting it keeps the
+   * pre-`size` look). Resolved in core — the component only bridges the
+   * numbers into inline styles.
+   */
+  size?: AdminChromeSize
   ariaLabel?: string
   onSelect?: (key: string, node: NavNode) => void
   onExpandedKeysChange?: (keys: string[]) => void
@@ -35,6 +41,12 @@ export interface IrisAdminTabsProps {
   /** Enable pointer/touch reordering. */
   reorderable?: boolean
   onReorder?: (tabs: TabItem[]) => void
+  /**
+   * Bounded bar / chip geometry (`md` = the default, so omitting it keeps the
+   * pre-`size` look). Resolved in core — the component only bridges the
+   * numbers into inline styles.
+   */
+  size?: AdminChromeSize
 }
 
 // ── AdminLayout ─────────────────────────────────────────────────────────────────

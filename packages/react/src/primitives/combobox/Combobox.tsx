@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { createVirtualizer, type Virtualizer } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 
 export type IrisComboboxSize = 'sm' | 'md' | 'lg'
 
@@ -19,6 +20,10 @@ export interface IrisComboboxProps {
   placeholder?: string
   disabled?: boolean
   invalid?: boolean
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisComboboxSize
   /** Text shown when no option matches the query. Defaults to the i18n value. */
   emptyText?: string
@@ -38,13 +43,21 @@ export interface IrisComboboxProps {
 
 const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+    sm: {
+      padding: '4px 8px',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: 'var(--iris-control-height-sm, 28px)',
+    },
     md: {
       padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
       fontSize: 'var(--iris-font-size-md, 14px)',
-      minHeight: '34px',
+      minHeight: 'var(--iris-control-height-md, 34px)',
     },
-    lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
+    lg: {
+      padding: '8px 12px',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: 'var(--iris-control-height-lg, 40px)',
+    },
   }
 
 /** Listbox maxHeight — the virtualizer's viewport (px). */
@@ -68,7 +81,7 @@ export function IrisCombobox({
   placeholder,
   disabled = false,
   invalid = false,
-  size = 'md',
+  size: sizeProp,
   emptyText,
   id,
   ariaDescribedby,
@@ -78,6 +91,8 @@ export function IrisCombobox({
   ...rest
 }: IrisComboboxProps): React.ReactElement {
   const { t } = useI18n()
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(sizeProp)
   const reactId = React.useId()
   const listboxId = `${reactId}-listbox`
   const optionId = (i: number) => `${reactId}-opt-${i}`

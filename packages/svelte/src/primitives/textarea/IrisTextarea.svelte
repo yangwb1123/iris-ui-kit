@@ -1,10 +1,15 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { getComponentSize } from '../../provider'
 
   type Size = 'sm' | 'md' | 'lg'
 
   interface Props {
     value?: string
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: Size
     placeholder?: string
     disabled?: boolean
@@ -26,7 +31,7 @@
 
   let {
     value = '',
-    size = 'md',
+    size: sizeProp,
     placeholder = '',
     disabled = false,
     readonly = false,
@@ -44,6 +49,9 @@
     onblur,
     ...rest
   }: Props = $props()
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   let focused = $state(false)
   let textareaEl = $state<HTMLTextAreaElement | undefined>(undefined)

@@ -1,11 +1,15 @@
 import type { IrisIconNode } from './types'
+import {
+  ATTRIBUTE_VALUE_VALIDATORS,
+  isNumberValue,
+  MAX_ATTRIBUTE_COUNT,
+  MAX_ATTRIBUTE_LENGTH,
+  MAX_NODE_COUNT,
+  MAX_TREE_DEPTH,
+  SAFE_EXTENSION_ATTR,
+  SHAPE_TAGS,
+} from './svg-safety'
 
-const MAX_ICON_NODE_DEPTH = 16
-const MAX_ICON_NODE_COUNT = 512
-const MAX_ICON_NODE_ATTRIBUTES = 32
-const MAX_ICON_ATTRIBUTE_LENGTH = 32_768
-
-const SHAPE_TAGS = new Set(['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'])
 export const SAFE_ICON_NODE_TAGS = new Set([
   ...SHAPE_TAGS,
   'clipPath',
@@ -77,40 +81,6 @@ export const SAFE_ICON_NODE_ATTRS = new Set([
   'y2',
 ])
 
-const SAFE_EXTENSION_ATTR = /^(?:aria|data)-[A-Za-z0-9_.:-]+$/
-const NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?%?$/
-const NUMBER_LIST = /^[\s,+\-.\deE]+$/
-const PATH_DATA = /^[\s,+\-.\deEMmZzLlHhVvCcSsQqTtAa]+$/
-const TRANSFORM = /^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(\s*[+\-.\deE,\s]+\)\s*)+$/
-const SAFE_ID = /^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/
-const LOCAL_REFERENCE = /^url\(#([A-Za-z_][A-Za-z0-9_.:-]{0,127})\)$/
-const SAFE_PAINT = new Set([
-  'aqua',
-  'black',
-  'blue',
-  'brown',
-  'currentcolor',
-  'cyan',
-  'fuchsia',
-  'gray',
-  'green',
-  'grey',
-  'lime',
-  'magenta',
-  'maroon',
-  'navy',
-  'none',
-  'olive',
-  'orange',
-  'purple',
-  'red',
-  'silver',
-  'teal',
-  'transparent',
-  'white',
-  'yellow',
-])
-
 const NUMERIC_ATTRS = new Set([
   'cx',
   'cy',
@@ -149,73 +119,19 @@ function isIconNode(value: unknown): value is IrisIconNode {
   )
 }
 
-function isSafeColor(value: string): boolean {
-  const normalized = value.trim().toLowerCase()
-  return (
-    SAFE_PAINT.has(normalized) ||
-    /^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(normalized) ||
-    /^(?:rgb|rgba|hsl|hsla)\([\d\s,.%+\-/]+\)$/i.test(normalized)
-  )
-}
-
-function isSafePaint(value: string): boolean {
-  return isSafeColor(value) || LOCAL_REFERENCE.test(value)
-}
-
-function isSafeLocalReference(value: string): boolean {
-  return value === 'none' || LOCAL_REFERENCE.test(value)
-}
-
-function isSafeNumberList(value: string): boolean {
-  return value === 'none' || NUMBER_LIST.test(value)
-}
-
-function isSafeLineJoin(value: string): boolean {
-  return value === 'miter' || value === 'round' || value === 'bevel' || value === 'miter-clip'
-}
-
-function isCoordinateUnits(value: string): boolean {
-  return value === 'objectBoundingBox' || value === 'userSpaceOnUse'
-}
-
-const STRING_ATTR_VALIDATORS: Record<string, (value: string) => boolean> = {
-  d: (value) => PATH_DATA.test(value),
-  points: isSafeNumberList,
-  'stroke-dasharray': isSafeNumberList,
-  fill: isSafePaint,
-  stroke: isSafePaint,
-  'stop-color': isSafeColor,
-  'clip-path': isSafeLocalReference,
-  mask: isSafeLocalReference,
-  id: (value) => SAFE_ID.test(value),
-  transform: (value) => value.length <= 512 && TRANSFORM.test(value),
-  gradientTransform: (value) => value.length <= 512 && TRANSFORM.test(value),
-  'fill-rule': (value) => value === 'nonzero' || value === 'evenodd',
-  'clip-rule': (value) => value === 'nonzero' || value === 'evenodd',
-  'stroke-linecap': (value) => value === 'butt' || value === 'round' || value === 'square',
-  'stroke-linejoin': isSafeLineJoin,
-  'vector-effect': (value) => value === 'none' || value === 'non-scaling-stroke',
-  gradientUnits: isCoordinateUnits,
-  clipPathUnits: isCoordinateUnits,
-  maskUnits: isCoordinateUnits,
-  maskContentUnits: isCoordinateUnits,
-  'mask-type': (value) => value === 'alpha' || value === 'luminance',
-  spreadMethod: (value) => value === 'pad' || value === 'reflect' || value === 'repeat',
-}
-
 function isSafeAttributeValue(name: string, rawValue: string | number): boolean {
   if (typeof rawValue === 'number' && !Number.isFinite(rawValue)) return false
   const value = String(rawValue)
-  if (value.length > MAX_ICON_ATTRIBUTE_LENGTH) return false
-  if (NUMERIC_ATTRS.has(name)) return NUMBER.test(value)
-  return STRING_ATTR_VALIDATORS[name]?.(value) ?? true
+  if (value.length > MAX_ATTRIBUTE_LENGTH) return false
+  if (NUMERIC_ATTRS.has(name)) return isNumberValue(value)
+  return ATTRIBUTE_VALUE_VALIDATORS[name]?.(value) ?? true
 }
 
 function hasOnlySafeAttributes(attrs: Record<string, string | number>): boolean {
   let count = 0
   for (const name in attrs) {
     if (!Object.hasOwn(attrs, name)) continue
-    if (++count > MAX_ICON_NODE_ATTRIBUTES) return false
+    if (++count > MAX_ATTRIBUTE_COUNT) return false
     if (
       (!SAFE_ICON_NODE_ATTRS.has(name) && !SAFE_EXTENSION_ATTR.test(name)) ||
       !isSafeAttributeValue(name, attrs[name]!)
@@ -233,7 +149,7 @@ function sanitizeAttributes(
   let count = 0
   for (const name in attrs) {
     if (!Object.hasOwn(attrs, name)) continue
-    if (++count > MAX_ICON_NODE_ATTRIBUTES) break
+    if (++count > MAX_ATTRIBUTE_COUNT) break
     const value = attrs[name]!
     if (
       (SAFE_ICON_NODE_ATTRS.has(name) || SAFE_EXTENSION_ATTR.test(name)) &&
@@ -273,7 +189,7 @@ export function normalizeIconNodes(nodes: readonly IrisIconNode[]): readonly Iri
   if (
     !Array.isArray(nodes) ||
     nodes.length === 0 ||
-    (nodes.length <= MAX_ICON_NODE_COUNT &&
+    (nodes.length <= MAX_NODE_COUNT &&
       nodes.every(
         (node) =>
           isIconNode(node) &&
@@ -294,8 +210,8 @@ export function normalizeIconNodes(nodes: readonly IrisIconNode[]): readonly Iri
     if (
       !isIconNode(value) ||
       !SAFE_ICON_NODE_TAGS.has(value.tag) ||
-      depth > MAX_ICON_NODE_DEPTH ||
-      nodeCount >= MAX_ICON_NODE_COUNT ||
+      depth > MAX_TREE_DEPTH ||
+      nodeCount >= MAX_NODE_COUNT ||
       (parent === undefined
         ? !isIconRootNodeTag(value.tag)
         : !isAllowedIconNodeChild(parent, value.tag))
@@ -312,7 +228,7 @@ export function normalizeIconNodes(nodes: readonly IrisIconNode[]): readonly Iri
       for (const child of value.children) {
         const normalized = visit(child, depth + 1, value.tag)
         if (normalized) children.push(normalized)
-        if (nodeCount >= MAX_ICON_NODE_COUNT) break
+        if (nodeCount >= MAX_NODE_COUNT) break
       }
     }
     active.delete(value)
@@ -324,7 +240,7 @@ export function normalizeIconNodes(nodes: readonly IrisIconNode[]): readonly Iri
   for (const node of nodes) {
     const normalized = visit(node, 0)
     if (normalized) result.push(normalized)
-    if (nodeCount >= MAX_ICON_NODE_COUNT) break
+    if (nodeCount >= MAX_NODE_COUNT) break
   }
   return result
 }

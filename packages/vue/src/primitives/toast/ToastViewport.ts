@@ -10,7 +10,13 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
+import {
+  createToastSwipe,
+  resolveToastBoxLayout,
+  TOAST_SWIPE_IGNORE_SELECTOR,
+  createAutoDismiss,
+  type AutoDismiss,
+} from '@iris-ui-kit/core'
 import {
   dismissToast,
   getToasts,
@@ -38,9 +44,6 @@ const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
   warning: 'var(--iris-warning)',
   info: 'var(--iris-info)',
 }
-
-/** Horizontal swipe distance (px) past which a release dismisses the toast. */
-const SWIPE_DISMISS_PX = 80
 
 /**
  * Renders the queued toasts. Mount exactly **one** of these per page —
@@ -79,15 +82,13 @@ export const IrisToastViewport = defineComponent({
     // all on hover, resume() on un-hover, cancel() on remove/unmount.
     const dismissers = new Map<string, AutoDismiss>()
 
-    // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
-    // release it dismisses, otherwise it snaps back. The decision logic reads a
-    // plain closure object (synchronous — survives event batching); the reactive
-    // ref drives the visual offset.
+    // Core owns item/pointer identity and cancellation; Vue owns capture and rendering.
+    const swipe = createToastSwipe<IrisToast>()
     const drag = ref<{ id: string; dx: number } | null>(null)
-    let dragLogic: { id: string; startX: number; dx: number } | null = null
 
     const onToastPointerDown = (toast: IrisToast, e: PointerEvent) => {
-      dragLogic = { id: toast.id, startX: e.clientX, dx: 0 }
+      const interactive = !!(e.target as Element | null)?.closest?.(TOAST_SWIPE_IGNORE_SELECTOR)
+      if (!swipe.start(toast, e, interactive)) return
       // Pointer capture keeps move/up on this element; unsupported in jsdom.
       try {
         ;(e.currentTarget as Element | null)?.setPointerCapture?.(e.pointerId)
@@ -97,19 +98,17 @@ export const IrisToastViewport = defineComponent({
       drag.value = { id: toast.id, dx: 0 }
     }
     const onToastPointerMove = (toast: IrisToast, e: PointerEvent) => {
-      const d = dragLogic
-      if (d && d.id === toast.id) {
-        d.dx = e.clientX - d.startX
-        drag.value = { id: toast.id, dx: d.dx }
-      }
+      const dx = swipe.move(toast, e)
+      if (dx !== null) drag.value = { id: toast.id, dx }
     }
-    const onToastPointerUp = (toast: IrisToast) => {
-      const d = dragLogic
-      if (d && d.id === toast.id) {
-        if (Math.abs(d.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
-        dragLogic = null
-        drag.value = null
-      }
+    const onToastPointerUp = (toast: IrisToast, e: PointerEvent) => {
+      const dismiss = swipe.end(toast, e.pointerId)
+      if (dismiss === null) return
+      drag.value = null
+      if (dismiss) dismissToast(toast.id)
+    }
+    const onToastPointerCancel = (toast: IrisToast, e: PointerEvent) => {
+      if (swipe.cancel(toast, e.pointerId)) drag.value = null
     }
 
     const cancelDismisser = (id: string) => {
@@ -141,6 +140,7 @@ export const IrisToastViewport = defineComponent({
     // newly-added toasts are created paused (started then paused) so they don't
     // tick until the pointer leaves.
     const syncDismissers = () => {
+      if (swipe.retain(toasts.value)) drag.value = null
       const liveIds = new Set(toasts.value.map((t) => t.id))
       for (const id of [...dismissers.keys()]) {
         if (!liveIds.has(id)) cancelDismisser(id)
@@ -180,6 +180,7 @@ export const IrisToastViewport = defineComponent({
     })
 
     onBeforeUnmount(() => {
+      swipe.reset()
       for (const d of dismissers.values()) d.cancel()
       dismissers.clear()
       unsubscribe?.()
@@ -212,6 +213,7 @@ export const IrisToastViewport = defineComponent({
         maxWidth: '420px',
         width: '100%',
         pointerEvents: 'none',
+        ...resolveToastBoxLayout().viewport,
       }
       const top = props.position.startsWith('top')
       const bottom = props.position.startsWith('bottom')
@@ -242,7 +244,9 @@ export const IrisToastViewport = defineComponent({
           'data-variant': toast.variant,
           onPointerdown: (e: PointerEvent) => onToastPointerDown(toast, e),
           onPointermove: (e: PointerEvent) => onToastPointerMove(toast, e),
-          onPointerup: () => onToastPointerUp(toast),
+          onPointerup: (e: PointerEvent) => onToastPointerUp(toast, e),
+          onPointercancel: (e: PointerEvent) => onToastPointerCancel(toast, e),
+          onLostpointercapture: (e: PointerEvent) => onToastPointerCancel(toast, e),
           style: {
             pointerEvents: 'auto',
             transform: dx ? `translateX(${dx}px)` : undefined,
@@ -261,7 +265,7 @@ export const IrisToastViewport = defineComponent({
             borderRadius: 'var(--iris-radius-md)',
             padding: 'var(--iris-padding-md)',
             boxShadow: 'var(--iris-shadow-lg)',
-            minWidth: '280px',
+            ...resolveToastBoxLayout().toast,
             fontSize: 'var(--iris-font-size-md, 14px)',
           },
         },

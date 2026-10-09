@@ -85,14 +85,83 @@ describe('IrisToastViewport', () => {
   // define clientX explicitly to drive the swipe handlers.
   function swipePointer(
     node: Element,
-    kind: 'pointerdown' | 'pointermove' | 'pointerup',
+    kind: string,
     clientX: number,
+    pointerId = 1,
+    isPrimary = true,
   ) {
     const ev = new Event(kind, { bubbles: true, cancelable: true }) as PointerEvent
-    Object.defineProperty(ev, 'pointerId', { value: 1, configurable: true })
-    Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+    for (const [key, value] of Object.entries({ pointerId, clientX, isPrimary, button: 0 })) {
+      Object.defineProperty(ev, key, { value, configurable: true })
+    }
     node.dispatchEvent(ev)
   }
+
+  it('does not capture the close button pointer sequence', async () => {
+    const wrapper = mount(Harness(), { attachTo: host })
+    pushToast({ title: 'Close me', duration: Infinity })
+    await nextTick()
+    const toast = wrapper.get('[data-iris-toast]').element
+    const capture = vi.fn()
+    Object.defineProperty(toast, 'setPointerCapture', { value: capture })
+    const button = wrapper.get('button[aria-label="Dismiss"]')
+    swipePointer(button.element, 'pointerdown', 0)
+    expect(capture).not.toHaveBeenCalled()
+    await button.trigger('click')
+    expect(wrapper.find('[data-iris-toast]').exists()).toBe(false)
+  })
+
+  it.each(['pointercancel', 'lostpointercapture'])(
+    '%s resets a swipe without dismissing',
+    async (kind) => {
+      const wrapper = mount(Harness(), { attachTo: host })
+      pushToast({ title: 'Cancelled', duration: Infinity })
+      await nextTick()
+      const toast = wrapper.get('[data-iris-toast]').element as HTMLElement
+      swipePointer(toast, 'pointerdown', 0)
+      swipePointer(toast, 'pointermove', 140)
+      await nextTick()
+      expect(toast.style.transform).toBe('translateX(140px)')
+      swipePointer(toast, kind, 140)
+      await nextTick()
+      expect(toast.style.transform).toBe('')
+      swipePointer(toast, 'pointerup', 140)
+      expect(getToasts()).toHaveLength(1)
+    },
+  )
+
+  it('a different pointer cannot move or finish the owning pointer swipe', async () => {
+    const wrapper = mount(Harness(), { attachTo: host })
+    pushToast({ title: 'Owned', duration: Infinity })
+    await nextTick()
+    const toast = wrapper.get('[data-iris-toast]').element as HTMLElement
+    swipePointer(toast, 'pointerdown', 0, 1)
+    swipePointer(toast, 'pointermove', 140, 2, false)
+    swipePointer(toast, 'pointerup', 140, 2, false)
+    await nextTick()
+    expect(getToasts()).toHaveLength(1)
+    expect(toast.style.transform).toBe('')
+    swipePointer(toast, 'pointermove', 140, 1)
+    swipePointer(toast, 'pointerup', 140, 1)
+    expect(getToasts()).toHaveLength(0)
+  })
+
+  it('secondary pointer down never captures and cannot replace a live swipe', async () => {
+    const wrapper = mount(Harness(), { attachTo: host })
+    pushToast({ title: 'Primary', duration: Infinity })
+    await nextTick()
+    const toast = wrapper.get('[data-iris-toast]').element
+    const capture = vi.fn()
+    Object.defineProperty(toast, 'setPointerCapture', { value: capture })
+    swipePointer(toast, 'pointerdown', 100, 2, false)
+    expect(capture).not.toHaveBeenCalled()
+    swipePointer(toast, 'pointerdown', 0, 1)
+    swipePointer(toast, 'pointerdown', 140, 2, false)
+    expect(capture).toHaveBeenCalledTimes(1)
+    swipePointer(toast, 'pointermove', 140, 1)
+    swipePointer(toast, 'pointerup', 140, 1)
+    expect(getToasts()).toHaveLength(0)
+  })
 
   it('swiping a toast past the threshold dismisses it', async () => {
     const wrapper = mount(Harness(), { attachTo: host })

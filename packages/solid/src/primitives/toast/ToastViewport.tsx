@@ -1,7 +1,14 @@
 import { For, Show, createSignal, onCleanup, splitProps, type JSX } from 'solid-js'
 import { installFloatingAnimations, ANIM_TOAST } from '../../floating/animations'
 import { Portal } from 'solid-js/web'
-import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
+import {
+  createToastSwipe,
+  resolveToastBoxLayout,
+  hyphenateLayoutStyle,
+  TOAST_SWIPE_IGNORE_SELECTOR,
+  createAutoDismiss,
+  type AutoDismiss,
+} from '@iris-ui-kit/core'
 import {
   dismissToast,
   getToasts,
@@ -62,13 +69,9 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
   // all on hover, resume() on un-hover, cancel() on remove/unmount.
   const dismissers = new Map<string, AutoDismiss>()
 
-  // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
-  // release it dismisses, otherwise it snaps back. The decision logic reads the
-  // plain `dragLogic` ref (synchronous — survives event batching); the signal
-  // drives the visual offset.
-  const SWIPE_DISMISS_PX = 80
+  // Core owns item/pointer identity and cancellation; Solid owns capture and rendering.
+  const swipe = createToastSwipe<IrisToast>()
   const [drag, setDrag] = createSignal<{ id: string; dx: number } | null>(null)
-  let dragLogic: { id: string; startX: number; dx: number } | null = null
 
   const cancelDismisser = (id: string): void => {
     const d = dismissers.get(id)
@@ -109,6 +112,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
     // Evict oldest if exceeding `max`.
     const trimmed = next.length > max() ? next.slice(-max()) : next
     setToasts(trimmed)
+    if (swipe.retain(trimmed)) setDrag(null)
     // Cancel dismissers for removed toasts.
     const liveIds = new Set(trimmed.map((entry) => entry.id))
     for (const id of [...dismissers.keys()]) {
@@ -126,6 +130,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
   })
 
   onCleanup(() => {
+    swipe.reset()
     cancelAll()
     unsubscribe()
   })
@@ -159,6 +164,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
       'max-width': '420px',
       width: '100%',
       'pointer-events': 'none',
+      ...hyphenateLayoutStyle(resolveToastBoxLayout().viewport),
     }
     if (pos.startsWith('top')) base.top = '0'
     if (pos.startsWith('bottom')) base.bottom = '0'
@@ -185,7 +191,10 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
           const isDragging = (): boolean => drag()?.id === toast.id
           const dx = (): number => (isDragging() ? (drag()?.dx ?? 0) : 0)
           const onPointerDown = (e: PointerEvent & { currentTarget: HTMLDivElement }): void => {
-            dragLogic = { id: toast.id, startX: e.clientX, dx: 0 }
+            const interactive = !!(e.target as Element | null)?.closest?.(
+              TOAST_SWIPE_IGNORE_SELECTOR,
+            )
+            if (!swipe.start(toast, e, interactive)) return
             // Pointer capture keeps move/up on this element; unsupported in jsdom.
             try {
               e.currentTarget.setPointerCapture?.(e.pointerId)
@@ -195,19 +204,17 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
             setDrag({ id: toast.id, dx: 0 })
           }
           const onPointerMove = (e: PointerEvent): void => {
-            const d = dragLogic
-            if (d && d.id === toast.id) {
-              d.dx = e.clientX - d.startX
-              setDrag({ id: toast.id, dx: d.dx })
-            }
+            const dx = swipe.move(toast, e)
+            if (dx !== null) setDrag({ id: toast.id, dx })
           }
-          const onPointerUp = (): void => {
-            const d = dragLogic
-            if (d && d.id === toast.id) {
-              if (Math.abs(d.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
-              dragLogic = null
-              setDrag(null)
-            }
+          const onPointerUp = (e: PointerEvent): void => {
+            const dismiss = swipe.end(toast, e.pointerId)
+            if (dismiss === null) return
+            setDrag(null)
+            if (dismiss) dismissToast(toast.id)
+          }
+          const onPointerCancel = (e: PointerEvent): void => {
+            if (swipe.cancel(toast, e.pointerId)) setDrag(null)
           }
           return (
             <div
@@ -218,6 +225,8 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
+              onPointerCancel={onPointerCancel}
+              onLostPointerCapture={onPointerCancel}
               style={{
                 'pointer-events': 'auto',
                 transform: dx() ? `translateX(${dx()}px)` : undefined,
@@ -236,7 +245,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
                 'border-radius': 'var(--iris-radius-md, 6px)',
                 padding: 'var(--iris-padding-md, 12px)',
                 'box-shadow': 'var(--iris-shadow-lg)',
-                'min-width': '280px',
+                ...hyphenateLayoutStyle(resolveToastBoxLayout().toast),
                 'font-size': 'var(--iris-font-size-md, 14px)',
               }}
             >

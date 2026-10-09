@@ -30,6 +30,7 @@ export default defineConfig({
     environment: 'node',
     include: [
       'src/hydration.test.ts',
+      'src/provider/ControlLayout.ssr.test.ts',
       'src/primitives/table/formula-tables.ssr.test.ts',
       'src/primitives/table/undo.ssr.test.ts',
       'src/primitives/table/grid-columns.ssr.test.ts',

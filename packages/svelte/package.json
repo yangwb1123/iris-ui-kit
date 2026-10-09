@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/svelte",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "Svelte 5 adapter for Iris UI — thin bridges over @iris-ui-kit/core",
   "license": "MIT",
   "type": "module",
@@ -108,7 +108,8 @@
   "scripts": {
     "build": "svelte-package -i src -o dist && node ../../scripts/prune-package-dist.mjs dist && node scripts/fix-esm-extensions.mjs",
     "dev": "svelte-package -i src -o dist --watch",
-    "test": "vitest run && vitest run --config vitest.ssr.config.ts",
+    "test": "vitest run && vitest run --config vitest.ssr.config.ts && pnpm test:hydration",
+    "test:hydration": "vitest run --config vitest.hydration.config.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint src",
     "clean": "rm -rf dist .turbo .svelte-kit"

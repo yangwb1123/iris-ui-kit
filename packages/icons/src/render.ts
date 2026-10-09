@@ -4,6 +4,7 @@ import {
   SAFE_ICON_NODE_ATTRS,
   SAFE_ICON_NODE_TAGS,
 } from './icon-nodes'
+import { SAFE_EXTENSION_ATTR } from './svg-safety'
 import type { IrisIcon, IrisIconNode } from './types'
 
 export interface RenderIconOptions {
@@ -48,8 +49,6 @@ const SAFE_ROOT_ATTRS = new Set([
 ])
 
 const SAFE_NODE_ATTRS = SAFE_ICON_NODE_ATTRS
-
-const SAFE_EXTENSION_ATTR = /^(?:aria|data)-[A-Za-z0-9_.:-]+$/
 
 function escapeXml(value: string | number): string {
   return String(value)

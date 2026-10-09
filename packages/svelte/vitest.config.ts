@@ -16,6 +16,8 @@ export default defineConfig({
     // `render()` cannot consume the client build, so exclude it here.
     exclude: [
       'src/hydration.test.ts',
+      'src/provider/ControlLayout.ssr.test.ts',
+      'src/provider/ComponentSize.hydration.test.ts',
       'src/primitives/table/undo.ssr.test.ts',
       'src/primitives/table/grid-columns.ssr.test.ts',
       'src/primitives/table/batch-fade-svelte.ssr.test.ts',

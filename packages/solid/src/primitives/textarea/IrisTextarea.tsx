@@ -1,5 +1,6 @@
 import { createEffect, createSignal, mergeProps, onMount, splitProps, type JSX } from 'solid-js'
 import type { Size } from '@iris-ui-kit/core'
+import { useComponentSize } from '../../provider'
 
 export type IrisTextareaSize = Size
 
@@ -18,6 +19,10 @@ const SIZE_STYLES: Record<IrisTextareaSize, { padding: string; fontSize: string 
 export interface IrisTextareaProps {
   value?: string
   defaultValue?: string
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisTextareaSize
   placeholder?: string
   disabled?: boolean
@@ -41,10 +46,7 @@ export interface IrisTextareaProps {
 
 /** Solid port of IrisTextarea — multi-line input with optional autoResize. */
 export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
-  const merged = mergeProps(
-    { size: 'md' as IrisTextareaSize, rows: 3, maxRows: 8, autoResize: false, autosize: false },
-    props,
-  )
+  const merged = mergeProps({ rows: 3, maxRows: 8, autoResize: false, autosize: false }, props)
   const [local, rest] = splitProps(merged, [
     'value',
     'defaultValue',
@@ -65,6 +67,9 @@ export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
     'onBlur',
     'style',
   ])
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal(local.defaultValue ?? '')
@@ -106,8 +111,8 @@ export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
     opacity: local.disabled ? 0.6 : 1,
     transition: 'border-color 120ms ease, box-shadow 120ms ease',
     'box-shadow': boxShadow(),
-    padding: SIZE_STYLES[local.size].padding,
-    'font-size': SIZE_STYLES[local.size].fontSize,
+    padding: SIZE_STYLES[size()].padding,
+    'font-size': SIZE_STYLES[size()].fontSize,
     'line-height': '1.5',
     ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
   })
@@ -145,7 +150,7 @@ export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
     <div
       {...rest}
       data-iris-textarea=""
-      data-iris-textarea-size={local.size}
+      data-iris-textarea-size={size()}
       data-state={local.invalid ? 'invalid' : focused() ? 'focused' : 'idle'}
       style={wrapperStyle()}
     >

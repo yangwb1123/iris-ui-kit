@@ -3,6 +3,7 @@ import { onMount } from 'solid-js'
 import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 import { installButtonStyles } from './styles'
 import { IrisSlot } from '../slot/IrisSlot'
+import { useComponentSize } from '../../provider'
 
 type StyleMap = Record<string, string>
 
@@ -81,6 +82,10 @@ export interface IrisButtonProps extends Omit<
   'type' | 'disabled' | 'onClick' | 'class' | 'style' | 'children'
 > {
   variant?: IrisButtonVariant
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisButtonSize
   disabled?: boolean
   loading?: boolean
@@ -106,7 +111,6 @@ export function IrisButton(props: IrisButtonProps): JSX.Element {
   const merged = mergeProps(
     {
       variant: 'solid' as IrisButtonVariant,
-      size: 'md' as IrisButtonSize,
       disabled: false,
       loading: false,
       type: 'button' as IrisButtonType,
@@ -130,6 +134,9 @@ export function IrisButton(props: IrisButtonProps): JSX.Element {
 
   onMount(() => installButtonStyles())
 
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
+
   const interactive = (): boolean => !local.disabled && !local.loading
   const handleClick = (event: MouseEvent): void => {
     if (!interactive()) {
@@ -148,7 +155,7 @@ export function IrisButton(props: IrisButtonProps): JSX.Element {
       return local.variant
     },
     get 'data-iris-button-size'() {
-      return local.size
+      return size()
     },
     get 'aria-disabled'() {
       return local.disabled ? 'true' : undefined
@@ -157,7 +164,7 @@ export function IrisButton(props: IrisButtonProps): JSX.Element {
       return local.loading ? 'true' : undefined
     },
     get style() {
-      return { ...buildInlineStyle(local.variant, local.size), ...(local.style ?? {}) }
+      return { ...buildInlineStyle(local.variant, size()), ...(local.style ?? {}) }
     },
     onClick: handleClick,
   }

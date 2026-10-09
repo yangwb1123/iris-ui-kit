@@ -2,6 +2,7 @@
   import { useFormFieldControl } from '../form-field/context'
   import { styleToString, mergeStyle } from '../../internal/style'
   import type { IrisSwitchProps, IrisSwitchSize } from './types'
+  import { getComponentSize } from '../../provider'
 
   const DIM_MAP: Record<IrisSwitchSize, { width: string; height: string; thumb: string }> = {
     sm: { width: '28px', height: '16px', thumb: '12px' },
@@ -13,7 +14,7 @@
     checked,
     defaultChecked,
     onChange,
-    size = 'md',
+    size: sizeProp,
     disabled = false,
     invalid = false,
     ariaDescribedby,
@@ -23,6 +24,8 @@
   }: IrisSwitchProps = $props()
 
   const field = useFormFieldControl()
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
   // svelte-ignore state_referenced_locally — uncontrolled seed; controlled reads use the prop.
   let internal = $state(Boolean(defaultChecked))
   const isControlled = $derived(checked !== undefined)

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
+  import { getComponentSize } from '../../provider'
 
   export type IrisComboboxSize = 'sm' | 'md' | 'lg'
 
@@ -16,6 +17,10 @@
     placeholder?: string
     disabled?: boolean
     invalid?: boolean
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: IrisComboboxSize
     emptyText?: string
     id?: string
@@ -36,7 +41,7 @@
     placeholder,
     disabled = false,
     invalid = false,
-    size = 'md',
+    size: sizeProp,
     emptyText,
     id,
     onValueChange,
@@ -44,6 +49,9 @@
     virtual = false,
     ...rest
   }: Props = $props()
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   const { locale: i18nLocale, t: translate } = useI18n()
   let reactiveT = $state(translate)
@@ -82,17 +90,17 @@
     sm: {
       padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
       fontSize: 'var(--iris-font-size-xs, 12px)',
-      minHeight: '28px',
+      minHeight: 'var(--iris-control-height-sm, 28px)',
     },
     md: {
       padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
       fontSize: 'var(--iris-font-size-md, 14px)',
-      minHeight: '34px',
+      minHeight: 'var(--iris-control-height-md, 34px)',
     },
     lg: {
       padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
       fontSize: 'var(--iris-font-size-lg, 16px)',
-      minHeight: '40px',
+      minHeight: 'var(--iris-control-height-lg, 40px)',
     },
   }
   /** Listbox maxHeight — the virtualizer's viewport (px). */

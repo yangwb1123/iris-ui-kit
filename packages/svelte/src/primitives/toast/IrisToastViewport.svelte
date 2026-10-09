@@ -1,7 +1,15 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
-  import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
+  import {
+    createToastSwipe,
+    resolveToastBoxLayout,
+    hyphenateLayoutStyle,
+    TOAST_SWIPE_IGNORE_SELECTOR,
+    createAutoDismiss,
+    type AutoDismiss,
+  } from '@iris-ui-kit/core'
   import { portal } from '../../internal/portal'
+  import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
   import {
     dismissToast,
@@ -58,16 +66,13 @@
   // all on hover, resume() on un-hover, cancel() on remove/unmount.
   const dismissers = new Map<string, AutoDismiss>()
 
-  // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
-  // release it dismisses, otherwise it snaps back. The decision logic reads the
-  // plain `dragLogic` closure var (synchronous — survives event batching); the
-  // `drag` $state drives the visual offset (re-renders the transform).
-  const SWIPE_DISMISS_PX = 80
-  let dragLogic: { id: string; startX: number; dx: number } | null = null
+  // Core owns item/pointer identity and cancellation; Svelte owns capture and rendering.
+  const swipe = createToastSwipe<IrisToast>()
   let drag = $state<{ id: string; dx: number } | null>(null)
 
   function onPointerDown(toast: IrisToast, e: PointerEvent): void {
-    dragLogic = { id: toast.id, startX: e.clientX, dx: 0 }
+    const interactive = !!(e.target as Element | null)?.closest?.(TOAST_SWIPE_IGNORE_SELECTOR)
+    if (!swipe.start(toast, e, interactive)) return
     // Pointer capture keeps move/up on this element; unsupported in jsdom.
     try {
       ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId)
@@ -78,18 +83,19 @@
   }
 
   function onPointerMove(toast: IrisToast, e: PointerEvent): void {
-    if (dragLogic && dragLogic.id === toast.id) {
-      dragLogic.dx = e.clientX - dragLogic.startX
-      drag = { id: toast.id, dx: dragLogic.dx }
-    }
+    const dx = swipe.move(toast, e)
+    if (dx !== null) drag = { id: toast.id, dx }
   }
 
-  function onPointerUp(toast: IrisToast): void {
-    if (dragLogic && dragLogic.id === toast.id) {
-      if (Math.abs(dragLogic.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
-      dragLogic = null
-      drag = null
-    }
+  function onPointerUp(toast: IrisToast, e: PointerEvent): void {
+    const dismiss = swipe.end(toast, e.pointerId)
+    if (dismiss === null) return
+    drag = null
+    if (dismiss) dismissToast(toast.id)
+  }
+
+  function onPointerCancel(toast: IrisToast, e: PointerEvent): void {
+    if (swipe.cancel(toast, e.pointerId)) drag = null
   }
 
   function toastStyle(toast: IrisToast): string {
@@ -111,7 +117,8 @@
       `border-inline-start: 4px solid ${VARIANT_ACCENT[toast.variant]}; ` +
       'border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 12px); ' +
       'box-shadow: var(--iris-shadow-lg); ' +
-      'min-width: 280px; font-size: var(--iris-font-size-md, 14px)'
+      styleToString(hyphenateLayoutStyle(resolveToastBoxLayout().toast)) +
+      '; font-size: var(--iris-font-size-md, 14px)'
     )
   }
 
@@ -153,6 +160,7 @@
   // While hovered, a newly-armed dismisser is immediately paused (created-then-
   // paused) so it doesn't tick until the pointer leaves.
   $effect(() => {
+    if (swipe.retain(toasts)) drag = null
     const liveIds = new Set(toasts.map((entry) => entry.id))
     for (const id of [...dismissers.keys()]) {
       if (!liveIds.has(id)) cancelDismisser(id)
@@ -176,6 +184,7 @@
 
   // Tear down on unmount: detach every dismisser permanently.
   onDestroy(() => {
+    swipe.reset()
     for (const d of dismissers.values()) d.cancel()
     dismissers.clear()
   })
@@ -207,6 +216,7 @@
       'max-width: 420px',
       'width: 100%',
       'pointer-events: none',
+      styleToString(hyphenateLayoutStyle(resolveToastBoxLayout().viewport)),
     ]
     if (pos.startsWith('top')) parts.push('top: 0')
     if (pos.startsWith('bottom')) parts.push('bottom: 0')
@@ -224,7 +234,10 @@
   data-position={position}
   onpointerenter={onPointerEnter}
   onpointerleave={onPointerLeave}
-  style={positionStyle(position)}
+  style={mergeStyle(
+    positionStyle(position),
+    typeof rest.style === 'string' ? rest.style : undefined,
+  )}
 >
   {#each toasts as toast (toast.id)}
     <div
@@ -234,7 +247,9 @@
       data-variant={toast.variant}
       onpointerdown={(e) => onPointerDown(toast, e)}
       onpointermove={(e) => onPointerMove(toast, e)}
-      onpointerup={() => onPointerUp(toast)}
+      onpointerup={(e) => onPointerUp(toast, e)}
+      onpointercancel={(e) => onPointerCancel(toast, e)}
+      onlostpointercapture={(e) => onPointerCancel(toast, e)}
       style={toastStyle(toast)}
     >
       <div style="flex: 1; min-width: 0">

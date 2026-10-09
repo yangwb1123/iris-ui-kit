@@ -17,6 +17,7 @@ import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'
 import { PluginStoreContextKey, type PluginStoreContext } from './context'
+import { ComponentSizeKey, useComponentSize, type IrisComponentSize } from './componentSize'
 
 const DEFAULT_LOCALE = 'en-US'
 
@@ -36,6 +37,13 @@ export interface IrisProviderProps {
   plugins?: IrisPlugin[]
   /** Element receiving the plugin token layer; defaults to `documentElement`. */
   target?: HTMLElement | null
+  /**
+   * Default size for every size-bearing control below this provider. Controls
+   * with an explicit `size` prop always win; a nested provider without
+   * `componentSize` inherits this one; with no provider at all controls are
+   * `md`.
+   */
+  componentSize?: IrisComponentSize
 }
 
 /**
@@ -56,6 +64,7 @@ export const IrisProvider = defineComponent({
     messages: { type: Object as PropType<Record<string, string>>, default: undefined },
     plugins: { type: Array as PropType<IrisPlugin[]>, default: undefined },
     target: { type: Object as PropType<HTMLElement | null>, default: null },
+    componentSize: { type: String as PropType<IrisComponentSize>, default: undefined },
   },
   setup(props, { slots }) {
     // R1: `collected` is reactive so a `plugins` swap re-derives everything
@@ -73,6 +82,14 @@ export const IrisProvider = defineComponent({
       installed: new Set((props.plugins ?? []).map((p) => p.name)),
     })
     provide(PluginStoreContextKey, ctx)
+
+    // Component size: this provider's prop, else the size it inherits from an
+    // outer provider, else `md`. A computed keeps it reactive to prop changes;
+    // `provide()` adds no DOM node of its own.
+    provide(
+      ComponentSizeKey,
+      useComponentSize(() => props.componentSize),
+    )
 
     // tokens → additive CSS-var layer over the active theme; reverted on unmount.
     let applied: ApplyCssVarsResult | null = null

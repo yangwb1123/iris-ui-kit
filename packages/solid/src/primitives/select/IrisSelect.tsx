@@ -13,6 +13,7 @@ import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 import { SelectOptions } from './SelectOptions'
 import { SELECT_LISTBOX_MAX_HEIGHT, SELECT_ROW_HEIGHT, SELECT_SIZE_MAP } from './select-constants'
 import {
@@ -44,7 +45,15 @@ export interface IrisSelectProps<T = unknown> {
   /** @deprecated Prefer `onValueChange` for cross-framework code. */
   onChange?: (value: T) => void
   placeholder?: string
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisSelectSize
+  /** Trigger width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the trigger to its container (`width: 100%`). */
+  fullWidth?: boolean
   disabled?: boolean
   placement?: Placement
   invalid?: boolean
@@ -68,7 +77,6 @@ export interface IrisSelectProps<T = unknown> {
 export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element {
   const merged = mergeProps(
     {
-      size: 'md' as IrisSelectSize,
       disabled: false,
       placement: 'bottom-start' as Placement,
       invalid: false,
@@ -304,7 +312,9 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
     setOpen(false)
   }
 
-  const sz = createMemo(() => SELECT_SIZE_MAP[merged.size])
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => merged.size)
+  const sz = createMemo(() => SELECT_SIZE_MAP[size()])
 
   const listboxContent = (): JSX.Element => (
     <div
@@ -365,7 +375,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         aria-label={merged.ariaLabel}
         aria-describedby={props.ariaDescribedby}
         data-iris-select-trigger=""
-        data-iris-select-size={merged.size}
+        data-iris-select-size={size()}
         data-state={open() ? 'open' : 'closed'}
         onKeyDown={handleKeyDown}
         onClick={() => !merged.disabled && setOpen((v) => !v)}
@@ -383,6 +393,11 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
           'font-family': 'inherit',
           position: 'relative',
           'min-width': '140px',
+          'box-sizing': 'border-box',
+          ...(merged.fullWidth ? { width: '100%' } : null),
+          ...(merged.width !== undefined
+            ? { width: typeof merged.width === 'number' ? `${merged.width}px` : merged.width }
+            : null),
           'padding-block': sz().paddingBlock,
           'padding-inline-start': sz().paddingInlineStart,
           'padding-inline-end': sz().paddingInlineEnd,
@@ -391,7 +406,17 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
           ...(merged.style ?? {}),
         }}
       >
-        <span style={{ flex: '1', 'min-width': '0' }}>{triggerLabel()}</span>
+        <span
+          style={{
+            flex: '1',
+            'min-width': '0',
+            overflow: 'hidden',
+            'text-overflow': 'ellipsis',
+            'white-space': 'nowrap',
+          }}
+        >
+          {triggerLabel()}
+        </span>
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"

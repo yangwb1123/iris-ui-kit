@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hyphenateLayoutStyle, resolveFormFieldLayout } from '@iris-ui-kit/core'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { setFormFieldContext, type FormFieldControl } from './context'
   import type { IrisFormFieldProps } from './types'
@@ -10,6 +11,10 @@
     required = false,
     labelFor,
     size = 'md',
+    labelPlacement,
+    labelWidth,
+    controlWidth,
+    fullWidth,
     style,
     children,
     ...rest
@@ -39,9 +44,17 @@
     },
   } satisfies FormFieldControl)
 
-  const rootStyle = $derived(
-    styleToString({ display: 'flex', 'flex-direction': 'column', gap: '4px' }),
+  // Layout is decided in core so react/vue/solid lay out identically.
+  const layout = $derived(
+    resolveFormFieldLayout({
+      labelPlacement,
+      labelWidth,
+      controlWidth,
+      fullWidth,
+    }),
   )
+
+  const rootStyle = $derived(styleToString(hyphenateLayoutStyle(layout.root)))
   const labelStyle = $derived(
     styleToString({
       'font-size':
@@ -51,14 +64,17 @@
       display: 'inline-flex',
       'align-items': 'center',
       gap: '4px',
+      ...hyphenateLayoutStyle(layout.label),
     }),
   )
+  const controlStyle = $derived(styleToString(hyphenateLayoutStyle(layout.control)))
 </script>
 
 <div
   {...rest}
   data-iris-form-field
   data-iris-form-field-state={error ? 'invalid' : 'valid'}
+  data-iris-form-field-placement={layout.placement === 'top' ? undefined : layout.placement}
   style={mergeStyle(rootStyle, style)}
 >
   {#if label}
@@ -71,24 +87,51 @@
         >{/if}
     </label>
   {/if}
-  {@render children?.()}
-  {#if hint && !error}
-    <div
-      id={hintId}
-      data-iris-form-field-hint
-      style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
-    >
-      {hint}
+  <!-- The control area is grouped under its own wrapper when a layout prop asks
+       for one (horizontal fields keep help/error under the control). -->
+  {#if layout.grouped}
+    <div data-iris-form-field-control style={controlStyle}>
+      {@render children?.()}
+      {#if hint && !error}
+        <div
+          id={hintId}
+          data-iris-form-field-hint
+          style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
+        >
+          {hint}
+        </div>
+      {/if}
+      {#if error}
+        <div
+          id={errorId}
+          data-iris-form-field-error
+          role="alert"
+          style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
+        >
+          {error}
+        </div>
+      {/if}
     </div>
-  {/if}
-  {#if error}
-    <div
-      id={errorId}
-      data-iris-form-field-error
-      role="alert"
-      style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
-    >
-      {error}
-    </div>
+  {:else}
+    {@render children?.()}
+    {#if hint && !error}
+      <div
+        id={hintId}
+        data-iris-form-field-hint
+        style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
+      >
+        {hint}
+      </div>
+    {/if}
+    {#if error}
+      <div
+        id={errorId}
+        data-iris-form-field-error
+        role="alert"
+        style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
+      >
+        {error}
+      </div>
+    {/if}
   {/if}
 </div>

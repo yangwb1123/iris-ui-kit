@@ -1,5 +1,6 @@
 import { createSignal, createUniqueId, mergeProps, splitProps, type JSX } from 'solid-js'
 import { RadioGroupCtx, useRadioGroupContext, type IrisRadioSize } from './context'
+import { useComponentSize } from '../../provider'
 
 // ── Group ──────────────────────────────────────────────────────────────────
 
@@ -7,6 +8,10 @@ export interface IrisRadioGroupProps {
   value?: string | number | boolean | null
   defaultValue?: string | number | boolean | null
   name?: string
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisRadioSize
   disabled?: boolean
   onChange?: (value: string | number | boolean) => void
@@ -16,10 +21,7 @@ export interface IrisRadioGroupProps {
 }
 
 export function IrisRadioGroup(props: IrisRadioGroupProps): JSX.Element {
-  const merged = mergeProps(
-    { size: 'md' as IrisRadioSize, disabled: false, defaultValue: null },
-    props,
-  )
+  const merged = mergeProps({ disabled: false, defaultValue: null }, props)
   const [local, rest] = splitProps(merged, [
     'value',
     'defaultValue',
@@ -29,6 +31,8 @@ export function IrisRadioGroup(props: IrisRadioGroupProps): JSX.Element {
     'onChange',
     'children',
   ])
+
+  const size = useComponentSize(() => local.size)
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal<string | number | boolean | null>(
@@ -52,7 +56,7 @@ export function IrisRadioGroup(props: IrisRadioGroupProps): JSX.Element {
         value: currentValue,
         setValue,
         get size() {
-          return () => local.size
+          return size
         },
         get disabled() {
           return () => local.disabled
@@ -82,6 +86,10 @@ export interface IrisRadioProps {
   /** Standalone mode only */
   checked?: boolean
   defaultChecked?: boolean
+  /**
+   * Explicit size. Omit to inherit the group, then the nearest
+   * `<IrisProvider componentSize>` (`md` when there is none).
+   */
   size?: IrisRadioSize
   disabled?: boolean
   id?: string
@@ -108,7 +116,8 @@ export function IrisRadio(props: IrisRadioProps): JSX.Element {
 
   const group = useRadioGroupContext()
 
-  const size = (): IrisRadioSize => local.size ?? group?.size() ?? 'md'
+  // Explicit prop wins, then the group, then the nearest provider, then `md`.
+  const size = useComponentSize(() => local.size ?? group?.size())
   const disabled = (): boolean => local.disabled || (group?.disabled() ?? false)
   const isControlled = (): boolean => local.checked !== undefined
   const [internal, setInternal] = createSignal(Boolean(local.defaultChecked))

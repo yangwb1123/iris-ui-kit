@@ -1,6 +1,11 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { composeEventHandlers } from '@iris-ui-kit/core'
+import {
+  composeEventHandlers,
+  resolveDialogLayout,
+  type DialogSize,
+  type LayoutLength,
+} from '@iris-ui-kit/core'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { IrisSlot } from '../slot/Slot'
@@ -13,6 +18,16 @@ export interface IrisDialogContentProps extends Omit<
 > {
   /** Portal target. `false` renders in place; default = `document.body`. */
   portalTarget?: HTMLElement | false
+  /**
+   * Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem.
+   * Always clamped to the viewport minus the backdrop gutter; override with
+   * `width`. Omit for the content-sized dialog (unchanged default).
+   */
+  size?: DialogSize
+  /** Explicit surface width (a number is read as px); wins over `size`. */
+  width?: LayoutLength
+  /** Surface height cap; defaults to `85vh`. */
+  maxHeight?: LayoutLength
   children?: React.ReactNode
 }
 
@@ -27,13 +42,18 @@ export interface IrisDialogContentProps extends Omit<
  *   - **ARIA** — `role="dialog"`, `aria-modal="true"`, `aria-labelledby` /
  *     `aria-describedby` wired automatically when `<IrisDialogTitle>` /
  *     `<IrisDialogDescription>` are present.
+ *
+ * Sizing is declarative (`size` / `width` / `maxHeight`, decided in core) and
+ * always clamped to the viewport minus the backdrop gutter. Without those props
+ * the surface renders exactly as before — content-sized, `max-width: 90vw`.
  */
 export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogContentProps>(
   function IrisDialogContent(
-    { portalTarget, style, onPointerDown, children, ...rest },
+    { portalTarget, size, width, maxHeight, style, onPointerDown, children, ...rest },
     forwardedRef,
   ) {
     const ctx = useDialogContext('IrisDialogContent')
+    const layout = resolveDialogLayout({ size, width, maxHeight })
 
     const innerRef = React.useRef<HTMLDivElement | null>(null)
     const captureRef = React.useCallback(
@@ -105,6 +125,7 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
           tabIndex={-1}
           data-state="open"
           onPointerDown={handleContentPointerDown}
+          {...(layout.size ? { 'data-iris-dialog-size': layout.size } : {})}
           style={{
             background: 'var(--iris-surface-floating)',
             color: 'var(--iris-foreground)',
@@ -113,8 +134,11 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
             animation: ANIM_DIALOG,
             padding: 'var(--iris-padding-lg, 20px)',
             boxShadow: 'var(--iris-shadow-xl)',
-            maxWidth: '90vw',
-            maxHeight: '85vh',
+            ...(layout.width === undefined
+              ? null
+              : { boxSizing: 'border-box', width: layout.width }),
+            maxWidth: layout.maxWidth,
+            maxHeight: layout.maxHeight,
             overflow: 'auto',
             outline: 'none',
             ...style,

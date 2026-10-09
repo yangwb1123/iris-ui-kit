@@ -2,10 +2,27 @@ import { createSignal, createMemo, mergeProps, splitProps, Show, type JSX } from
 import { IrisCalendar } from '../calendar/IrisCalendar'
 import { formatLocalISO, safeLocale } from '../calendar/dateUtils'
 import { useI18n } from '../../i18n'
+import { useComponentSize, type IrisComponentSize } from '../../provider'
 
 function formatDisplay(date: Date | null | undefined, locale?: string): string {
   if (!date) return ''
   return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
+}
+
+/** Trigger metrics per size — the same scale the text controls use. */
+const TRIGGER_SIZE: Record<IrisComponentSize, { padding: string; fontSize: string }> = {
+  sm: {
+    padding: 'var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+  },
+  lg: {
+    padding: 'var(--iris-padding-sm, 8px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 export interface IrisDatePickerProps {
@@ -20,6 +37,17 @@ export interface IrisDatePickerProps {
   invalid?: boolean
   onChange?: (date: Date | null) => void
   id?: string
+  /**
+   * Explicit size for the trigger. Omit to inherit the nearest
+   * `<IrisProvider componentSize>` (`md` when there is none).
+   */
+  size?: IrisComponentSize
+  /** Trigger width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the trigger to its container (`width: 100%`). */
+  fullWidth?: boolean
+  class?: string
+  style?: JSX.CSSProperties | string
 }
 
 /**
@@ -48,9 +76,16 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
     'invalid',
     'onChange',
     'id',
+    'size',
+    'width',
+    'fullWidth',
+    'class',
+    'style',
   ])
 
   const { t } = useI18n()
+  // Trigger adopts the inherited size; the calendar panel is unchanged.
+  const size = useComponentSize(() => local.size)
 
   const [internalValue, setInternalValue] = createSignal<Date | null>(local.defaultValue)
   const [open, setOpen] = createSignal(false)
@@ -74,6 +109,7 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
         aria-haspopup="dialog"
         aria-expanded={open()}
         data-iris-date-picker-trigger=""
+        data-iris-date-picker-size={size()}
         data-iris-date-picker-iso={currentValue() ? formatLocalISO(currentValue()!) : undefined}
         data-state={open() ? 'open' : 'closed'}
         onClick={() => !local.disabled && setOpen((v) => !v)}
@@ -81,16 +117,23 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
           display: 'inline-flex',
           'align-items': 'center',
           gap: '8px',
-          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+          padding: TRIGGER_SIZE[size()].padding,
           background: 'var(--iris-surface)',
           border: `1px solid ${local.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
           'border-radius': 'var(--iris-radius-md, 6px)',
           color: display() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-          'font-size': 'var(--iris-font-size-md, 14px)',
+          'font-size': TRIGGER_SIZE[size()].fontSize,
           'font-family': 'inherit',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           opacity: local.disabled ? '0.5' : '1',
           'min-width': '160px',
+          'box-sizing': 'border-box',
+          ...(local.fullWidth ? { width: '100%' } : null),
+          ...(local.width !== undefined
+            ? { width: typeof local.width === 'number' ? `${local.width}px` : local.width }
+            : null),
+          ...(typeof local.style === 'object' ? local.style : {}),
+          ...(local.class ? { class: local.class } : null),
         }}
       >
         <span style={{ flex: '1', 'text-align': 'start' }}>

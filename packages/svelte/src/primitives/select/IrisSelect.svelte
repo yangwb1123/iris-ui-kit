@@ -10,6 +10,7 @@
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
+  import { getComponentSize } from '../../provider'
   import type { Placement } from '@iris-ui-kit/core'
   import { SELECT_LISTBOX_MAX_HEIGHT, SELECT_ROW_HEIGHT, SELECT_SIZE_MAP } from './select-constants'
   import { createSelectElementAction } from './select-actions'
@@ -29,7 +30,15 @@
     defaultValue?: unknown
     multiple?: boolean
     placeholder?: string
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: IrisSelectSize
+    /** Trigger width — any CSS length, or a number of px. */
+    width?: string | number
+    /** Stretch the trigger to its container (`width: 100%`). */
+    fullWidth?: boolean
     disabled?: boolean
     placement?: Placement
     invalid?: boolean
@@ -54,7 +63,9 @@
     multiple = false,
     defaultValue,
     placeholder,
-    size = 'md',
+    size: sizeProp,
+    width,
+    fullWidth = false,
     disabled = false,
     placement = 'bottom-start',
     invalid = false,
@@ -66,6 +77,9 @@
     virtual = false,
     ...rest
   }: IrisSelectProps = $props()
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   const { locale: i18nLocale, t: translate } = useI18n()
   let reactiveT = $state(translate)
@@ -346,11 +360,16 @@
     ? 'not-allowed'
     : 'pointer'}; opacity: {disabled
     ? '0.6'
-    : '1'}; text-align: start; font-family: inherit; position: relative; min-width: 140px; padding-block: {sz.paddingBlock}; padding-inline-start: {sz.paddingInlineStart}; padding-inline-end: {sz.paddingInlineEnd}; font-size: {sz.fontSize}; min-height: {sz.minHeight};{style
-    ? ' ' + style
-    : ''}"
+    : '1'}; text-align: start; font-family: inherit; position: relative; min-width: 140px; box-sizing: border-box; padding-block: {sz.paddingBlock}; padding-inline-start: {sz.paddingInlineStart}; padding-inline-end: {sz.paddingInlineEnd}; font-size: {sz.fontSize}; min-height: {sz.minHeight};{fullWidth
+    ? ' width: 100%;'
+    : ''}{width !== undefined
+    ? ` width: ${typeof width === 'number' ? `${width}px` : width};`
+    : ''}{style ? ' ' + style : ''}"
 >
-  <span style="flex: 1; min-width: 0">{triggerLabel}</span>
+  <span
+    style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+    >{triggerLabel}</span
+  >
   <svg
     aria-hidden="true"
     viewBox="0 0 16 16"

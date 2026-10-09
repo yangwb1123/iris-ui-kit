@@ -1,7 +1,13 @@
 import * as React from 'react'
 import { installFloatingAnimations, ANIM_TOAST } from '../../floating/animations'
 import { createPortal } from 'react-dom'
-import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
+import {
+  createToastSwipe,
+  resolveToastBoxLayout,
+  TOAST_SWIPE_IGNORE_SELECTOR,
+  createAutoDismiss,
+  type AutoDismiss,
+} from '@iris-ui-kit/core'
 import {
   dismissToast,
   getToasts,
@@ -49,6 +55,7 @@ function positionStyle(position: IrisToastPosition): React.CSSProperties {
     maxWidth: 420,
     width: '100%',
     pointerEvents: 'none',
+    ...resolveToastBoxLayout().viewport,
   }
   const top = position.startsWith('top')
   const bottom = position.startsWith('bottom')
@@ -103,12 +110,9 @@ export function IrisToastViewport({
   // all on hover, resume() on un-hover, cancel() on remove/unmount.
   const dismissersRef = React.useRef(new Map<string, AutoDismiss>())
 
-  // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
-  // release it dismisses, otherwise it snaps back. The decision logic reads the
-  // ref (synchronous — survives event batching); state drives the visual offset.
-  const SWIPE_DISMISS_PX = 80
+  // Core owns item/pointer identity and cancellation; React owns capture and rendering.
+  const [swipe] = React.useState(() => createToastSwipe<IrisToast>())
   const [drag, setDrag] = React.useState<{ id: string; dx: number } | null>(null)
-  const dragRef = React.useRef<{ id: string; startX: number; dx: number } | null>(null)
 
   const cancelDismisser = React.useCallback((id: string) => {
     const d = dismissersRef.current.get(id)
@@ -139,6 +143,7 @@ export function IrisToastViewport({
   // newly-added toasts are created paused (started then paused) so they don't
   // tick until the pointer leaves.
   React.useEffect(() => {
+    if (swipe.retain(toasts)) setDrag(null)
     const liveIds = new Set(toasts.map((t) => t.id))
     for (const id of Array.from(dismissersRef.current.keys())) {
       if (!liveIds.has(id)) cancelDismisser(id)
@@ -149,7 +154,7 @@ export function IrisToastViewport({
         if (hovered) dismissersRef.current.get(toast.id)?.pause()
       }
     }
-  }, [toasts, hovered, armDismisser, cancelDismisser])
+  }, [toasts, hovered, armDismisser, cancelDismisser, swipe])
 
   // When hover toggles, pause/resume every live dismisser wholesale.
   React.useEffect(() => {
@@ -164,10 +169,11 @@ export function IrisToastViewport({
   React.useEffect(() => {
     const dismissers = dismissersRef.current
     return () => {
+      swipe.reset()
       for (const d of dismissers.values()) d.cancel()
       dismissers.clear()
     }
-  }, [])
+  }, [swipe])
 
   const node = (
     <div
@@ -189,7 +195,10 @@ export function IrisToastViewport({
             data-iris-toast=""
             data-variant={toast.variant}
             onPointerDown={(e) => {
-              dragRef.current = { id: toast.id, startX: e.clientX, dx: 0 }
+              const interactive = !!(e.target as Element | null)?.closest?.(
+                TOAST_SWIPE_IGNORE_SELECTOR,
+              )
+              if (!swipe.start(toast, e, interactive)) return
               // Pointer capture keeps move/up on this element; unsupported in jsdom.
               try {
                 e.currentTarget.setPointerCapture?.(e.pointerId)
@@ -199,19 +208,20 @@ export function IrisToastViewport({
               setDrag({ id: toast.id, dx: 0 })
             }}
             onPointerMove={(e) => {
-              const d = dragRef.current
-              if (d && d.id === toast.id) {
-                d.dx = e.clientX - d.startX
-                setDrag({ id: toast.id, dx: d.dx })
-              }
+              const dx = swipe.move(toast, e)
+              if (dx !== null) setDrag({ id: toast.id, dx })
             }}
-            onPointerUp={() => {
-              const d = dragRef.current
-              if (d && d.id === toast.id) {
-                if (Math.abs(d.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
-                dragRef.current = null
-                setDrag(null)
-              }
+            onPointerUp={(e) => {
+              const dismiss = swipe.end(toast, e.pointerId)
+              if (dismiss === null) return
+              setDrag(null)
+              if (dismiss) dismissToast(toast.id)
+            }}
+            onPointerCancel={(e) => {
+              if (swipe.cancel(toast, e.pointerId)) setDrag(null)
+            }}
+            onLostPointerCapture={(e) => {
+              if (swipe.cancel(toast, e.pointerId)) setDrag(null)
             }}
             style={{
               pointerEvents: 'auto',
@@ -231,7 +241,7 @@ export function IrisToastViewport({
               borderRadius: 'var(--iris-radius-md, 6px)',
               padding: 'var(--iris-padding-md, 12px)',
               boxShadow: 'var(--iris-shadow-lg)',
-              minWidth: 280,
+              ...resolveToastBoxLayout().toast,
               fontSize: 'var(--iris-font-size-md, 14px)',
             }}
           >

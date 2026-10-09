@@ -1,6 +1,7 @@
 import * as React from 'react'
 import type { Placement } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize, type IrisComponentSize } from '../../provider'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
@@ -10,6 +11,28 @@ import { formatLocalISO, safeLocale } from '../calendar/dateUtils'
 function formatDisplay(date: Date | null, locale?: string): string {
   if (!date) return ''
   return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
+}
+
+/** Trigger metrics per size — the same scale the text controls use. */
+const TRIGGER_SIZE: Record<
+  IrisComponentSize,
+  { padding: string; fontSize: string; minHeight: string }
+> = {
+  sm: {
+    padding: '4px 8px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: '8px 12px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
 }
 
 export interface IrisDatePickerProps {
@@ -24,12 +47,21 @@ export interface IrisDatePickerProps {
   disabled?: boolean
   invalid?: boolean
   placement?: Placement
+  /**
+   * Explicit size for the trigger. Omit to inherit the nearest
+   * `<IrisProvider componentSize>` (`md` when there is none).
+   */
+  size?: IrisComponentSize
   /** id forwarded to the trigger. Set by `IrisFormField`. */
   id?: string
   /** Forwarded as `aria-describedby` on the trigger. Set by `IrisFormField`. */
   ariaDescribedby?: string
   style?: React.CSSProperties
   className?: string
+  /** Trigger width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the trigger to its container (`width: 100%`). */
+  fullWidth?: boolean
 }
 
 /**
@@ -50,11 +82,17 @@ export function IrisDatePicker({
   placement = 'bottom-start',
   id,
   ariaDescribedby,
+  size: sizeProp,
   style,
   className,
+  width,
+  fullWidth = false,
   ...rest
 }: IrisDatePickerProps): React.ReactElement {
   const { t } = useI18n()
+  // Trigger adopts the inherited size; the calendar panel is unchanged.
+  const size = useComponentSize(sizeProp)
+  const triggerSize = TRIGGER_SIZE[size]
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<Date | null>(defaultValue ?? null)
   const value = isControlled ? (valueProp as Date | null) : internal
@@ -78,6 +116,7 @@ export function IrisDatePicker({
           aria-invalid={invalid ? 'true' : undefined}
           aria-describedby={ariaDescribedby}
           data-iris-date-picker-trigger=""
+          data-iris-date-picker-size={size}
           data-iris-date-picker-iso={value ? formatLocalISO(value) : undefined}
           {...rest}
           data-state={open ? 'open' : 'closed'}
@@ -85,18 +124,23 @@ export function IrisDatePicker({
             display: 'inline-flex',
             alignItems: 'center',
             gap: 'var(--iris-space-xs, 8px)',
-            padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+            padding: triggerSize.padding,
             background: 'var(--iris-background)',
             color: value ? 'var(--iris-foreground)' : 'var(--iris-muted)',
             border: `1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
             borderRadius: 'var(--iris-radius-md, 6px)',
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.6 : 1,
-            fontSize: 'var(--iris-font-size-md, 14px)',
+            fontSize: triggerSize.fontSize,
             fontFamily: 'inherit',
-            minHeight: 34,
+            minHeight: triggerSize.minHeight,
             minWidth: 180,
+            boxSizing: 'border-box',
             textAlign: 'start',
+            ...(fullWidth ? { width: '100%' } : null),
+            ...(width !== undefined
+              ? { width: typeof width === 'number' ? `${width}px` : width }
+              : null),
             ...style,
           }}
         >

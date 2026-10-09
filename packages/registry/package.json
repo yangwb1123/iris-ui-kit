@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/registry",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typed source registry and declarative marketplace contracts for Iris UI",
   "license": "MIT",
   "type": "module",

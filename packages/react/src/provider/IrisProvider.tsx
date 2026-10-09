@@ -11,6 +11,7 @@ import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'
 import { PluginStoreContext } from './context'
+import { ComponentSizeContext, resolveComponentSize, type IrisComponentSize } from './componentSize'
 
 export interface IrisProviderProps {
   /** Active theme store. When passed, wraps children in `<ThemeProvider>`. */
@@ -27,6 +28,13 @@ export interface IrisProviderProps {
   plugins?: IrisPlugin[]
   /** Element to receive plugin tokens. Defaults to `document.documentElement`. */
   target?: HTMLElement | null
+  /**
+   * Default size for every size-bearing control below this provider. Controls
+   * with an explicit `size` prop always win; a nested provider without
+   * `componentSize` inherits this one; with no provider at all controls are
+   * `md`.
+   */
+  componentSize?: IrisComponentSize
   children?: ReactNode
 }
 
@@ -47,6 +55,7 @@ export function IrisProvider({
   messages,
   plugins,
   target = null,
+  componentSize,
   children,
 }: IrisProviderProps) {
   const collected = useMemo(() => runPlugins(plugins ?? []), [plugins])
@@ -75,10 +84,21 @@ export function IrisProvider({
   // Plugin messages are the BASE; user-supplied messages win.
   const merged = { ...collected.messages[locale ?? 'en-US'], ...(messages ?? {}) }
 
-  // Order (innermost-out): Theme → Skin → I18n → PluginContext → children.
+  // Component size: this provider's prop, else the size it inherits from an
+  // outer provider, else `md`. Render-time only — SSR-safe and reactive on
+  // prop change, with no DOM node of its own.
+  const inheritedSize = useContext(ComponentSizeContext)
+  const sizeValue = useMemo(
+    () => resolveComponentSize(componentSize, inheritedSize),
+    [componentSize, inheritedSize],
+  )
+
+  // Order (innermost-out): Theme → Skin → I18n → PluginContext → Size → children.
   let tree: ReactNode = (
     <IrisI18nProvider locale={locale} messages={merged}>
-      <PluginStoreContext.Provider value={value}>{children}</PluginStoreContext.Provider>
+      <PluginStoreContext.Provider value={value}>
+        <ComponentSizeContext.Provider value={sizeValue}>{children}</ComponentSizeContext.Provider>
+      </PluginStoreContext.Provider>
     </IrisI18nProvider>
   )
   if (skin) {

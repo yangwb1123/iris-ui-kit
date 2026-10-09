@@ -10,6 +10,8 @@ import { createSSRApp, h } from 'vue'
 import { renderToString } from '@vue/server-renderer'
 import { createPlugin } from '@iris-ui-kit/core'
 import { IrisProvider } from './IrisProvider'
+import { IrisInput } from '../primitives/input/Input'
+import { IrisButton } from '../primitives/button/Button'
 
 const examplePlugin = createPlugin({
   name: 'example',
@@ -27,6 +29,21 @@ describe('@iris-ui-kit/vue IrisProvider SSR', () => {
     })
     const html = await renderToString(app)
     expect(html).toContain('ssr-ok')
+    expect(typeof document).toBe('undefined')
+  })
+
+  it('renders the provider componentSize on the server (no DOM, no wrapper)', async () => {
+    const app = createSSRApp({
+      render: () =>
+        h(
+          IrisProvider,
+          { componentSize: 'sm' },
+          { default: () => h('div', [h(IrisButton, null, { default: () => 'x' }), h(IrisInput)]) },
+        ),
+    })
+    const html = await renderToString(app)
+    expect(html).toContain('data-iris-button-size="sm"')
+    expect(html).toContain('data-iris-input-size="sm"')
     expect(typeof document).toBe('undefined')
   })
 })

@@ -33,7 +33,12 @@ export interface IrisStackProps extends JSX.HTMLAttributes<HTMLDivElement> {
   inline?: boolean
 }
 
-/** Flex container with token-driven spacing. Solid port of the React/Vue IrisStack. */
+/**
+ * Flex container with token-driven spacing. Solid port of the React/Vue IrisStack.
+ * The root is `box-sizing: border-box` + `min-width: 0` so a Stack can be
+ * dropped into a shrinking composition (a dialog body, a table cell, a form
+ * field row) without its own box model or content forcing an overflow.
+ */
 export function IrisStack(props: IrisStackProps): JSX.Element {
   const merged = mergeProps(
     {
@@ -68,6 +73,8 @@ export function IrisStack(props: IrisStackProps): JSX.Element {
         'align-items': ALIGN_MAP[local.align],
         'justify-content': JUSTIFY_MAP[local.justify],
         'flex-wrap': local.wrap ? 'wrap' : 'nowrap',
+        'box-sizing': 'border-box',
+        'min-width': 0,
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
     >

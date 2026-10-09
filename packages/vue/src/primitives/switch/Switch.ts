@@ -1,7 +1,15 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
 import type { Size } from '@iris-ui-kit/core'
+import { useComponentSize } from '../../provider'
+import { splitControlAttrs } from '../../internal/control-attrs'
 
 export type IrisSwitchSize = Size
+
+const DIM_MAP: Record<IrisSwitchSize, { width: string; height: string; thumb: string }> = {
+  sm: { width: '28px', height: '16px', thumb: '12px' },
+  md: { width: '36px', height: '20px', thumb: '16px' },
+  lg: { width: '44px', height: '24px', thumb: '20px' },
+}
 
 /**
  * Two-state toggle. Backed by a native checkbox for keyboard and form
@@ -9,13 +17,16 @@ export type IrisSwitchSize = Size
  *
  * The native checkbox is visually hidden but focusable — focus styles ride
  * on the wrapping label via `:focus-within`.
+ *
+ * `size` falls back to the nearest `<IrisProvider componentSize>`.
  */
 export const IrisSwitch = defineComponent({
   name: 'IrisSwitch',
   inheritAttrs: false,
   props: {
     modelValue: { type: Boolean, default: false },
-    size: { type: String as PropType<IrisSwitchSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisSwitchSize>, default: undefined },
     disabled: { type: Boolean, default: false },
     id: { type: String, default: undefined },
     /** Optional name attribute on the underlying checkbox (for form submission). */
@@ -30,14 +41,8 @@ export const IrisSwitch = defineComponent({
     change: (_value: boolean) => true,
   },
   setup(props, { attrs, emit }) {
-    const dims = computed(() => {
-      const map: Record<IrisSwitchSize, { width: string; height: string; thumb: string }> = {
-        sm: { width: '28px', height: '16px', thumb: '12px' },
-        md: { width: '36px', height: '20px', thumb: '16px' },
-        lg: { width: '44px', height: '24px', thumb: '20px' },
-      }
-      return map[props.size]
-    })
+    const size = useComponentSize(() => props.size)
+    const dims = computed(() => DIM_MAP[size.value])
 
     const trackStyle = computed<Record<string, string>>(() => ({
       position: 'relative',
@@ -76,13 +81,14 @@ export const IrisSwitch = defineComponent({
       emit('change', next)
     }
 
-    return () =>
-      h(
+    return () => {
+      const { aria, host } = splitControlAttrs(attrs)
+      return h(
         'label',
         {
-          ...attrs,
+          ...host,
           'data-iris-switch': '',
-          'data-iris-switch-size': props.size,
+          'data-iris-switch-size': size.value,
           'data-state': props.modelValue ? 'checked' : 'unchecked',
           style: {
             display: 'inline-flex',
@@ -90,11 +96,12 @@ export const IrisSwitch = defineComponent({
             gap: 'var(--iris-gap-sm)',
             cursor: props.disabled ? 'not-allowed' : 'pointer',
             userSelect: 'none',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...((host.style as Record<string, string> | undefined) ?? {}),
           },
         },
         [
           h('input', {
+            ...aria,
             type: 'checkbox',
             role: 'switch',
             id: props.id,
@@ -118,5 +125,6 @@ export const IrisSwitch = defineComponent({
           ]),
         ],
       )
+    }
   },
 })

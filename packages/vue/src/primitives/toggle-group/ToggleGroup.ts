@@ -10,6 +10,7 @@ import {
   type Ref,
 } from 'vue'
 import { createSelectionModel } from '@iris-ui-kit/core'
+import { useComponentSize } from '../../provider'
 import {
   ToggleGroupContextKey,
   type IrisToggleGroupType,
@@ -38,7 +39,8 @@ export const IrisToggleGroup = defineComponent({
       default: undefined,
     },
     orientation: { type: String as PropType<IrisToggleGroupOrientation>, default: 'horizontal' },
-    size: { type: String as PropType<'sm' | 'md' | 'lg'>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<'sm' | 'md' | 'lg'>, default: undefined },
     variant: { type: String as PropType<IrisToggleGroupVariant>, default: 'outline' },
     disabled: { type: Boolean, default: false },
   },
@@ -47,6 +49,7 @@ export const IrisToggleGroup = defineComponent({
   },
   setup(props, { slots, attrs, emit }) {
     const items: { value: string; el: Ref<HTMLElement | null> }[] = []
+    const size = useComponentSize(() => props.size)
 
     // Selection logic (single/multiple toggle, dedup) lives in the core model;
     // this component only maps its union value shape (string | string[] | null)
@@ -116,7 +119,7 @@ export const IrisToggleGroup = defineComponent({
     provide(ToggleGroupContextKey, {
       type: computed(() => props.type),
       orientation: computed(() => props.orientation),
-      size: computed(() => props.size),
+      size,
       variant: computed(() => props.variant),
       disabled: computed(() => props.disabled),
       isActive,
@@ -137,7 +140,7 @@ export const IrisToggleGroup = defineComponent({
           'data-iris-toggle-group': '',
           'data-iris-toggle-group-type': props.type,
           'data-iris-toggle-group-orientation': props.orientation,
-          'data-iris-toggle-group-size': props.size,
+          'data-iris-toggle-group-size': size.value,
           style: {
             display: 'inline-flex',
             flexDirection: props.orientation === 'horizontal' ? 'row' : 'column',

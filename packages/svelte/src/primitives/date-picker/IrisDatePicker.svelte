@@ -2,6 +2,29 @@
   import IrisCalendar from '../calendar/IrisCalendar.svelte'
   import { safeLocale } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
+  import { getComponentSize, type IrisComponentSize } from '../../provider'
+
+  /** Trigger metrics per size — the same scale the text controls use. */
+  const TRIGGER_SIZE: Record<
+    IrisComponentSize,
+    { padding: string; fontSize: string; minHeight: string }
+  > = {
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: 'var(--iris-control-height-sm, 28px)',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: 'var(--iris-control-height-md, 34px)',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: 'var(--iris-control-height-lg, 40px)',
+    },
+  }
 
   const { locale: i18nLocale, t: translate } = useI18n()
   let reactiveT = $state(translate)
@@ -23,6 +46,15 @@
     disabled?: boolean
     invalid?: boolean
     id?: string
+    /**
+     * Explicit size for the trigger. Omit to inherit the nearest
+     * `<IrisProvider componentSize>` (`md` when there is none).
+     */
+    size?: IrisComponentSize
+    /** Trigger width — any CSS length, or a number of px. */
+    width?: string | number
+    /** Stretch the trigger to its container (`width: 100%`). */
+    fullWidth?: boolean
     onValueChange?: (date: Date | null) => void
     style?: string
     class?: string
@@ -38,11 +70,18 @@
     disabled = false,
     invalid = false,
     id,
+    size: sizeProp,
+    width,
+    fullWidth = false,
     onValueChange,
     style,
     class: className,
     ...rest
   }: Props = $props()
+
+  // Trigger adopts the inherited size; the calendar panel is unchanged.
+  const size = $derived(getComponentSize(sizeProp))
+  const triggerSize = $derived(TRIGGER_SIZE[size])
 
   let open = $state(false)
   let containerEl = $state<HTMLElement | undefined>(undefined)
@@ -105,23 +144,32 @@
     aria-expanded={open}
     aria-haspopup="dialog"
     data-iris-date-picker-trigger
+    data-iris-date-picker-size={size}
     data-iris-date-picker-iso={value ? formatISODate(value) : undefined}
     data-state={open ? 'open' : 'closed'}
     onclick={toggle}
     style:display="inline-flex"
     style:align-items="center"
     style:gap="var(--iris-space-xs, 8px)"
-    style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
+    style:padding={triggerSize.padding}
     style:background="var(--iris-background)"
     style:color={value ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}
     style:border-radius="var(--iris-radius-md, 6px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
     style:opacity={disabled ? '0.6' : '1'}
-    style:font-size="var(--iris-font-size-md, 14px)"
+    style:font-size={triggerSize.fontSize}
     style:font-family="inherit"
-    style:min-height="34px"
+    style:min-height={triggerSize.minHeight}
     style:min-width="180px"
+    style:box-sizing="border-box"
+    style:width={fullWidth
+      ? '100%'
+      : width === undefined
+        ? undefined
+        : typeof width === 'number'
+          ? `${width}px`
+          : width}
     style:text-align="start"
     {...rest}
   >

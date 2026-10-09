@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useFormFieldControl } from '../form-field/context'
+  import { getComponentSize } from '../../provider'
   import { styleToString, mergeStyle } from '../../internal/style'
   import type { IrisInputProps, IrisInputSize } from './types'
 
@@ -8,22 +9,22 @@
       sm: {
         padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
         fontSize: 'var(--iris-font-size-xs, 12px)',
-        minHeight: '28px',
+        minHeight: 'var(--iris-control-height-sm, 28px)',
       },
       md: {
         padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
         fontSize: 'var(--iris-font-size-md, 14px)',
-        minHeight: '34px',
+        minHeight: 'var(--iris-control-height-md, 34px)',
       },
       lg: {
         padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
         fontSize: 'var(--iris-font-size-lg, 16px)',
-        minHeight: '40px',
+        minHeight: 'var(--iris-control-height-lg, 40px)',
       },
     }
 
   let {
-    size = 'md',
+    size: sizeProp,
     type = 'text',
     invalid = false,
     readonly = false,
@@ -31,6 +32,8 @@
     prefix,
     suffix,
     style,
+    width,
+    fullWidth = false,
     id,
     onfocus,
     onblur,
@@ -38,6 +41,8 @@
   }: IrisInputProps = $props()
 
   const field = useFormFieldControl()
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
   let focused = $state(false)
 
   const isInvalid = $derived(invalid || (field?.invalid ?? false))
@@ -63,9 +68,12 @@
       'box-shadow': focused
         ? `0 0 0 3px ${isInvalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
         : 'none',
+      ...(fullWidth || width !== undefined ? { 'box-sizing': 'border-box' } : null),
       padding: sizeStyle.padding,
       'min-height': sizeStyle.minHeight,
       'font-size': sizeStyle.fontSize,
+      ...(fullWidth ? { width: '100%' } : null),
+      ...(width !== undefined ? { width: typeof width === 'number' ? `${width}px` : width } : null),
     }),
   )
 

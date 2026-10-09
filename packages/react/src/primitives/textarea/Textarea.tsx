@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useComponentSize } from '../../provider'
 
 export type IrisTextareaSize = 'sm' | 'md' | 'lg'
 
@@ -18,6 +19,10 @@ export interface IrisTextareaProps extends Omit<
   React.TextareaHTMLAttributes<HTMLTextAreaElement>,
   'size'
 > {
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisTextareaSize
   invalid?: boolean
   ariaDescribedby?: string
@@ -35,7 +40,7 @@ export interface IrisTextareaProps extends Omit<
 export const IrisTextarea = React.forwardRef<HTMLTextAreaElement, IrisTextareaProps>(
   function IrisTextarea(
     {
-      size = 'md',
+      size: sizeProp,
       invalid = false,
       ariaDescribedby,
       autosize = false,
@@ -53,6 +58,8 @@ export const IrisTextarea = React.forwardRef<HTMLTextAreaElement, IrisTextareaPr
   ) {
     const [focused, setFocused] = React.useState(false)
     const innerRef = React.useRef<HTMLTextAreaElement | null>(null)
+    // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+    const size = useComponentSize(sizeProp)
 
     // Combine forwarded ref + internal ref.
     React.useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, [])

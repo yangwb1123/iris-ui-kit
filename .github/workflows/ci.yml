@@ -50,6 +50,14 @@ jobs:
       - name: Pack + external npm install smoke check
         run: pnpm check:pack-install
 
+      - name: Native Toast pointer ownership (four frameworks)
+        run: >-
+          docker run --rm --network host --ipc=host --ulimit nofile=65536:65536
+          --env CI=true
+          --volume "$GITHUB_WORKSPACE:/work" --workdir /work
+          mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+          corepack pnpm check:toast-pointer
+
       - name: Acceptance suite (core gates)
         run: node cli.mjs acceptance
 

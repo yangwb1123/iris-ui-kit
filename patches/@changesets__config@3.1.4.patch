@@ -1,0 +1,74 @@
+diff --git a/dist/changesets-config.cjs.js b/dist/changesets-config.cjs.js
+index 996b3c039ead61f2c0f898b72bb0e40c45714133..cf855b1302406053e92c6d014030567f914b950d 100644
+--- a/dist/changesets-config.cjs.js
++++ b/dist/changesets-config.cjs.js
+@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
+ 
+ var fs = require('fs-extra');
+ var path = require('path');
+-var micromatch = require('micromatch');
++var micromatch = require('./patterns.cjs');
+ var errors = require('@changesets/errors');
+ var logger = require('@changesets/logger');
+ var getPackages = require('@manypkg/get-packages');
+diff --git a/dist/changesets-config.esm.js b/dist/changesets-config.esm.js
+index a9554b0fa5bab2175d7017943289af4b9415d4fa..bc8616712fe7ca831af06333e0361f3a482ce229 100644
+--- a/dist/changesets-config.esm.js
++++ b/dist/changesets-config.esm.js
+@@ -1,6 +1,6 @@
+ import * as fs from 'fs-extra';
+ import path from 'path';
+-import micromatch from 'micromatch';
++import micromatch from './patterns.cjs';
+ import { ValidationError } from '@changesets/errors';
+ import { warn } from '@changesets/logger';
+ import { getPackages } from '@manypkg/get-packages';
+diff --git a/dist/patterns.cjs b/dist/patterns.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..999945aef7160c326b54e5780104cddcf11ab0ee
+--- /dev/null
++++ b/dist/patterns.cjs
+@@ -0,0 +1,43 @@
++// MIT. Package-name matching only; no recursive braces AST or expansion API.
++'use strict';
++const picomatch = require('picomatch');
++
++function compile(pattern) {
++  if (typeof pattern !== 'string' || pattern.length > 4096) {
++    throw new RangeError('Changesets pattern budget exceeded');
++  }
++  let depth = 0;
++  let inClass = false;
++  for (let i = 0; i < pattern.length; i++) {
++    const char = pattern[i];
++    if (char === '\\') { i++; continue; }
++    if (char === '[') { inClass = true; continue; }
++    if (char === ']') { inClass = false; continue; }
++    if (inClass) continue;
++    if (char === '{' || char === '(') depth++;
++    if (depth > 64) throw new RangeError('Changesets pattern budget exceeded');
++    if (char === '}' || char === ')') depth = Math.max(0, depth - 1);
++  }
++  return picomatch(pattern, {}, true);
++}
++
++function matchNames(names, patterns) {
++  const included = new Set();
++  const excluded = new Set();
++  let negatives = 0;
++  for (const pattern of patterns) {
++    const match = compile(pattern);
++    const negative = match.state.negated || match.state.negatedExtglob;
++    if (negative) negatives++;
++    for (const name of names) {
++      const result = match(name, true);
++      if (negative ? result.isMatch : !result.isMatch) continue;
++      if (negative) excluded.add(name);
++      else { excluded.delete(name); included.add(name); }
++    }
++  }
++  const selected = patterns.length && negatives === patterns.length ? names : [...included];
++  return selected.filter(name => !excluded.has(name));
++}
++matchNames.isMatch = (name, pattern) => compile(pattern)(name);
++module.exports = matchNames;

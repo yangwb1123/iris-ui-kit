@@ -1,6 +1,7 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
-import type { Size } from '@iris-ui-kit/core'
+import { hyphenateLayoutStyle, resolveGrowableControlHeight, type Size } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 
 export type IrisNumberInputSize = Size
 
@@ -22,28 +23,49 @@ function roundToStep(value: number, step: number): number {
 
 const SIZE_STYLES: Record<
   IrisNumberInputSize,
-  { padding: string; fontSize: string; minHeight: string }
+  { padding: string; paddingInline: string; fontSize: string; minHeight: string }
 > = {
   sm: {
     padding: '4px var(--iris-padding-sm, 8px)',
+    paddingInline: 'var(--iris-padding-sm, 8px)',
     fontSize: 'var(--iris-font-size-xs, 12px)',
-    minHeight: '28px',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
   },
   md: {
     padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    paddingInline: 'var(--iris-padding-md, 12px)',
     fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: '34px',
+    minHeight: 'var(--iris-control-height-md, 34px)',
   },
   lg: {
     padding: '8px var(--iris-padding-md, 12px)',
+    paddingInline: 'var(--iris-padding-md, 12px)',
     fontSize: 'var(--iris-font-size-lg, 16px)',
-    minHeight: '40px',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
   },
+}
+
+/** Width of one stepper button (px). */
+const STEPPER_WIDTH = 22
+/** Space between a stepper and the text field (px, inline). */
+const STEPPER_GAP = 4
+/** Space the text field needs on its own for a number (px) — matches 4ch. */
+const FIELD_MIN_WIDTH = 40
+/** Border width added once per side of the host box (px). */
+const BORDER_WIDTH = 1
+
+/** CSS width value — numbers are px, strings pass through as authored. */
+function cssWidth(width: string | number): string {
+  return typeof width === 'number' ? `${width}px` : width
 }
 
 export interface IrisNumberInputProps {
   value?: number | null
   defaultValue?: number | null
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisNumberInputSize
   min?: number
   max?: number
@@ -55,18 +77,25 @@ export interface IrisNumberInputProps {
   showControls?: boolean
   id?: string
   ariaDescribedby?: string
+  /** Accessible name for the native spinbutton input (no visible label). */
+  ariaLabel?: string
+  /** id of the element labelling the native spinbutton input. */
+  ariaLabelledby?: string
   onChange?: (value: number | null) => void
   onFocus?: (e: FocusEvent) => void
   onBlur?: (e: FocusEvent) => void
   style?: JSX.CSSProperties | string
   class?: string
+  /** Host box width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the host box to its container (`width: 100%`). */
+  fullWidth?: boolean
 }
 
 /** Solid port of IrisNumberInput — numeric input with step buttons. */
 export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
   const merged = mergeProps(
     {
-      size: 'md' as IrisNumberInputSize,
       min: -Infinity,
       max: Infinity,
       step: 1,
@@ -88,13 +117,19 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
     'showControls',
     'id',
     'ariaDescribedby',
+    'ariaLabel',
+    'ariaLabelledby',
     'onChange',
     'onFocus',
     'onBlur',
     'style',
+    'width',
+    'fullWidth',
   ])
 
   const { t } = useI18n()
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal<number | null>(
@@ -173,7 +208,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
     }
   }
 
-  const sz = (): (typeof SIZE_STYLES)[IrisNumberInputSize] => SIZE_STYLES[local.size]
+  const sz = (): (typeof SIZE_STYLES)[IrisNumberInputSize] => SIZE_STYLES[size()]
 
   const borderColor = (): string =>
     local.invalid ? 'var(--iris-danger)' : focused() ? 'var(--iris-primary)' : 'var(--iris-border)'
@@ -183,9 +218,16 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
       ? `0 0 0 3px ${local.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
 
+  // The host box is the WHOLE control (field + both steppers + gaps +
+  // padding + borders), so its minimum intrinsic width covers all of it.
+  const contentMinWidth = (): number =>
+    local.showControls ? FIELD_MIN_WIDTH + STEPPER_GAP * 3 + STEPPER_WIDTH * 2 : FIELD_MIN_WIDTH
+
   const wrapperStyle = (): JSX.CSSProperties => ({
     display: 'inline-flex',
     'align-items': 'center',
+    gap: `${STEPPER_GAP}px`,
+    'box-sizing': 'border-box',
     background: 'var(--iris-background)',
     color: 'var(--iris-foreground)',
     border: `1px solid ${borderColor()}`,
@@ -195,7 +237,10 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
     'box-shadow': boxShadow(),
     padding: sz().padding,
     'min-height': sz().minHeight,
+    'min-width': `calc(${contentMinWidth()}px + 2 * ${sz().paddingInline} + ${BORDER_WIDTH * 2}px)`,
     'font-size': sz().fontSize,
+    ...(local.fullWidth ? { width: '100%' } : null),
+    ...(local.width !== undefined ? { width: cssWidth(local.width) } : null),
     ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
   })
 
@@ -203,14 +248,13 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
     display: 'inline-flex',
     'align-items': 'center',
     'justify-content': 'center',
-    width: '22px',
-    height: '22px',
+    width: `${STEPPER_WIDTH}px`,
+    ...hyphenateLayoutStyle(resolveGrowableControlHeight(STEPPER_WIDTH)),
     background: 'transparent',
     border: 'none',
     'border-radius': 'var(--iris-radius-sm, 4px)',
     cursor: 'pointer',
     color: 'var(--iris-muted)',
-    'line-height': '1',
     'flex-shrink': '0',
   }
 
@@ -221,7 +265,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
     <div
       {...rest}
       data-iris-number-input=""
-      data-iris-number-input-size={local.size}
+      data-iris-number-input-size={size()}
       data-state={local.invalid ? 'invalid' : focused() ? 'focused' : 'idle'}
       style={wrapperStyle()}
     >
@@ -232,7 +276,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
           aria-label={t('numberInput.decrement')}
           disabled={local.disabled || atMin() || undefined}
           onClick={() => increment(-1)}
-          style={{ ...btnStyle, 'margin-inline-end': '4px' }}
+          style={btnStyle}
         >
           −
         </button>
@@ -242,6 +286,8 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
         type="text"
         inputMode="decimal"
         role="spinbutton"
+        aria-label={local.ariaLabel}
+        aria-labelledby={local.ariaLabelledby}
         value={rawText()}
         placeholder={local.placeholder}
         disabled={local.disabled}
@@ -253,7 +299,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
         aria-valuemax={Number.isFinite(local.max) ? local.max : undefined}
         style={{
           flex: '1',
-          'min-width': '40px',
+          'min-width': `${FIELD_MIN_WIDTH}px`,
           width: '4ch',
           border: 'none',
           outline: 'none',
@@ -276,7 +322,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
           aria-label={t('numberInput.increment')}
           disabled={local.disabled || atMax() || undefined}
           onClick={() => increment(1)}
-          style={{ ...btnStyle, 'margin-inline-start': '4px' }}
+          style={btnStyle}
         >
           +
         </button>

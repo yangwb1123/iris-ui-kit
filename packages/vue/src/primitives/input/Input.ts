@@ -1,8 +1,33 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import type { Size } from '@iris-ui-kit/core'
+import { useComponentSize } from '../../provider'
+import { splitControlAttrs } from '../../internal/control-attrs'
 
 export type IrisInputSize = Size
 export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' | 'tel' | 'url'
+
+const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
+/** CSS width value — numbers are px, strings pass through as authored. */
+function cssWidth(width: string | number): string {
+  return typeof width === 'number' ? `${width}px` : width
+}
 
 /**
  * Text input primitive. Wraps a native `<input>` with token-driven styling
@@ -11,6 +36,8 @@ export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' 
  *
  * Focus styling is handled with `:focus-within` on the wrapping `<label>`,
  * which doubles as the click target so the entire pill is clickable.
+ *
+ * `size` falls back to the nearest `<IrisProvider componentSize>`.
  */
 export const IrisInput = defineComponent({
   name: 'IrisInput',
@@ -18,7 +45,8 @@ export const IrisInput = defineComponent({
   props: {
     modelValue: { type: [String, Number] as PropType<string | number>, default: '' },
     type: { type: String as PropType<IrisInputType>, default: 'text' },
-    size: { type: String as PropType<IrisInputSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisInputSize>, default: undefined },
     placeholder: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
@@ -27,6 +55,10 @@ export const IrisInput = defineComponent({
     id: { type: String, default: undefined },
     /** Forwarded as `aria-describedby` on the inner <input>. Set by IrisFormField. */
     ariaDescribedby: { type: String, default: undefined },
+    /** Host width — any CSS length, or a number of px. */
+    width: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Stretch the host to its container (`width: 100%`). */
+    fullWidth: { type: Boolean, default: false },
   },
   emits: {
     'update:modelValue': (_value: string) => true,
@@ -35,27 +67,9 @@ export const IrisInput = defineComponent({
   },
   setup(props, { slots, attrs, emit }) {
     const focused = ref(false)
+    const size = useComponentSize(() => props.size)
 
-    const sizeStyles = computed<Record<string, string>>(() => {
-      const map: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
-        sm: {
-          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
-          fontSize: 'var(--iris-font-size-xs, 12px)',
-          minHeight: '28px',
-        },
-        md: {
-          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
-          fontSize: 'var(--iris-font-size-md, 14px)',
-          minHeight: '34px',
-        },
-        lg: {
-          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
-          fontSize: 'var(--iris-font-size-lg, 16px)',
-          minHeight: '40px',
-        },
-      }
-      return map[props.size]
-    })
+    const sizeStyles = computed<Record<string, string>>(() => SIZE_MAP[size.value])
 
     const wrapperStyle = computed<Record<string, string>>(() => {
       const borderColor = props.invalid
@@ -70,6 +84,7 @@ export const IrisInput = defineComponent({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 'var(--iris-gap-sm)',
+        ...(props.fullWidth || props.width !== undefined ? { boxSizing: 'border-box' } : null),
         background: props.readonly ? 'var(--iris-surface)' : 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         border: `1px solid ${borderColor}`,
@@ -81,6 +96,8 @@ export const IrisInput = defineComponent({
         ...sizeStyles.value,
         padding: sizeStyles.value.padding,
         minHeight: sizeStyles.value.minHeight,
+        ...(props.fullWidth ? { width: '100%' } : null),
+        ...(props.width !== undefined ? { width: cssWidth(props.width) } : null),
       }
     })
 
@@ -111,12 +128,13 @@ export const IrisInput = defineComponent({
     return () => {
       const prefix = slots.prefix?.()
       const suffix = slots.suffix?.()
+      const { aria, host } = splitControlAttrs(attrs)
       return h(
         'label',
         {
-          ...attrs,
+          ...host,
           'data-iris-input': '',
-          'data-iris-input-size': props.size,
+          'data-iris-input-size': size.value,
           'data-state': props.invalid
             ? 'invalid'
             : focused.value
@@ -126,7 +144,7 @@ export const IrisInput = defineComponent({
                 : 'idle',
           style: {
             ...wrapperStyle.value,
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...((host.style as Record<string, string> | undefined) ?? {}),
           },
         },
         [
@@ -140,6 +158,7 @@ export const IrisInput = defineComponent({
               prefix,
             ),
           h('input', {
+            ...aria,
             id: props.id,
             type: props.type,
             value: props.modelValue,

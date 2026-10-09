@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PlatformConfig } from '../config'
 import { OidcClient } from './oidc'
 
@@ -62,6 +62,15 @@ async function signIDToken(
 }
 
 describe('OidcClient', () => {
+  // jsdom's ArrayBuffer belongs to another realm. Node 20 WebCrypto rejects
+  // that buffer before verifying any bytes; browsers use one native realm.
+  // Match the real WebCrypto/TextEncoder realm, never mock signature validity.
+  beforeAll(() => {
+    const nativeBytes = new TextEncoder().encode('')
+    vi.stubGlobal('Uint8Array', nativeBytes.constructor)
+    vi.stubGlobal('ArrayBuffer', nativeBytes.buffer.constructor)
+  })
+  afterAll(() => vi.unstubAllGlobals())
   beforeEach(() => sessionStorage.clear())
 
   it('builds an S256 authorization request without a client secret', async () => {

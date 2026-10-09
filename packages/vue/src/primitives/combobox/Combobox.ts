@@ -1,3 +1,4 @@
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import {
   computed,
   defineComponent,
@@ -10,6 +11,7 @@ import {
 } from 'vue'
 import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 
 export type IrisComboboxSize = 'sm' | 'md' | 'lg'
 
@@ -24,17 +26,17 @@ const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; mi
     sm: {
       padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
       fontSize: 'var(--iris-font-size-xs, 12px)',
-      minHeight: '28px',
+      minHeight: 'var(--iris-control-height-sm, 28px)',
     },
     md: {
       padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
       fontSize: 'var(--iris-font-size-md, 14px)',
-      minHeight: '34px',
+      minHeight: 'var(--iris-control-height-md, 34px)',
     },
     lg: {
       padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
       fontSize: 'var(--iris-font-size-lg, 16px)',
-      minHeight: '40px',
+      minHeight: 'var(--iris-control-height-lg, 40px)',
     },
   }
 
@@ -59,7 +61,8 @@ export const IrisCombobox = defineComponent({
     placeholder: { type: String, default: undefined },
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
-    size: { type: String as PropType<IrisComboboxSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisComboboxSize>, default: undefined },
     /**
      * Opt-in windowed rendering of the listbox via the core virtualizer.
      * When true, only the visible window (+ buffer) of options is rendered;
@@ -84,6 +87,7 @@ export const IrisCombobox = defineComponent({
   },
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
+    const size = useComponentSize(() => props.size)
     const reactId = useId()
     const listboxId = `${reactId}-listbox`
     const optionId = (i: number) => `${reactId}-opt-${i}`
@@ -123,7 +127,7 @@ export const IrisCombobox = defineComponent({
       if (!v) {
         v = createVirtualizer({
           count: 0,
-          estimateSize: () => ROW_HEIGHT[props.size],
+          estimateSize: () => ROW_HEIGHT[size.value],
           getItemKey: (i) => filtered.value[i]?.value ?? i,
           viewportSize: LISTBOX_MAX_HEIGHT,
           buffer: 4,
@@ -150,8 +154,8 @@ export const IrisCombobox = defineComponent({
       const el = listboxRef.value
       if (!el) return
       const top = el.scrollTop
-      const start = index * ROW_HEIGHT[props.size]
-      if (start >= top && start + ROW_HEIGHT[props.size] <= top + LISTBOX_MAX_HEIGHT) return
+      const start = index * ROW_HEIGHT[size.value]
+      if (start >= top && start + ROW_HEIGHT[size.value] <= top + LISTBOX_MAX_HEIGHT) return
       el.scrollTop = v.scrollToIndex(index, start < top ? 'start' : 'end')
     }
 
@@ -235,7 +239,7 @@ export const IrisCombobox = defineComponent({
     }
 
     return () => {
-      const sz = SIZE_MAP[props.size]
+      const sz = SIZE_MAP[size.value]
       const list = filtered.value
       const borderColor = props.invalid
         ? 'var(--iris-danger)'
@@ -253,13 +257,13 @@ export const IrisCombobox = defineComponent({
         {
           ...attrs,
           'data-iris-combobox': '',
-          'data-iris-combobox-size': props.size,
+          'data-iris-combobox-size': size.value,
           'data-state': open.value ? 'open' : 'closed',
           style: {
             position: 'relative',
             display: 'inline-block',
             minWidth: '200px',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         [
@@ -422,7 +426,7 @@ export const IrisCombobox = defineComponent({
                           'data-iris-combobox-spacer': '',
                           'data-iris-combobox-spacer-type': 'bottom',
                           style: {
-                            height: `${vstate.value.totalSize - vstate.value.offsetBefore - vstate.value.items.length * ROW_HEIGHT[props.size]}px`,
+                            height: `${vstate.value.totalSize - vstate.value.offsetBefore - vstate.value.items.length * ROW_HEIGHT[size.value]}px`,
                           },
                         }),
                       ]

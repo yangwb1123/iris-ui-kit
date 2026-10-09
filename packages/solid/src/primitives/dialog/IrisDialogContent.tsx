@@ -1,4 +1,10 @@
 import { createEffect, onCleanup, splitProps, Show, type JSX } from 'solid-js'
+import {
+  hyphenateLayoutStyle,
+  resolveDialogLayout,
+  type DialogSize,
+  type LayoutLength,
+} from '@iris-ui-kit/core'
 import { installFloatingAnimations, ANIM_DIALOG } from '../../floating/animations'
 import { Portal, Dynamic } from 'solid-js/web'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
@@ -9,6 +15,12 @@ import { IrisSlot } from '../slot/IrisSlot'
 export interface IrisDialogContentProps extends JSX.HTMLAttributes<HTMLDivElement> {
   /** Portal target; `false` renders in place. Default renders to body. */
   portalTarget?: HTMLElement | false
+  /** Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem. */
+  size?: DialogSize
+  /** Explicit surface width (a number is read as px); wins over `size`. */
+  width?: LayoutLength
+  /** Surface height cap; defaults to `85vh`. */
+  maxHeight?: LayoutLength
   children?: JSX.Element
 }
 
@@ -34,10 +46,23 @@ export interface IrisDialogCloseProps extends Omit<
  * The modal surface (and its backdrop). Renders only while the dialog is open.
  * Behaviors: body scroll lock, focus trap, Escape to dismiss, backdrop click to dismiss.
  * Solid port of the Vue IrisDialogContent.
+ *
+ * Sizing is declarative (`size` / `width` / `maxHeight`, decided in core) and
+ * always clamped to the viewport minus the backdrop gutter. Without those props
+ * the surface renders exactly as before — content-sized, `max-width: 90vw`.
  */
 export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
   const ctx = useDialogContext('IrisDialogContent')
-  const [local, others] = splitProps(props, ['portalTarget', 'style', 'children'])
+  const [local, others] = splitProps(props, [
+    'portalTarget',
+    'size',
+    'width',
+    'maxHeight',
+    'style',
+    'children',
+  ])
+  const layout = (): ReturnType<typeof resolveDialogLayout> =>
+    resolveDialogLayout({ size: local.size, width: local.width, maxHeight: local.maxHeight })
 
   useBodyScrollLock(ctx.open)
   useFocusTrap({
@@ -105,6 +130,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
         tabindex={-1}
         data-state="open"
         onPointerDown={onContentPointerDown}
+        data-iris-dialog-size={layout().size}
         style={{
           background: 'var(--iris-surface-floating)',
           animation: ANIM_DIALOG,
@@ -113,8 +139,13 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
           'border-radius': 'var(--iris-radius-lg)',
           padding: 'var(--iris-padding-lg)',
           'box-shadow': 'var(--iris-shadow-xl)',
-          'max-width': '90vw',
-          'max-height': '85vh',
+          ...hyphenateLayoutStyle({
+            ...(layout().width === undefined
+              ? {}
+              : { boxSizing: 'border-box', width: layout().width }),
+            maxWidth: layout().maxWidth,
+            maxHeight: layout().maxHeight,
+          }),
           overflow: 'auto',
           outline: 'none',
           ...((local.style as JSX.CSSProperties) ?? {}),

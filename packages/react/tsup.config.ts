@@ -28,6 +28,9 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
+  // Compact release output without renaming component/function identifiers.
+  minifyWhitespace: true,
+  minifySyntax: true,
   target: 'es2022',
   external: [
     'react',

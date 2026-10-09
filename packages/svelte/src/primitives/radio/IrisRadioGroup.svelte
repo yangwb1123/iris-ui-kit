@@ -1,11 +1,12 @@
 <script lang="ts">
   import { setRadioGroupContext, type RadioSize } from './context'
+  import { getComponentSize } from '../../provider'
 
   let {
     value: valueProp,
     defaultValue = null,
     name,
-    size = 'md',
+    size: sizeProp,
     disabled = false,
     onchange,
     children,
@@ -14,12 +15,19 @@
     value?: string | number | boolean | null
     defaultValue?: string | number | boolean | null
     name?: string
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: RadioSize
     disabled?: boolean
     onchange?: (value: string | number | boolean) => void
     children?: import('svelte').Snippet
     [key: string]: unknown
   } = $props()
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   // svelte-ignore state_referenced_locally
   const fallbackName = $props.id()

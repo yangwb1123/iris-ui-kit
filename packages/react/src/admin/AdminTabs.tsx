@@ -1,6 +1,14 @@
 import * as React from 'react'
-import { isClosable, type TabsNav, type TabItem } from '@iris-ui-kit/core'
+import {
+  adminChromePx,
+  adminTabsChrome,
+  isClosable,
+  type AdminChromeSize,
+  type TabsNav,
+  type TabItem,
+} from '@iris-ui-kit/core'
 import { useTabsNav } from './useTabsNav'
+import { useComponentSize } from '../provider'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
@@ -18,6 +26,12 @@ export interface IrisAdminTabsProps {
   /** Enable pointer/touch reordering. */
   reorderable?: boolean
   onReorder?: (tabs: TabItem[]) => void
+  /**
+   * Bounded bar / chip geometry (`md` = the default, so omitting it keeps the
+   * pre-`size` look). Resolved in core — this component only bridges the
+   * numbers into inline styles.
+   */
+  size?: AdminChromeSize
 }
 
 /**
@@ -38,9 +52,13 @@ export function IrisAdminTabs({
   onRefresh,
   reorderable = true,
   onReorder,
+  size: sizeProp,
 }: IrisAdminTabsProps): React.ReactElement {
   const t = useTabsNav(nav)
   const { t: translate } = useI18n()
+  // Bar / chip geometry for the requested tier — one core table, bridged below.
+  const size = useComponentSize(sizeProp)
+  const chrome = adminTabsChrome(size)
   const tablistRef = React.useRef<HTMLDivElement>(null)
   const pendingFocus = React.useRef<string | null>(null)
 
@@ -115,18 +133,18 @@ export function IrisAdminTabs({
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 'var(--iris-space-xs, 8px)',
+          gap: adminChromePx(chrome.labelGap),
           border: 'none',
           background: 'transparent',
           color: 'inherit',
           font: 'inherit',
-          fontSize: 'var(--iris-font-size-sm, 13px)',
+          fontSize: chrome.labelFontSize,
           cursor: 'pointer',
           padding: 0,
         }}
         onClick={() => activate(tab.key)}
       >
-        {tab.icon ? <IrisIcon name={tab.icon} size={14} /> : null}
+        {tab.icon ? <IrisIcon name={tab.icon} size={chrome.tabIconSize} /> : null}
         <span style={{ whiteSpace: 'nowrap' }}>{tab.title}</span>
       </button>
     )
@@ -141,8 +159,9 @@ export function IrisAdminTabs({
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 16,
-          height: 16,
+          boxSizing: 'border-box',
+          width: adminChromePx(chrome.closeSize),
+          height: adminChromePx(chrome.closeSize),
           border: 'none',
           borderRadius: 'var(--iris-radius-sm, 4px)',
           background: 'transparent',
@@ -156,10 +175,10 @@ export function IrisAdminTabs({
           close(tab.key)
         }}
       >
-        <IrisIcon name="x" size={12} />
+        <IrisIcon name="x" size={chrome.closeIconSize} />
       </button>
     ) : tab.pinned ? (
-      <IrisIcon name="check-circle" size={12} style={{ opacity: 0.5 }} />
+      <IrisIcon name="check-circle" size={chrome.closeIconSize} style={{ opacity: 0.5 }} />
     ) : null
 
     return (
@@ -170,9 +189,13 @@ export function IrisAdminTabs({
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 4,
-          padding:
-            'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+          gap: adminChromePx(chrome.chipGap),
+          boxSizing: 'border-box',
+          // A floor, never a clip: a larger font grows the chip.
+          minHeight: adminChromePx(chrome.chipMinHeight),
+          paddingBlock: adminChromePx(chrome.chipPaddingBlock),
+          paddingInlineStart: adminChromePx(chrome.chipPaddingInlineStart),
+          paddingInlineEnd: adminChromePx(chrome.chipPaddingInlineEnd),
           borderRadius: 'var(--iris-radius-md, 6px)',
           border: `1px solid ${active ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
           background: active ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -190,11 +213,16 @@ export function IrisAdminTabs({
   return (
     <div
       data-iris-admin-tabs=""
+      data-iris-size={sizeProp ?? (size === 'md' ? undefined : size)}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 'var(--iris-space-xs, 8px)',
-        padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+        boxSizing: 'border-box',
+        minWidth: adminChromePx(chrome.barMinWidth),
+        minHeight: adminChromePx(chrome.barMinHeight),
+        gap: adminChromePx(chrome.barGap),
+        paddingBlock: adminChromePx(chrome.barPaddingBlock),
+        paddingInline: adminChromePx(chrome.barPaddingInline),
         borderBottom: '1px solid var(--iris-border)',
         background: 'var(--iris-background)',
       }}
@@ -205,7 +233,7 @@ export function IrisAdminTabs({
         role="tablist"
         aria-label={translate('admin.openPages')}
         onKeyDown={onKeyDown}
-        style={{ overflowX: 'auto', flex: 1 }}
+        style={{ minWidth: adminChromePx(chrome.scrollMinWidth), overflowX: 'auto', flex: 1 }}
       >
         <IrisSortable
           items={t.tabs}
@@ -226,8 +254,9 @@ export function IrisAdminTabs({
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 28,
-            height: 28,
+            boxSizing: 'border-box',
+            width: adminChromePx(chrome.actionsSize),
+            height: adminChromePx(chrome.actionsSize),
             borderRadius: 'var(--iris-radius-md, 6px)',
             border: '1px solid var(--iris-border)',
             background: 'var(--iris-surface)',
@@ -235,7 +264,7 @@ export function IrisAdminTabs({
             cursor: 'pointer',
           }}
         >
-          <IrisIcon name="more-horizontal" size={16} />
+          <IrisIcon name="more-horizontal" size={chrome.actionsIconSize} />
         </IrisDropdownTrigger>
         <IrisDropdownMenu>
           {activeKey ? (

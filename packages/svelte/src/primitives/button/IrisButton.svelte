@@ -4,11 +4,16 @@
   import { installButtonStyles, buildInlineStyle } from './styles'
   import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
   import { createSlotChildProps, type IrisSlotChildProps } from '../slot/slot'
+  import { getComponentSize } from '../../provider'
 
   // Forwards arbitrary button attributes (aria-*, id, …) like the React/Vue/Solid
   // adapters; the Iris-specific props override the native ones.
   interface Props extends Omit<HTMLButtonAttributes, 'type' | 'disabled' | 'onclick' | 'children'> {
     variant?: IrisButtonVariant
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: IrisButtonSize
     disabled?: boolean
     loading?: boolean
@@ -22,7 +27,7 @@
 
   let {
     variant = 'solid',
-    size = 'md',
+    size: sizeProp,
     disabled = false,
     loading = false,
     type = 'button',
@@ -36,6 +41,9 @@
   }: Props = $props()
 
   $effect(() => installButtonStyles())
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   const interactive = $derived(!disabled && !loading)
   const style = $derived(buildInlineStyle(variant, size))

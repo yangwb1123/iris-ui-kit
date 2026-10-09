@@ -9,6 +9,8 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
+import { resolveDialogLayout, type DialogSize } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import { installFloatingAnimations, ANIM_DIALOG } from '../floating/animations'
 import { DialogContextKey } from './context'
 import { PopoverContextKey } from '../popover/context'
@@ -23,6 +25,10 @@ import { findFirstElement, mergeSlotProps } from '../slot/Slot'
  *   - **Escape to dismiss** — controlled by `Dialog.closeOnEscape`.
  *   - **Backdrop click to dismiss** — controlled by `Dialog.closeOnOutsideClick`.
  *   - **ARIA** — `role="dialog"`, `aria-modal="true"`, `aria-labelledby` / `aria-describedby` wired automatically when `<IrisDialogTitle>` / `<IrisDialogDescription>` are present.
+ *
+ * Sizing is declarative (`size` / `width` / `maxHeight`, decided in core) and
+ * always clamped to the viewport minus the backdrop gutter. Without those props
+ * the surface renders exactly as before — content-sized, `max-width: 90vw`.
  */
 export const IrisDialogContent = defineComponent({
   name: 'IrisDialogContent',
@@ -32,6 +38,12 @@ export const IrisDialogContent = defineComponent({
       type: [String, Object, Boolean] as PropType<string | HTMLElement | false>,
       default: 'body',
     },
+    /** Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem. */
+    size: { type: String as () => DialogSize, default: undefined },
+    /** Explicit surface width (a number is read as px); wins over `size`. */
+    width: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Surface height cap; defaults to `85vh`. */
+    maxHeight: { type: [String, Number] as PropType<string | number>, default: undefined },
   },
   setup(props, { slots, attrs }) {
     installFloatingAnimations()
@@ -90,6 +102,11 @@ export const IrisDialogContent = defineComponent({
     }
     return () => {
       if (!ctx.open.value) return null
+      const layout = resolveDialogLayout({
+        size: props.size,
+        width: props.width,
+        maxHeight: props.maxHeight,
+      })
       const backdrop = h(
         'div',
         {
@@ -124,6 +141,7 @@ export const IrisDialogContent = defineComponent({
               tabindex: -1,
               'data-state': 'open',
               onPointerdown: onContentPointerDown,
+              ...(layout.size ? { 'data-iris-dialog-size': layout.size } : {}),
               style: {
                 background: 'var(--iris-surface-floating)',
                 animation: ANIM_DIALOG,
@@ -132,11 +150,14 @@ export const IrisDialogContent = defineComponent({
                 borderRadius: 'var(--iris-radius-lg)',
                 padding: 'var(--iris-padding-lg)',
                 boxShadow: 'var(--iris-shadow-xl)',
-                maxWidth: '90vw',
-                maxHeight: '85vh',
+                ...(layout.width === undefined
+                  ? {}
+                  : { boxSizing: 'border-box', width: layout.width }),
+                maxWidth: layout.maxWidth,
+                maxHeight: layout.maxHeight,
                 overflow: 'auto',
                 outline: 'none',
-                ...((attrs.style as Record<string, string> | undefined) ?? {}),
+                ...normalizeHostStyle(attrs.style),
               },
             },
             slots.default?.(),
@@ -173,7 +194,7 @@ export const IrisDialogTitle = defineComponent({
             margin: '0 0 var(--iris-gap-md) 0',
             fontSize: 'var(--iris-font-size-xl, 18px)',
             fontWeight: '600',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         slots.default?.(),
@@ -205,7 +226,7 @@ export const IrisDialogDescription = defineComponent({
             margin: '0 0 var(--iris-gap-lg) 0',
             color: 'var(--iris-muted)',
             fontSize: 'var(--iris-font-size-md, 14px)',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         slots.default?.(),

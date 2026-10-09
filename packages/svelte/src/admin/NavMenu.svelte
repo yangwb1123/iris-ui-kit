@@ -1,5 +1,8 @@
 <script lang="ts">
   import {
+    adminChromePx,
+    adminNavChrome,
+    adminNavIndent,
     branchTrail,
     createExpansion,
     findNavNode,
@@ -12,6 +15,7 @@
   import { toStore } from '../useStore'
   import { styleToString } from '../internal/style'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
+  import { getComponentSize } from '../provider'
   import { useI18n } from '../i18n'
   import type { IrisNavMenuProps } from './types'
 
@@ -32,10 +36,15 @@
     defaultExpandedKeys,
     collapsed = false,
     orientation = 'vertical',
+    size: sizeProp,
     ariaLabel,
     onSelect,
     onExpandedKeysChange,
   }: IrisNavMenuProps = $props()
+
+  // Row geometry for the requested tier — one core table, bridged below.
+  const size = $derived(getComponentSize(sizeProp))
+  const chrome = $derived(adminNavChrome(size))
 
   const isControlled = $derived(expandedKeys !== undefined)
 
@@ -86,9 +95,11 @@
     return styleToString({
       display: 'flex',
       'align-items': 'center',
-      gap: 'var(--iris-space-sm, 12px)',
+      gap: adminChromePx(chrome.itemGap),
       width: orientation === 'horizontal' && opts.depth === 0 ? 'auto' : '100%',
       'box-sizing': 'border-box',
+      // A floor, never a clip: a larger font/skin grows the row.
+      'min-height': adminChromePx(chrome.itemMinHeight),
       border: 'none',
       'border-radius': 'var(--iris-radius-md, 6px)',
       background: opts.active
@@ -102,13 +113,20 @@
           ? 'var(--iris-primary)'
           : 'var(--iris-foreground)',
       font: 'inherit',
-      'font-size': '14px',
+      'font-size': chrome.fontSize,
       'font-weight': opts.active || opts.trail ? '600' : '400',
       'text-align': 'start',
       cursor: opts.disabled ? 'not-allowed' : 'pointer',
       opacity: opts.disabled ? '0.5' : '1',
-      padding: collapsed ? '10px' : '8px 10px',
-      'padding-inline-start': collapsed ? '10px' : `${12 + opts.depth * 16}px`,
+      // Logical paddings (RTL-safe); the icon-only rail stays centered and
+      // flat, nested rows get the core indent for ANY depth.
+      ...(collapsed
+        ? { padding: adminChromePx(chrome.collapsedPadding) }
+        : {
+            'padding-block': adminChromePx(chrome.paddingBlock),
+            'padding-inline': adminChromePx(chrome.paddingInline),
+            'padding-inline-start': adminChromePx(adminNavIndent(chrome, opts.depth)),
+          }),
       'justify-content': collapsed ? 'center' : 'flex-start',
     })
   }
@@ -192,11 +210,11 @@
       }}
       onclick={() => (branch ? toggle(node.key) : select(node))}
     >
-      {#if node.icon}<IrisIcon name={node.icon} size={18} />{/if}
+      {#if node.icon}<IrisIcon name={node.icon} size={chrome.iconSize} />{/if}
       <span
         style="flex: {branch
           ? '1'
-          : '0 1 auto'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+          : '0 1 auto'}; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
       >
         {node.title}
       </span>
@@ -211,7 +229,7 @@
       {#if branch}
         <IrisIcon
           name={open ? 'chevron-down' : 'chevron-right'}
-          size={16}
+          size={chrome.arrowSize}
           style="margin-inline-start: {node.badge ? '6px' : 'auto'}; opacity: 0.6"
         />
       {/if}
@@ -276,7 +294,7 @@
     onclick={() => select(branch ? firstLeaf(node) : node)}
   >
     {#if node.icon}
-      <IrisIcon name={node.icon} size={20} />
+      <IrisIcon name={node.icon} size={chrome.collapsedIconSize} />
     {:else}
       <span style="font-weight: 700">{node.title.charAt(0)}</span>
     {/if}
@@ -288,12 +306,13 @@
   data-iris-nav-menu
   data-collapsed={collapsed ? 'true' : undefined}
   data-orientation={orientation}
+  data-iris-size={sizeProp ?? (size === 'md' ? undefined : size)}
   aria-label={ariaLabel ?? reactiveT('admin.nav')}
   onkeydown={onKeyDown}
   style:display="flex"
   style:flex-direction={orientation === 'horizontal' ? 'row' : 'column'}
   style:align-items={orientation === 'horizontal' ? 'center' : undefined}
-  style:gap="var(--iris-space-xxs, 4px)"
+  style:gap={adminChromePx(chrome.menuGap)}
 >
   {#each tree as node (node.key)}
     {#if collapsed}{@render collapsedItem(node)}{:else}{@render navItem(node, 0)}{/if}

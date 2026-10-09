@@ -38,6 +38,9 @@
       'align-items': ALIGN_MAP[align],
       'justify-content': JUSTIFY_MAP[justify],
       'flex-wrap': wrap ? 'wrap' : 'nowrap',
+      // Shrinkable box: safe inside dialog bodies, table cells and field rows.
+      'box-sizing': 'border-box',
+      'min-width': 0,
     }),
   )
 </script>

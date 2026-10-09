@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/tokens",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Design token types and default themes for Iris UI",
   "license": "MIT",
   "type": "module",

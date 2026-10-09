@@ -40,6 +40,10 @@ export interface IrisStackProps extends React.HTMLAttributes<HTMLDivElement> {
 /**
  * Flex container with token-driven spacing. The lightest possible layout
  * primitive — saves hand-writing `display: flex` everywhere.
+ *
+ * The root is `box-sizing: border-box` + `min-width: 0` so a Stack can be
+ * dropped into a shrinking composition (a dialog body, a table cell, a form
+ * field row) without its own box model or content forcing an overflow.
  */
 export const IrisStack = React.forwardRef<HTMLDivElement, IrisStackProps>(function IrisStack(
   {
@@ -68,6 +72,8 @@ export const IrisStack = React.forwardRef<HTMLDivElement, IrisStackProps>(functi
         alignItems: ALIGN_MAP[align],
         justifyContent: JUSTIFY_MAP[justify],
         flexWrap: wrap ? 'wrap' : 'nowrap',
+        boxSizing: 'border-box',
+        minWidth: 0,
         ...style,
       }}
     >

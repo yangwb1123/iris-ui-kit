@@ -24,17 +24,84 @@ function dismissButtonFor(toast: HTMLElement): HTMLButtonElement {
   return toast.querySelector('button[aria-label=Dismiss]') as HTMLButtonElement
 }
 
-// jsdom's PointerEvent drops clientX from its init, so build the event and
-// define clientX explicitly to drive the swipe handlers.
+// jsdom may omit pointer identity/primary fields as well as clientX.
 function swipePointer(
   node: Element,
-  kind: 'pointerDown' | 'pointerMove' | 'pointerUp',
+  kind: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel' | 'lostPointerCapture',
   clientX: number,
+  options: Partial<{ pointerId: number; button: number; isPrimary: boolean }> = {},
 ) {
-  const ev = createEvent[kind](node, { pointerId: 1 })
-  Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+  const ev = createEvent[kind](node)
+  for (const [key, value] of Object.entries({
+    pointerId: 1,
+    button: 0,
+    isPrimary: true,
+    clientX,
+    ...options,
+  })) {
+    Object.defineProperty(ev, key, { value, configurable: true })
+  }
   fireEvent(node, ev)
 }
+
+describe('React swipe ownership', () => {
+  for (const kind of ['pointerCancel', 'lostPointerCapture'] as const) {
+    it(`clears an owned ${kind} without dismissing`, () => {
+      render(<IrisToastViewport />)
+      act(() => {
+        pushToast({ title: 'Owned gesture', duration: 0 })
+      })
+      const toast = toasts()[0]!
+      swipePointer(toast, 'pointerDown', 0)
+      swipePointer(toast, 'pointerMove', 140)
+      expect(toast.style.transform).toBe('translateX(140px)')
+      swipePointer(toast, kind, 140)
+      swipePointer(toast, 'pointerUp', 140)
+      expect(toasts()).toHaveLength(1)
+      expect(toast.style.transform).toBe('')
+    })
+  }
+  it('ignores a foreign release until its owner releases', () => {
+    render(<IrisToastViewport />)
+    act(() => {
+      pushToast({ title: 'Pointer owner', duration: 0 })
+    })
+    const toast = toasts()[0]!
+    swipePointer(toast, 'pointerDown', 0)
+    swipePointer(toast, 'pointerMove', 140)
+    swipePointer(toast, 'pointerUp', 140, { pointerId: 2 })
+    expect(toasts()).toHaveLength(1)
+    swipePointer(toast, 'pointerUp', 140)
+    expect(toasts()).toHaveLength(0)
+  })
+  it('does not capture a non-primary down', () => {
+    render(<IrisToastViewport />)
+    act(() => {
+      pushToast({ title: 'Secondary', duration: 0 })
+    })
+    const toast = toasts()[0]!
+    const capture = vi.fn()
+    Object.defineProperty(toast, 'setPointerCapture', { value: capture })
+    swipePointer(toast, 'pointerDown', 0, { isPrimary: false })
+    expect(capture).not.toHaveBeenCalled()
+  })
+  it('does not carry a gesture into an item replaced under the same id', () => {
+    render(<IrisToastViewport />)
+    act(() => {
+      pushToast({ id: 'same', title: 'Before', duration: 0 })
+    })
+    const toast = toasts()[0]!
+    swipePointer(toast, 'pointerDown', 0)
+    swipePointer(toast, 'pointerMove', 140)
+    act(() => {
+      pushToast({ id: 'same', title: 'After', duration: 0 })
+    })
+    swipePointer(toasts()[0]!, 'pointerUp', 140)
+    expect(toasts()).toHaveLength(1)
+    expect(toasts()[0]!.textContent).toContain('After')
+    expect(toasts()[0]!.style.transform).toBe('')
+  })
+})
 
 describe('@iris-ui-kit/react IrisToast', () => {
   it('renders viewport and shows nothing when queue is empty', () => {
@@ -50,6 +117,20 @@ describe('@iris-ui-kit/react IrisToast', () => {
     const list = toasts()
     expect(list.length).toBe(1)
     expect(list[0]?.textContent).toContain('Hello')
+  })
+
+  it('does not capture the close button pointer sequence', () => {
+    render(<IrisToastViewport />)
+    act(() => {
+      pushToast({ title: 'Close me', duration: Infinity })
+    })
+    const toast = toasts()[0]!
+    const capture = vi.fn()
+    Object.defineProperty(toast, 'setPointerCapture', { value: capture })
+    swipePointer(dismissButtonFor(toast), 'pointerDown', 0)
+    expect(capture).not.toHaveBeenCalled()
+    fireEvent.click(dismissButtonFor(toast))
+    expect(toasts()).toHaveLength(0)
   })
 
   it('swiping a toast past the threshold dismisses it', () => {

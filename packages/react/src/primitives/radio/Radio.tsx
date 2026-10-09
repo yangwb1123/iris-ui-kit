@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useComponentSize } from '../../provider'
 import { RadioGroupContext } from './context'
 
 export type IrisRadioSize = 'sm' | 'md' | 'lg'
@@ -17,6 +18,10 @@ export interface IrisRadioProps extends Omit<
   checked?: boolean
   defaultChecked?: boolean
   onChange?: (checked: boolean) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisRadioSize
   children?: React.ReactNode
 }
@@ -28,7 +33,7 @@ export const IrisRadio = React.forwardRef<HTMLInputElement, IrisRadioProps>(func
     checked,
     defaultChecked = false,
     onChange,
-    size = 'md',
+    size: sizeProp,
     disabled,
     children,
     style,
@@ -38,6 +43,8 @@ export const IrisRadio = React.forwardRef<HTMLInputElement, IrisRadioProps>(func
   ref,
 ) {
   const ctx = React.useContext(RadioGroupContext)
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(sizeProp)
   const [internalChecked, setInternalChecked] = React.useState(Boolean(defaultChecked))
   const isControlled = checked !== undefined
   const isDisabled = Boolean(disabled || ctx?.disabled)

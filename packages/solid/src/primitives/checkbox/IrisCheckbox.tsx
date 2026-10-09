@@ -1,6 +1,7 @@
 import { createSignal, mergeProps, splitProps, type JSX } from 'solid-js'
 import type { Size } from '@iris-ui-kit/core'
 import { useFormFieldControl } from '../form-field/context'
+import { useComponentSize } from '../../provider'
 
 export type IrisCheckboxSize = Size
 export type IrisCheckboxValue = boolean | 'indeterminate'
@@ -11,6 +12,10 @@ export interface IrisCheckboxProps {
   checked?: IrisCheckboxValue
   defaultChecked?: IrisCheckboxValue
   onChange?: (value: boolean) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisCheckboxSize
   disabled?: boolean
   id?: string
@@ -32,7 +37,6 @@ export function IrisCheckbox(props: IrisCheckboxProps): JSX.Element {
   const field = useFormFieldControl()
   const merged = mergeProps(
     {
-      size: 'md' as IrisCheckboxSize,
       disabled: false,
       invalid: false,
       defaultChecked: false as IrisCheckboxValue,
@@ -67,7 +71,9 @@ export function IrisCheckbox(props: IrisCheckboxProps): JSX.Element {
     return v ? 'checked' : 'unchecked'
   }
 
-  const dim = (): string => DIM_MAP[local.size]
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
+  const dim = (): string => DIM_MAP[size()]
 
   const handleChange = (e: Event & { currentTarget: HTMLInputElement }): void => {
     if (local.disabled) return
@@ -100,7 +106,7 @@ export function IrisCheckbox(props: IrisCheckboxProps): JSX.Element {
   return (
     <label
       data-iris-checkbox=""
-      data-iris-checkbox-size={local.size}
+      data-iris-checkbox-size={size()}
       data-state={state()}
       class={local.class}
       style={{

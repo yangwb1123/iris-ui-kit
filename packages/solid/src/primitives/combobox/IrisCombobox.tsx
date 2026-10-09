@@ -12,6 +12,7 @@ import {
 } from 'solid-js'
 import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 
 export type IrisComboboxSize = 'sm' | 'md' | 'lg'
 
@@ -23,13 +24,21 @@ export interface IrisComboboxOption {
 
 const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+    sm: {
+      padding: '4px 8px',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: 'var(--iris-control-height-sm, 28px)',
+    },
     md: {
       padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
       fontSize: 'var(--iris-font-size-md, 14px)',
-      minHeight: '34px',
+      minHeight: 'var(--iris-control-height-md, 34px)',
     },
-    lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
+    lg: {
+      padding: '8px 12px',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: 'var(--iris-control-height-lg, 40px)',
+    },
   }
 
 /** Listbox maxHeight — the virtualizer's viewport (px). */
@@ -44,6 +53,10 @@ export interface IrisComboboxProps {
   placeholder?: string
   disabled?: boolean
   invalid?: boolean
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisComboboxSize
   emptyText?: string
   id?: string
@@ -66,7 +79,6 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
   const merged = mergeProps(
     {
       options: [] as IrisComboboxOption[],
-      size: 'md' as IrisComboboxSize,
       disabled: false,
       invalid: false,
       virtual: false,
@@ -75,6 +87,8 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
   )
 
   const { t } = useI18n()
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => merged.size)
 
   const reactId = createUniqueId()
   const listboxId = `${reactId}-listbox`
@@ -105,7 +119,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
       if (!vInstance) {
         vInstance = createVirtualizer({
           count: 0,
-          estimateSize: () => ROW_HEIGHT[merged.size],
+          estimateSize: () => ROW_HEIGHT[size()],
           getItemKey: (i) => filtered()[i]?.value ?? i,
           viewportSize: LISTBOX_MAX_HEIGHT,
           buffer: 4,
@@ -166,8 +180,8 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
     const el = listboxEl
     if (!el) return
     const top = el.scrollTop
-    const start = index * ROW_HEIGHT[merged.size]
-    if (start >= top && start + ROW_HEIGHT[merged.size] <= top + LISTBOX_MAX_HEIGHT) return
+    const start = index * ROW_HEIGHT[size()]
+    if (start >= top && start + ROW_HEIGHT[size()] <= top + LISTBOX_MAX_HEIGHT) return
     el.scrollTop = vInstance.scrollToIndex(index, start < top ? 'start' : 'end')
   }
 
@@ -239,7 +253,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
     }
   }
 
-  const sz = createMemo(() => SIZE_MAP[merged.size])
+  const sz = createMemo(() => SIZE_MAP[size()])
   const borderColor = createMemo(() =>
     merged.invalid
       ? 'var(--iris-danger)'
@@ -256,7 +270,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
   return (
     <div
       data-iris-combobox=""
-      data-iris-combobox-size={merged.size}
+      data-iris-combobox-size={size()}
       data-state={open() ? 'open' : 'closed'}
       style={{
         position: 'relative',
@@ -436,7 +450,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
                 data-iris-combobox-spacer=""
                 data-iris-combobox-spacer-type="bottom"
                 style={{
-                  height: `${vstate().totalSize - vstate().offsetBefore - vstate().items.length * ROW_HEIGHT[merged.size]}px`,
+                  height: `${vstate().totalSize - vstate().offsetBefore - vstate().items.length * ROW_HEIGHT[size()]}px`,
                 }}
               />
             </Show>

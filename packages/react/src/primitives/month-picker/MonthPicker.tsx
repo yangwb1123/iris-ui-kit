@@ -1,6 +1,7 @@
 import * as React from 'react'
 import type { Placement } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useComponentSize, type IrisComponentSize } from '../../provider'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
@@ -60,16 +61,36 @@ function nextEnabledIndex(
   return current
 }
 
+/** Trigger metrics per size — the same scale the text controls use. */
+const TRIGGER_SIZE: Record<
+  IrisComponentSize,
+  { padding: string; fontSize: string; minHeight: string }
+> = {
+  sm: {
+    padding: '4px 8px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: '8px 12px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
 const triggerBaseStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
-  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
   background: 'var(--iris-background)',
   borderRadius: 'var(--iris-radius-md, 6px)',
-  fontSize: 'var(--iris-font-size-md, 14px)',
   fontFamily: 'inherit',
-  minHeight: 'var(--iris-control-height-md, 34px)',
   minWidth: 180,
+  boxSizing: 'border-box',
   textAlign: 'start',
 }
 
@@ -133,6 +154,15 @@ export interface IrisMonthPickerProps {
   ariaDescribedby?: string
   style?: React.CSSProperties
   className?: string
+  /**
+   * Explicit size for the trigger. Omit to inherit the nearest
+   * `<IrisProvider componentSize>` (`md` when there is none).
+   */
+  size?: IrisComponentSize
+  /** Trigger width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the trigger to its container (`width: 100%`). */
+  fullWidth?: boolean
 }
 
 export function IrisMonthPicker({
@@ -151,9 +181,15 @@ export function IrisMonthPicker({
   ariaDescribedby,
   style,
   className,
+  size: sizeProp,
+  width,
+  fullWidth = false,
   ...rest
 }: IrisMonthPickerProps): React.ReactElement {
   const { t } = useI18n()
+  // Trigger adopts the inherited size; the month panel is unchanged.
+  const size = useComponentSize(sizeProp)
+  const triggerSize = TRIGGER_SIZE[size]
   const isControlled = valueProp !== undefined
   const [internalValue, setInternalValue] = React.useState<Date | null>(
     isValidDate(defaultValue) ? startOfMonth(defaultValue) : null,
@@ -265,14 +301,22 @@ export function IrisMonthPicker({
           aria-describedby={ariaDescribedby}
           {...rest}
           data-iris-month-picker-trigger=""
+          data-iris-month-picker-size={size}
           data-iris-month-picker-value={selectedValue}
           data-state={open ? 'open' : 'closed'}
           style={{
             ...triggerBaseStyle,
+            padding: triggerSize.padding,
+            fontSize: triggerSize.fontSize,
+            minHeight: triggerSize.minHeight,
             color: selectedValue ? 'var(--iris-foreground)' : 'var(--iris-muted)',
             border: `1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.6 : 1,
+            ...(fullWidth ? { width: '100%' } : null),
+            ...(width !== undefined
+              ? { width: typeof width === 'number' ? `${width}px` : width }
+              : null),
             ...style,
           }}
         >

@@ -6,6 +6,29 @@
     startOfMonth,
   } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
+  import { getComponentSize, type IrisComponentSize } from '../../provider'
+
+  /** Trigger metrics per size — the same scale the text controls use. */
+  const TRIGGER_SIZE: Record<
+    IrisComponentSize,
+    { padding: string; fontSize: string; minHeight: string }
+  > = {
+    sm: {
+      padding: 'var(--iris-padding-sm, 4px) var(--iris-padding-sm, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: 'var(--iris-control-height-sm, 28px)',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: 'var(--iris-control-height-md, 34px)',
+    },
+    lg: {
+      padding: 'var(--iris-padding-sm, 8px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: 'var(--iris-control-height-lg, 40px)',
+    },
+  }
 
   const { locale: i18nLocale, t: translate } = useI18n()
   let reactiveT = $state(translate)
@@ -37,6 +60,15 @@
     invalid?: boolean
     id?: string
     ariaDescribedby?: string
+    /**
+     * Explicit size for the trigger. Omit to inherit the nearest
+     * `<IrisProvider componentSize>` (`md` when there is none).
+     */
+    size?: IrisComponentSize
+    /** Trigger width — any CSS length, or a number of px. */
+    width?: string | number
+    /** Stretch the trigger to its container (`width: 100%`). */
+    fullWidth?: boolean
     onValueChange?: (date: Date | null) => void
     style?: string
     class?: string
@@ -53,11 +85,18 @@
     invalid = false,
     id,
     ariaDescribedby,
+    size: sizeProp,
+    width,
+    fullWidth = false,
     onValueChange,
     style,
     class: className,
     ...rest
   }: IrisMonthPickerProps = $props()
+
+  // Trigger adopts the inherited size; the month panel is unchanged.
+  const size = $derived(getComponentSize(sizeProp))
+  const triggerSize = $derived(TRIGGER_SIZE[size])
 
   function isValidDate(candidate: Date | null | undefined): candidate is Date {
     return candidate instanceof Date && Number.isFinite(candidate.getTime())
@@ -223,22 +262,31 @@
     aria-haspopup="dialog"
     aria-expanded={open}
     data-iris-month-picker-trigger
+    data-iris-month-picker-size={size}
     data-iris-month-picker-value={selectedValue}
     data-state={open ? 'open' : 'closed'}
     onclick={() => !disabled && (open = !open)}
     style:display="inline-flex"
     style:align-items="center"
-    style:padding="var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)"
+    style:padding={triggerSize.padding}
     style:background="var(--iris-background)"
     style:color={selectedValue ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}
     style:border-radius="var(--iris-radius-md, 6px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
     style:opacity={disabled ? '0.6' : '1'}
-    style:font-size="var(--iris-font-size-md, 14px)"
+    style:font-size={triggerSize.fontSize}
     style:font-family="inherit"
-    style:min-height="var(--iris-control-height-md, 34px)"
+    style:min-height={triggerSize.minHeight}
     style:min-width="180px"
+    style:box-sizing="border-box"
+    style:width={fullWidth
+      ? '100%'
+      : width === undefined
+        ? undefined
+        : typeof width === 'number'
+          ? `${width}px`
+          : width}
     style:text-align="start"
   >
     {display || placeholder || reactiveT('monthPicker.placeholder')}

@@ -1,5 +1,7 @@
 import { computed, defineComponent, h, nextTick, onMounted, ref, watch, type PropType } from 'vue'
 import type { Size } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
+import { useComponentSize } from '../../provider'
 
 export type IrisTextareaSize = Size
 
@@ -13,7 +15,8 @@ export const IrisTextarea = defineComponent({
   inheritAttrs: false,
   props: {
     modelValue: { type: String, default: '' },
-    size: { type: String as PropType<IrisTextareaSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisTextareaSize>, default: undefined },
     placeholder: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
@@ -36,6 +39,7 @@ export const IrisTextarea = defineComponent({
   setup(props, { attrs, emit }) {
     const focused = ref(false)
     const textareaRef = ref<HTMLTextAreaElement | null>(null)
+    const size = useComponentSize(() => props.size)
 
     const sizeStyles = computed<{ padding: string; fontSize: string; lineHeight: string }>(() => {
       const map: Record<
@@ -58,7 +62,7 @@ export const IrisTextarea = defineComponent({
           lineHeight: '1.5',
         },
       }
-      return map[props.size]
+      return map[size.value]
     })
 
     const wrapperStyle = computed<Record<string, string>>(() => {
@@ -135,11 +139,11 @@ export const IrisTextarea = defineComponent({
         {
           ...attrs,
           'data-iris-textarea': '',
-          'data-iris-textarea-size': props.size,
+          'data-iris-textarea-size': size.value,
           'data-state': props.invalid ? 'invalid' : focused.value ? 'focused' : 'idle',
           style: {
             ...wrapperStyle.value,
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         h('textarea', {

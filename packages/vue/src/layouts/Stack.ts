@@ -35,6 +35,10 @@ function toCssSpacing(spacing: string | number): string {
  *
  * Use `direction`/`spacing`/`align`/`justify`/`wrap` to configure; children
  * are arranged in document order with `gap: <spacing>`.
+ *
+ * The root is `box-sizing: border-box` + `min-width: 0` so a Stack can be
+ * dropped into a shrinking composition (a dialog body, a table cell, a form
+ * field row) without its own box model or content forcing an overflow.
  */
 export const IrisStack = defineComponent({
   name: 'IrisStack',
@@ -56,6 +60,8 @@ export const IrisStack = defineComponent({
       alignItems: ALIGN_MAP[props.align],
       justifyContent: JUSTIFY_MAP[props.justify],
       flexWrap: props.wrap ? 'wrap' : 'nowrap',
+      boxSizing: 'border-box',
+      minWidth: '0',
     }))
 
     return () =>

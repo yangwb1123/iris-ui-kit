@@ -1,6 +1,8 @@
 import { defineConfig } from 'tsup'
+import { execFileSync } from 'node:child_process'
+import process from 'node:process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 /**
  * Build the full barrel (`index`) plus a flattened entry per top-level group
@@ -62,6 +64,12 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
+  // Compact after tree-shaking so defineComponent's PURE metadata survives.
+  onSuccess: async () => {
+    execFileSync(process.execPath, [resolve('../../scripts/compact-published-js.mjs'), 'dist'], {
+      stdio: 'inherit',
+    })
+  },
   target: 'es2022',
   external: [
     'vue',

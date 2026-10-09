@@ -15,21 +15,21 @@ export const SELECT_SIZE_MAP: Record<
     paddingInlineStart: 'var(--iris-space-xs, 8px)',
     paddingInlineEnd: 'var(--iris-space-xl, 24px)',
     fontSize: 'var(--iris-font-size-xs, 12px)',
-    minHeight: '28px',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
   },
   md: {
     paddingBlock: 'var(--iris-padding-sm, 6px)',
     paddingInlineStart: 'var(--iris-padding-md, 12px)',
     paddingInlineEnd: 'var(--iris-space-xl, 24px)',
     fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: '34px',
+    minHeight: 'var(--iris-control-height-md, 34px)',
   },
   lg: {
     paddingBlock: 'var(--iris-space-xs, 8px)',
     paddingInlineStart: 'var(--iris-padding-md, 12px)',
     paddingInlineEnd: 'var(--iris-space-2xl, 32px)',
     fontSize: 'var(--iris-font-size-lg, 16px)',
-    minHeight: '40px',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
   },
 }
 

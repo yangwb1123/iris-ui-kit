@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useComponentSize } from '../../provider'
 
 export type IrisSwitchSize = 'sm' | 'md' | 'lg'
 
@@ -15,6 +16,10 @@ export interface IrisSwitchProps extends Omit<
   checked?: boolean
   defaultChecked?: boolean
   onChange?: (next: boolean, event: React.ChangeEvent<HTMLInputElement>) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisSwitchSize
   invalid?: boolean
   ariaDescribedby?: string
@@ -32,7 +37,7 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
     checked,
     defaultChecked,
     onChange,
-    size = 'md',
+    size: sizeProp,
     disabled = false,
     invalid = false,
     ariaDescribedby,
@@ -42,6 +47,8 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
   ref,
 ) {
   const [internalChecked, setInternalChecked] = React.useState(Boolean(defaultChecked))
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(sizeProp)
   const isControlled = checked !== undefined
   const value = isControlled ? Boolean(checked) : internalChecked
 

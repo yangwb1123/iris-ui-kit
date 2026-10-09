@@ -2,6 +2,7 @@ import { computed, defineComponent, h, type PropType, type VNode } from 'vue'
 import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 import { installButtonStyles } from './styles'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'
+import { useComponentSize } from '../../provider'
 
 type StyleMap = Record<string, string>
 
@@ -122,7 +123,8 @@ export const IrisButton = defineComponent({
   name: 'IrisButton',
   props: {
     variant: { type: String as PropType<IrisButtonVariant>, default: 'solid' },
-    size: { type: String as PropType<IrisButtonSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisButtonSize>, default: undefined },
     disabled: { type: Boolean, default: false },
     loading: { type: Boolean, default: false },
     type: { type: String as PropType<IrisButtonType>, default: 'button' },
@@ -133,9 +135,10 @@ export const IrisButton = defineComponent({
   },
   setup(props, { slots, emit }) {
     installButtonStyles()
+    const size = useComponentSize(() => props.size)
 
     const isInteractive = computed(() => !props.disabled && !props.loading)
-    const inlineStyle = computed(() => buildInlineStyle(props.variant, props.size))
+    const inlineStyle = computed(() => buildInlineStyle(props.variant, size.value))
 
     const onClick = (event: MouseEvent) => {
       if (!isInteractive.value) {
@@ -150,7 +153,7 @@ export const IrisButton = defineComponent({
       const baseProps: Record<string, unknown> = {
         class: 'iris-button',
         'data-iris-button-variant': props.variant,
-        'data-iris-button-size': props.size,
+        'data-iris-button-size': size.value,
         'aria-disabled': props.disabled ? 'true' : undefined,
         'aria-busy': props.loading ? 'true' : undefined,
         style: inlineStyle.value,

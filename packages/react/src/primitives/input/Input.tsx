@@ -1,22 +1,35 @@
 import * as React from 'react'
+import { useComponentSize } from '../../provider'
 
 export type IrisInputSize = 'sm' | 'md' | 'lg'
 export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' | 'tel' | 'url'
 
 const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
-  sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+  sm: {
+    padding: '4px 8px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
   md: {
     padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
     fontSize: 'var(--iris-font-size-md, 14px)',
-    minHeight: '34px',
+    minHeight: 'var(--iris-control-height-md, 34px)',
   },
-  lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
+  lg: {
+    padding: '8px 12px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
 }
 
 export interface IrisInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   'size' | 'type' | 'prefix'
 > {
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisInputSize
   type?: IrisInputType
   invalid?: boolean
@@ -24,6 +37,10 @@ export interface IrisInputProps extends Omit<
   ariaDescribedby?: string
   prefix?: React.ReactNode
   suffix?: React.ReactNode
+  /** Host box width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the host box to its container (`width: 100%`). */
+  fullWidth?: boolean
 }
 
 /**
@@ -35,12 +52,14 @@ export interface IrisInputProps extends Omit<
  */
 export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(function IrisInput(
   {
-    size = 'md',
+    size: sizeProp,
     type = 'text',
     invalid = false,
     ariaDescribedby,
     prefix,
     suffix,
+    width,
+    fullWidth = false,
     style,
     onFocus,
     onBlur,
@@ -49,6 +68,8 @@ export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(func
   ref,
 ) {
   const [focused, setFocused] = React.useState(false)
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(sizeProp)
   const sizeStyles = SIZE_MAP[size]
 
   const borderColor = invalid
@@ -62,6 +83,7 @@ export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(func
 
   const wrapperStyle: React.CSSProperties = {
     display: 'inline-flex',
+    ...(fullWidth || width !== undefined ? { boxSizing: 'border-box' as const } : null),
     alignItems: 'center',
     gap: 'var(--iris-space-xs, 8px)',
     background: rest.readOnly ? 'var(--iris-surface)' : 'var(--iris-background)',
@@ -75,6 +97,8 @@ export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(func
     padding: sizeStyles.padding,
     minHeight: sizeStyles.minHeight,
     fontSize: sizeStyles.fontSize,
+    ...(fullWidth ? { width: '100%' } : null),
+    ...(width !== undefined ? { width: typeof width === 'number' ? `${width}px` : width } : null),
     ...style,
   }
 

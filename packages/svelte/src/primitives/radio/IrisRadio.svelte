@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getRadioGroupContext, type RadioSize } from './context'
+  import { getComponentSize } from '../../provider'
 
   let {
     value,
@@ -17,6 +18,10 @@
     modelValue?: string | number | boolean | null
     defaultChecked?: boolean
     onChange?: (checked: boolean) => void
+    /**
+     * Explicit size. Omit to inherit the group, then the nearest
+     * `<IrisProvider componentSize>` (`md` when there is none).
+     */
     size?: RadioSize
     disabled?: boolean
     id?: string
@@ -27,7 +32,8 @@
 
   const group = getRadioGroupContext()
 
-  const size = $derived<RadioSize>(sizeProp ?? group?.size ?? 'md')
+  // Explicit prop wins, then the group, then the nearest provider, then `md`.
+  const size = $derived<RadioSize>(getComponentSize(sizeProp ?? group?.size))
   const disabled = $derived(disabledProp || Boolean(group?.disabled))
   const isControlled = $derived(modelValue !== undefined)
   // svelte-ignore state_referenced_locally — uncontrolled seed; controlled reads use the prop.

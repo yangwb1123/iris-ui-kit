@@ -1,5 +1,8 @@
 import * as React from 'react'
 import {
+  adminChromePx,
+  adminNavChrome,
+  adminNavIndent,
   branchTrail,
   createExpansion,
   findNavNode,
@@ -7,10 +10,12 @@ import {
   firstLeaf,
   isBranch,
   visibleNav,
+  type AdminChromeSize,
   type ExpansionModel,
   type NavNode,
 } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
+import { useComponentSize } from '../provider'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
 
@@ -27,6 +32,12 @@ export interface IrisNavMenuProps {
   collapsed?: boolean
   /** Top-level flow. Horizontal branches open an anchored dropdown panel. */
   orientation?: 'vertical' | 'horizontal'
+  /**
+   * Bounded row geometry (`md` = the default, so omitting it keeps the
+   * pre-`size` look). Resolved in core — this component only bridges the
+   * numbers into inline styles.
+   */
+  size?: AdminChromeSize
   ariaLabel?: string
   onSelect?: (key: string, node: NavNode) => void
   onExpandedKeysChange?: (keys: string[]) => void
@@ -49,12 +60,16 @@ export function IrisNavMenu({
   defaultExpandedKeys,
   collapsed = false,
   orientation = 'vertical',
+  size: sizeProp,
   ariaLabel,
   onSelect,
   onExpandedKeysChange,
 }: IrisNavMenuProps): React.ReactElement {
   const { t } = useI18n()
   const horizontal = orientation === 'horizontal'
+  // Row geometry for the requested tier — one core table, bridged below.
+  const size = useComponentSize(sizeProp)
+  const chrome = adminNavChrome(size)
   // Expand/collapse state lives in the core expansion model — the open-set algebra
   // and the active-trail union (`merge`) are byte-identical across every adapter, so
   // they live in @iris-ui-kit/core. This component keeps only the controlled/uncontrolled
@@ -110,9 +125,11 @@ export function IrisNavMenu({
   }): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 'var(--iris-space-sm, 12px)',
+    gap: adminChromePx(chrome.itemGap),
     width: horizontal && opts.depth === 0 ? 'auto' : '100%',
     boxSizing: 'border-box',
+    // A floor, never a clip: a larger font/skin grows the row.
+    minHeight: adminChromePx(chrome.itemMinHeight),
     border: 'none',
     borderRadius: 'var(--iris-radius-md, 6px)',
     background:
@@ -139,18 +156,25 @@ export function IrisNavMenu({
         ? 'var(--iris-primary)'
         : 'var(--iris-foreground)',
     font: 'inherit',
-    fontSize: 'var(--iris-font-size-md, 14px)',
+    fontSize: chrome.fontSize,
     fontWeight: opts.active || opts.trail ? 600 : 400,
     textAlign: 'start',
     cursor: opts.disabled ? 'not-allowed' : 'pointer',
     opacity: opts.disabled ? 0.5 : 1,
-    padding: collapsed ? 10 : 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-    paddingInlineStart: collapsed ? 10 : 12 + opts.depth * 16,
+    // Logical paddings (RTL-safe); the icon-only rail stays centered and
+    // flat, nested rows get the core indent for ANY depth.
+    ...(collapsed
+      ? { padding: adminChromePx(chrome.collapsedPadding) }
+      : {
+          paddingBlock: adminChromePx(chrome.paddingBlock),
+          paddingInline: adminChromePx(chrome.paddingInline),
+          paddingInlineStart: adminChromePx(adminNavIndent(chrome, opts.depth)),
+        }),
     justifyContent: collapsed ? 'center' : 'flex-start',
   })
 
-  const iconNode = (node: NavNode, size = 18): React.ReactElement | null =>
-    node.icon ? <IrisIcon name={node.icon} size={size} /> : null
+  const iconNode = (node: NavNode, iconSize: number): React.ReactElement | null =>
+    node.icon ? <IrisIcon name={node.icon} size={iconSize} /> : null
 
   const badgeNode = (node: NavNode): React.ReactElement | null =>
     node.badge !== undefined && node.badge !== '' && !collapsed ? (
@@ -201,7 +225,9 @@ export function IrisNavMenu({
         {...hoverProps(node.key)}
         onClick={() => select(branch ? firstLeaf(node) : node)}
       >
-        {iconNode(node, 20) ?? <span style={{ fontWeight: 700 }}>{node.title.charAt(0)}</span>}
+        {iconNode(node, chrome.collapsedIconSize) ?? (
+          <span style={{ fontWeight: 700 }}>{node.title.charAt(0)}</span>
+        )}
       </button>
     )
   }
@@ -234,10 +260,11 @@ export function IrisNavMenu({
         {...hoverProps(node.key)}
         onClick={() => (branch ? toggle(node.key) : select(node))}
       >
-        {iconNode(node)}
+        {iconNode(node, chrome.iconSize)}
         <span
           style={{
             flex: branch ? 1 : '0 1 auto',
+            minWidth: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -249,7 +276,7 @@ export function IrisNavMenu({
         {branch ? (
           <IrisIcon
             name={open ? 'chevron-down' : 'chevron-right'}
-            size={16}
+            size={chrome.arrowSize}
             style={{ marginInlineStart: node.badge ? 6 : 'auto', opacity: 0.6 }}
           />
         ) : null}
@@ -352,13 +379,14 @@ export function IrisNavMenu({
       data-iris-nav-menu=""
       data-collapsed={collapsed ? 'true' : undefined}
       data-orientation={orientation}
+      data-iris-size={sizeProp ?? (size === 'md' ? undefined : size)}
       aria-label={ariaLabel ?? t('admin.nav')}
       onKeyDown={onKeyDown}
       style={{
         display: 'flex',
         flexDirection: horizontal ? 'row' : 'column',
         alignItems: horizontal ? 'center' : undefined,
-        gap: 'var(--iris-space-xxs, 4px)',
+        gap: adminChromePx(chrome.menuGap),
       }}
     >
       {collapsed

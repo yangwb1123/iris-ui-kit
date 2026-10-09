@@ -1,6 +1,8 @@
 import { computed, defineComponent, h, nextTick, ref, watch, type PropType } from 'vue'
 import type { Placement } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import { useI18n } from '../../i18n'
+import { useComponentSize, type IrisComponentSize } from '../../provider'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
@@ -63,16 +65,36 @@ function nextEnabledIndex(
   return current
 }
 
+/** Trigger metrics per size — the same scale the text controls use. */
+const TRIGGER_SIZE: Record<
+  IrisComponentSize,
+  { padding: string; fontSize: string; minHeight: string }
+> = {
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
 const triggerBaseStyle: StyleMap = {
   display: 'inline-flex',
   alignItems: 'center',
-  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
   background: 'var(--iris-background)',
   borderRadius: 'var(--iris-radius-md, 6px)',
-  fontSize: 'var(--iris-font-size-md, 14px)',
   fontFamily: 'inherit',
-  minHeight: 'var(--iris-control-height-md, 34px)',
   minWidth: '180px',
+  boxSizing: 'border-box',
   textAlign: 'start',
 }
 
@@ -132,6 +154,12 @@ export const IrisMonthPicker = defineComponent({
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
     placement: { type: String as PropType<Placement>, default: 'bottom-start' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisComponentSize>, default: undefined },
+    /** Trigger width — any CSS length, or a number of px. */
+    width: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Stretch the trigger to its container (`width: 100%`). */
+    fullWidth: { type: Boolean, default: false },
     /** id forwarded to the trigger. Set by IrisFormField. */
     id: { type: String, default: undefined },
     /** Forwarded as aria-describedby on the trigger. */
@@ -142,6 +170,7 @@ export const IrisMonthPicker = defineComponent({
   },
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
+    const size = useComponentSize(() => props.size)
     const open = ref(false)
     const panelRef = ref<HTMLElement | null>(null)
     const initialMonth = isValidDate(props.modelValue)
@@ -273,14 +302,24 @@ export const IrisMonthPicker = defineComponent({
                   'aria-invalid': props.invalid ? 'true' : undefined,
                   'aria-describedby': props.ariaDescribedby,
                   'data-iris-month-picker-trigger': '',
+                  'data-iris-month-picker-size': size.value,
                   'data-iris-month-picker-value': selectedValue.value ?? undefined,
                   style: {
                     ...triggerBaseStyle,
+                    padding: TRIGGER_SIZE[size.value].padding,
+                    fontSize: TRIGGER_SIZE[size.value].fontSize,
+                    minHeight: TRIGGER_SIZE[size.value].minHeight,
                     color: selectedValue.value ? 'var(--iris-foreground)' : 'var(--iris-muted)',
                     border: `1px solid ${props.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
                     cursor: props.disabled ? 'not-allowed' : 'pointer',
                     opacity: props.disabled ? '0.6' : '1',
-                    ...((attrs.style as StyleMap | undefined) ?? {}),
+                    ...(props.fullWidth ? { width: '100%' } : null),
+                    ...(props.width !== undefined
+                      ? {
+                          width: typeof props.width === 'number' ? `${props.width}px` : props.width,
+                        }
+                      : null),
+                    ...normalizeHostStyle(attrs.style),
                   },
                 },
                 triggerLabel.value,

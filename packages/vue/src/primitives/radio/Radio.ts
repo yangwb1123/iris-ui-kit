@@ -1,3 +1,4 @@
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import {
   computed,
   defineComponent,
@@ -11,6 +12,7 @@ import {
   type PropType,
 } from 'vue'
 import { type Size } from '@iris-ui-kit/core'
+import { useComponentSize } from '../../provider'
 
 export type IrisRadioSize = Size
 
@@ -41,7 +43,8 @@ export const IrisRadioGroup = defineComponent({
       default: null,
     },
     name: { type: String, default: undefined },
-    size: { type: String as PropType<IrisRadioSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisRadioSize>, default: undefined },
     disabled: { type: Boolean, default: false },
   },
   emits: {
@@ -62,7 +65,7 @@ export const IrisRadioGroup = defineComponent({
         if (!isControlled.value) internal.value = v
         emit('update:modelValue', v)
       },
-      size: computed(() => props.size),
+      size: useComponentSize(() => props.size),
       disabled: computed(() => props.disabled),
     })
     return () =>
@@ -76,7 +79,7 @@ export const IrisRadioGroup = defineComponent({
             display: 'inline-flex',
             flexDirection: 'column',
             gap: 'var(--iris-gap-sm)',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         slots.default?.(),
@@ -104,16 +107,23 @@ export const IrisRadio = defineComponent({
       type: [String, Number, Boolean] as PropType<string | number | boolean | null>,
       default: undefined,
     },
+    /** Omit to inherit the group, then the nearest <IrisProvider componentSize>. */
     size: { type: String as PropType<IrisRadioSize>, default: undefined },
     disabled: { type: Boolean, default: false },
     id: { type: String, default: undefined },
+    /**
+     * Accessible name for the native radio input (the element with the radio
+     * role) — NOT the wrapping label. Use when there is no visible label text.
+     */
+    ariaLabel: { type: String, default: undefined },
   },
   emits: {
     'update:modelValue': (_value: string | number | boolean) => true,
   },
   setup(props, { slots, attrs, emit }) {
     const group = inject(RadioGroupKey, null)
-    const size = computed<IrisRadioSize>(() => props.size ?? group?.size.value ?? 'md')
+    // Explicit prop wins, then the group, then the nearest provider, then `md`.
+    const size = useComponentSize(() => props.size ?? group?.size.value)
     const disabled = computed(() => props.disabled || Boolean(group?.disabled.value))
     const checked = computed(() => {
       if (group) return group.value.value === props.value
@@ -169,7 +179,7 @@ export const IrisRadio = defineComponent({
             gap: 'var(--iris-gap-sm)',
             cursor: disabled.value ? 'not-allowed' : 'pointer',
             userSelect: 'none',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         [
@@ -180,6 +190,8 @@ export const IrisRadio = defineComponent({
             value: String(props.value),
             checked: checked.value,
             disabled: disabled.value || undefined,
+            'aria-label': props.ariaLabel,
+            'aria-checked': checked.value ? 'true' : 'false',
             style: {
               position: 'absolute',
               opacity: '0',

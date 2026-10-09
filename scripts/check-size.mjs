@@ -101,13 +101,20 @@ const BUDGETS = {
   // persistence and the shared pinned-boundary math are now public core
   // primitives consumed by all four Grid bridges. The measured barrel is
   // 53.7KB gzip; retain reviewable headroom for the new contract.
-  core: 55,
+  // Maintainer-authorized release rebaseline (2026-10-09): retain the shared
+  // grid/data/size/layout/Toast contracts; 69,881B measured, 3,847B headroom.
+  // Not all historical growth is attributable to the current Toast change.
+  // Entry gzip measurement and all other limits stay unchanged.
+  // See docs/RELEASE_SIZE_BUDGET.md for scope and authorization.
+  core: 72,
   // Bumped 3→4 (2026-08-07): font.size 9 档刻度 + space 4pt + control.height +
   // foreground/floating/backdrop 语义 token 家族（设计系统统一 + 美学评审）。
   tokens: 4,
   theme: 3.5,
   skins: 5,
-  icons: 7,
+  // Same explicit disposition: preserve bounded SVG/reference validation,
+  // renderer/provider safety and public icon API; 11,723B + 565B headroom.
+  icons: 12,
   // Bumped 80→160 (2026-08-19): grid parity rounds expanded the public
   // adapter barrel (table editing, export, range/presence state and shared
   // controller bridges). The measured barrel is 151.9KB gzip.

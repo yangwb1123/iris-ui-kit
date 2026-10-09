@@ -1,5 +1,6 @@
 import { createSignal, mergeProps, splitProps, type JSX } from 'solid-js'
 import { useFormFieldControl } from '../form-field/context'
+import { useComponentSize } from '../../provider'
 
 export type IrisSwitchSize = 'sm' | 'md' | 'lg'
 
@@ -16,6 +17,10 @@ export interface IrisSwitchProps extends Omit<
   checked?: boolean
   defaultChecked?: boolean
   onChange?: (next: boolean, event: Event) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisSwitchSize
   invalid?: boolean
   ariaDescribedby?: string
@@ -24,10 +29,7 @@ export interface IrisSwitchProps extends Omit<
 /** Solid port of the React/Vue IrisSwitch. Self-wires aria from IrisFormField. */
 export function IrisSwitch(props: IrisSwitchProps): JSX.Element {
   const field = useFormFieldControl()
-  const merged = mergeProps(
-    { size: 'md' as IrisSwitchSize, disabled: false, invalid: false },
-    props,
-  )
+  const merged = mergeProps({ disabled: false, invalid: false }, props)
   const [local, rest] = splitProps(merged, [
     'checked',
     'defaultChecked',
@@ -53,14 +55,16 @@ export function IrisSwitch(props: IrisSwitchProps): JSX.Element {
 
   const invalid = (): boolean => local.invalid || (field?.invalid() ?? false)
   const describedBy = (): string | undefined => local.ariaDescribedby ?? field?.describedBy()
-  const dim = (): { width: string; height: string; thumb: string } => DIM_MAP[local.size]
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
+  const dim = (): { width: string; height: string; thumb: string } => DIM_MAP[size()]
   const thumbOffset = (): string =>
     value() ? `calc(${dim().width} - ${dim().thumb} - 2px)` : '2px'
 
   return (
     <label
       data-iris-switch=""
-      data-iris-switch-size={local.size}
+      data-iris-switch-size={size()}
       data-state={value() ? 'checked' : 'unchecked'}
       style={{
         display: 'inline-flex',

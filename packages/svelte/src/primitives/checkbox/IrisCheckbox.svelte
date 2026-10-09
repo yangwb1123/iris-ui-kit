@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { getComponentSize } from '../../provider'
+
   type CheckboxValue = boolean | 'indeterminate'
   type CheckboxSize = 'sm' | 'md' | 'lg'
 
   let {
     value: valueProp = false,
-    size = 'md',
+    size: sizeProp,
     disabled = false,
     id,
     name,
@@ -17,6 +19,10 @@
     ...rest
   }: {
     value?: CheckboxValue
+    /**
+     * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+     * (`md` when there is none).
+     */
     size?: CheckboxSize
     disabled?: boolean
     id?: string
@@ -33,6 +39,9 @@
   const checkState = $derived<'checked' | 'unchecked' | 'indeterminate'>(
     valueProp === 'indeterminate' ? 'indeterminate' : valueProp ? 'checked' : 'unchecked',
   )
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = $derived(getComponentSize(sizeProp))
 
   const DIM: Record<CheckboxSize, string> = { sm: '14px', md: '18px', lg: '22px' }
   const dim = $derived(DIM[size])

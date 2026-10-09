@@ -1,3 +1,4 @@
+import { normalizeHostStyle } from '../../internal/control-attrs'
 import {
   computed,
   defineComponent,
@@ -23,6 +24,7 @@ import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisList, type IrisListItem } from '../list/List'
 import { useI18n } from '../../i18n'
+import { useComponentSize } from '../../provider'
 import { renderVirtualSelectListbox } from './renderVirtualListbox'
 
 export type IrisSelectSize = Size
@@ -65,7 +67,12 @@ export const IrisSelect = defineComponent({
     multiple: { type: Boolean, default: false },
     defaultValue: { type: null as unknown as PropType<unknown>, default: undefined },
     placeholder: { type: String, default: undefined },
-    size: { type: String as PropType<IrisSelectSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisSelectSize>, default: undefined },
+    /** Trigger width — any CSS length, or a number of px. */
+    width: { type: [String, Number] as PropType<string | number>, default: undefined },
+    /** Stretch the trigger to its container (`width: 100%`). */
+    fullWidth: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     placement: { type: String as PropType<Placement>, default: 'bottom-start' },
     /** Visual invalid state. */
@@ -91,6 +98,7 @@ export const IrisSelect = defineComponent({
   },
   setup(props, { slots, attrs, emit }) {
     const { t } = useI18n()
+    const size = useComponentSize(() => props.size)
     const open = ref(false)
     const internalValue = ref<unknown>(props.defaultValue)
     const controlled = computed(() => props.modelValue !== undefined)
@@ -277,24 +285,24 @@ export const IrisSelect = defineComponent({
           paddingInlineStart: 'var(--iris-space-xs, 8px)',
           paddingInlineEnd: '24px',
           fontSize: 'var(--iris-font-size-xs, 12px)',
-          minHeight: '28px',
+          minHeight: 'var(--iris-control-height-sm, 28px)',
         },
         md: {
           paddingBlock: 'var(--iris-space-xs, 8px)',
           paddingInlineStart: 'var(--iris-space-sm, 12px)',
           paddingInlineEnd: 'var(--iris-space-xl, 24px)',
           fontSize: 'var(--iris-font-size-md, 14px)',
-          minHeight: '34px',
+          minHeight: 'var(--iris-control-height-md, 34px)',
         },
         lg: {
           paddingBlock: 'var(--iris-space-xs, 8px)',
           paddingInlineStart: 'var(--iris-space-sm, 12px)',
           paddingInlineEnd: 'var(--iris-space-2xl, 32px)',
           fontSize: 'var(--iris-font-size-lg, 16px)',
-          minHeight: '40px',
+          minHeight: 'var(--iris-control-height-lg, 40px)',
         },
       }
-      return map[props.size]
+      return map[size.value]
     })
 
     const triggerStyle = computed<Record<string, string>>(() => ({
@@ -312,7 +320,12 @@ export const IrisSelect = defineComponent({
       position: 'relative',
       width: 'auto',
       minWidth: '140px',
+      boxSizing: 'border-box',
       ...sizeStyles.value,
+      ...(props.fullWidth ? { width: '100%' } : null),
+      ...(props.width !== undefined
+        ? { width: typeof props.width === 'number' ? `${props.width}px` : props.width }
+        : null),
     }))
 
     const chevron = () =>
@@ -369,7 +382,7 @@ export const IrisSelect = defineComponent({
                       id: props.id,
                       disabled: props.disabled || undefined,
                       'data-iris-select-trigger': '',
-                      'data-iris-select-size': props.size,
+                      'data-iris-select-size': size.value,
                       'data-state': open.value ? 'open' : 'closed',
                       // A select opens a listbox, not a generic dialog — override
                       // the popover trigger's default aria-haspopup="dialog".
@@ -378,11 +391,23 @@ export const IrisSelect = defineComponent({
                       'aria-describedby': props.ariaDescribedby,
                       style: {
                         ...triggerStyle.value,
-                        ...((attrs.style as Record<string, string> | undefined) ?? {}),
+                        ...normalizeHostStyle(attrs.style),
                       },
                     },
                     [
-                      h('span', { style: { flex: '1', minWidth: '0' } }, triggerLabel.value),
+                      h(
+                        'span',
+                        {
+                          style: {
+                            flex: '1',
+                            minWidth: '0',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          },
+                        },
+                        triggerLabel.value,
+                      ),
                       chevron(),
                     ],
                   ),

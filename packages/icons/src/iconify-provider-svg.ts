@@ -5,6 +5,7 @@ import {
   SAFE_ICON_NODE_TAGS,
 } from './icon-nodes'
 import { iconifyFail as fail } from './iconify-provider-errors'
+import { decodeXmlAttribute, validateAttribute } from './iconify-provider-security'
 import {
   DEFINITION_TAGS,
   GRADIENT_TAGS,
@@ -14,11 +15,9 @@ import {
   MAX_BODY_LENGTH,
   MAX_NODE_COUNT,
   MAX_TREE_DEPTH,
-  SHAPE_TAG_SET,
+  SHAPE_TAGS,
   XML_NAME,
-  decodeXmlAttribute,
-  validateAttribute,
-} from './iconify-provider-security'
+} from './svg-safety'
 import type { IrisIconNode } from './types'
 
 function skipWhitespace(value: string, start: number): number {
@@ -189,14 +188,12 @@ function parseNode(
 
 function nodeReferences(node: IrisIconNode): Array<{ id: string; kind: string }> {
   const result: Array<{ id: string; kind: string }> = []
-  for (const attr of ['fill', 'stroke']) {
-    const match = LOCAL_REFERENCE.exec(String(node.attrs[attr] ?? ''))
-    if (match) result.push({ id: match[1]!, kind: 'gradient' })
-  }
   for (const [attr, kind] of [
+    ['fill', 'gradient'],
+    ['stroke', 'gradient'],
     ['clip-path', 'clipPath'],
     ['mask', 'mask'],
-  ]) {
+  ] as const) {
     const match = LOCAL_REFERENCE.exec(String(node.attrs[attr] ?? ''))
     if (match) result.push({ id: match[1]!, kind })
   }
@@ -205,7 +202,13 @@ function nodeReferences(node: IrisIconNode): Array<{ id: string; kind: string }>
 
 function validateReferences(nodes: readonly IrisIconNode[], iconName: string): void {
   const definitions = new Map<string, string>()
-  const visitIds = (node: IrisIconNode): void => {
+  const references = new Map<string, Set<string>>()
+  const allReferences: ReturnType<typeof nodeReferences> = []
+  // Record each reference once, owned by its nearest named definition. A nested
+  // definition is not part of its parent's dependency graph. Defer reference
+  // validation until every id is known: forward references and the existing
+  // id-error-before-reference-error ordering must remain intact.
+  const collect = (node: IrisIconNode, owner?: string): void => {
     const id = node.attrs.id
     if (typeof id === 'string') {
       if (!DEFINITION_TAGS.has(node.tag)) {
@@ -215,46 +218,28 @@ function validateReferences(nodes: readonly IrisIconNode[], iconName: string): v
         fail('unsafe-icon', `duplicate SVG id "${id}" in Iconify icon "${iconName}"`)
       }
       definitions.set(id, node.tag)
+      references.set(id, new Set())
+      owner = id
     }
-    for (const child of node.children ?? []) visitIds(child)
-  }
-  for (const node of nodes) visitIds(node)
-
-  const references = new Map<string, Set<string>>()
-  const collectRefs = (node: IrisIconNode, output: Set<string>, root: boolean): void => {
-    if (!root && typeof node.attrs.id === 'string' && DEFINITION_TAGS.has(node.tag)) return
-    for (const reference of nodeReferences(node)) output.add(reference.id)
-    for (const child of node.children ?? []) collectRefs(child, output, false)
-  }
-
-  for (const node of nodes) {
-    const addDefinition = (current: IrisIconNode): void => {
-      if (typeof current.attrs.id === 'string' && DEFINITION_TAGS.has(current.tag)) {
-        const deps = new Set<string>()
-        collectRefs(current, deps, true)
-        references.set(current.attrs.id, deps)
-      }
-      for (const child of current.children ?? []) addDefinition(child)
-    }
-    addDefinition(node)
-  }
-
-  const validateNodeRefs = (node: IrisIconNode): void => {
     for (const reference of nodeReferences(node)) {
-      const target = definitions.get(reference.id)
-      const validTarget =
-        target !== undefined &&
-        (reference.kind === 'gradient' ? GRADIENT_TAGS.has(target) : target === reference.kind)
-      if (!validTarget) {
-        fail(
-          'unsafe-icon',
-          `unresolved or incompatible SVG reference "${reference.id}" in Iconify icon "${iconName}"`,
-        )
-      }
+      allReferences.push(reference)
+      if (owner !== undefined) references.get(owner)!.add(reference.id)
     }
-    for (const child of node.children ?? []) validateNodeRefs(child)
+    for (const child of node.children ?? []) collect(child, owner)
   }
-  for (const node of nodes) validateNodeRefs(node)
+  for (const node of nodes) collect(node)
+  for (const reference of allReferences) {
+    const target = definitions.get(reference.id)
+    const validTarget =
+      target !== undefined &&
+      (reference.kind === 'gradient' ? GRADIENT_TAGS.has(target) : target === reference.kind)
+    if (!validTarget) {
+      fail(
+        'unsafe-icon',
+        `unresolved or incompatible SVG reference "${reference.id}" in Iconify icon "${iconName}"`,
+      )
+    }
+  }
 
   const visiting = new Set<string>()
   const visited = new Set<string>()
@@ -273,7 +258,7 @@ function validateReferences(nodes: readonly IrisIconNode[], iconName: string): v
 }
 
 function hasRenderableGeometry(node: IrisIconNode): boolean {
-  if (SHAPE_TAG_SET.has(node.tag)) return true
+  if (SHAPE_TAGS.has(node.tag)) return true
   return node.tag === 'g' && (node.children ?? []).some(hasRenderableGeometry)
 }
 

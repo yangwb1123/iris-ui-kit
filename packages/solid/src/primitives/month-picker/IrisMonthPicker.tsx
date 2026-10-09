@@ -9,6 +9,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { useI18n } from '../../i18n'
+import { useComponentSize, type IrisComponentSize } from '../../provider'
 import {
   formatLocalYearMonth,
   isOutOfMonthRange,
@@ -65,6 +66,28 @@ function nextEnabledIndex(
   return current
 }
 
+/** Trigger metrics per size — the same scale the text controls use. */
+const TRIGGER_SIZE: Record<
+  IrisComponentSize,
+  { padding: string; fontSize: string; minHeight: string }
+> = {
+  sm: {
+    padding: 'var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: 'var(--iris-control-height-sm, 28px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 'var(--iris-control-height-md, 34px)',
+  },
+  lg: {
+    padding: 'var(--iris-padding-sm, 8px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: 'var(--iris-control-height-lg, 40px)',
+  },
+}
+
 export interface IrisMonthPickerProps {
   value?: Date | null
   defaultValue?: Date | null
@@ -81,6 +104,15 @@ export interface IrisMonthPickerProps {
   ariaDescribedby?: string
   class?: string
   style?: JSX.CSSProperties
+  /**
+   * Explicit size for the trigger. Omit to inherit the nearest
+   * `<IrisProvider componentSize>` (`md` when there is none).
+   */
+  size?: IrisComponentSize
+  /** Trigger width — any CSS length, or a number of px. */
+  width?: string | number
+  /** Stretch the trigger to its container (`width: 100%`). */
+  fullWidth?: boolean
   onChange?: (date: Date | null) => void
 }
 
@@ -109,9 +141,14 @@ export function IrisMonthPicker(props: IrisMonthPickerProps): JSX.Element {
     'ariaDescribedby',
     'class',
     'style',
+    'size',
+    'width',
+    'fullWidth',
     'onChange',
   ])
   const { t } = useI18n()
+  // Trigger adopts the inherited size; the month panel is unchanged.
+  const size = useComponentSize(() => local.size)
   const [internalValue, setInternalValue] = createSignal<Date | null>(
     isValidDate(local.defaultValue) ? startOfMonth(local.defaultValue) : null,
   )
@@ -237,24 +274,30 @@ export function IrisMonthPicker(props: IrisMonthPickerProps): JSX.Element {
         aria-haspopup="dialog"
         aria-expanded={open()}
         data-iris-month-picker-trigger=""
+        data-iris-month-picker-size={size()}
         data-iris-month-picker-value={selectedValue()}
         data-state={open() ? 'open' : 'closed'}
         onClick={() => !local.disabled && setOpen((value) => !value)}
         style={{
           display: 'inline-flex',
           'align-items': 'center',
-          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+          padding: TRIGGER_SIZE[size()].padding,
           background: 'var(--iris-background)',
           color: selectedValue() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
           border: `1px solid ${local.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
           'border-radius': 'var(--iris-radius-md, 6px)',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           opacity: local.disabled ? '0.6' : '1',
-          'font-size': 'var(--iris-font-size-md, 14px)',
+          'font-size': TRIGGER_SIZE[size()].fontSize,
           'font-family': 'inherit',
-          'min-height': 'var(--iris-control-height-md, 34px)',
+          'min-height': TRIGGER_SIZE[size()].minHeight,
           'min-width': '180px',
+          'box-sizing': 'border-box',
           'text-align': 'start',
+          ...(local.fullWidth ? { width: '100%' } : null),
+          ...(local.width !== undefined
+            ? { width: typeof local.width === 'number' ? `${local.width}px` : local.width }
+            : null),
         }}
       >
         {display() || local.placeholder || t('monthPicker.placeholder')}

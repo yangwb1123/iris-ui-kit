@@ -9,6 +9,7 @@ import {
 } from 'solid-js'
 import { createSelectionModel } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
+import { useComponentSize } from '../../provider'
 import {
   ToggleGroupCtx,
   type IrisToggleGroupType,
@@ -23,6 +24,10 @@ export interface IrisToggleGroupProps {
   value?: string | string[] | null
   defaultValue?: string | string[] | null
   orientation?: IrisToggleGroupOrientation
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: 'sm' | 'md' | 'lg'
   variant?: IrisToggleGroupVariant
   disabled?: boolean
@@ -39,7 +44,6 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): JSX.Element {
     {
       type: 'single' as IrisToggleGroupType,
       orientation: 'horizontal' as IrisToggleGroupOrientation,
-      size: 'md' as 'sm' | 'md' | 'lg',
       variant: 'outline' as IrisToggleGroupVariant,
       disabled: false,
     },
@@ -57,6 +61,9 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): JSX.Element {
     'children',
     'style',
   ])
+
+  // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+  const size = useComponentSize(() => local.size)
 
   // Selection logic (single/multiple toggle, dedup) lives in the core model;
   // this component only maps its value shape (string | string[] | null) to/from
@@ -128,7 +135,7 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): JSX.Element {
           return local.orientation
         },
         get size() {
-          return local.size
+          return size()
         },
         get variant() {
           return local.variant
@@ -151,7 +158,7 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): JSX.Element {
         data-iris-toggle-group=""
         data-iris-toggle-group-type={local.type}
         data-iris-toggle-group-orientation={local.orientation}
-        data-iris-toggle-group-size={local.size}
+        data-iris-toggle-group-size={size()}
         style={{
           display: 'inline-flex',
           'flex-direction': local.orientation === 'horizontal' ? 'row' : 'column',

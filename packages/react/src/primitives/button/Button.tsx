@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import { composeEventHandlers } from '@iris-ui-kit/core'
+import { useComponentSize } from '../../provider'
 import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 import { installButtonStyles } from './styles'
 
@@ -91,6 +92,10 @@ export interface IrisButtonProps extends Omit<
   'type' | 'disabled' | 'onClick' | 'className' | 'style' | 'children'
 > {
   variant?: IrisButtonVariant
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisButtonSize
   disabled?: boolean
   loading?: boolean
@@ -127,7 +132,7 @@ export interface IrisButtonProps extends Omit<
  */
 export function IrisButton({
   variant = 'solid',
-  size = 'md',
+  size: sizeProp,
   disabled = false,
   loading = false,
   type = 'button',
@@ -142,6 +147,10 @@ export function IrisButton({
   useEffect(() => {
     installButtonStyles()
   }, [])
+
+  // No explicit `size` → inherit the nearest <IrisProvider componentSize>,
+  // else `md`. The provider can change at runtime; this re-renders with it.
+  const size = useComponentSize(sizeProp)
 
   const isInteractive = !disabled && !loading
 

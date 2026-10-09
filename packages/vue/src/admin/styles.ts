@@ -1,14 +1,20 @@
+/**
+ * Nav chrome lives in ONE injected stylesheet (the accordion animation, the
+ * flyout panels and the `:hover`/`:active` states cannot be inline), while the
+ * bounded `size` geometry arrives as CSS custom properties from
+ * `adminNavCssVars()` (core) — so `size` never needs a per-tier rule block
+ * here. Every knob keeps its legacy default as the `var()` fallback, which is
+ * what an omitted `size` renders (see `NavMenu.ts`).
+ */
 export const __NAV_MENU_STYLE_ID = 'iris-nav-menu-styles'
 
 const CSS = `
 :where(.iris-nav-menu) {
-  --iris-nav-indent-step: 16px;
   --iris-nav-item-padding-inline: 12px;
   --iris-nav-item-padding-block: 8px;
   --iris-nav-item-border-radius: var(--iris-radius-md, 6px);
   --iris-nav-item-hover: var(--iris-surface-hover, var(--iris-surface));
   --iris-nav-item-active-hover: color-mix(in srgb, var(--iris-primary) 88%, black);
-  --iris-nav-item-height: 34px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -33,7 +39,8 @@ const CSS = `
   flex: 0 1 auto;
   align-items: center;
   width: 100%;
-  min-height: var(--iris-nav-item-height);
+  /* A floor, never a clip: a larger font grows the row instead of truncating it. */
+  min-height: var(--iris-nav-item-height, 34px);
   border: none;
   border-radius: var(--iris-nav-item-border-radius);
   background: transparent;
@@ -46,9 +53,11 @@ const CSS = `
   cursor: pointer;
   opacity: 1;
   margin: 0;
-  gap: var(--iris-space-sm, 12px);
-  padding-block: var(--iris-nav-item-padding-block);
-  padding-inline: var(--iris-nav-item-padding-inline);
+  gap: 12px;
+  /* Logical paddings, so RTL mirrors; the vertical nested indent is an inline
+     core value (any depth) — see NavMenu.ts. */
+  padding-block: var(--iris-nav-item-padding-block, 8px);
+  padding-inline: var(--iris-nav-item-padding-inline, 12px);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -56,50 +65,6 @@ const CSS = `
 :where(.iris-nav-menu--horizontal > .iris-nav-menu-group > .iris-nav-menu-item) {
   width: auto;
   padding-inline-start: var(--iris-nav-item-padding-inline);
-}
-
-:where(.iris-nav-menu-item[data-depth='0']) {
-  --iris-nav-item-padding-inline-start: 12px;
-}
-
-:where(.iris-nav-menu-item[data-depth='1']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step));
-}
-
-:where(.iris-nav-menu-item[data-depth='2']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 2);
-}
-
-:where(.iris-nav-menu-item[data-depth='3']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 3);
-}
-
-:where(.iris-nav-menu-item[data-depth='4']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 4);
-}
-
-:where(.iris-nav-menu-item[data-depth='5']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 5);
-}
-
-:where(.iris-nav-menu-item[data-depth='6']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 6);
-}
-
-:where(.iris-nav-menu-item[data-depth='7']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 7);
-}
-
-:where(.iris-nav-menu-item[data-depth='8']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 8);
-}
-
-:where(.iris-nav-menu-item[data-depth='9']) {
-  --iris-nav-item-padding-inline-start: calc(12px + var(--iris-nav-indent-step) * 9);
-}
-
-:where(.iris-nav-menu--vertical .iris-nav-menu-item[data-depth]) {
-  padding-inline-start: var(--iris-nav-item-padding-inline-start);
 }
 
 :where(.iris-nav-menu-item:hover),
@@ -283,7 +248,7 @@ const CSS = `
 }
 
 /* A9: the collapsed rail stays centered even though rows carry data-depth
-   (the vertical indent rules would otherwise win the specificity tie). */
+   (any leftover indent rule would otherwise win the specificity tie). */
 :where(.iris-nav-menu--collapsed .iris-nav-menu-item[data-depth]) {
   justify-content: center;
   padding-inline: var(--iris-nav-item-padding-inline);

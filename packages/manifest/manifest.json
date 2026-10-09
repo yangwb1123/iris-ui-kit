@@ -2204,6 +2204,17 @@
           "name": "onReorder",
           "type": "(tabs: TabItem[]) => void",
           "optional": true
+        },
+        {
+          "name": "size",
+          "type": "AdminChromeSize",
+          "optional": true,
+          "description": "Bounded bar / chip geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — this component only bridges the numbers into inline styles.",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         }
       ],
       "frameworkContracts": {
@@ -2242,6 +2253,17 @@
               "name": "onReorder",
               "type": "(tabs: TabItem[]) => void",
               "optional": true
+            },
+            {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "description": "Bounded bar / chip geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — this component only bridges the numbers into inline styles.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             }
           ],
           "events": [
@@ -2268,6 +2290,16 @@
               "type": "boolean",
               "optional": true,
               "default": "true"
+            },
+            {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             },
             {
               "name": "shortcuts",
@@ -2318,6 +2350,17 @@
               "name": "onReorder",
               "type": "(tabs: TabItem[]) => void",
               "optional": true
+            },
+            {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "description": "Bounded bar / chip geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — this component only bridges the numbers into inline styles.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             }
           ],
           "events": [
@@ -2366,6 +2409,17 @@
               "name": "onReorder",
               "type": "(tabs: TabItem[]) => void",
               "optional": true
+            },
+            {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "description": "Bounded bar / chip geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — the component only bridges the numbers into inline styles.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             }
           ],
           "events": [
@@ -2387,14 +2441,15 @@
         "onReorder"
       ],
       "quality": {
-        "propCount": 6,
+        "propCount": 7,
         "eventCount": 4
       },
       "parity": {
         "name": "IrisAdminTabs",
         "common": [
           "nav",
-          "reorderable"
+          "reorderable",
+          "size"
         ],
         "union": [
           "nav",
@@ -2403,14 +2458,15 @@
           "onRefresh",
           "onReorder",
           "reorderable",
-          "shortcuts"
+          "shortcuts",
+          "size"
         ],
-        "ratio": 0.29,
+        "ratio": 0.38,
         "byFramework": {
-          "react": 6,
-          "vue": 3,
-          "solid": 6,
-          "svelte": 6
+          "react": 7,
+          "vue": 4,
+          "solid": 7,
+          "svelte": 7
         },
         "uniqueTo": {
           "react": [],
@@ -2427,7 +2483,7 @@
           "onReorder"
         ],
         "intrinsic": [],
-        "asymmetry": 2
+        "asymmetry": 1.75
       }
     },
     {
@@ -5638,12 +5694,12 @@
           "name": "size",
           "type": "IrisButtonSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "disabled",
@@ -5721,12 +5777,12 @@
               "name": "size",
               "type": "IrisButtonSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "disabled",
@@ -5817,7 +5873,6 @@
               "name": "size",
               "type": "IrisButtonSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -5887,6 +5942,7 @@
               "name": "size",
               "type": "IrisButtonSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -5979,12 +6035,12 @@
               "name": "size",
               "type": "IrisButtonSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "disabled",
@@ -7841,12 +7897,12 @@
           "name": "size",
           "type": "IrisCheckboxSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "invalid",
@@ -7891,12 +7947,12 @@
               "name": "size",
               "type": "IrisCheckboxSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "invalid",
@@ -7941,7 +7997,6 @@
               "name": "size",
               "type": "IrisCheckboxSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -8020,6 +8075,7 @@
               "name": "size",
               "type": "IrisCheckboxSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -8102,12 +8158,12 @@
               "name": "size",
               "type": "CheckboxSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "disabled",
@@ -9629,12 +9685,12 @@
           "name": "size",
           "type": "IrisComboboxSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "emptyText",
@@ -9719,12 +9775,12 @@
               "name": "size",
               "type": "IrisComboboxSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "emptyText",
@@ -9807,7 +9863,6 @@
               "name": "size",
               "type": "IrisComboboxSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -9885,6 +9940,7 @@
               "name": "size",
               "type": "IrisComboboxSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -9963,12 +10019,12 @@
               "name": "size",
               "type": "IrisComboboxSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "emptyText",
@@ -12834,6 +12890,17 @@
           "default": "bottom-start"
         },
         {
+          "name": "size",
+          "type": "IrisComponentSize",
+          "optional": true,
+          "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        {
           "name": "id",
           "type": "string",
           "optional": true,
@@ -12854,6 +12921,19 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "width",
+          "type": "string | number",
+          "optional": true,
+          "description": "Trigger width — any CSS length, or a number of px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the trigger to its container (`width: 100%`).",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -12920,6 +13000,17 @@
               "default": "bottom-start"
             },
             {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true,
@@ -12940,6 +13031,19 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`).",
+              "default": "false"
             }
           ],
           "events": [
@@ -13001,6 +13105,27 @@
               "type": "Placement",
               "optional": true,
               "default": "bottom-start"
+            },
+            {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "id",
@@ -13076,6 +13201,39 @@
               "name": "id",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`)."
+            },
+            {
+              "name": "class",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "style",
+              "type": "JSX.CSSProperties | string",
+              "optional": true
             }
           ],
           "events": [
@@ -13138,6 +13296,30 @@
               "optional": true
             },
             {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`).",
+              "default": "false"
+            },
+            {
               "name": "onValueChange",
               "type": "(date: Date | null) => void",
               "optional": true
@@ -13164,20 +13346,23 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 15,
+        "propCount": 18,
         "eventCount": 1
       },
       "parity": {
         "name": "IrisDatePicker",
         "common": [
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "locale",
           "max",
           "min",
           "placeholder",
-          "weekStartsOn"
+          "size",
+          "weekStartsOn",
+          "width"
         ],
         "union": [
           "ariaDescribedby",
@@ -13185,6 +13370,7 @@
           "className",
           "defaultValue",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "locale",
@@ -13195,16 +13381,18 @@
           "onValueChange",
           "placeholder",
           "placement",
+          "size",
           "style",
           "value",
-          "weekStartsOn"
+          "weekStartsOn",
+          "width"
         ],
-        "ratio": 0.44,
+        "ratio": 0.52,
         "byFramework": {
-          "react": 15,
-          "vue": 11,
-          "solid": 11,
-          "svelte": 12
+          "react": 18,
+          "vue": 14,
+          "solid": 16,
+          "svelte": 15
         },
         "uniqueTo": {
           "react": [
@@ -13216,12 +13404,11 @@
           "solid": [
             "onChange"
           ],
-          "svelte": [
-            "class"
-          ]
+          "svelte": []
         },
         "shared": [
           "ariaDescribedby",
+          "class",
           "defaultValue",
           "onValueChange",
           "placement",
@@ -13229,7 +13416,7 @@
           "value"
         ],
         "intrinsic": [],
-        "asymmetry": 1.36
+        "asymmetry": 1.29
       }
     },
     {
@@ -14467,6 +14654,30 @@
           "description": "Portal target. `false` renders in place; default = `document.body`."
         },
         {
+          "name": "size",
+          "type": "DialogSize",
+          "optional": true,
+          "description": "Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem. Always clamped to the viewport minus the backdrop gutter; override with `width`. Omit for the content-sized dialog (unchanged default).",
+          "enum": [
+            "sm",
+            "md",
+            "lg",
+            "xl"
+          ]
+        },
+        {
+          "name": "width",
+          "type": "LayoutLength",
+          "optional": true,
+          "description": "Explicit surface width (a number is read as px); wins over `size`."
+        },
+        {
+          "name": "maxHeight",
+          "type": "LayoutLength",
+          "optional": true,
+          "description": "Surface height cap; defaults to `85vh`."
+        },
+        {
           "name": "children",
           "type": "React.ReactNode",
           "optional": true
@@ -14481,6 +14692,30 @@
               "type": "HTMLElement | false",
               "optional": true,
               "description": "Portal target. `false` renders in place; default = `document.body`."
+            },
+            {
+              "name": "size",
+              "type": "DialogSize",
+              "optional": true,
+              "description": "Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem. Always clamped to the viewport minus the backdrop gutter; override with `width`. Omit for the content-sized dialog (unchanged default).",
+              "enum": [
+                "sm",
+                "md",
+                "lg",
+                "xl"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Explicit surface width (a number is read as px); wins over `size`."
+            },
+            {
+              "name": "maxHeight",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Surface height cap; defaults to `85vh`."
             },
             {
               "name": "children",
@@ -14504,6 +14739,21 @@
               "type": "string | HTMLElement | false",
               "optional": true,
               "default": "body"
+            },
+            {
+              "name": "size",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "maxHeight",
+              "type": "string | number",
+              "optional": true
             }
           ],
           "events": [],
@@ -14520,6 +14770,30 @@
               "type": "HTMLElement | false",
               "optional": true,
               "description": "Portal target; `false` renders in place. Default renders to body."
+            },
+            {
+              "name": "size",
+              "type": "DialogSize",
+              "optional": true,
+              "description": "Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem.",
+              "enum": [
+                "sm",
+                "md",
+                "lg",
+                "xl"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Explicit surface width (a number is read as px); wins over `size`."
+            },
+            {
+              "name": "maxHeight",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Surface height cap; defaults to `85vh`."
             },
             {
               "name": "children",
@@ -14550,6 +14824,30 @@
               "description": "Portal target — pass `false` to render in place."
             },
             {
+              "name": "size",
+              "type": "DialogSize",
+              "optional": true,
+              "description": "Surface preset — `sm` 32rem · `md` 40rem · `lg` 50rem · `xl` 60rem.",
+              "enum": [
+                "sm",
+                "md",
+                "lg",
+                "xl"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Explicit surface width (a number is read as px); wins over `size`."
+            },
+            {
+              "name": "maxHeight",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Surface height cap; defaults to `85vh`."
+            },
+            {
               "name": "children",
               "type": "import('svelte').Snippet",
               "optional": true
@@ -14566,24 +14864,31 @@
         "default"
       ],
       "quality": {
-        "propCount": 2,
+        "propCount": 5,
         "eventCount": 0
       },
       "parity": {
         "name": "IrisDialogContent",
-        "common": [],
+        "common": [
+          "maxHeight",
+          "size",
+          "width"
+        ],
         "union": [
           "children",
+          "maxHeight",
           "portalTarget",
+          "size",
           "style",
-          "teleport"
+          "teleport",
+          "width"
         ],
-        "ratio": 0,
+        "ratio": 0.43,
         "byFramework": {
-          "react": 2,
-          "vue": 1,
-          "solid": 2,
-          "svelte": 3
+          "react": 5,
+          "vue": 4,
+          "solid": 5,
+          "svelte": 6
         },
         "uniqueTo": {
           "react": [],
@@ -14600,7 +14905,7 @@
           "portalTarget"
         ],
         "intrinsic": [],
-        "asymmetry": 3
+        "asymmetry": 1.5
       }
     },
     {
@@ -20055,6 +20360,34 @@
           "default": "md"
         },
         {
+          "name": "labelPlacement",
+          "type": "FormFieldLabelPlacement",
+          "optional": true,
+          "description": "Label above the control (default) or beside it.",
+          "enum": [
+            "top",
+            "start"
+          ]
+        },
+        {
+          "name": "labelWidth",
+          "type": "LayoutLength",
+          "optional": true,
+          "description": "Width of the label column — a number is read as px. Labels wrap inside it."
+        },
+        {
+          "name": "controlWidth",
+          "type": "LayoutLength",
+          "optional": true,
+          "description": "Width of the control area (control + hint/error); a number is read as px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the field (and its control area) to the container width."
+        },
+        {
           "name": "children",
           "type": "React.ReactNode",
           "optional": true
@@ -20101,6 +20434,34 @@
                 "md"
               ],
               "default": "md"
+            },
+            {
+              "name": "labelPlacement",
+              "type": "FormFieldLabelPlacement",
+              "optional": true,
+              "description": "Label above the control (default) or beside it.",
+              "enum": [
+                "top",
+                "start"
+              ]
+            },
+            {
+              "name": "labelWidth",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Width of the label column — a number is read as px. Labels wrap inside it."
+            },
+            {
+              "name": "controlWidth",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Width of the control area (control + hint/error); a number is read as px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the field (and its control area) to the container width."
             },
             {
               "name": "children",
@@ -20154,6 +20515,28 @@
               "type": "string",
               "optional": true,
               "default": "md"
+            },
+            {
+              "name": "labelPlacement",
+              "type": "string",
+              "optional": true,
+              "default": "top"
+            },
+            {
+              "name": "labelWidth",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "controlWidth",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [],
@@ -20199,6 +20582,34 @@
                 "sm",
                 "md"
               ]
+            },
+            {
+              "name": "labelPlacement",
+              "type": "FormFieldLabelPlacement",
+              "optional": true,
+              "description": "Label above the control (default) or beside it.",
+              "enum": [
+                "top",
+                "start"
+              ]
+            },
+            {
+              "name": "labelWidth",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Width of the label column — a number is read as px. Labels wrap inside it."
+            },
+            {
+              "name": "controlWidth",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Width of the control area (control + hint/error); a number is read as px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the field (and its control area) to the container width."
             },
             {
               "name": "children",
@@ -20255,6 +20666,34 @@
               "default": "md"
             },
             {
+              "name": "labelPlacement",
+              "type": "FormFieldLabelPlacement",
+              "optional": true,
+              "description": "Label above the control (default) or beside it.",
+              "enum": [
+                "top",
+                "start"
+              ]
+            },
+            {
+              "name": "labelWidth",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Width of the label column — a number is read as px. Labels wrap inside it."
+            },
+            {
+              "name": "controlWidth",
+              "type": "LayoutLength",
+              "optional": true,
+              "description": "Width of the control area (control + hint/error); a number is read as px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the field (and its control area) to the container width."
+            },
+            {
               "name": "children",
               "type": "Snippet",
               "optional": true
@@ -20273,34 +20712,42 @@
         "default"
       ],
       "quality": {
-        "propCount": 7,
+        "propCount": 11,
         "eventCount": 0
       },
       "parity": {
         "name": "IrisFormField",
         "common": [
+          "controlWidth",
           "error",
+          "fullWidth",
           "hint",
           "label",
           "labelFor",
+          "labelPlacement",
+          "labelWidth",
           "required",
           "size"
         ],
         "union": [
           "children",
+          "controlWidth",
           "error",
+          "fullWidth",
           "hint",
           "label",
           "labelFor",
+          "labelPlacement",
+          "labelWidth",
           "required",
           "size"
         ],
-        "ratio": 0.86,
+        "ratio": 0.91,
         "byFramework": {
-          "react": 7,
-          "vue": 6,
-          "solid": 7,
-          "svelte": 7
+          "react": 11,
+          "vue": 10,
+          "solid": 11,
+          "svelte": 11
         },
         "uniqueTo": {
           "react": [],
@@ -20312,7 +20759,7 @@
           "children"
         ],
         "intrinsic": [],
-        "asymmetry": 1.17
+        "asymmetry": 1.1
       }
     },
     {
@@ -23063,12 +23510,12 @@
           "name": "size",
           "type": "IrisInputSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "type",
@@ -23106,6 +23553,19 @@
           "name": "suffix",
           "type": "React.ReactNode",
           "optional": true
+        },
+        {
+          "name": "width",
+          "type": "string | number",
+          "optional": true,
+          "description": "Host box width — any CSS length, or a number of px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the host box to its container (`width: 100%`).",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -23116,12 +23576,12 @@
               "name": "size",
               "type": "IrisInputSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "type",
@@ -23159,6 +23619,19 @@
               "name": "suffix",
               "type": "React.ReactNode",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`).",
+              "default": "false"
             }
           ],
           "events": [],
@@ -23200,7 +23673,6 @@
               "name": "size",
               "type": "IrisInputSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -23240,6 +23712,17 @@
               "name": "ariaDescribedby",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
@@ -23263,6 +23746,7 @@
               "name": "size",
               "type": "IrisInputSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -23302,6 +23786,18 @@
               "name": "suffix",
               "type": "JSX.Element",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`)."
             }
           ],
           "events": [],
@@ -23322,12 +23818,12 @@
               "name": "size",
               "type": "IrisInputSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "type",
@@ -23364,6 +23860,19 @@
               "name": "suffix",
               "type": "Snippet",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`).",
+              "default": "false"
             }
           ],
           "events": [],
@@ -23383,20 +23892,23 @@
         "suffix"
       ],
       "quality": {
-        "propCount": 6,
+        "propCount": 8,
         "eventCount": 0
       },
       "parity": {
         "name": "IrisInput",
         "common": [
           "ariaDescribedby",
+          "fullWidth",
           "invalid",
           "size",
-          "type"
+          "type",
+          "width"
         ],
         "union": [
           "ariaDescribedby",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "modelValue",
@@ -23405,14 +23917,15 @@
           "readonly",
           "size",
           "suffix",
-          "type"
+          "type",
+          "width"
         ],
-        "ratio": 0.36,
+        "ratio": 0.46,
         "byFramework": {
-          "react": 6,
-          "vue": 9,
-          "solid": 6,
-          "svelte": 6
+          "react": 8,
+          "vue": 11,
+          "solid": 8,
+          "svelte": 8
         },
         "uniqueTo": {
           "react": [],
@@ -23431,7 +23944,7 @@
           "suffix"
         ],
         "intrinsic": [],
-        "asymmetry": 1.5
+        "asymmetry": 1.38
       }
     },
     {
@@ -27738,6 +28251,30 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "size",
+          "type": "IrisComponentSize",
+          "optional": true,
+          "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        {
+          "name": "width",
+          "type": "string | number",
+          "optional": true,
+          "description": "Trigger width — any CSS length, or a number of px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the trigger to its container (`width: 100%`).",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -27825,6 +28362,30 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`).",
+              "default": "false"
             }
           ],
           "events": [
@@ -27885,6 +28446,27 @@
               "type": "Placement",
               "optional": true,
               "default": "bottom-start"
+            },
+            {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "id",
@@ -27976,6 +28558,29 @@
               "optional": true
             },
             {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`)."
+            },
+            {
               "name": "onChange",
               "type": "(date: Date | null) => void",
               "optional": true
@@ -28047,6 +28652,30 @@
               "optional": true
             },
             {
+              "name": "size",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Explicit size for the trigger. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`).",
+              "default": "false"
+            },
+            {
               "name": "onValueChange",
               "type": "(date: Date | null) => void",
               "optional": true
@@ -28075,7 +28704,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 15,
+        "propCount": 18,
         "eventCount": 1
       },
       "parity": {
@@ -28084,12 +28713,15 @@
           "ariaDescribedby",
           "defaultMonth",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "locale",
           "max",
           "min",
-          "placeholder"
+          "placeholder",
+          "size",
+          "width"
         ],
         "union": [
           "ariaDescribedby",
@@ -28098,6 +28730,7 @@
           "defaultMonth",
           "defaultValue",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "locale",
@@ -28108,15 +28741,17 @@
           "onValueChange",
           "placeholder",
           "placement",
+          "size",
           "style",
-          "value"
+          "value",
+          "width"
         ],
-        "ratio": 0.5,
+        "ratio": 0.57,
         "byFramework": {
-          "react": 15,
-          "vue": 11,
-          "solid": 14,
-          "svelte": 13
+          "react": 18,
+          "vue": 14,
+          "solid": 17,
+          "svelte": 16
         },
         "uniqueTo": {
           "react": [
@@ -28139,7 +28774,7 @@
           "value"
         ],
         "intrinsic": [],
-        "asymmetry": 1.36
+        "asymmetry": 1.29
       }
     },
     {
@@ -28885,6 +29520,17 @@
           "default": "vertical"
         },
         {
+          "name": "size",
+          "type": "AdminChromeSize",
+          "optional": true,
+          "description": "Bounded row geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — this component only bridges the numbers into inline styles.",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        {
           "name": "ariaLabel",
           "type": "string",
           "optional": true
@@ -28945,6 +29591,17 @@
                 "horizontal"
               ],
               "default": "vertical"
+            },
+            {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "description": "Bounded row geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — this component only bridges the numbers into inline styles.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             },
             {
               "name": "ariaLabel",
@@ -29011,6 +29668,16 @@
               ]
             },
             {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
               "name": "ariaLabel",
               "type": "string",
               "optional": true
@@ -29058,6 +29725,17 @@
               "enum": [
                 "vertical",
                 "horizontal"
+              ]
+            },
+            {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "description": "Bounded row geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — this component only bridges the numbers into inline styles.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
               ]
             },
             {
@@ -29125,6 +29803,17 @@
               "default": "vertical"
             },
             {
+              "name": "size",
+              "type": "AdminChromeSize",
+              "optional": true,
+              "description": "Bounded row geometry (`md` = the default, so omitting it keeps the pre-`size` look). Resolved in core — the component only bridges the numbers into inline styles.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
               "name": "ariaLabel",
               "type": "string",
               "optional": true
@@ -29155,7 +29844,7 @@
         "onExpandedKeysChange"
       ],
       "quality": {
-        "propCount": 9,
+        "propCount": 10,
         "eventCount": 2
       },
       "parity": {
@@ -29167,7 +29856,8 @@
           "defaultExpandedKeys",
           "expandedKeys",
           "items",
-          "orientation"
+          "orientation",
+          "size"
         ],
         "union": [
           "activeKey",
@@ -29178,14 +29868,15 @@
           "items",
           "onExpandedKeysChange",
           "onSelect",
-          "orientation"
+          "orientation",
+          "size"
         ],
-        "ratio": 0.78,
+        "ratio": 0.8,
         "byFramework": {
-          "react": 9,
-          "vue": 7,
-          "solid": 9,
-          "svelte": 9
+          "react": 10,
+          "vue": 8,
+          "solid": 10,
+          "svelte": 10
         },
         "uniqueTo": {
           "react": [],
@@ -29198,7 +29889,7 @@
           "onSelect"
         ],
         "intrinsic": [],
-        "asymmetry": 1.29
+        "asymmetry": 1.25
       }
     },
     {
@@ -29581,12 +30272,12 @@
           "name": "size",
           "type": "IrisNumberInputSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "min",
@@ -29620,6 +30311,19 @@
           "name": "ariaDescribedby",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "width",
+          "type": "string | number",
+          "optional": true,
+          "description": "Host box width — any CSS length, or a number of px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the host box to its container (`width: 100%`).",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -29645,12 +30349,12 @@
               "name": "size",
               "type": "IrisNumberInputSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "min",
@@ -29684,6 +30388,19 @@
               "name": "ariaDescribedby",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`).",
+              "default": "false"
             }
           ],
           "events": [
@@ -29707,7 +30424,6 @@
               "name": "size",
               "type": "IrisNumberInputSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -29769,6 +30485,17 @@
               "name": "ariaDescribedby",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
@@ -29798,6 +30525,7 @@
               "name": "size",
               "type": "IrisNumberInputSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -29855,6 +30583,18 @@
               "optional": true
             },
             {
+              "name": "ariaLabel",
+              "type": "string",
+              "optional": true,
+              "description": "Accessible name for the native spinbutton input (no visible label)."
+            },
+            {
+              "name": "ariaLabelledby",
+              "type": "string",
+              "optional": true,
+              "description": "id of the element labelling the native spinbutton input."
+            },
+            {
               "name": "onChange",
               "type": "(value: number | null) => void",
               "optional": true
@@ -29878,6 +30618,18 @@
               "name": "class",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`)."
             }
           ],
           "events": [
@@ -29903,12 +30655,12 @@
               "name": "size",
               "type": "Size",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "min",
@@ -29967,9 +30719,34 @@
               "optional": true
             },
             {
+              "name": "ariaLabel",
+              "type": "string",
+              "optional": true,
+              "description": "Accessible name for the native spinbutton input."
+            },
+            {
+              "name": "ariaLabelledby",
+              "type": "string",
+              "optional": true,
+              "description": "id of the element labelling the native spinbutton input."
+            },
+            {
               "name": "style",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`).",
+              "default": "false"
             },
             {
               "name": "onchange",
@@ -30006,25 +30783,30 @@
         "onChange"
       ],
       "quality": {
-        "propCount": 10,
+        "propCount": 12,
         "eventCount": 1
       },
       "parity": {
         "name": "IrisNumberInput",
         "common": [
           "ariaDescribedby",
+          "fullWidth",
           "invalid",
           "max",
           "min",
           "showControls",
           "size",
-          "step"
+          "step",
+          "width"
         ],
         "union": [
           "ariaDescribedby",
+          "ariaLabel",
+          "ariaLabelledby",
           "class",
           "defaultValue",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "max",
@@ -30043,14 +30825,15 @@
           "size",
           "step",
           "style",
-          "value"
+          "value",
+          "width"
         ],
-        "ratio": 0.3,
+        "ratio": 0.33,
         "byFramework": {
-          "react": 10,
-          "vue": 12,
-          "solid": 18,
-          "svelte": 17
+          "react": 12,
+          "vue": 14,
+          "solid": 22,
+          "svelte": 21
         },
         "uniqueTo": {
           "react": [],
@@ -30070,6 +30853,8 @@
           ]
         },
         "shared": [
+          "ariaLabel",
+          "ariaLabelledby",
           "defaultValue",
           "disabled",
           "id",
@@ -30080,7 +30865,7 @@
           "value"
         ],
         "intrinsic": [],
-        "asymmetry": 1.8
+        "asymmetry": 1.83
       }
     },
     {
@@ -31161,6 +31946,7 @@
           "name": "size",
           "type": "IrisInputSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
@@ -31191,6 +31977,18 @@
           "type": "string",
           "optional": true,
           "description": "Forwarded as aria-describedby."
+        },
+        {
+          "name": "width",
+          "type": "string | number",
+          "optional": true,
+          "description": "Host box width — any CSS length, or a number of px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the host box to its container (`width: 100%`)."
         }
       ],
       "frameworkContracts": {
@@ -31220,6 +32018,7 @@
               "name": "size",
               "type": "IrisInputSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -31250,6 +32049,18 @@
               "type": "string",
               "optional": true,
               "description": "Forwarded as aria-describedby."
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Host box width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the host box to its container (`width: 100%`)."
             }
           ],
           "events": [],
@@ -31526,7 +32337,7 @@
         "prefix"
       ],
       "quality": {
-        "propCount": 7,
+        "propCount": 9,
         "eventCount": 0
       },
       "parity": {
@@ -31541,6 +32352,7 @@
           "class",
           "defaultValue",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "modelValue",
@@ -31559,20 +32371,23 @@
           "style",
           "suffix",
           "type",
-          "value"
+          "value",
+          "width"
         ],
-        "ratio": 0.13,
+        "ratio": 0.12,
         "byFramework": {
-          "react": 7,
+          "react": 9,
           "vue": 8,
           "solid": 15,
           "svelte": 14
         },
         "uniqueTo": {
           "react": [
+            "fullWidth",
             "prefix",
             "suffix",
-            "type"
+            "type",
+            "width"
           ],
           "vue": [
             "modelValue"
@@ -31601,7 +32416,7 @@
           "value"
         ],
         "intrinsic": [],
-        "asymmetry": 2.14
+        "asymmetry": 1.88
       }
     },
     {
@@ -33279,6 +34094,17 @@
           "description": "Element to receive plugin tokens. Defaults to `document.documentElement`."
         },
         {
+          "name": "componentSize",
+          "type": "IrisComponentSize",
+          "optional": true,
+          "description": "Default size for every size-bearing control below this provider. Controls with an explicit `size` prop always win; a nested provider without `componentSize` inherits this one; with no provider at all controls are `md`.",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        {
           "name": "children",
           "type": "ReactNode",
           "optional": true
@@ -33330,6 +34156,17 @@
               "type": "HTMLElement | null",
               "optional": true,
               "description": "Element to receive plugin tokens. Defaults to `document.documentElement`."
+            },
+            {
+              "name": "componentSize",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Default size for every size-bearing control below this provider. Controls with an explicit `size` prop always win; a nested provider without `componentSize` inherits this one; with no provider at all controls are `md`.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             },
             {
               "name": "children",
@@ -33386,6 +34223,16 @@
               "name": "target",
               "type": "HTMLElement | null",
               "optional": true
+            },
+            {
+              "name": "componentSize",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             }
           ],
           "events": [],
@@ -33440,6 +34287,17 @@
               "type": "HTMLElement | null",
               "optional": true,
               "description": "Element to receive plugin tokens; default `document.documentElement`."
+            },
+            {
+              "name": "componentSize",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Default size for every size-bearing control below this provider. Controls with an explicit `size` prop always win; a nested provider without `componentSize` inherits this one; with no provider at all controls are `md`.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
             },
             {
               "name": "children",
@@ -33501,6 +34359,17 @@
               "description": "Token apply target; defaults to `document.documentElement`."
             },
             {
+              "name": "componentSize",
+              "type": "IrisComponentSize",
+              "optional": true,
+              "description": "Default size for every size-bearing control below this provider. Controls with an explicit `size` prop always win; a nested provider without `componentSize` inherits this one; with no provider at all controls are `md`.",
+              "enum": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            {
               "name": "children",
               "type": "Snippet",
               "optional": true
@@ -33519,12 +34388,13 @@
         "default"
       ],
       "quality": {
-        "propCount": 8,
+        "propCount": 9,
         "eventCount": 0
       },
       "parity": {
         "name": "IrisProvider",
         "common": [
+          "componentSize",
           "dir",
           "locale",
           "messages",
@@ -33535,6 +34405,7 @@
         ],
         "union": [
           "children",
+          "componentSize",
           "dir",
           "locale",
           "messages",
@@ -33543,12 +34414,12 @@
           "target",
           "theme"
         ],
-        "ratio": 0.88,
+        "ratio": 0.89,
         "byFramework": {
-          "react": 8,
-          "vue": 7,
-          "solid": 8,
-          "svelte": 8
+          "react": 9,
+          "vue": 8,
+          "solid": 9,
+          "svelte": 9
         },
         "uniqueTo": {
           "react": [],
@@ -33560,7 +34431,7 @@
           "children"
         ],
         "intrinsic": [],
-        "asymmetry": 1.14
+        "asymmetry": 1.13
       }
     },
     {
@@ -33879,12 +34750,12 @@
           "name": "size",
           "type": "IrisRadioSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "children",
@@ -33921,12 +34792,12 @@
               "name": "size",
               "type": "IrisRadioSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "children",
@@ -33979,6 +34850,11 @@
               "name": "id",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "ariaLabel",
+              "type": "string",
+              "optional": true
             }
           ],
           "events": [
@@ -34014,6 +34890,7 @@
               "name": "size",
               "type": "IrisRadioSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the group, then the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -34079,8 +34956,7 @@
             {
               "name": "defaultChecked",
               "type": "boolean",
-              "optional": true,
-              "default": "false"
+              "optional": true
             },
             {
               "name": "onChange",
@@ -34091,6 +34967,7 @@
               "name": "size",
               "type": "RadioSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the group, then the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -34100,8 +34977,7 @@
             {
               "name": "disabled",
               "type": "boolean",
-              "optional": true,
-              "default": "false"
+              "optional": true
             },
             {
               "name": "id",
@@ -34146,6 +35022,7 @@
           "value"
         ],
         "union": [
+          "ariaLabel",
           "checked",
           "children",
           "class",
@@ -34159,16 +35036,18 @@
           "style",
           "value"
         ],
-        "ratio": 0.17,
+        "ratio": 0.15,
         "byFramework": {
           "react": 6,
-          "vue": 5,
+          "vue": 6,
           "solid": 10,
           "svelte": 9
         },
         "uniqueTo": {
           "react": [],
-          "vue": [],
+          "vue": [
+            "ariaLabel"
+          ],
           "solid": [
             "class",
             "style"
@@ -34187,7 +35066,7 @@
           "onChange"
         ],
         "intrinsic": [],
-        "asymmetry": 2
+        "asymmetry": 1.67
       }
     },
     {
@@ -34332,7 +35211,6 @@
               "name": "size",
               "type": "IrisRadioSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -34376,6 +35254,7 @@
               "name": "size",
               "type": "IrisRadioSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -34440,12 +35319,12 @@
               "name": "size",
               "type": "RadioSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "disabled",
@@ -37705,12 +38584,12 @@
           "name": "size",
           "type": "IrisSelectSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "disabled",
@@ -37756,6 +38635,19 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "width",
+          "type": "string | number",
+          "optional": true,
+          "description": "Trigger width — any CSS length, or a number of px."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "optional": true,
+          "description": "Stretch the trigger to its container (`width: 100%`).",
+          "default": "false"
         },
         {
           "name": "virtual",
@@ -37806,12 +38698,12 @@
               "name": "size",
               "type": "IrisSelectSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "disabled",
@@ -37857,6 +38749,19 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`).",
+              "default": "false"
             },
             {
               "name": "virtual",
@@ -37912,12 +38817,22 @@
               "name": "size",
               "type": "IrisSelectSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
                 "lg"
               ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "disabled",
@@ -38017,11 +38932,24 @@
               "name": "size",
               "type": "IrisSelectSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
               ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`)."
             },
             {
               "name": "disabled",
@@ -38114,12 +39042,25 @@
               "name": "size",
               "type": "IrisSelectSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
+            },
+            {
+              "name": "width",
+              "type": "string | number",
+              "optional": true,
+              "description": "Trigger width — any CSS length, or a number of px."
+            },
+            {
+              "name": "fullWidth",
+              "type": "boolean",
+              "optional": true,
+              "description": "Stretch the trigger to its container (`width: 100%`).",
+              "default": "false"
             },
             {
               "name": "disabled",
@@ -38191,7 +39132,7 @@
         "renderTrigger"
       ],
       "quality": {
-        "propCount": 16,
+        "propCount": 18,
         "eventCount": 1
       },
       "parity": {
@@ -38200,6 +39141,7 @@
           "ariaDescribedby",
           "defaultValue",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "items",
@@ -38207,7 +39149,8 @@
           "placeholder",
           "placement",
           "size",
-          "virtual"
+          "virtual",
+          "width"
         ],
         "union": [
           "ariaDescribedby",
@@ -38215,6 +39158,7 @@
           "className",
           "defaultValue",
           "disabled",
+          "fullWidth",
           "id",
           "invalid",
           "items",
@@ -38230,14 +39174,15 @@
           "style",
           "teleport",
           "value",
-          "virtual"
+          "virtual",
+          "width"
         ],
-        "ratio": 0.52,
+        "ratio": 0.57,
         "byFramework": {
-          "react": 16,
-          "vue": 13,
-          "solid": 17,
-          "svelte": 15
+          "react": 18,
+          "vue": 15,
+          "solid": 19,
+          "svelte": 17
         },
         "uniqueTo": {
           "react": [
@@ -38261,7 +39206,7 @@
           "value"
         ],
         "intrinsic": [],
-        "asymmetry": 1.31
+        "asymmetry": 1.27
       }
     },
     {
@@ -42936,12 +43881,12 @@
           "name": "size",
           "type": "IrisSwitchSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "invalid",
@@ -42978,12 +43923,12 @@
               "name": "size",
               "type": "IrisSwitchSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "invalid",
@@ -43019,7 +43964,6 @@
               "name": "size",
               "type": "IrisSwitchSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -43085,6 +44029,7 @@
               "name": "size",
               "type": "IrisSwitchSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -43133,12 +44078,12 @@
               "name": "size",
               "type": "IrisSwitchSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "invalid",
@@ -49260,12 +50205,12 @@
           "name": "size",
           "type": "IrisTextareaSize",
           "optional": true,
+          "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
           "enum": [
             "sm",
             "md",
             "lg"
-          ],
-          "default": "md"
+          ]
         },
         {
           "name": "invalid",
@@ -49299,12 +50244,12 @@
               "name": "size",
               "type": "IrisTextareaSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "invalid",
@@ -49350,7 +50295,6 @@
               "name": "size",
               "type": "IrisTextareaSize",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -49442,6 +50386,7 @@
               "name": "size",
               "type": "IrisTextareaSize",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -49555,12 +50500,12 @@
               "name": "size",
               "type": "Size",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "placeholder",
@@ -50785,7 +51730,6 @@
               "name": "size",
               "type": "'sm' | 'md' | 'lg'",
               "optional": true,
-              "default": "md",
               "enum": [
                 "sm",
                 "md",
@@ -50856,6 +51800,7 @@
               "name": "size",
               "type": "'sm' | 'md' | 'lg'",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
@@ -50943,12 +51888,12 @@
               "name": "size",
               "type": "'sm' | 'md' | 'lg'",
               "optional": true,
+              "description": "Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>` (`md` when there is none).",
               "enum": [
                 "sm",
                 "md",
                 "lg"
-              ],
-              "default": "md"
+              ]
             },
             {
               "name": "variant",
@@ -54856,21 +55801,21 @@
       "caveat": "Visibility metric, NOT a parity guarantee. Per-framework contracts are intentionally idiomatic (Vue modelValue/update:modelValue, Solid onChange, Svelte callback props), so a low nameIntersection can mean \"named differently\" rather than \"missing\". A high surfaceAsymmetry is the stronger signal: naming idiom cannot explain a wide prop-count gap. Always read the target framework's own contract before generating code.",
       "threshold": 0.8,
       "identical": 5,
-      "nearIdentical": 8,
-      "divergent": 139,
+      "nearIdentical": 9,
+      "divergent": 138,
       "incomparable": 0,
       "intrinsicSpread": 5,
       "propTotals": {
-        "react": 1269,
-        "vue": 853,
-        "solid": 1181,
-        "svelte": 1212
+        "react": 1293,
+        "vue": 876,
+        "solid": 1207,
+        "svelte": 1236
       },
       "exclusivePropNames": {
-        "react": 216,
-        "vue": 69,
+        "react": 218,
+        "vue": 70,
         "solid": 112,
-        "svelte": 124
+        "svelte": 123
       },
       "meanRatio": 0.45,
       "minRatio": 0,
@@ -54885,39 +55830,6 @@
         }
       },
       "worst": [
-        {
-          "name": "IrisDialogContent",
-          "common": [],
-          "union": [
-            "children",
-            "portalTarget",
-            "style",
-            "teleport"
-          ],
-          "ratio": 0,
-          "byFramework": {
-            "react": 2,
-            "vue": 1,
-            "solid": 2,
-            "svelte": 3
-          },
-          "uniqueTo": {
-            "react": [],
-            "vue": [
-              "teleport"
-            ],
-            "solid": [],
-            "svelte": [
-              "style"
-            ]
-          },
-          "shared": [
-            "children",
-            "portalTarget"
-          ],
-          "intrinsic": [],
-          "asymmetry": 3
-        },
         {
           "name": "IrisDrawerContent",
           "common": [],
@@ -55192,6 +56104,7 @@
             "class",
             "defaultValue",
             "disabled",
+            "fullWidth",
             "id",
             "invalid",
             "modelValue",
@@ -55210,20 +56123,23 @@
             "style",
             "suffix",
             "type",
-            "value"
+            "value",
+            "width"
           ],
-          "ratio": 0.13,
+          "ratio": 0.12,
           "byFramework": {
-            "react": 7,
+            "react": 9,
             "vue": 8,
             "solid": 15,
             "svelte": 14
           },
           "uniqueTo": {
             "react": [
+              "fullWidth",
               "prefix",
               "suffix",
-              "type"
+              "type",
+              "width"
             ],
             "vue": [
               "modelValue"
@@ -55252,7 +56168,60 @@
             "value"
           ],
           "intrinsic": [],
-          "asymmetry": 2.14
+          "asymmetry": 1.88
+        },
+        {
+          "name": "IrisRadio",
+          "common": [
+            "size",
+            "value"
+          ],
+          "union": [
+            "ariaLabel",
+            "checked",
+            "children",
+            "class",
+            "defaultChecked",
+            "disabled",
+            "id",
+            "modelValue",
+            "onChange",
+            "onchange",
+            "size",
+            "style",
+            "value"
+          ],
+          "ratio": 0.15,
+          "byFramework": {
+            "react": 6,
+            "vue": 6,
+            "solid": 10,
+            "svelte": 9
+          },
+          "uniqueTo": {
+            "react": [],
+            "vue": [
+              "ariaLabel"
+            ],
+            "solid": [
+              "class",
+              "style"
+            ],
+            "svelte": [
+              "onchange"
+            ]
+          },
+          "shared": [
+            "checked",
+            "children",
+            "defaultChecked",
+            "disabled",
+            "id",
+            "modelValue",
+            "onChange"
+          ],
+          "intrinsic": [],
+          "asymmetry": 1.67
         },
         {
           "name": "IrisDragger",
@@ -55305,56 +56274,6 @@
           "asymmetry": 3.33
         },
         {
-          "name": "IrisRadio",
-          "common": [
-            "size",
-            "value"
-          ],
-          "union": [
-            "checked",
-            "children",
-            "class",
-            "defaultChecked",
-            "disabled",
-            "id",
-            "modelValue",
-            "onChange",
-            "onchange",
-            "size",
-            "style",
-            "value"
-          ],
-          "ratio": 0.17,
-          "byFramework": {
-            "react": 6,
-            "vue": 5,
-            "solid": 10,
-            "svelte": 9
-          },
-          "uniqueTo": {
-            "react": [],
-            "vue": [],
-            "solid": [
-              "class",
-              "style"
-            ],
-            "svelte": [
-              "onchange"
-            ]
-          },
-          "shared": [
-            "checked",
-            "children",
-            "defaultChecked",
-            "disabled",
-            "id",
-            "modelValue",
-            "onChange"
-          ],
-          "intrinsic": [],
-          "asymmetry": 2
-        },
-        {
           "name": "IrisTimeline",
           "common": [
             "items"
@@ -55392,6 +56311,70 @@
           ],
           "intrinsic": [],
           "asymmetry": 4
+        },
+        {
+          "name": "IrisTreeSelect",
+          "common": [
+            "disabled",
+            "invalid",
+            "placeholder"
+          ],
+          "union": [
+            "ariaDescribedby",
+            "class",
+            "className",
+            "defaultExpanded",
+            "defaultValue",
+            "disabled",
+            "id",
+            "invalid",
+            "modelValue",
+            "nodes",
+            "onChange",
+            "onValueChange",
+            "options",
+            "placeholder",
+            "selectionMode",
+            "size",
+            "style",
+            "value"
+          ],
+          "ratio": 0.17,
+          "byFramework": {
+            "react": 13,
+            "vue": 9,
+            "solid": 9,
+            "svelte": 9
+          },
+          "uniqueTo": {
+            "react": [
+              "className"
+            ],
+            "vue": [
+              "modelValue"
+            ],
+            "solid": [
+              "onChange"
+            ],
+            "svelte": [
+              "class"
+            ]
+          },
+          "shared": [
+            "ariaDescribedby",
+            "defaultExpanded",
+            "defaultValue",
+            "id",
+            "nodes",
+            "onValueChange",
+            "options",
+            "selectionMode",
+            "size",
+            "style",
+            "value"
+          ],
+          "intrinsic": [],
+          "asymmetry": 1.44
         }
       ]
     }

@@ -11,6 +11,11 @@ import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'
 import { PluginStoreContext, type PluginStoreContextValue } from './PluginStoreContext'
+import {
+  ComponentSizeContext,
+  useComponentSize,
+  type IrisComponentSize,
+} from './ComponentSizeContext'
 
 export interface IrisProviderProps {
   /** Theme store; wraps `<ThemeProvider>` only when supplied. */
@@ -27,6 +32,13 @@ export interface IrisProviderProps {
   plugins?: IrisPlugin[]
   /** Element to receive plugin tokens; default `document.documentElement`. */
   target?: HTMLElement | null
+  /**
+   * Default size for every size-bearing control below this provider. Controls
+   * with an explicit `size` prop always win; a nested provider without
+   * `componentSize` inherits this one; with no provider at all controls are
+   * `md`.
+   */
+  componentSize?: IrisComponentSize
   children?: JSX.Element
 }
 
@@ -71,9 +83,15 @@ export function IrisProvider(props: IrisProviderProps): JSX.Element {
     },
   }
 
+  // Component size: this provider's prop, else the size it inherits from an
+  // outer provider, else `md`. Reactive accessor — no DOM node of its own.
+  const size = useComponentSize(() => props.componentSize)
+
   const withI18n = (): JSX.Element => (
     <IrisI18nProvider locale={props.locale} messages={messages()}>
-      <PluginStoreContext.Provider value={value}>{props.children}</PluginStoreContext.Provider>
+      <PluginStoreContext.Provider value={value}>
+        <ComponentSizeContext.Provider value={size}>{props.children}</ComponentSizeContext.Provider>
+      </PluginStoreContext.Provider>
     </IrisI18nProvider>
   )
 

@@ -1,6 +1,14 @@
 import { For, Show, type JSX } from 'solid-js'
-import { isClosable, type TabsNav, type TabItem } from '@iris-ui-kit/core'
+import {
+  adminChromePx,
+  adminTabsChrome,
+  isClosable,
+  type AdminChromeSize,
+  type TabsNav,
+  type TabItem,
+} from '@iris-ui-kit/core'
 import { useTabsNav } from './useTabsNav'
+import { useComponentSize } from '../provider'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
@@ -18,6 +26,12 @@ export interface IrisAdminTabsProps {
   /** Enable pointer/touch reordering. */
   reorderable?: boolean
   onReorder?: (tabs: TabItem[]) => void
+  /**
+   * Bounded bar / chip geometry (`md` = the default, so omitting it keeps the
+   * pre-`size` look). Resolved in core — this component only bridges the
+   * numbers into inline styles.
+   */
+  size?: AdminChromeSize
 }
 
 /**
@@ -29,6 +43,9 @@ export interface IrisAdminTabsProps {
 export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
   const t = useTabsNav(props.nav)
   const { t: translate } = useI18n()
+  // Bar / chip geometry for the requested tier — one core table, bridged below.
+  const size = useComponentSize(() => props.size)
+  const chrome = () => adminTabsChrome(size())
   let tablistEl: HTMLDivElement | undefined
   let pendingFocus: string | null = null
 
@@ -97,9 +114,13 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
         style={{
           display: 'inline-flex',
           'align-items': 'center',
-          gap: '4px',
-          padding:
-            'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+          gap: adminChromePx(chrome().chipGap),
+          'box-sizing': 'border-box',
+          // A floor, never a clip: a larger font grows the chip.
+          'min-height': adminChromePx(chrome().chipMinHeight),
+          'padding-block': adminChromePx(chrome().chipPaddingBlock),
+          'padding-inline-start': adminChromePx(chrome().chipPaddingInlineStart),
+          'padding-inline-end': adminChromePx(chrome().chipPaddingInlineEnd),
           'border-radius': 'var(--iris-radius-md, 6px)',
           border: `1px solid ${active() ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
           background: active() ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -118,19 +139,19 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
           style={{
             display: 'inline-flex',
             'align-items': 'center',
-            gap: 'var(--iris-space-xs, 8px)',
+            gap: adminChromePx(chrome().labelGap),
             border: 'none',
             background: 'transparent',
             color: 'inherit',
             font: 'inherit',
-            'font-size': 'var(--iris-font-size-sm, 13px)',
+            'font-size': chrome().labelFontSize,
             cursor: 'pointer',
             padding: 0,
           }}
           onClick={() => activate(tab.key)}
         >
           <Show when={tab.icon}>
-            <IrisIcon name={tab.icon!} size={14} />
+            <IrisIcon name={tab.icon!} size={chrome().tabIconSize} />
           </Show>
           <span style={{ 'white-space': 'nowrap' }}>{tab.title}</span>
         </button>
@@ -138,7 +159,11 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
           when={closable}
           fallback={
             <Show when={tab.pinned}>
-              <IrisIcon name="check-circle" size={12} style={{ opacity: '0.5' }} />
+              <IrisIcon
+                name="check-circle"
+                size={chrome().closeIconSize}
+                style={{ opacity: '0.5' }}
+              />
             </Show>
           }
         >
@@ -151,8 +176,9 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
               display: 'inline-flex',
               'align-items': 'center',
               'justify-content': 'center',
-              width: '16px',
-              height: '16px',
+              'box-sizing': 'border-box',
+              width: adminChromePx(chrome().closeSize),
+              height: adminChromePx(chrome().closeSize),
               border: 'none',
               'border-radius': 'var(--iris-radius-sm, 4px)',
               background: 'transparent',
@@ -166,7 +192,7 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
               close(tab.key)
             }}
           >
-            <IrisIcon name="x" size={12} />
+            <IrisIcon name="x" size={chrome().closeIconSize} />
           </button>
         </Show>
       </div>
@@ -176,11 +202,16 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
   return (
     <div
       data-iris-admin-tabs=""
+      data-iris-size={props.size ?? (size() === 'md' ? undefined : size())}
       style={{
         display: 'flex',
         'align-items': 'center',
-        gap: 'var(--iris-space-xs, 8px)',
-        padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+        'box-sizing': 'border-box',
+        'min-width': adminChromePx(chrome().barMinWidth),
+        'min-height': adminChromePx(chrome().barMinHeight),
+        gap: adminChromePx(chrome().barGap),
+        'padding-block': adminChromePx(chrome().barPaddingBlock),
+        'padding-inline': adminChromePx(chrome().barPaddingInline),
         'border-bottom': '1px solid var(--iris-border)',
         background: 'var(--iris-background)',
       }}
@@ -191,7 +222,11 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
         role="tablist"
         aria-label={translate('admin.openPages')}
         onKeyDown={onKeyDown}
-        style={{ 'overflow-x': 'auto', flex: 1 }}
+        style={{
+          'min-width': adminChromePx(chrome().scrollMinWidth),
+          'overflow-x': 'auto',
+          flex: 1,
+        }}
       >
         <IrisSortable
           items={t.tabs()}
@@ -216,8 +251,9 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
             display: 'inline-flex',
             'align-items': 'center',
             'justify-content': 'center',
-            width: '28px',
-            height: '28px',
+            'box-sizing': 'border-box',
+            width: adminChromePx(chrome().actionsSize),
+            height: adminChromePx(chrome().actionsSize),
             'border-radius': 'var(--iris-radius-md, 6px)',
             border: '1px solid var(--iris-border)',
             background: 'var(--iris-surface)',
@@ -225,7 +261,7 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
             cursor: 'pointer',
           }}
         >
-          <IrisIcon name="more-horizontal" size={16} />
+          <IrisIcon name="more-horizontal" size={chrome().actionsIconSize} />
         </IrisDropdownTrigger>
         <IrisDropdownMenu>
           <Show

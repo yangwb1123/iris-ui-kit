@@ -129,16 +129,21 @@ coverage:
 size:
   # gzipped KB 预算（dist/index.js 的 gzip 后大小）
   budgets:
-    # Named table views/tabs and shared pinned-boundary math are now public core
-    # primitives; measured barrel is 53.7KB gzip with reviewable headroom.
-    "@iris-ui-kit/core": 55
+    # Maintainer authorized "尺寸门禁修改，然后发布" (2026-10-09).
+    # Keep shared grid/data/component-size/layout/Toast contracts. Entry gzip
+    # 69,881B; limit 73,728B, finite headroom 3,847B (5.50% of measurement).
+    # Historical 55KiB baseline was already exceeded before this release work;
+    # do not attribute the entire delta to Toast. See docs/RELEASE_SIZE_BUDGET.md.
+    "@iris-ui-kit/core": 72
     # Bumped 3→4 (2026-08-19): typography/spacing token family growth; the
     # measured barrel is 3.1KB gzip.
     "@iris-ui-kit/tokens": 4
     "@iris-ui-kit/theme": 3.5
     "@iris-ui-kit/skins": 5
-    # Unsafe SVG-node rejection and escaping added to the public SSR renderer.
-    "@iris-ui-kit/icons": 7
+    # Same authorization; preserve SVG/reference/provider security contracts.
+    # Entry gzip 11,723B; limit 12,288B, finite headroom 565B (4.82%).
+    # Keep the separate enforced single-icon 1KiB probe unchanged.
+    "@iris-ui-kit/icons": 12
     # Grid parity rounds expanded the public adapter barrels; named views/tabs
     # now measure React 154.1KB, Vue 108.8KB, Solid 117.0KB gzip respectively.
     "@iris-ui-kit/react": 160

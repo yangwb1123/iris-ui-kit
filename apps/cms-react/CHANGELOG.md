@@ -1,5 +1,31 @@
 # cms-react
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [c154245]
+- Updated dependencies [250484b]
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies [586d8d0]
+- Updated dependencies [586d8d0]
+- Updated dependencies
+- Updated dependencies [fa08376]
+- Updated dependencies [0b0d23f]
+- Updated dependencies [1a1f48f]
+- Updated dependencies
+  - @iris-ui-kit/core@0.2.7
+  - @iris-ui-kit/plugin-locale-zh@0.1.2
+  - @iris-ui-kit/tokens@0.3.1
+  - @iris-ui-kit/react@0.4.0
+  - @iris-ui-kit/plugin-form-builder@2.0.3
+  - @iris-ui-kit/plugin-markdown@0.1.1
+  - @iris-ui-kit/plugin-notifications@0.2.1
+  - @iris-ui-kit/plugin-pro-table@0.2.1
+  - @iris-ui-kit/cms-shared@0.0.3
+
 ## 0.0.4
 
 ### Patch Changes

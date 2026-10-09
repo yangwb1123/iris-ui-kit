@@ -187,6 +187,30 @@ export {
 } from './value-distribution'
 export { matchConditionalStyles, type ConditionalStyleRule } from './conditional-styles'
 export {
+  normalizeLayoutLength,
+  resolveGrowableControlHeight,
+  hyphenateLayoutStyle,
+  resolveToastBoxLayout,
+  resolveFormFieldLayout,
+  resolveDialogLayout,
+  DIALOG_SIZE_WIDTHS,
+  DIALOG_BACKDROP_GUTTER,
+  DIALOG_MAX_HEIGHT,
+  DIALOG_LEGACY_MAX_WIDTH,
+  DIALOG_VIEWPORT_CLAMP,
+  type LayoutLength,
+  type CssLayoutStyle,
+  type FormFieldLabelPlacement,
+  type FormFieldLayoutInput,
+  type FormFieldLayout,
+  type DialogSize,
+  type DialogLayoutInput,
+  type DialogLayout,
+} from './control-layout'
+export { DEFAULT_COMPONENT_SIZE, resolveComponentSize } from './component-size'
+export { canStartToastSwipe, createToastSwipe, TOAST_SWIPE_IGNORE_SELECTOR } from './toast-swipe'
+export type { ToastSwipePointer } from './toast-swipe'
+export {
   PROGRESS_INDETERMINATE_ANIMATION,
   PROGRESS_INDETERMINATE_KEYFRAME,
   PROGRESS_STYLES,
@@ -399,6 +423,19 @@ export {
   type AdminContentHeight,
   type AdminDensity,
 } from './admin-preferences'
+export {
+  ADMIN_CHROME_SIZES,
+  DEFAULT_ADMIN_CHROME_SIZE,
+  resolveAdminChromeSize,
+  adminNavChrome,
+  adminTabsChrome,
+  adminNavIndent,
+  adminNavCssVars,
+  adminChromePx,
+  type AdminChromeSize,
+  type AdminNavChrome,
+  type AdminTabsChrome,
+} from './admin-density'
 export {
   createResourceController,
   createClientFetcher,

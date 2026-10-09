@@ -43,14 +43,13 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 
 ## Cross-framework parity (READ BEFORE generating code)
 Visibility metric, NOT a parity guarantee. Per-framework contracts are intentionally idiomatic (Vue modelValue/update:modelValue, Solid onChange, Svelte callback props), so a low nameIntersection can mean "named differently" rather than "missing". A high surfaceAsymmetry is the stronger signal: naming idiom cannot explain a wide prop-count gap. Always read the target framework's own contract before generating code.
-- Of 152 comparable components: 5 have identical prop names in all 4 frameworks, 8 are near-identical, 139 diverge.
+- Of 152 comparable components: 5 have identical prop names in all 4 frameworks, 9 are near-identical, 138 diverge.
 - 5 components are excluded from those counts because at least one adapter forwards its whole HTML attribute set (contract `propsSource: "intrinsic-spread"`), so its prop list is not enumerable. An empty `props` array there does NOT mean the component accepts no attributes — read `intrinsicAttributes`.
 - Mean shared prop names: 45% (lowest 0%).
-- Prop declarations per framework: react 1269, vue 853, solid 1181, svelte 1212.
-- Prop names declared by exactly one framework (capability that exists on one adapter only): react 216, vue 69, solid 112, svelte 124.
+- Prop declarations per framework: react 1293, vue 876, solid 1207, svelte 1236.
+- Prop names declared by exactly one framework (capability that exists on one adapter only): react 218, vue 70, solid 112, svelte 123.
 - Widest surface gap: `IrisToggleGroupItem` — 5x (react 1, vue 2, solid 5, svelte 4 props).
 - Most divergent components (shared/union prop names):
-  - `IrisDialogContent` 0% shared — react 2, vue 1, solid 2, svelte 3
   - `IrisDrawerContent` 0% shared — react 2, vue 1, solid 2, svelte 3
   - `IrisDropdownMenu` 0% shared — react 2, vue 1, solid 2, svelte 1
   - `IrisMenuContent` 0% shared — react 2, vue 1, solid 2, svelte 4
@@ -58,10 +57,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   - `IrisColorPicker` 10% shared — react 5, vue 3, solid 5, svelte 6
   - `IrisFormBuilder` 11% shared — react 3, vue 6, solid 3, svelte 3; react-only: className
   - `IrisProTable` 11% shared — react 2, vue 7, solid 2, svelte 2; react-only: className
-  - `IrisPasswordInput` 13% shared — react 7, vue 8, solid 15, svelte 14; react-only: prefix, suffix, type
+  - `IrisPasswordInput` 12% shared — react 9, vue 8, solid 15, svelte 14; react-only: fullWidth, prefix, suffix, type, width
+  - `IrisRadio` 15% shared — react 6, vue 6, solid 10, svelte 9
   - `IrisDragger` 17% shared — react 8, vue 3, solid 10, svelte 10
-  - `IrisRadio` 17% shared — react 6, vue 5, solid 10, svelte 9
   - `IrisTimeline` 17% shared — react 4, vue 1, solid 4, svelte 3; react-only: className
+  - `IrisTreeSelect` 17% shared — react 13, vue 9, solid 9, svelte 9; react-only: className
 
 ## Components (157 total — 157 in all 4 frameworks; react 157, vue 157, solid 157, svelte 157)
 
@@ -190,11 +190,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 24 props, 3 events
 - IrisAdminTabs [react/solid/svelte/vue] — layer-4
   Vben-style multi-tab bar over a shared {@link TabsNav} store. Each open page is a closable chip; clicking activates (`onChange`), the × closes, and a trailing actions dropdown runs Refresh / Close / Close-others / Close-all on the active tab. The store owns the tab list + active key; the host watches it to sync routing + keep-alive.
-  react: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
-  solid: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
-  svelte: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
-  vue: props nav, reorderable?, shortcuts?; events change, close, refresh, reorder
-  quality: 6 props, 4 events
+  react: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?, size?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
+  solid: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?, size?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
+  svelte: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?, size?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
+  vue: props nav, reorderable?, size?, shortcuts?; events change, close, refresh, reorder
+  quality: 7 props, 4 events
 - IrisErrorBoundary [react/solid/svelte/vue] — layer-1
   Catches errors thrown while rendering its subtree and switches to a fallback UI instead of crashing the whole React tree. Exposes `reset()` (passed to the fallback) that clears the error and re-attempts rendering the children.
   react: props children?, fallback?, onError?; events onError; slots default, fallback; types IrisErrorBoundaryFallbackProps, IrisErrorBoundaryProps
@@ -211,18 +211,18 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 6 props, 0 events
 - IrisNavMenu [react/solid/svelte/vue] — layer-1
   Data-driven nested navigation menu — the sidebar nav of the admin shell. Renders a normalized `NavNode[]` tree as an accordion of expandable branches and selectable leaves; the active leaf and its ancestor branches are highlighted, and the active branch trail auto-expands. Router-agnostic: takes `activeKey`, calls `onSelect(key, node)`; the host owns navigation.
-  react: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
-  solid: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
-  svelte: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
-  vue: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?; events select, update:expandedKeys
-  quality: 9 props, 2 events
+  react: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, size?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
+  solid: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, size?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
+  svelte: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, size?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
+  vue: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, size?, ariaLabel?; events select, update:expandedKeys
+  quality: 10 props, 2 events
 - IrisProvider [react/solid/svelte/vue] — layer-1
   The single unified entry point. Runs the plugins, applies their additive token layer over the active theme, merges their messages under the user's, and exposes their stores via `PluginStoreContext`. The existing Theme / Skin / I18n providers are composed in around it.
-  react: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?; slots default; types IrisProviderProps
-  solid: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?; slots default; types IrisProviderProps
-  svelte: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?; slots default; types IrisProviderProps
-  vue: props theme?, skin?, dir?, locale?, messages?, plugins?, target?; slots default; types IrisProviderProps
-  quality: 8 props, 0 events
+  react: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, componentSize?, children?; slots default; types IrisProviderProps
+  solid: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, componentSize?, children?; slots default; types IrisProviderProps
+  svelte: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, componentSize?, children?; slots default; types IrisProviderProps
+  vue: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, componentSize?; slots default; types IrisProviderProps
+  quality: 9 props, 0 events
 
 ### plugin (16)
 - IrisAdminApp [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-admin (IrisProvider plugins)
@@ -509,11 +509,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 10 props, 1 events
 - IrisDatePicker [react/solid/svelte/vue] — layer-2
   Date picker: button-styled trigger + Popover + Calendar. On selection the popover auto-closes. Use `IrisCalendar` directly when you want it inline.
-  react: props value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisDatePickerProps
-  solid: props value?, defaultValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, onChange?, id?; events onChange; types IrisDatePickerProps
-  svelte: props value?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, id?, onValueChange?, style?, class?; events onValueChange
-  vue: props modelValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?; events update:modelValue
-  quality: 15 props, 1 events
+  react: props value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, size?, id?, ariaDescribedby?, style?, className?, width?, fullWidth?; events onValueChange; types IrisDatePickerProps
+  solid: props value?, defaultValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, onChange?, id?, size?, width?, fullWidth?, class?, style?; events onChange; types IrisDatePickerProps
+  svelte: props value?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, id?, size?, width?, fullWidth?, onValueChange?, style?, class?; events onValueChange
+  vue: props modelValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, size?, width?, fullWidth?, id?, ariaDescribedby?; events update:modelValue
+  quality: 18 props, 1 events
 - IrisDateRangePicker [react/solid/svelte/vue] — layer-2
   Range date picker. Trigger displays `start → end`; popover contains two month calendars (current + next).
   react: props value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisDateRangePickerProps
@@ -544,11 +544,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 2 props, 0 events
 - IrisDialogContent [react/solid/svelte/vue] — layer-2
   The modal surface (and its backdrop). Renders only while the dialog is open. Behaviors enabled automatically:
-  react: props portalTarget?, children?; slots default; types IrisDialogContentProps
-  solid: props portalTarget?, children?; slots default; types IrisDialogContentProps
-  svelte: props style?, portalTarget?, children?; slots default
-  vue: props teleport?; slots default
-  quality: 2 props, 0 events
+  react: props portalTarget?, size?, width?, maxHeight?, children?; slots default; types IrisDialogContentProps
+  solid: props portalTarget?, size?, width?, maxHeight?, children?; slots default; types IrisDialogContentProps
+  svelte: props style?, portalTarget?, size?, width?, maxHeight?, children?; slots default
+  vue: props teleport?, size?, width?, maxHeight?; slots default
+  quality: 5 props, 0 events
 - IrisDialogDescription [react/solid/svelte/vue] — layer-2
   Sets `aria-describedby` on the dialog content automatically. Renders a `<p>` by default.
   react: props as?; types IrisDialogDescriptionProps
@@ -683,11 +683,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 9 props, 1 events
 - IrisFormField [react/solid/svelte/vue] — layer-1
   Form-field wrapper that handles the label / hint / error trio with the right a11y plumbing. Non-invasive wrapper around any Iris input primitive (`IrisInput`, `IrisTextarea`, `IrisNumberInput`, `IrisSwitch`, `IrisCheckbox`, `IrisPasswordInput`, …): locates the first valid React element in `children` and clones it with the generated `id`, `aria-describedby`, and `invalid`.
-  react: props label?, hint?, error?, required?, labelFor?, size?, children?; slots default; types IrisFormFieldProps
-  solid: props label?, hint?, error?, required?, labelFor?, size?, children?; slots default; types IrisFormFieldProps
-  svelte: props label?, hint?, error?, required?, labelFor?, size?, children?; slots default; types IrisFormFieldProps
-  vue: props label?, hint?, error?, required?, labelFor?, size?; slots default
-  quality: 7 props, 0 events
+  react: props label?, hint?, error?, required?, labelFor?, size?, labelPlacement?, labelWidth?, controlWidth?, fullWidth?, children?; slots default; types IrisFormFieldProps
+  solid: props label?, hint?, error?, required?, labelFor?, size?, labelPlacement?, labelWidth?, controlWidth?, fullWidth?, children?; slots default; types IrisFormFieldProps
+  svelte: props label?, hint?, error?, required?, labelFor?, size?, labelPlacement?, labelWidth?, controlWidth?, fullWidth?, children?; slots default; types IrisFormFieldProps
+  vue: props label?, hint?, error?, required?, labelFor?, size?, labelPlacement?, labelWidth?, controlWidth?, fullWidth?; slots default
+  quality: 11 props, 0 events
 - IrisGauge [react/solid/svelte/vue] — layer-1
   Semicircular arc gauge built from a structured SVG — a 180° track arc plus a value arc whose `stroke-dashoffset` encodes `(value − min) / (max − min)`. Distinct from the full-ring `IrisProgressCircle`.
   react: props value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?, style?, className?; slots format; types IrisGaugeProps, IrisGaugeStatus
@@ -718,11 +718,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 8 props, 0 events
 - IrisInput [react/solid/svelte/vue] — layer-1
   Single-line text input with size variants, an `invalid` state, and optional `prefix`/`suffix` adornments. Forwards its ref to the native `<input>`.
-  react: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
-  solid: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
-  svelte: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
-  vue: props modelValue?, type?, size?, placeholder?, disabled?, readonly?, invalid?, id?, ariaDescribedby?; events blur, focus, update:modelValue; slots prefix, suffix; types IrisInputSize, IrisInputType
-  quality: 6 props, 0 events
+  react: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?, width?, fullWidth?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
+  solid: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?, width?, fullWidth?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
+  svelte: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?, width?, fullWidth?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
+  vue: props modelValue?, type?, size?, placeholder?, disabled?, readonly?, invalid?, id?, ariaDescribedby?, width?, fullWidth?; events blur, focus, update:modelValue; slots prefix, suffix; types IrisInputSize, IrisInputType
+  quality: 8 props, 0 events
 - IrisKbd [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisKbd}.
   react: props keys?, separator?, size?, children?; slots default; types IrisKbdProps, IrisKbdSize
@@ -799,18 +799,18 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   vue: props asChild?; slots default
   quality: 2 props, 0 events
 - IrisMonthPicker [react/solid/svelte/vue] — layer-1
-  react: props value?, defaultValue?, onValueChange?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisMonthPickerProps
-  solid: props value?, defaultValue?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, id?, ariaDescribedby?, class?, style?, onChange?; events onChange; types IrisMonthPickerProps
-  svelte: props value?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, id?, ariaDescribedby?, onValueChange?, style?, class?; events onValueChange; types IrisMonthPickerProps
-  vue: props modelValue?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?; events update:modelValue; types IrisMonthPickerProps
-  quality: 15 props, 1 events
+  react: props value?, defaultValue?, onValueChange?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?, size?, width?, fullWidth?; events onValueChange; types IrisMonthPickerProps
+  solid: props value?, defaultValue?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, id?, ariaDescribedby?, class?, style?, size?, width?, fullWidth?, onChange?; events onChange; types IrisMonthPickerProps
+  svelte: props value?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, id?, ariaDescribedby?, size?, width?, fullWidth?, onValueChange?, style?, class?; events onValueChange; types IrisMonthPickerProps
+  vue: props modelValue?, defaultMonth?, min?, max?, locale?, placeholder?, disabled?, invalid?, placement?, size?, width?, fullWidth?, id?, ariaDescribedby?; events update:modelValue; types IrisMonthPickerProps
+  quality: 18 props, 1 events
 - IrisNumberInput [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisNumberInput}.
-  react: props value?, defaultValue?, onChange?, size?, min?, max?, step?, invalid?, showControls?, ariaDescribedby?; events onChange; types IrisNumberInputProps, IrisNumberInputSize
-  solid: props value?, defaultValue?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, onChange?, onFocus?, onBlur?, style?, class?; events onBlur, onChange, onFocus; types IrisNumberInputProps, IrisNumberInputSize
-  svelte: props value?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, style?, onchange?, oninput?, onfocus?, onblur?; events onblur, onchange, onfocus, oninput
-  vue: props modelValue?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?; events blur, focus, update:modelValue; types IrisNumberInputSize
-  quality: 10 props, 1 events
+  react: props value?, defaultValue?, onChange?, size?, min?, max?, step?, invalid?, showControls?, ariaDescribedby?, width?, fullWidth?; events onChange; types IrisNumberInputProps, IrisNumberInputSize
+  solid: props value?, defaultValue?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, ariaLabel?, ariaLabelledby?, onChange?, onFocus?, onBlur?, style?, class?, width?, fullWidth?; events onBlur, onChange, onFocus; types IrisNumberInputProps, IrisNumberInputSize
+  svelte: props value?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, ariaLabel?, ariaLabelledby?, style?, width?, fullWidth?, onchange?, oninput?, onfocus?, onblur?; events onblur, onchange, onfocus, oninput
+  vue: props modelValue?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, width?, fullWidth?; events blur, focus, update:modelValue; types IrisNumberInputSize
+  quality: 12 props, 1 events
 - IrisOtpInput [react/solid/svelte/vue] — layer-1
   One-time-code / PIN entry: a row of single-character cells with smart focus movement, paste-to-fill, and keyboard editing. The value is kept contiguous (no interior gaps), masked optionally, and surfaced via `onValueChange`; `onComplete` fires when every cell is filled. Drop it inside `IrisFormField` — the injected `id` lands on the first cell so the label focuses it.
   react: props value?, defaultValue?, onValueChange?, onComplete?, length?, type?, mask?, size?, disabled?, invalid?, autoFocus?, placeholder?, id?, ariaDescribedby?, style?, className?; events onComplete, onValueChange; types IrisOtpInputProps, IrisOtpInputSize, IrisOtpInputType
@@ -827,11 +827,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 9 props, 1 events
 - IrisPasswordInput [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisPasswordInput}.
-  react: props showToggle?, suffix?, prefix?, size?, type?, invalid?, ariaDescribedby?; slots prefix, suffix; types IrisPasswordInputProps
+  react: props showToggle?, suffix?, prefix?, size?, type?, invalid?, ariaDescribedby?, width?, fullWidth?; slots prefix, suffix; types IrisPasswordInputProps
   solid: props value?, defaultValue?, size?, placeholder?, disabled?, readonly?, invalid?, showToggle?, id?, ariaDescribedby?, onChange?, onFocus?, onBlur?, style?, class?; events onBlur, onChange, onFocus; types IrisPasswordInputProps, IrisPasswordInputSize
   svelte: props value?, size?, placeholder?, disabled?, readonly?, invalid?, showToggle?, id?, ariaDescribedby?, style?, onchange?, oninput?, onfocus?, onblur?; events onblur, onchange, onfocus, oninput
   vue: props modelValue?, size?, placeholder?, disabled?, readonly?, invalid?, id?, showToggle?; events blur, focus, update:modelValue; slots prefix, suffix; types IrisPasswordInputSize
-  quality: 7 props, 0 events
+  quality: 9 props, 0 events
 - IrisPopover [react/solid/svelte/vue] — layer-2
   Root provider for a Popover surface. Wraps the trigger and the content, threads a state machine + DOM refs + positioning options through context. Supports controlled (`open` + `onOpenChange`) and uncontrolled (`defaultOpen`) modes.
   react: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisPopoverContentProps, IrisPopoverProps, IrisPopoverTriggerProps
@@ -872,7 +872,7 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   react: props value, checked?, defaultChecked?, onChange?, size?, children?; events onChange; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
   solid: props value, checked?, defaultChecked?, size?, disabled?, id?, onChange?, children?, style?, class?; events onChange; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
   svelte: props value, modelValue?, defaultChecked?, onChange?, size?, disabled?, id?, onchange?, children?; events onChange, onchange; slots default
-  vue: props value, modelValue?, size?, disabled?, id?; events update:modelValue; slots default; types IrisRadioSize
+  vue: props value, modelValue?, size?, disabled?, id?, ariaLabel?; events update:modelValue; slots default; types IrisRadioSize
   quality: 6 props, 1 events
 - IrisRadioGroup [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisRadioGroup}.
@@ -932,11 +932,11 @@ Visibility metric, NOT a parity guarantee. Per-framework contracts are intention
   quality: 10 props, 1 events
 - IrisSelect [react/solid/svelte/vue] — layer-2
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
-  react: props items, value?, defaultValue?, onValueChange?, multiple?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?, virtual?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
-  solid: props items, multiple?, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaLabel?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  svelte: props items, value?, defaultValue?, multiple?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?, virtual?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  vue: props items, modelValue?, multiple?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?, virtual?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  quality: 16 props, 1 events
+  react: props items, value?, defaultValue?, onValueChange?, multiple?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?, width?, fullWidth?, virtual?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
+  solid: props items, multiple?, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, width?, fullWidth?, disabled?, placement?, invalid?, id?, ariaLabel?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  svelte: props items, value?, defaultValue?, multiple?, placeholder?, size?, width?, fullWidth?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?, virtual?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  vue: props items, modelValue?, multiple?, defaultValue?, placeholder?, size?, width?, fullWidth?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?, virtual?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  quality: 18 props, 1 events
 - IrisSkeleton [react/solid/svelte/vue] — layer-1
   A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.
   react: props width?, height?, shape?, animated?; types IrisSkeletonProps, IrisSkeletonShape

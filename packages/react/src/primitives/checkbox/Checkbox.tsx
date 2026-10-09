@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useComponentSize } from '../../provider'
 
 export type IrisCheckboxSize = 'sm' | 'md' | 'lg'
 export type IrisCheckboxValue = boolean | 'indeterminate'
@@ -17,6 +18,10 @@ export interface IrisCheckboxProps extends Omit<
   checked?: IrisCheckboxValue
   defaultChecked?: IrisCheckboxValue
   onChange?: (next: boolean, event: React.ChangeEvent<HTMLInputElement>) => void
+  /**
+   * Explicit size. Omit to inherit the nearest `<IrisProvider componentSize>`
+   * (`md` when there is none).
+   */
   size?: IrisCheckboxSize
   invalid?: boolean
   ariaDescribedby?: string
@@ -39,7 +44,7 @@ export const IrisCheckbox = React.forwardRef<HTMLInputElement, IrisCheckboxProps
       checked,
       defaultChecked = false,
       onChange,
-      size = 'md',
+      size: sizeProp,
       disabled = false,
       invalid = false,
       ariaDescribedby,
@@ -50,6 +55,8 @@ export const IrisCheckbox = React.forwardRef<HTMLInputElement, IrisCheckboxProps
     ref,
   ) {
     const [internalChecked, setInternalChecked] = React.useState<IrisCheckboxValue>(defaultChecked)
+    // No explicit `size` → nearest <IrisProvider componentSize>, else `md`.
+    const size = useComponentSize(sizeProp)
     const isControlled = checked !== undefined
     const value: IrisCheckboxValue = isControlled ? (checked as IrisCheckboxValue) : internalChecked
 

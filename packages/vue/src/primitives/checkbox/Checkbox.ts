@@ -1,5 +1,7 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
 import type { Size } from '@iris-ui-kit/core'
+import { normalizeHostStyle } from '../../internal/control-attrs'
+import { useComponentSize } from '../../provider'
 
 export type IrisCheckboxSize = Size
 export type IrisCheckboxValue = boolean | 'indeterminate'
@@ -20,7 +22,8 @@ export const IrisCheckbox = defineComponent({
       type: [Boolean, String] as PropType<IrisCheckboxValue>,
       default: false,
     },
-    size: { type: String as PropType<IrisCheckboxSize>, default: 'md' },
+    /** Omit to inherit the nearest <IrisProvider componentSize> (`md` default). */
+    size: { type: String as PropType<IrisCheckboxSize>, default: undefined },
     disabled: { type: Boolean, default: false },
     id: { type: String, default: undefined },
     name: { type: String, default: undefined },
@@ -41,6 +44,7 @@ export const IrisCheckbox = defineComponent({
     change: (_value: boolean) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const size = useComponentSize(() => props.size)
     const state = computed<'checked' | 'unchecked' | 'indeterminate'>(() => {
       if (props.modelValue === 'indeterminate') return 'indeterminate'
       return props.modelValue ? 'checked' : 'unchecked'
@@ -48,7 +52,7 @@ export const IrisCheckbox = defineComponent({
 
     const dim = computed(() => {
       const map: Record<IrisCheckboxSize, string> = { sm: '14px', md: '18px', lg: '22px' }
-      return map[props.size]
+      return map[size.value]
     })
 
     const boxStyle = computed<Record<string, string>>(() => ({
@@ -109,7 +113,7 @@ export const IrisCheckbox = defineComponent({
         {
           ...attrs,
           'data-iris-checkbox': '',
-          'data-iris-checkbox-size': props.size,
+          'data-iris-checkbox-size': size.value,
           'data-state': state.value,
           style: {
             display: 'inline-flex',
@@ -117,7 +121,7 @@ export const IrisCheckbox = defineComponent({
             gap: 'var(--iris-gap-sm)',
             cursor: props.disabled ? 'not-allowed' : 'pointer',
             userSelect: 'none',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            ...normalizeHostStyle(attrs.style),
           },
         },
         [

@@ -76,6 +76,39 @@ def verify_current(pack, current):
                 raise ValueError("Registry has nonportable dependencies")
 
 
+def workflow_marker(pack):
+    name, version = pack["name"], pack["version"]
+    if (not re.fullmatch(r"@iris-ui-kit/[a-z][a-z0-9-]*", name)
+            or not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", version)):
+        raise ValueError("Invalid cross-worker publication intent identity")
+    return f"refs/tags/iris-npm-intent-{name.split('/')[-1]}-{version}"
+
+
+def workflow_marker_exists(root, pack):
+    ref = workflow_marker(pack)
+    endpoint = f"repos/{REPOSITORY}/git/matching-refs/{ref.removeprefix('refs/')}"
+    rows = json.loads(capture(["gh", "api", endpoint, "--method", "GET"], root))
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ValueError("Invalid retained workflow publication intent")
+    return any(row.get("ref") == ref for row in rows)
+
+
+def create_workflow_marker(root, pack):
+    # Create-only retained Git ref survives fresh workers and different source
+    # SHAs. A duplicate, timeout, malformed response or nonzero result blocks
+    # the npm write. Never update/delete this marker or blindly replay its POST.
+    head = os.environ.get("GITHUB_SHA", "")
+    if os.environ.get("GITHUB_ACTIONS") != "true" or not re.fullmatch(r"[a-f0-9]{40}", head):
+        raise ValueError("Retained workflow intent requires actual Actions source")
+    ref = workflow_marker(pack)
+    args = ["gh", "api", f"repos/{REPOSITORY}/git/refs", "--method", "POST",
+            "-f", f"ref={ref}", "-f", f"sha={head}"]
+    data = json.loads(capture(args, root))
+    if (not isinstance(data, dict) or data.get("ref") != ref
+            or data.get("object", {}).get("sha") != head):
+        raise ValueError("Cross-worker publication intent was not confirmed")
+
+
 def registry_preflight(root, packs):
     journal = publication_journal(root)
     already = set()
@@ -86,6 +119,8 @@ def registry_preflight(root, packs):
             already.add(pack["name"])
         elif journal.get(pack["name"] + "@" + pack["version"]) == "outcome_unknown":
             raise ValueError("An earlier write remains unknown; inspect registry before any replay")
+        elif workflow_marker_exists(root, pack):
+            raise ValueError("An earlier workflow write intent remains unresolved; inspect registry before any replay")
     return already
 
 
@@ -130,6 +165,7 @@ def publish_one(root, pack, output):
         raise ValueError("Approved publication artifact changed")
     log = output / (pack["name"].split("/")[-1] + ".publish.log")
     publication_journal(root, pack, "outcome_unknown")  # durable intent BEFORE the external write
+    create_workflow_marker(root, pack)  # create-only, retained across worker replacement
     code = run_command(["npm", "publish", pack["path"], "--access=public", "--tag=latest",
                         "--provenance", f"--registry={REGISTRY}"], root, log, 120)
     # ALWAYS reconcile actual registry state, including nonzero/timeout outcomes.

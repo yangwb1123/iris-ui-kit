@@ -53,12 +53,15 @@ def run_command(args, cwd, log, timeout, max_output=64 * 1024 * 1024):
             while proc.poll() is None and time.monotonic() < deadline and not overflow.is_set():
                 time.sleep(0.02)
             expired = time.monotonic() >= deadline
-            if expired or overflow.is_set():
-                _stop_owned(proc)
-            reader.join(timeout=2)
+            # A successful/reaped leader may leave silent descendants holding
+            # the owned session alive. Clean that group on every exit, not only
+            # on timeout or when an inherited stdout pipe happens to stay open.
+            _stop_owned(proc)
+            reader.join(timeout=max(0, deadline - time.monotonic()))
             if reader.is_alive():
                 _stop_owned(proc)
                 reader.join(timeout=2)
+            expired = expired or time.monotonic() >= deadline
             code = 124 if expired else (125 if overflow.is_set() or reader.is_alive() else proc.returncode)
         except BaseException:
             _stop_owned(proc)

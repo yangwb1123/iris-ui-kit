@@ -1,4 +1,5 @@
 """Read-only source/pack contracts for the Iris publication transaction."""
+import gzip
 import hashlib
 import json
 import re
@@ -96,26 +97,70 @@ def graph(root):
     return packages
 
 
+class ArchiveBudget:
+    """Charge raw decompressed bytes, including invisible PAX/GNU metadata."""
+    def __init__(self, stream):
+        self.stream, self.total = stream, 0
+
+    def read(self, size):
+        data = self.stream.read(size)
+        self.total += len(data)
+        if self.total > MAX_SOURCE:
+            raise ValueError("Tarball decompressed byte budget exceeded")
+        return data
+
+
+def validate_archive_bytes(path):
+    # TarFile hides extended headers during iteration and may allocate their
+    # payloads before yielding a member. Inspect raw headers first, boundedly.
+    with gzip.open(path, "rb") as stream:
+        budget = ArchiveBudget(stream)
+        for _ in range(MAX_FILES):
+            header = budget.read(512)
+            if len(header) != 512:
+                raise ValueError("Truncated tarball header")
+            if header == bytes(512):
+                while chunk := budget.read(65536):
+                    if any(chunk):
+                        raise ValueError("Nonzero data after tarball terminator")
+                return
+            member = tarfile.TarInfo.frombuf(header, "utf-8", "strict")
+            if not 0 <= member.size <= MAX_FILE or member.type == tarfile.GNUTYPE_SPARSE:
+                raise ValueError("Oversized or sparse raw tarball member")
+            remaining = ((member.size + 511) // 512) * 512
+            while remaining:
+                size = min(remaining, 65536)
+                if len(budget.read(size)) != size:
+                    raise ValueError("Truncated tarball payload")
+                remaining -= size
+        raise ValueError("Tarball raw header-count budget exceeded")
+
+
 def safe_member(member):
     path = PurePosixPath(member.name)
-    if path.is_absolute() or ".." in path.parts or path.parts[:1] != ("package",):
-        raise ValueError("Unsafe tarball member path")
-    if not (member.isfile() or member.isdir()) or member.size > MAX_FILE:
+    canonical = path.as_posix()
+    spelling = member.name.rstrip("/") if member.isdir() else member.name
+    if (path.is_absolute() or ".." in path.parts or path.parts[:1] != ("package",)
+            or spelling != canonical or "\\" in member.name):
+        raise ValueError("Unsafe or noncanonical tarball member path")
+    if not (member.isfile() or member.isdir()) or not 0 <= member.size <= MAX_FILE:
         raise ValueError("Linked, nonregular or oversized tarball member")
+    return canonical
 
 
 def read_pack(path, expected, license_text):
     """Inspect without extraction; pin every workspace production dependency."""
     if path.stat().st_size > MAX_FILE:
         raise ValueError("Tarball byte budget exceeded")
+    validate_archive_bytes(path)
     with tarfile.open(path, "r:gz") as archive:
         names, total = set(), 0
         for index, member in enumerate(archive):
-            safe_member(member)
+            name = safe_member(member)
             total += member.size
-            if index >= MAX_FILES or total > MAX_SOURCE or member.name in names:
+            if index >= MAX_FILES or total > MAX_SOURCE or name in names:
                 raise ValueError("Tarball size/count/duplicate-member contract failed")
-            names.add(member.name)
+            names.add(name)
         stream = archive.extractfile("package/package.json")
         raw = stream.read(2 * 1024 * 1024 + 1)
         if len(raw) > 2 * 1024 * 1024:

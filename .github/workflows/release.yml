@@ -23,7 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: read
+      # Create-only per-package/version intent refs fence fresh-worker retries.
+      contents: write
       actions: read
       id-token: write
     steps:

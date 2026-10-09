@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
+
   type CountdownSize = 'sm' | 'md' | 'lg'
 
   const VALUE_FONT: Record<CountdownSize, number> = { sm: 18, md: 24, lg: 30 }
@@ -88,7 +90,9 @@
     void value
     void format
     void now
-    start()
+    // Consumer callbacks may read/write parent state. Only timer configuration
+    // owns this effect; callback feedback must never restart an expired timer.
+    untrack(start)
     return stop
   })
 </script>

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { IrisLongPress } from './LongPress'
 
@@ -6,9 +6,15 @@ function clearBody() {
   while (document.body.firstChild) document.body.removeChild(document.body.firstChild)
 }
 
-afterEach(() => clearBody())
+beforeEach(() => vi.useFakeTimers())
+afterEach(() => {
+  clearBody()
+  vi.useRealTimers()
+})
 
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+// Wall-clock sleeps cannot assert the pre-deadline state under a busy event loop.
+// Advance the real controller's timer deterministically; do not mock the gesture.
+const wait = (ms: number) => vi.advanceTimersByTimeAsync(ms)
 
 describe('@iris-ui-kit/vue IrisLongPress pointercancel + reactive props', () => {
   it('AC1: pointercancel before holdDelay does NOT fire onLongPress', async () => {
@@ -38,6 +44,8 @@ describe('@iris-ui-kit/vue IrisLongPress pointercancel + reactive props', () => 
     await wrap.setProps({ disabled: true }) // watcher has run when this resolves
     await wait(70) // well past the 50ms deadline
     expect(onLongPress).not.toHaveBeenCalled()
+    wrap.unmount()
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('AC3: holdDelay prop update re-arms the timer with the new value', async () => {
@@ -50,8 +58,16 @@ describe('@iris-ui-kit/vue IrisLongPress pointercancel + reactive props', () => 
     await wrap.setProps({ holdDelay: 10 })
     await wait(5) // new 10ms delay not yet elapsed
     expect(onLongPress).not.toHaveBeenCalled()
-    await wait(35) // 40ms total after the change — long before the old 200ms deadline
+    await wait(4)
+    expect(onLongPress).not.toHaveBeenCalled()
+    await wait(1) // exactly the replacement 10ms deadline
     expect(onLongPress).toHaveBeenCalledOnce()
+    await wait(30) // 40ms total after the change — long before the old 200ms deadline
+    expect(onLongPress).toHaveBeenCalledOnce()
+    await wait(200) // the cancelled old timer must not produce a second callback
+    expect(onLongPress).toHaveBeenCalledOnce()
+    wrap.unmount()
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('AC4: pointerdown → pointercancel → pointerdown fires only after the second hold', async () => {
@@ -68,5 +84,7 @@ describe('@iris-ui-kit/vue IrisLongPress pointercancel + reactive props', () => 
     wrap.element.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     await wait(50)
     expect(onLongPress).toHaveBeenCalledOnce()
+    wrap.unmount()
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

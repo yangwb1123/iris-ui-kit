@@ -300,7 +300,8 @@ test('VxeGrid Example — controlled column visibility across framework bundles'
   const statusToggle = section.locator('[data-iris-vxe-visibility-toggle="status"]')
   const roleToggle = section.locator('[data-iris-vxe-visibility-toggle="role"]')
   const bodyRows = table.locator(
-    '[role="row"]:not([data-iris-table-row="header"]):not([data-iris-table-row="summary"])',
+    // Vue/Solid headers use data-iris-table-header-row, not the React row sentinel.
+    '[role="row"]:not([data-iris-table-header-row]):not([data-iris-table-row="header"]):not([data-iris-table-row="summary"])',
   )
   const headerKeys = () =>
     table

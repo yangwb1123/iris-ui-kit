@@ -30,7 +30,9 @@ test('Dashboard operations', async ({ page }) => {
 
   const exportItem = rootMenu.getByRole('menuitem', { name: 'Export report', exact: true })
   await expect(exportItem).toHaveAttribute('aria-disabled', 'true')
-  await exportItem.click()
+  // Intentionally attempt a native click on a disabled item; ordinary click()
+  // waits for aria-disabled to clear and never exercises the disabled guard.
+  await exportItem.click({ force: true })
   await expect(output).toHaveText('Last action: none')
   await expect(rootMenu).toBeVisible()
 

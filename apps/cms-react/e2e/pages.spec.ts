@@ -65,15 +65,29 @@ test('VxeGrid Example — official basic-usage grid parity', async ({ page }) =>
   // 官方数据 6 行（两个表各一份，用 first）
   await expect(page.getByText('Test1', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Test6', { exact: true }).first()).toBeVisible()
-  // seq 序号列
-  await expect(page.getByText('1', { exact: true }).first()).toBeVisible()
+  // Sequence belongs to the basic table, not a hidden keep-alive Dashboard counter.
+  const basicTable = page
+    .locator('section')
+    .filter({
+      has: page.getByRole('heading', {
+        name: 'vxe-grid 基础用法（Basic usage）',
+        exact: true,
+      }),
+    })
+    .getByRole('table')
+  await expect(basicTable.getByText('1', { exact: true }).first()).toBeVisible()
   // 排序可点（Name 表头）
   const nameHeader = page.getByRole('columnheader', { name: /Name/ })
   await expect(nameHeader.first()).toBeVisible()
   // 行编辑标题 + 单元格点击进入编辑
   await expect(page.getByRole('heading', { name: '行编辑（Row editing）' })).toBeVisible()
-  await page.getByText('Test1', { exact: true }).nth(1).click()
-  await expect(page.getByRole('row', { name: /Test1/ }).getByRole('textbox')).toBeVisible()
+  const editingSection = page.locator('section').filter({
+    has: page.getByRole('heading', { name: '行编辑（Row editing）', exact: true }),
+  })
+  // Keep a stable row identity after its Name text is replaced by the editor.
+  const editingRow = editingSection.locator('[data-iris-table-row="10001"]')
+  await editingRow.getByText('Test1', { exact: true }).click()
+  await expect(editingRow.getByRole('textbox')).toBeVisible()
 })
 
 test('VxeGrid Example — controlled column widths', async ({ page }) => {
@@ -247,6 +261,12 @@ test('VxeGrid Example — controlled checkbox filter values', async ({ page }) =
   const panel = page.locator('[data-iris-table-filter-panel]')
   const readout = section.locator('[data-iris-vxe-filter-values-readout]')
 
+  // Both preceding demo sources load asynchronously. Wait for real rows before
+  // opening the filter: their late layout/scroll changes intentionally dismiss it.
+  for (const heading of ['服务端数据源', '搜索表单']) {
+    const sourceSection = page.locator('section').filter({ hasText: heading })
+    await expect(sourceSection.getByText('Test1', { exact: true })).toBeVisible()
+  }
   await expect(section).toHaveCount(1)
   await expect(names).toHaveText(['Active row', 'Paused row', 'Inactive row'])
   await expect(statuses).toHaveText(['active', 'paused', 'inactive'])

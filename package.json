@@ -53,7 +53,7 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "release:verify": "pnpm audit:security && pnpm format:check && pnpm test:scripts && pnpm lint && pnpm typecheck && pnpm build && pnpm check:pack-install && pnpm check:toast-pointer && pnpm check:manifest && pnpm check:doc-facts && pnpm check:parity && pnpm check:docs-reference && pnpm check:registry && pnpm size && pnpm audit:tokens && pnpm check:rsc && pnpm check:desktop-parity && pnpm arch-check:ratchet && pnpm test",
-    "release:publish": "pnpm gen:manifest && pnpm build && changeset publish",
+    "release:publish": "python3 -B scripts/release/iris_publish.py --publish",
     "release": "pnpm release:verify && pnpm release:publish",
     "format": "prettier --write \"**/*.{ts,tsx,vue,svelte,js,json,md,css,html}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,vue,svelte,js,json,md,css,html}\"",

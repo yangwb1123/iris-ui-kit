@@ -67,7 +67,8 @@ class FormStoreEngine<V extends FormValues> {
   readonly api: FormStore<V>
 
   constructor(config: FormConfig<V>) {
-    const validators: FormValidators<V> = config.validators ?? {}
+    const suppliedValidators = config.validators
+    const validators: FormValidators<V> = suppliedValidators ?? {}
     const validateOnChange = config.validateOnChange ?? true
     const validateOnBlur = config.validateOnBlur ?? true
     const parse = config.parse ?? ((v: V) => v)
@@ -100,6 +101,10 @@ class FormStoreEngine<V extends FormValues> {
     }
     // Own plain snapshots before user validators/transforms run.
     const readValidationValues = (): V => cloneFormDraftValue(readEffectiveValues()) as V
+    // A private empty map does not consume a detached return, but snapshot
+    // writes and their observable errors still run before validation starts.
+    const readFieldValues = (): V =>
+      cloneFormDraftValue(readEffectiveValues(), new Map(), suppliedValidators != null) as V
 
     const writeError = (name: string, error: string | undefined): void => {
       store.setState((state) => {
@@ -133,7 +138,7 @@ class FormStoreEngine<V extends FormValues> {
     const coordinator: ValidationCoordinator<V> = createValidationCoordinator<V>({
       validateOnChange,
       debounceMs: config.validationDebounceMs ?? 0,
-      getValues: readValidationValues,
+      getValues: readFieldValues,
       onFieldValidating: setValidating,
       onFieldError: writeError,
       onFormValidating: setFormValidating,
@@ -153,7 +158,7 @@ class FormStoreEngine<V extends FormValues> {
     const validateField: FormStore<V>['validateField'] = async (ref) => {
       const name = pathKey(ref)
       if (coordinator.disposed) return store.getState().errors[name as Key<V>]
-      const result = await coordinator.runField(name, readValidationValues(), runFieldValidator)
+      const result = await coordinator.runField(name, readFieldValues(), runFieldValidator)
       if (coordinator.isCurrentField(result)) return result.error
       return store.getState().errors[name as Key<V>]
     }

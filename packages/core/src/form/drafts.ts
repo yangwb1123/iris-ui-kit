@@ -1,5 +1,6 @@
 import { formatPath, getByPath, parsePath, setByPath, type PathSegment } from '../path'
 import type { FieldFlags, FormValues } from './types'
+import { copySnapshotProperties } from '../snapshot-properties'
 
 export function serializeFormDraft<V extends FormValues>(
   values: V,
@@ -14,39 +15,53 @@ export function serializeFormDraft<V extends FormValues>(
   }
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+function hasPlainPrototype(value: object): boolean {
   const prototype = Object.getPrototypeOf(value)
   return prototype === Object.prototype || prototype === null
 }
 
-/** Detach draft data without changing the identity of opaque user objects. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  return hasPlainPrototype(value)
+}
+
+/** Scalar dispatch is side-effect-free; object traversal stays in snapshot order. */
+function cloneFormEntry(value: unknown, seen: WeakMap<object, unknown>): unknown {
+  return value !== null && typeof value === 'object' ? cloneFormDraftValue(value, seen) : value
+}
+
+/** Execute snapshot work in order; optionally discard only the final return value. */
 export function cloneFormDraftValue(
   value: unknown,
   seen = new WeakMap<object, unknown>(),
+  detach = true,
 ): unknown {
   if (value === null || typeof value !== 'object') return value
+  if (!detach) {
+    // Even an unused output has observable push/setter/lookup failures. Execute
+    // the real clone first; never pass original child values into those hooks.
+    cloneFormDraftValue(value, seen)
+    return value
+  }
   const previous = seen.get(value)
   if (previous !== undefined) return previous
 
   if (Array.isArray(value)) {
     const copy: unknown[] = []
     seen.set(value, copy)
-    for (const item of value) copy.push(cloneFormDraftValue(item, seen))
+    for (const item of value) copy.push(cloneFormEntry(item, seen))
     return copy
   }
-  if (!isPlainObject(value)) return value
+  if (!hasPlainPrototype(value)) return value
 
-  const copy = Object.create(Object.getPrototypeOf(value)) as Record<string, unknown>
+  // Keep the second source prototype read: a proxy may change it between reads.
+  const prototype = Object.getPrototypeOf(value)
+  const copy = (prototype === Object.prototype ? {} : Object.create(prototype)) as Record<
+    string,
+    unknown
+  >
   seen.set(value, copy)
-  for (const key of Object.keys(value)) {
-    Object.defineProperty(copy, key, {
-      configurable: true,
-      enumerable: true,
-      value: cloneFormDraftValue(value[key], seen),
-      writable: true,
-    })
-  }
+  copySnapshotProperties(value, copy, cloneFormEntry, seen)
   return copy
 }
 

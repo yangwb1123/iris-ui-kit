@@ -69,9 +69,58 @@ function normalizeTimeout(timeout: unknown): number {
     : DEFAULT_NOTIFICATION_TIMEOUT
 }
 
+// Only owner-created frozen data records may be reused. Array operations can
+// produce foreign records through species even when their input list is owned.
+const ownedRecords = new WeakSet<DesktopNotification>()
+const ownedDenseLists = new WeakSet<readonly DesktopNotification[]>()
+function matchesOwnedRecords(
+  snapshot: readonly DesktopNotification[],
+  previous: readonly DesktopNotification[],
+): boolean {
+  if (!ownedDenseLists.has(previous) || snapshot.length !== previous.length + 1) return false
+  // Both arrays have private, dense data indices. Check actual spread output,
+  // not the iterator's provenance: a caller can override next after import.
+  for (let index = 0; index < previous.length; index++) {
+    if (snapshot[index + 1] !== previous[index]) return false
+  }
+  return true
+}
+
+function freezeState(snapshot: DesktopNotification[], dense: boolean): NotificationCenterState {
+  Object.freeze(snapshot)
+  if (dense) ownedDenseLists.add(snapshot)
+  return Object.freeze({ notifications: snapshot }) as NotificationCenterState
+}
+
+function snapshotRecord(notification: DesktopNotification): DesktopNotification {
+  if (ownedRecords.has(notification)) return notification
+  const snapshot = Object.freeze({ ...notification })
+  ownedRecords.add(snapshot)
+  return snapshot
+}
+
 function createState(notifications: readonly DesktopNotification[]): NotificationCenterState {
-  const snapshot = notifications.map((notification) => Object.freeze({ ...notification }))
-  return Object.freeze({ notifications: Object.freeze(snapshot) }) as NotificationCenterState
+  // Match indexed map's length window and HasProperty reads, not an untrusted
+  // produced array's iterator/map/species. Keep holes and inherited indices.
+  const length = Math.min(
+    Math.max(Math.floor(+notifications.length) || 0, 0),
+    Number.MAX_SAFE_INTEGER,
+  )
+  const snapshot: DesktopNotification[] = []
+  const prototype = Object.getPrototypeOf(snapshot)
+  // The unpublished builder must not invoke inherited numeric setters. Restore
+  // its ordinary array prototype only after every detached index is installed.
+  Object.setPrototypeOf(snapshot, null)
+  snapshot.length = length
+  let count = 0
+  for (let index = 0; index < length; index++) {
+    if (index in notifications) {
+      snapshot[index] = snapshotRecord(notifications[index]!)
+      count++
+    }
+  }
+  Object.setPrototypeOf(snapshot, prototype)
+  return freezeState(snapshot, count === length)
 }
 
 export function createNotificationCenter(): NotificationCenter {
@@ -82,7 +131,7 @@ export function createNotificationCenter(): NotificationCenter {
     subscribe: store.subscribe,
     post(input) {
       const id = generateId('ntf')
-      const notification: DesktopNotification = {
+      const notification: DesktopNotification = Object.freeze({
         id,
         title: input.title,
         body: input.body,
@@ -90,13 +139,25 @@ export function createNotificationCenter(): NotificationCenter {
         appId: input.appId,
         tone: normalizeTone(input.tone),
         timeout: normalizeTimeout(input.timeout),
-      }
-      store.setState((s) => createState([notification, ...s.notifications]))
+      })
+      ownedRecords.add(notification)
+      store.setState((s) => {
+        const previous = s.notifications
+        // Always execute original iteration before making any ownership claim.
+        // Throws/reentry and next-produced foreign records are observable.
+        const snapshot = [notification, ...previous]
+        return matchesOwnedRecords(snapshot, previous)
+          ? freezeState(snapshot, true)
+          : createState(snapshot)
+      })
       return id
     },
     dismiss(id) {
       if (!store.getState().notifications.some((n) => n.id === id)) return
-      store.setState((s) => createState(s.notifications.filter((n) => n.id !== id)))
+      store.setState((s) => {
+        const previous = s.notifications
+        return createState(previous.filter((n) => n.id !== id))
+      })
     },
     dismissAll() {
       if (store.getState().notifications.length === 0) return

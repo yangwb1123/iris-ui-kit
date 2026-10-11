@@ -1,4 +1,5 @@
 import type { OutboxFlushResult, OutboxItem, OutboxItemOutcome } from './outbox'
+import { copySnapshotProperties } from './snapshot-properties'
 
 /** JSON values accepted by the built-in durable snapshot guard. */
 export type OutboxJsonValue =
@@ -61,16 +62,13 @@ function cloneRuntimeObject(value: object, seen: Map<object, unknown>): unknown 
     return copy
   }
 
-  const copy = Object.create(Object.getPrototypeOf(value)) as Record<string, unknown>
+  const prototype = Object.getPrototypeOf(value)
+  const copy = (prototype === Object.prototype ? {} : Object.create(prototype)) as Record<
+    string,
+    unknown
+  >
   seen.set(value, copy)
-  for (const key of Object.keys(value)) {
-    Object.defineProperty(copy, key, {
-      value: cloneRuntimeValue((value as Record<string, unknown>)[key], seen),
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    })
-  }
+  copySnapshotProperties(value, copy, cloneRuntimeValue, seen)
   return copy
 }
 

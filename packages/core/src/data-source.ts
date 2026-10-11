@@ -22,7 +22,7 @@ import {
   positiveInteger,
 } from './data-source-cache-helpers'
 import { createSelectionModel } from './selection'
-import { createDataSourceMutationRuntime } from './data-source-mutations'
+import { createLazyDataSourceMutationRuntime } from './data-source/lazy-mutations'
 import type { DataSourceQueuedMutation } from './data-source-mutation-types'
 import { pageCount as computePageCount } from './data-view'
 import { createResilientFetcher } from './resilient-fetcher'
@@ -371,7 +371,7 @@ class DataSourceEngine<T> {
       resilient.cache.remove(cacheKey(buildQuery()))
     }
 
-    const mutationRuntime = createDataSourceMutationRuntime<T>({
+    const mutationRuntime = createLazyDataSourceMutationRuntime<T>({
       store,
       outbox,
       reload: () => fetchPage({ append: false }),

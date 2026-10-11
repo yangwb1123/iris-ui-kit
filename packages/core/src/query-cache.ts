@@ -113,14 +113,16 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
       ? Infinity
       : Math.max(0, Math.floor(Number.isFinite(options.maxEntries) ? options.maxEntries : Infinity))
   const entries = new Map<string, InternalEntry<T>>()
+  let newestEntry: InternalEntry<T> | undefined
   const listeners = new Map<string, Set<(entry: QueryEntry<T>) => void>>()
 
   // Map insertion order is the LRU order: the first entry is least recently
   // used and the last entry is most recently used.
   const touch = (key: string, e: InternalEntry<T>): void => {
-    if (entries.get(key) !== e) return
+    if (entries.get(key) !== e || newestEntry === e) return
     entries.delete(key)
     entries.set(key, e)
+    newestEntry = e
   }
 
   // A cache mutation supersedes any request already attached to this entry.
@@ -146,6 +148,7 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
       // is in flight so concurrent callers can still de-duplicate onto it.
       if (key === protectedKey) return
       entries.delete(key)
+      if (newestEntry === e) newestEntry = undefined
       orphanInflight(e)
     }
   }
@@ -155,6 +158,7 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
     if (!e) {
       e = idleEntry<T>()
       entries.set(key, e)
+      newestEntry = e
       evictIfNeeded(protectNewEntry ? key : undefined)
     } else {
       touch(key, e)
@@ -305,11 +309,13 @@ export function createQueryCache<T>(options: QueryCacheOptions = {}): QueryCache
       // Remove first so an abort listener cannot attach a new request to the
       // entry that is being dropped.
       entries.delete(key)
+      if (newestEntry === e) newestEntry = undefined
       orphanInflight(e)
     },
     clear() {
       const current = [...entries.values()]
       entries.clear()
+      newestEntry = undefined
       for (const e of current) orphanInflight(e)
     },
     subscribe(key, listener) {

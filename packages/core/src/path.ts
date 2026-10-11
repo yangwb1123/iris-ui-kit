@@ -192,10 +192,13 @@ export function parsePath(path: Path, options?: { allowReserved?: boolean }): Pa
   const str = path as string
   if (str === '') return []
 
-  const safety = validatePathSafety(str, [])
+  // A nonempty flat field cannot contain bracket/dot syntax or a null byte.
+  // Keep numeric conversion and reserved-key validation on the same path.
+  const flat = typeof str === 'string' && !/[.[\]\0]/.test(str)
+  const safety = flat ? null : validatePathSafety(str, [])
   if (safety) return safety
 
-  const segments = parseSegments(str)
+  const segments = flat ? [/^\d+$/.test(str) ? Number(str) : str] : parseSegments(str)
 
   // Prototype pollution key check (skip when options.allowReserved is true).
   if (!options?.allowReserved) {

@@ -19,12 +19,19 @@ function serverMarkups(filename: string, props: Array<Record<string, unknown>>):
       // Vitest disables HMR; its SSR companion must use the same compiler mode.
       // Svelte 5 ignores legacy hot:false, leaving Vite's default HMR enabled.
       plugins: [svelte({ compilerOptions: { hmr: false, preserveWhitespace: false } })], resolve: { conditions: ['node'] },
-      server: { middlewareMode: true }, ssr: { resolve: { conditions: ['node'] } } });
+      // These frozen, SSR-only requests need neither HMR/WebSocket transport
+      // nor file watching. hmr:false alone does not disable Vite 6's socket.
+      server: { middlewareMode: true, hmr: false, ws: false, watch: null },
+      ssr: { resolve: { conditions: ['node'] } } });
     try {
       const component = await server.ssrLoadModule('/src/provider/' + process.argv[1] + '.svelte');
       const { render } = await server.ssrLoadModule('svelte/server');
       const requests = JSON.parse(process.argv[2]);
-      console.log(JSON.stringify(requests.map(props => render(component.default, { props }).body)));
+      const bodies = requests.map(props => render(component.default, { props }).body);
+      console.log(JSON.stringify({ bodies,
+        hmrDisabled: server.config.server.hmr === false,
+        websocketDisabled: server.config.server.ws === false,
+        watcherDisabled: server.config.server.watch === null }));
     } finally { await server.close(); }
   `
   const result = spawnSync(
@@ -38,7 +45,16 @@ function serverMarkups(filename: string, props: Array<Record<string, unknown>>):
     },
   )
   expect(result.status, result.stderr || String(result.error)).toBe(0)
-  const bodies = JSON.parse(result.stdout) as string[]
+  const { bodies, hmrDisabled, websocketDisabled, watcherDisabled } = JSON.parse(result.stdout) as {
+    bodies: string[]
+    hmrDisabled: boolean
+    websocketDisabled: boolean
+    watcherDisabled: boolean
+  }
+  // These are the native server's resolved options, not a mocked renderer.
+  expect(hmrDisabled, 'SSR-only requests do not need development hot updates').toBe(true)
+  expect(websocketDisabled, 'SSR-only requests must not start a WebSocket transport').toBe(true)
+  expect(watcherDisabled, 'Frozen SSR source does not need a file watcher').toBe(true)
   expect(bodies).toHaveLength(props.length)
   expect(bodies.every((body) => typeof body === 'string')).toBe(true)
   return bodies

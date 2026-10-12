@@ -23,19 +23,13 @@ import {
 } from './data-source-cache-helpers'
 import { createSelectionModel } from './selection'
 import { createLazyDataSourceMutationRuntime } from './data-source/lazy-mutations'
+import { createDataSourceDescriptorCodec } from './data-source/descriptor-codec'
 import type { DataSourceQueuedMutation } from './data-source-mutation-types'
 import { pageCount as computePageCount } from './data-view'
 import { createResilientFetcher } from './resilient-fetcher'
-import {
-  createOutbox,
-  OutboxSerializationError,
-  type AdvancedOutbox,
-  type OutboxCodec,
-  type OutboxStorage,
-} from './outbox'
+import { createOutbox, type AdvancedOutbox, type OutboxStorage } from './outbox'
 import { cloneRuntimeValue } from './outbox-runtime'
 import {
-  DataSourceMutationUndeliveredError,
   type DataSourceQuery,
   type DataSourceMode,
   type DataSourceConfig,
@@ -147,36 +141,6 @@ class DataSourceEngine<T> {
     const outboxOpts = config.outbox
     const durableOutboxOpts: DataSourceOutboxOptions | undefined =
       typeof outboxOpts === 'object' ? outboxOpts : undefined
-    const descriptorCodec: OutboxCodec<QueuedMutation, DataSourceMutationDescriptor> = {
-      encode(mutation) {
-        const descriptor = mutation.descriptor
-        if (!descriptor || typeof descriptor.type !== 'string') {
-          throw new OutboxSerializationError(
-            'Data-source durable outbox mutations require options.descriptor; action closures are not persistable',
-          )
-        }
-        return descriptor
-      },
-      decode(descriptor) {
-        if (!descriptor || typeof descriptor.type !== 'string') {
-          throw new OutboxSerializationError(
-            'Data-source outbox descriptor must contain a string `type`',
-          )
-        }
-        const executor = durableOutboxOpts?.executor
-        return {
-          description: `data-source:${descriptor.type}`,
-          descriptor,
-          run: executor
-            ? () => executor(descriptor)
-            : async () => {
-                throw new DataSourceMutationUndeliveredError(
-                  `No outbox executor is configured for descriptor type "${descriptor.type}"`,
-                )
-              },
-        }
-      },
-    }
     const outbox = outboxOpts
       ? durableOutboxOpts?.storage !== undefined
         ? createOutbox<QueuedMutation, DataSourceMutationDescriptor>({
@@ -184,7 +148,9 @@ class DataSourceEngine<T> {
               await mutation.run()
             },
             storage: durableOutboxOpts.storage as OutboxStorage<DataSourceMutationDescriptor>,
-            codec: descriptorCodec,
+            // Keep descriptor work only in the durable branch, after the
+            // original second storage read and before maxAttempts/load.
+            codec: createDataSourceDescriptorCodec(durableOutboxOpts),
             maxAttempts: durableOutboxOpts.maxAttempts,
           })
         : createOutbox<QueuedMutation>({

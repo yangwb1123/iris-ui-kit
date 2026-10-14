@@ -6,9 +6,9 @@ if (!['native-control', 'fetcher-control'].includes(mode))
 
 export function createQueryCache() {
   return {
-    fetch(_key, fetcher) {
+    fetch(key, fetcher) {
       // Both construction and signal access remain INSIDE each measured fetch.
-      return fetcher(mode === 'native-control' ? new AbortController().signal : undefined)
+      return fetcher(key, mode === 'native-control' ? new AbortController().signal : undefined)
     },
   }
 }

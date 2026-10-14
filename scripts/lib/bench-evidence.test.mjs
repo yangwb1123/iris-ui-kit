@@ -11,6 +11,16 @@ import { collectCases, saveReport } from '../bench-evidence/reporter.mjs'
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const query = '10k unique fetches (no cache hits)'
 const expected = { query: ['src/resilience.bench.ts', query] }
+function runControlWitness(source) {
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+    encoding: 'utf8',
+    timeout: 10_000,
+    maxBuffer: 65536,
+  })
+  assert.equal(result.error, undefined)
+  assert.equal(result.status, 0, result.stdout + result.stderr)
+}
+
 function fixture() {
   return [
     {
@@ -103,7 +113,7 @@ test('Python protocol, source/argument refusal and absolute-window contracts', (
 
 test('separate control witness process; never instrument a performance process', () => {
   const control = new URL('../bench-evidence/controls.mjs', import.meta.url).href
-  const source = `
+  runControlWitness(`
     import assert from 'node:assert/strict';
     const Original = globalThis.AbortController, controllers = [];
     globalThis.AbortController = class extends Original { constructor() { super(); controllers.push(this) } };
@@ -111,23 +121,53 @@ test('separate control witness process; never instrument a performance process',
       process.env.IRIS_BENCH_VARIANT = 'native-control';
       const {createQueryCache} = await import(${JSON.stringify(control + '?native')});
       const cache = createQueryCache(), signals = [];
-      for(let i=0;i<5;i++) assert.equal(await cache.fetch(String(i), s => {signals.push(s);return Promise.resolve(i)}), i);
+      assert.equal(controllers.length,0);
+      for(let i=0;i<5;i++) {
+        assert.equal(await cache.fetch(String(i), (key, signal) => {
+          assert.equal(key,String(i)); assert.equal(controllers.length,i+1);
+          assert.equal(signal,controllers[i].signal); signals.push(signal);
+          return Promise.resolve(Number(key));
+        }),i);
+      }
       assert.equal(controllers.length,5); assert.equal(new Set(signals).size,5);
       assert.ok(signals.every(s=>s instanceof AbortSignal)); controllers[0].abort();
       assert.equal(signals[0].aborted,true); assert.ok(signals.slice(1).every(s=>!s.aborted));
       process.env.IRIS_BENCH_VARIANT = 'fetcher-control';
       const bare = await import(${JSON.stringify(control + '?bare')});
-      await bare.createQueryCache().fetch('x', s => assert.equal(s,undefined));
+      await bare.createQueryCache().fetch('x', (key, signal) => {
+        assert.equal(key,'x'); assert.equal(signal,undefined);
+      });
       assert.equal(controllers.length,5);
     } finally { globalThis.AbortController = Original; }
-  `
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
-    encoding: 'utf8',
-    timeout: 10_000,
-    maxBuffer: 65536,
-  })
-  assert.equal(result.status, 0, result.stderr)
+  `)
 })
+
+for (const variant of ['native-control', 'fetcher-control']) {
+  test(`${variant} forwards keys and key-derived results without wrapping fetcher outcomes`, () => {
+    const control = new URL('../bench-evidence/controls.mjs', import.meta.url).href
+    runControlWitness(`
+      import assert from 'node:assert/strict';
+      process.env.IRIS_BENCH_VARIANT = ${JSON.stringify(variant)};
+      const {createQueryCache} = await import(${JSON.stringify(control)});
+      const cache = createQueryCache(), data = [{id:0},{id:1},{id:2}];
+      // Same key-dependent lookup as resilience.bench.ts, without timing it.
+      const seen = [], fetcher = async k => {seen.push(k);return data[Number(k)]};
+      for(const key of ['0','01','2']) assert.equal(await cache.fetch(key,fetcher),data[Number(key)]);
+      assert.deepEqual(seen,['0','01','2']);
+      const promise = Promise.resolve(data[1]);
+      let args;
+      assert.equal(cache.fetch('opaque-key', (...received) => {args=received;return promise}),promise);
+      assert.equal(args.length,2); assert.equal(args[0],'opaque-key');
+      if(process.env.IRIS_BENCH_VARIANT === 'native-control') assert.ok(args[1] instanceof AbortSignal);
+      else assert.equal(args[1],undefined);
+      assert.equal(cache.fetch('direct', () => data[0]),data[0]);
+      const error = new Error('fetcher failure'), rejected = Promise.reject(error);
+      const result = cache.fetch('reject', () => rejected);
+      assert.equal(result,rejected); await assert.rejects(result,e => e === error);
+      assert.throws(() => cache.fetch('throw', () => {throw error}),e => e === error);
+    `)
+  })
+}
 
 test('workflow is diagnostic only, read-only and keeps all partial artifacts', () => {
   const workflow = load(

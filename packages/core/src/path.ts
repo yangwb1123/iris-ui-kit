@@ -144,6 +144,20 @@ function validatePathSafety(str: string, segments: PathSegment[]): PathSegment[]
   return message ? pathError(message, str, segments) : null
 }
 
+/** Decode a proven dotted primitive without allocating general regex matches. */
+function parseDottedSegments(str: string): PathSegment[] {
+  const segments: PathSegment[] = []
+  let segment = ''
+  for (let index = 0; index <= str.length; index++) {
+    const char = index === str.length ? '.' : str[index]
+    if (char === '.') {
+      segments.push(/^\d+$/.test(segment) ? Number(segment) : segment)
+      segment = ''
+    } else segment += char
+  }
+  return segments
+}
+
 /** Parse the regex loop: extract segments from a validated path string. */
 function parseSegments(str: string): PathSegment[] {
   const segments: PathSegment[] = []
@@ -195,10 +209,17 @@ export function parsePath(path: Path, options?: { allowReserved?: boolean }): Pa
   // A nonempty flat field cannot contain bracket/dot syntax or a null byte.
   // Keep numeric conversion and reserved-key validation on the same path.
   const flat = typeof str === 'string' && !/[.[\]\0]/.test(str)
-  const safety = flat ? null : validatePathSafety(str, [])
+  // The proof excludes empty segments, brackets and null bytes. Other inputs
+  // still use the original validator; reserved-key policy always runs below.
+  const dotted = !flat && typeof str === 'string' && /^[^.[\]\0]+(?:\.[^.[\]\0]+)+$/.test(str)
+  const safety = flat || dotted ? null : validatePathSafety(str, [])
   if (safety) return safety
 
-  const segments = flat ? [/^\d+$/.test(str) ? Number(str) : str] : parseSegments(str)
+  const segments = flat
+    ? [/^\d+$/.test(str) ? Number(str) : str]
+    : dotted
+      ? parseDottedSegments(str)
+      : parseSegments(str)
 
   // Prototype pollution key check (skip when options.allowReserved is true).
   if (!options?.allowReserved) {

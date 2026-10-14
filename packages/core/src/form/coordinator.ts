@@ -132,6 +132,21 @@ export function createValidationCoordinator<V extends FormValues>(
     return isFieldCurrent(run) ? 'current' : 'superseded'
   }
 
+  // FieldRun is a private fixed-layout record created by runField, not user
+  // values. Keep a fresh fixed-layout result, including deferred status reads.
+  const fieldResult = (
+    run: FieldRun,
+    status: RunStatus | undefined,
+    error: string | undefined,
+  ): InternalFieldResult => ({
+    name: run.name,
+    runId: run.runId,
+    revision: run.revision,
+    epoch: run.epoch,
+    status: status ?? statusForField(run),
+    error,
+  })
+
   const statusForForm = (run: FormRun<V>): RunStatus => {
     if (disposed) return 'destroyed'
     if (run.epoch !== lifecycleEpoch) return 'cancelled'
@@ -196,7 +211,7 @@ export function createValidationCoordinator<V extends FormValues>(
     // the validating flag is published. Do not invoke user code after that
     // re-entrant lifecycle change.
     if (!isFieldCurrent(run)) {
-      return { ...run, status: statusForField(run), error: undefined }
+      return fieldResult(run, undefined, undefined)
     }
 
     let error: string | undefined
@@ -208,7 +223,7 @@ export function createValidationCoordinator<V extends FormValues>(
 
     const status = statusForField(run)
     if (status !== 'current') {
-      return { ...run, status, error: undefined }
+      return fieldResult(run, status, undefined)
     }
 
     if (activeFields.get(name) === run) activeFields.delete(name)
@@ -217,10 +232,10 @@ export function createValidationCoordinator<V extends FormValues>(
     // value, cancel, or start a newer validation before the error callback.
     // Re-check so an obsolete result cannot be committed after that callback.
     if (!isFieldCurrent(run)) {
-      return { ...run, status: statusForField(run), error: undefined }
+      return fieldResult(run, undefined, undefined)
     }
     options.onFieldError?.(name, error)
-    return { ...run, status, error }
+    return fieldResult(run, status, error)
   }
 
   const beginForm = (names: readonly string[], snapshot: V): FormRun<V> | null => {

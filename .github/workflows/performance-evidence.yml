@@ -1,0 +1,87 @@
+name: Performance evidence (not acceptance)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/performance-evidence.yml'
+      - 'scripts/bench-evidence/**'
+      - 'scripts/lib/bench-evidence.test.mjs'
+      - 'docs/PERFORMANCE_CONTRACT.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Do not cancel a timed cohort or discard partial evidence on a newer push.
+concurrency:
+  group: perf-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Refuse rerun attempts (retain and inspect the original evidence)
+        run: test "$GITHUB_RUN_ATTEMPT" = 1
+
+      - name: Checkout exact candidate (not a synthetic merge SHA)
+        uses: actions/checkout@v4
+        with:
+          path: candidate
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Checkout the fixed historical source (never install its old dependencies)
+        uses: actions/checkout@v4
+        with:
+          path: reference
+          ref: 8b694b9e242d6db033b5320e0b843fbebb391318
+          persist-credentials: false
+
+      - name: Setup locked current pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
+      - name: Setup Node20 (record actual version and image)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: candidate/pnpm-lock.yaml
+
+      - name: Install only the current locked harness
+        working-directory: candidate
+        run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: '0'
+
+      - name: Run protocol regressions in a separate process before collection
+        working-directory: candidate
+        run: node --test scripts/lib/bench-evidence.test.mjs
+
+      - name: Collect all declared cohorts without selecting a winner
+        working-directory: candidate
+        run: >-
+          python3 -B scripts/bench-evidence/collect.py
+          --reference-dir "$GITHUB_WORKSPACE/reference"
+          --expected-head "$CANDIDATE_HEAD"
+          --output-dir "$RUNNER_TEMP/iris-performance-evidence"
+          --pairs 6 --seconds 1200
+        env:
+          CANDIDATE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Retain raw and partial evidence (never a release receipt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-evidence-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/iris-performance-evidence/*.json
+            ${{ runner.temp }}/iris-performance-evidence/*.log
+            ${{ runner.temp }}/iris-performance-evidence/*.mjs
+            ${{ runner.temp }}/iris-performance-evidence/*.partial
+          if-no-files-found: error
+          retention-days: 14

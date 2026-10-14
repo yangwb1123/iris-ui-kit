@@ -1,4 +1,5 @@
 """Owned process groups, absolute deadlines and bounded byte diagnostics."""
+from contextlib import contextmanager, ExitStack
 import json
 import os
 import signal
@@ -36,6 +37,32 @@ def _stop_owned(proc):
     proc.wait(timeout=10)
 
 
+@contextmanager
+def _defer_spawn_interrupts():
+    """Deliver Python interrupts only after the caller owns the returned child.
+
+    Do not block OS signal masks: child exec semantics remain unchanged. ExitStack
+    restores every handler even if another interruption occurs during restoration.
+    Python signal callbacks run on the main thread, not on a worker spawning a child.
+    """
+    pending, previous = {}, {}
+
+    def defer(number, frame):
+        pending.setdefault(number, frame)
+
+    with ExitStack() as restore:
+        if threading.current_thread() is threading.main_thread():
+            for number in (signal.SIGALRM, signal.SIGINT):
+                handler = signal.getsignal(number)
+                if callable(handler):
+                    previous[number] = handler
+                    restore.callback(signal.signal, number, handler)
+                    signal.signal(number, defer)
+        yield
+    for number, frame in pending.items():
+        previous[number](number, frame)
+
+
 def run_command(args, cwd, log, timeout, max_output=64 * 1024 * 1024):
     if os.name != "posix" or not 0 < timeout <= 7200 or not 0 < max_output <= 64 * 1024 * 1024:
         raise ValueError("Invalid/unsupported process budget")
@@ -45,11 +72,13 @@ def run_command(args, cwd, log, timeout, max_output=64 * 1024 * 1024):
     env = {**os.environ, "HUSKY": "0", "CI": "1", "NEXT_TELEMETRY_DISABLED": "1", "NUXT_TELEMETRY_DISABLED": "1"}
     overflow, deadline = threading.Event(), time.monotonic() + timeout
     with log.open("wb") as output:
-        proc = subprocess.Popen(args, cwd=cwd, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, start_new_session=True)
-        reader = threading.Thread(target=_drain, args=(proc.stdout, output, max_output, overflow), daemon=True)
-        reader.start()
+        proc, reader = None, None
         try:
+            with _defer_spawn_interrupts():
+                proc = subprocess.Popen(args, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, start_new_session=True)
+            reader = threading.Thread(target=_drain, args=(proc.stdout, output, max_output, overflow), daemon=True)
+            reader.start()
             while proc.poll() is None and time.monotonic() < deadline and not overflow.is_set():
                 time.sleep(0.02)
             expired = time.monotonic() >= deadline
@@ -64,8 +93,12 @@ def run_command(args, cwd, log, timeout, max_output=64 * 1024 * 1024):
             expired = expired or time.monotonic() >= deadline
             code = 124 if expired else (125 if overflow.is_set() or reader.is_alive() else proc.returncode)
         except BaseException:
-            _stop_owned(proc)
-            reader.join(timeout=2)
+            if proc is not None:
+                _stop_owned(proc)
+                if reader is not None and reader.ident is not None:
+                    reader.join(timeout=2)
+                elif proc.stdout is not None:
+                    proc.stdout.close()
             raise
     metadata.update({"finished": time.time(), "exit": code})
     log.with_suffix(log.suffix + ".json").write_text(json.dumps(metadata, indent=2) + "\n")

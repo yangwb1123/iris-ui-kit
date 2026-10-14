@@ -72,23 +72,43 @@ function normalizeTimeout(timeout: unknown): number {
 // Only owner-created frozen data records may be reused. Array operations can
 // produce foreign records through species even when their input list is owned.
 const ownedRecords = new WeakSet<DesktopNotification>()
-const ownedDenseLists = new WeakSet<readonly DesktopNotification[]>()
+interface OwnedRecordLink {
+  readonly record: DesktopNotification
+  readonly tail: OwnedRecordLink | null
+}
+
+// true retains the original indexed proof for dense non-append snapshots.
+// Links describe only immutable append lineages; they never reach public state.
+type OwnedRecordProof = OwnedRecordLink | null | true
+const ownedDenseLists = new WeakMap<readonly DesktopNotification[], OwnedRecordProof>()
 function matchesOwnedRecords(
   snapshot: readonly DesktopNotification[],
   previous: readonly DesktopNotification[],
-): boolean {
-  if (!ownedDenseLists.has(previous) || snapshot.length !== previous.length + 1) return false
-  // Both arrays have private, dense data indices. Check actual spread output,
-  // not the iterator's provenance: a caller can override next after import.
-  for (let index = 0; index < previous.length; index++) {
-    if (snapshot[index + 1] !== previous[index]) return false
+): OwnedRecordProof | undefined {
+  const proof = ownedDenseLists.get(previous)
+  if (proof === undefined || snapshot.length !== previous.length + 1) return undefined
+  if (proof === true) {
+    for (let index = 0; index < previous.length; index++) {
+      if (snapshot[index + 1] !== previous[index]) return undefined
+    }
+    return true
   }
-  return true
+  // Verify every actual spread output against the immutable recorded lineage.
+  // This does not infer anything from the iterator or its next implementation.
+  let link = proof
+  for (let index = 1; link !== null; index++) {
+    if (snapshot[index] !== link.record) return undefined
+    link = link.tail
+  }
+  return { record: snapshot[0]!, tail: proof }
 }
 
-function freezeState(snapshot: DesktopNotification[], dense: boolean): NotificationCenterState {
+function freezeState(
+  snapshot: DesktopNotification[],
+  proof: OwnedRecordProof | undefined,
+): NotificationCenterState {
   Object.freeze(snapshot)
-  if (dense) ownedDenseLists.add(snapshot)
+  if (proof !== undefined) ownedDenseLists.set(snapshot, proof)
   return Object.freeze({ notifications: snapshot }) as NotificationCenterState
 }
 
@@ -120,7 +140,8 @@ function createState(notifications: readonly DesktopNotification[]): Notificatio
     }
   }
   Object.setPrototypeOf(snapshot, prototype)
-  return freezeState(snapshot, count === length)
+  const proof = count === length ? (length === 0 ? null : true) : undefined
+  return freezeState(snapshot, proof)
 }
 
 export function createNotificationCenter(): NotificationCenter {
@@ -146,9 +167,8 @@ export function createNotificationCenter(): NotificationCenter {
         // Always execute original iteration before making any ownership claim.
         // Throws/reentry and next-produced foreign records are observable.
         const snapshot = [notification, ...previous]
-        return matchesOwnedRecords(snapshot, previous)
-          ? freezeState(snapshot, true)
-          : createState(snapshot)
+        const proof = matchesOwnedRecords(snapshot, previous)
+        return proof !== undefined ? freezeState(snapshot, proof) : createState(snapshot)
       })
       return id
     },

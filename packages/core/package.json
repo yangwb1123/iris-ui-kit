@@ -38,6 +38,11 @@
       "import": "./dist/notifications.js",
       "require": "./dist/notifications.cjs"
     },
+    "./owned-notifications": {
+      "types": "./dist/owned-notifications.d.ts",
+      "import": "./dist/owned-notifications.js",
+      "require": "./dist/owned-notifications.cjs"
+    },
     "./clipboard-history": {
       "types": "./dist/clipboard-history.d.ts",
       "import": "./dist/clipboard-history.js",

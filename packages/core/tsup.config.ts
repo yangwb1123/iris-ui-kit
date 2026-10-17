@@ -11,6 +11,7 @@ export default defineConfig({
     'src/profile.ts',
     'src/commands.ts',
     'src/notifications.ts',
+    'src/owned-notifications.ts',
     'src/clipboard-history.ts',
     'src/fs.ts',
     'src/undo.ts',

@@ -5,6 +5,12 @@
 unchanged. A successful diagnostic collection does not pass a performance gate or
 authorize integration, release, or deployment.
 
+On 2026-10-15 the maintainer selected the versioned architecture **design** route.
+[Owned-data migration](OWNED_DATA_MIGRATION.md) proposes the input/view/history
+boundary, consumer migration and acceptance plan. Its detailed semantics, resource
+limits, public API, numeric performance targets and default switch remain unapproved;
+it changes no runtime, baseline or release authority.
+
 ## What needs a decision
 
 The original six obligations now include safety work absent from some historical
@@ -134,6 +140,70 @@ Before any baseline change:
   full workloads in CI; keep20%tolerance and all correctness/safety/coverage/package/
   native/browser gates. Neither this tool nor a green diagnostic workflow grants an
   exception to an existing failed mandatory check.
+
+## Mandatory benchmark gate: one execution owner
+
+`node scripts/check-bench-regression.mjs` owns one fresh **workspace-wide**
+`pnpm bench` invocation and adjudicates that invocation's output. CI must not run
+another `pnpm bench` first. The declared workspace inventory at this repair has
+49 package manifests and only `packages/core` owns a bench script. Keeping the root
+Turbo task also retains future non-core owners and the existing `^build` dependency
+edges; benchmark caching remains disabled. `pnpm bench` alone is execution, not the
+regression verdict. No previous log, cached benchmark table or diagnostic artifact
+can satisfy this command.
+
+Turbo's stream/grouped/full-output/no-prefix flags control presentation only. Vitest
+workloads, warmups, samples, concurrency and all baseline values remain unchanged.
+Removing the earlier whole-process pass removes its incidental prewarming and changes
+execution topology: this is **not** a claim of identical historical timing conditions,
+production speedup, or guaranteed completion inside CI's unchanged 30 minute limit.
+Nothing is moved outside an operation's measured callback. Fresh qualified CI evidence
+and every other integration/release gate remain necessary.
+
+The gate refuses missing/malformed/duplicate-key baseline input, invalid/nonpositive
+throughput, invalid history, ambiguous names, failed/signalled child execution, empty,
+incomplete, duplicate or malformed result tables, and absent required cases. Required
+cases must belong to the core runner and their declared benchmark source file. All
+20 existing baseline cases remain required. Non-baselined rows are retained and labeled
+**not acceptance**, not promoted into new numeric obligations. A changed output format
+fails closed rather than silently skipping rows. Names ending in a number (including
+`interleaved measure(10) + setScroll × 100`) are parsed as names, not fabricated Hz;
+old stored history is not retroactively corrected.
+
+Each recognized Vitest `RUN` owns a nonempty result stream and exactly one
+`BENCH Summary`. It must complete before another runner starts and before EOF;
+completion of core cannot certify a later or earlier runner. Empty tables are
+rejected at EOF even without a final newline. Suites, tables and completion markers
+require an active runner; tables also require a source-file marker. Repeated normalized
+runner roots and data after completion are rejected. Complete non-core runners remain
+valid before or after core, without adding numeric obligations for their extra rows.
+These are checks on the recognized log protocol, not proof against a trusted producer
+fabricating output or a certificate for arbitrary other benchmark formats.
+
+Default tolerance remains 0.2: minimum throughput is baseline × 0.8. An explicit
+`--threshold=0` through `--threshold=0.2` may only tighten it; malformed, duplicate,
+unknown or looser arguments are rejected before execution. Exit 0 requires a complete
+passing adjudication; exit 1 records complete measured regressions; exit 2 means invalid
+input/evidence/execution/persistence, not a performance score. These stricter rejection
+rules intentionally replace previously permissive CLI behavior.
+
+Execution has a 600 second absolute child deadline and an 8 MiB combined output budget;
+continuing output cannot extend the deadline. Cleanup targets the owned POSIX process
+group, including descendants after leader exit. Windows uses owned-PID tree termination
+and refuses unconfirmed cleanup; this local Linux verification is **not Windows or macOS
+acceptance**, nor a sandbox against trusted source deliberately escaping its process tree.
+JSON/history reads and replacement writes are limited to 1 MiB. An exclusive, non-breaking
+`bench-history.json.lock` excludes cooperating checker invocations. After a hard kill,
+inspect the owner/outcome before manually removing a stale lock; do not blindly replay.
+Only complete evidence updates history (including genuine regressions), through a synced
+temporary file and atomic rename. Existing dates/results are retained; a changed history
+is not overwritten. These checks cannot roll back benchmark code's other side effects.
+
+`node --test scripts/lib/bench-regression.test.mjs` uses deterministic subprocess
+producers and private histories for gate regressions, plus owned sleeper/output fixtures
+for transport cleanup. Their fabricated numbers are protocol fixtures, not benchmarks.
+The script suite discovers these tests automatically. Full production performance,
+native/browser acceptance, main/push CI and release authorization remain independent.
 
 ## Artifacts and implementation checks
 

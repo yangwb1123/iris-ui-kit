@@ -106,9 +106,8 @@ jobs:
           corepack pnpm exec playwright test
 
       - name: Bench + regression check
-        run: |
-          pnpm bench
-          node scripts/check-bench-regression.mjs
+        # The checker owns the sole workspace-wide benchmark invocation.
+        run: node scripts/check-bench-regression.mjs
 
       - name: Change budget (advisory)
         run: pnpm change-budget

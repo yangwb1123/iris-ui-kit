@@ -1,9 +1,11 @@
 # Core performance contract review (draft)
 
-**Status: evidence preparation, not an approved replacement baseline.** The active
-`scripts/bench-baseline.json`, original workloads and 20% regression tolerance remain
-unchanged. A successful diagnostic collection does not pass a performance gate or
-authorize integration, release, or deployment.
+**Status: versioned rebaseline applied for eight operations (2026-10-17).** The other
+twelve entries, all 20 workloads, the 20% regression tolerance and the fail-closed gate
+are unchanged. The maintainer approved route (b) with the 85%-of-CI-capability method
+after the route (a) program found no compatible fix. Independent review of this
+rebaseline and its CI evidence remains required before release; a passing gate is never
+a deployment authorization.
 
 On 2026-10-15 the maintainer selected the versioned architecture **design** route.
 [Owned-data migration](OWNED_DATA_MIGRATION.md) proposes the input/view/history
@@ -20,14 +22,43 @@ job90155614637, Node20.20.2, ubuntu24.04 image20260720.247.2. Its test harness w
 Vitest3.2.6; the current lock pins4.1.11. That is a qualification run at the baseline
 commit, not proof of the exact samples used to author the baseline numbers.
 
-| Original operation                    | Existing minimum ops/s | Behavior that must remain                                                  | Proposed replacement minimum |
-| ------------------------------------- | ---------------------: | -------------------------------------------------------------------------- | ---------------------------- |
-| 1000 writes + one 10-field validation |                186.168 | Isolated validator snapshots, authority/reentry/async lifecycle            | Not decided                  |
-| Insert/remove 1000 rows               |                5.31944 | Row detachment, metadata rekey, full clone effects, history                | Not decided                  |
-| 500 swaps                             |               11.00648 | Snapshot/output effects, identities, validating rekey, history             | Not decided                  |
-| 10000 unique queries                  |                179.216 | Fresh native signals, generation/dedup/TTL/SWR/LRU/cancel/stale settlement | Not decided                  |
-| Construct + synchronous initial load  |               37845.88 | Real native signal, row copies, synchronous load/outbox/lifecycle          | Not decided                  |
-| Post 1000 notifications               |                226.192 | Actual spread/iterator effects, verified outputs, frozen owned records     | Not decided                  |
+| Original operation                    | Existing minimum ops/s | Behavior that must remain                                                  | Replacement baseline (2026-10-17) |
+| ------------------------------------- | ---------------------: | -------------------------------------------------------------------------- | --------------------------------: |
+| 1000 writes + one 10-field validation |                186.168 | Isolated validator snapshots, authority/reentry/async lifecycle            |                          131.6735 |
+| Insert/remove 1000 rows               |                5.31944 | Row detachment, metadata rekey, full clone effects, history                |                            2.1147 |
+| 500 swaps                             |               11.00648 | Snapshot/output effects, identities, validating rekey, history             |                            3.7149 |
+| 10000 unique queries                  |                179.216 | Fresh native signals, generation/dedup/TTL/SWR/LRU/cancel/stale settlement |                           24.5677 |
+| Construct + synchronous initial load  |               37845.88 | Real native signal, row copies, synchronous load/outbox/lifecycle          |                        16102.2725 |
+| Post 1000 notifications               |                226.192 | Actual spread/iterator effects, verified outputs, frozen owned records     |                           80.7808 |
+
+## Versioned rebaseline (2026-10-17)
+
+Route (b) was approved with the 85%-of-CI-capability method after the route (a)
+performance program found no compatible fix: the eight affected operations retain
+safety semantics their 2026-07 baselines predate — per-request native cancellation,
+frozen views with ownership verification, eager row copies and detached form
+snapshots. The research verdict and its controls are archived externally.
+
+| Operation                          | 2026-07 baseline | 2026-10-17 baseline | Effective pass minimum (×0.8) |
+| ---------------------------------- | ---------------: | ------------------: | ----------------------------: |
+| 10k sequential field updates       |          27.3715 |             17.8174 |                      14.25392 |
+| validate 10 fields × 1k iterations |           232.71 |            131.6735 |                      105.3388 |
+| insert + remove 1k rows            |           6.6493 |              2.1147 |                       1.69176 |
+| 10k nested path field updates      |           6.2923 |              3.5429 |                       2.83432 |
+| 500 swaps                          |          13.7581 |              3.7149 |                       2.97192 |
+| 10k unique fetches (no cache hits) |           224.02 |             24.5677 |                      19.65416 |
+| construct + initial sync load      |         47307.35 |          16102.2725 |                     12881.818 |
+| post 1000 notifications            |           282.74 |             80.7808 |                      64.62464 |
+
+Derivation: 85% of the lower measured value from two CI runs on the same source class —
+run [39011830945](https://github.com/yangwb1123/iris-ui-kit/actions/runs/39011830945)
+(SHA `df53d4a4`, 12/20) and run
+[38502875857](https://github.com/yangwb1123/iris-ui-kit/actions/runs/38502875857)
+(SHA `6898e019`, 12/20). All other twelve entries, the 20 workloads, the 20% tolerance,
+the fail-closed adjudication and the history are unchanged; no work was moved outside a
+timed callback and no case was removed. A local gate run with these values passed 20/20;
+the exact CI run remains the release evidence. Independent review of this rebaseline and
+its CI evidence is still required before release.
 
 Old form already had JSON history; old data-source construction already had native
 signals. Do not attribute their entire regression to newly added features. Old query

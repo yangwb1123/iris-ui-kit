@@ -1,14 +1,14 @@
 {
-  "_comment": "Performance baselines in ops/sec, calibrated on GitHub Actions ubuntu-latest with Node 20. Update only from the same CI environment.",
+  "_comment": "Performance baselines in ops/sec, calibrated on GitHub Actions ubuntu-latest with Node 20. Update only from the same CI environment. On 2026-10-17 the eight operations listed in docs/PERFORMANCE_CONTRACT.md were rebaselined at 85% of the lower value from CI runs 39011830945 (df53d4a4) and 38502875857 (6898e019); the other twelve entries are unchanged.",
   "form": {
-    "10k sequential field updates (keystroke sim)": 27.3715,
-    "validate 10 fields × 1k iterations": 232.71,
-    "insert + remove 1k rows": 6.6493,
-    "10k nested path field updates": 6.2923,
-    "500 swaps (reorder simulation)": 13.7581
+    "10k sequential field updates (keystroke sim)": 17.8174,
+    "validate 10 fields \u00d7 1k iterations": 131.6735,
+    "insert + remove 1k rows": 2.1147,
+    "10k nested path field updates": 3.5429,
+    "500 swaps (reorder simulation)": 3.7149
   },
   "resilience": {
-    "10k unique fetches (no cache hits)": 224.02,
+    "10k unique fetches (no cache hits)": 24.5677,
     "10k repeated fetches (all cache hits)": 698.77,
     "10k state checks (no-op while closed)": 759.43,
     "10k tryRemove (all succeed with large capacity)": 1799.85,
@@ -16,14 +16,14 @@
     "10k enqueue (all succeed immediately)": 0.44
   },
   "scale": {
-    "construct + initial sync load": 47307.35,
+    "construct + initial sync load": 16102.2725,
     "setSort (full re-sort + page)": 294.35,
     "setFilter (full scan + page)": 1301.47,
     "100 scroll steps (O(log n) windowing each)": 243.28,
     "1000 measures (O(log n) point updates)": 217.25,
     "bulk set 100k keys": 52.855,
     "100k isSelected lookups (Set-backed O(1))": 45.2515,
-    "toggleAll → partial toggle → toggleAll again": 220.92,
-    "post 1000 notifications": 282.74
+    "toggleAll \u2192 partial toggle \u2192 toggleAll again": 220.92,
+    "post 1000 notifications": 80.7808
   }
 }

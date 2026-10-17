@@ -44,12 +44,27 @@ class Contract(unittest.TestCase):
                 self.assertEqual(registry.publication_journal(root)[pack['name']+'@'+pack['version']], 'outcome_unknown')
                 writes.append(args)
                 return 124
-            with patch.object(registry, 'run_command', side_effect=write), patch.object(registry, 'registry_view', return_value=None), patch.object(registry, 'create_workflow_marker'):
+            with patch.object(registry, 'run_command', side_effect=write), patch.object(registry, 'registry_view', return_value=None), patch.object(registry.time, 'sleep'), patch.object(registry, 'create_workflow_marker'):
                 with self.assertRaisesRegex(ValueError, 'unknown'):
                     registry.publish_one(root, pack, root)
                 with self.assertRaisesRegex(ValueError, 'earlier write remains unknown'):
                     registry.registry_preflight(root, [pack])
             self.assertEqual(len(writes), 1)
+
+    def test_async_registry_visibility_is_reconciled_after_bounded_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            subprocess.run(['git','init','-q',str(root)], check=True)
+            artifact = root / 'fixture.tgz'
+            artifact.write_bytes(b'fixture')
+            pack = {'name':'@iris-ui-kit/vue', 'version':'0.3.0', 'path':str(artifact),
+                    'integrity':'sha512-' + base64.b64encode(hashlib.sha512(b'fixture').digest()).decode(),
+                    'dependencies':{}, 'optionalDependencies':{}}
+            views = [None, None, {'dist':{'integrity':pack['integrity']},'dependencies':{},'optionalDependencies':{}}]
+            with patch.object(registry, 'run_command', return_value=0), patch.object(registry, 'registry_view', side_effect=views), patch.object(registry.time, 'sleep'), patch.object(registry, 'create_workflow_marker'):
+                result = registry.publish_one(root, pack, root)
+            self.assertEqual(result['status'], 'registry_verified')
+            self.assertEqual(registry.publication_journal(root)[pack['name']+'@'+pack['version']], 'registry_verified')
 
     def test_receipt_failure_prevents_write(self):
         pack = {'name':'@iris-ui-kit/vue', 'version':'0.3.0'}
@@ -148,6 +163,6 @@ test('standalone publisher fails closed for authorization, integrity and unknown
   })
   assert.ifError(result.error)
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stderr, /Ran 10 tests/)
+  assert.match(result.stderr, /Ran 11 tests/)
   assert.match(result.stderr, /\bOK\b/)
 })

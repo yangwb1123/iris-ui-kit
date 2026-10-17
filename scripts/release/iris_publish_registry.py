@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import time
 import base64
 import hashlib
 from urllib.parse import quote
@@ -74,6 +75,23 @@ def verify_current(pack, current):
         for spec in current.get(section, {}).values():
             if not isinstance(spec, str) or spec.startswith(("workspace:", "file:", "link:")):
                 raise ValueError("Registry has nonportable dependencies")
+
+
+def reconcile_registry(root, pack, attempts=10, delay=15.0):
+    """Read the version back within a bounded window after the single external write.
+
+    npm's publish pipeline commits the version asynchronously (observed 55-80s after
+    the CLI returns), so one immediate read-back reports a false unknown. Only the
+    read is retried; the write still happens exactly once and an unconfirmed result
+    after the window remains outcome_unknown, never auto-replayed.
+    """
+    for attempt in range(attempts):
+        current = registry_view(root, pack)
+        if current is not None:
+            return current
+        if attempt + 1 < attempts:
+            time.sleep(delay)
+    return None
 
 
 def workflow_marker(pack):
@@ -169,8 +187,9 @@ def publish_one(root, pack, output):
     code = run_command(["npm", "publish", pack["path"], "--access=public", "--tag=latest",
                         "--provenance", f"--registry={REGISTRY}"], root, log, 120)
     # ALWAYS reconcile actual registry state, including nonzero/timeout outcomes.
-    # A missing/unreadable result after a write is UNKNOWN, never auto-replayed.
-    current = registry_view(root, pack)
+    # The read-back is bounded-retried because npm commits asynchronously; a
+    # missing/unreadable result after the window is UNKNOWN, never auto-replayed.
+    current = reconcile_registry(root, pack)
     if current is None:
         raise ValueError(f"Publication outcome unknown (command exit {code}); inspect before retry: {pack['name']}")
     verify_current(pack, current)

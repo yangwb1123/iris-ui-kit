@@ -2,9 +2,9 @@ import * as React from 'react'
 import { type WindowManager, type WindowManagerState } from '@iris-ui-kit/core/window'
 import { type UserProfile, type ProfileData } from '@iris-ui-kit/core/profile'
 import {
-  type NotificationCenter,
-  type NotificationCenterState,
-} from '@iris-ui-kit/core/notifications'
+  type OwnedNotificationCenter,
+  type OwnedNotificationView,
+} from '@iris-ui-kit/core/owned-notifications'
 import {
   type ClipboardHistory,
   type ClipboardHistoryState,
@@ -66,17 +66,17 @@ export function useProfileState(): ProfileData {
 
 // ── Notification center ────────────────────────────────────────────────────────
 
-const NotificationsContext = React.createContext<NotificationCenter | null>(null)
+const NotificationsContext = React.createContext<OwnedNotificationCenter | null>(null)
 export const NotificationsProvider = NotificationsContext.Provider
 
-export function useNotifications(): NotificationCenter {
+export function useNotifications(): OwnedNotificationCenter {
   const nc = React.useContext(NotificationsContext)
   if (!nc) throw new Error('useNotifications must be used within <NotificationsProvider>')
   return nc
 }
 
 /** Subscribe to the live notification list (newest first). */
-export function useNotificationState(): NotificationCenterState {
+export function useNotificationState(): OwnedNotificationView {
   const nc = useNotifications()
   return React.useSyncExternalStore(nc.store.subscribe, nc.store.getState, nc.store.getState)
 }

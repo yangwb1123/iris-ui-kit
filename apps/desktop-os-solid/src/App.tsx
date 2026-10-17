@@ -12,7 +12,7 @@ import {
   type UserProfile,
 } from '@iris-ui-kit/core/profile'
 import { createCommandRegistry } from '@iris-ui-kit/core/commands'
-import { createNotificationCenter } from '@iris-ui-kit/core/notifications'
+import { createOwnedNotificationCenter } from '@iris-ui-kit/core/owned-notifications'
 import { createClipboardHistory } from '@iris-ui-kit/core/clipboard-history'
 import { createVirtualFs, type VirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 import { barInsets } from './os'
@@ -167,7 +167,7 @@ export function App(): JSX.Element {
   const commands = createCommandRegistry()
 
   // ONE notification center for the whole shell (toasts + history).
-  const notifications = createNotificationCenter()
+  const notifications = createOwnedNotificationCenter()
 
   // ONE clipboard history (the clipboard-manager engine behind the Clipboard app).
   const clipboard = createClipboardHistory()

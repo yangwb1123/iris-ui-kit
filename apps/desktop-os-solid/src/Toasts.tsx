@@ -13,7 +13,7 @@ const TONE: Record<NotificationTone, { glyph: string; color: string }> = {
 const MAX_TOASTS = 4
 
 /** One toast — auto-dismisses after its `timeout` (0 = sticky); ✕ dismisses now. */
-function Toast(props: { n: DesktopNotification; onDismiss: () => void }): JSX.Element {
+function Toast(props: { n: Readonly<DesktopNotification>; onDismiss: () => void }): JSX.Element {
   // Schedule the auto-dismiss whenever the toast's timeout changes; clear it on
   // cleanup (re-run / unmount), mirroring React's effect + clearTimeout.
   createEffect(() => {
@@ -85,7 +85,7 @@ function Toast(props: { n: DesktopNotification; onDismiss: () => void }): JSX.El
 export function Toasts(): JSX.Element {
   const nc = useNotifications()
   const state = useNotificationState()
-  const toasts = (): DesktopNotification[] => state().notifications.slice(0, MAX_TOASTS)
+  const toasts = (): Readonly<DesktopNotification>[] => state().notifications.slice(0, MAX_TOASTS)
   return (
     <Show when={toasts().length > 0}>
       <div

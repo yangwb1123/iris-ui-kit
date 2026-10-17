@@ -19,6 +19,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/core/profile': src('core/src/profile.ts'),
             '@iris-ui-kit/core/commands': src('core/src/commands.ts'),
             '@iris-ui-kit/core/notifications': src('core/src/notifications.ts'),
+            '@iris-ui-kit/core/owned-notifications': src('core/src/owned-notifications.ts'),
             '@iris-ui-kit/core/clipboard-history': src('core/src/clipboard-history.ts'),
             '@iris-ui-kit/core/fs': src('core/src/fs.ts'),
             '@iris-ui-kit/core/undo': src('core/src/undo.ts'),

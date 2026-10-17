@@ -31,6 +31,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/core/profile': coreSubpath('profile'),
             '@iris-ui-kit/core/commands': coreSubpath('commands'),
             '@iris-ui-kit/core/notifications': coreSubpath('notifications'),
+            '@iris-ui-kit/core/owned-notifications': coreSubpath('owned-notifications'),
             '@iris-ui-kit/core/clipboard-history': coreSubpath('clipboard-history'),
             '@iris-ui-kit/core/fs': coreSubpath('fs'),
             '@iris-ui-kit/core/undo': coreSubpath('undo'),

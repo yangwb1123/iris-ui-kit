@@ -13,7 +13,7 @@ const TONE: Record<NotificationTone, { glyph: string; color: string }> = {
 const MAX_TOASTS = 4
 
 /** One toast — auto-dismisses after its `timeout` (0 = sticky); ✕ dismisses now. */
-function Toast({ n, onDismiss }: { n: DesktopNotification; onDismiss: () => void }) {
+function Toast({ n, onDismiss }: { n: Readonly<DesktopNotification>; onDismiss: () => void }) {
   React.useEffect(() => {
     if (!n.timeout) return
     const t = setTimeout(onDismiss, n.timeout)

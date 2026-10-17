@@ -6,7 +6,7 @@ import {
   type WindowSession,
 } from '@iris-ui-kit/core/window'
 import { createUserProfile, localStorageProfileStorage } from '@iris-ui-kit/core/profile'
-import { createNotificationCenter } from '@iris-ui-kit/core/notifications'
+import { createOwnedNotificationCenter } from '@iris-ui-kit/core/owned-notifications'
 import { createClipboardHistory } from '@iris-ui-kit/core/clipboard-history'
 import { createVirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 import { CHROMES, barInsets, OS_ORDER, type OsId } from './os'
@@ -164,7 +164,7 @@ export function App() {
     createUserProfile({ storage: localStorageProfileStorage('iris-desktop-os') }),
   ).current
   // One notification center for the whole shell (toasts + history).
-  const notifications = React.useRef(createNotificationCenter()).current
+  const notifications = React.useRef(createOwnedNotificationCenter()).current
   // One clipboard history (the clipboard-manager engine).
   const clipboard = React.useRef(createClipboardHistory()).current
   // One virtual file system (Files + document open/save).

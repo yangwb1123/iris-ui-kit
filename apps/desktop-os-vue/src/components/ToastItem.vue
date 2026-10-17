@@ -8,7 +8,7 @@ import { type DesktopNotification } from '@iris-ui-kit/core/notifications'
  * Mirrors the React demo's inner `Toast` component.
  */
 const props = defineProps<{
-  n: DesktopNotification
+  n: Readonly<DesktopNotification>
   /** Accent color for the tone (left border). */
   toneColor: string
   /** Resolved glyph (the posting app's icon, or a tone glyph). */

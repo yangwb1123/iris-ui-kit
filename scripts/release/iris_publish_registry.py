@@ -1,8 +1,10 @@
 """Current registry evidence and immutable successful-main-CI qualification."""
 import json
+import io
 import os
 import re
 import time
+import tarfile
 import base64
 import hashlib
 from urllib.parse import quote
@@ -65,9 +67,7 @@ def registry_view(root, pack):
     return data
 
 
-def verify_current(pack, current):
-    if current.get("dist", {}).get("integrity") != pack["integrity"]:
-        raise ValueError(f"Registry integrity differs: {pack['name']}@{pack['version']}")
+def verify_metadata(pack, current):
     for section in ("dependencies", "optionalDependencies"):
         if current.get(section, {}) != pack[section]:
             raise ValueError(f"Registry production graph differs: {pack['name']}")
@@ -75,6 +75,60 @@ def verify_current(pack, current):
         for spec in current.get(section, {}).values():
             if not isinstance(spec, str) or spec.startswith(("workspace:", "file:", "link:")):
                 raise ValueError("Registry has nonportable dependencies")
+
+
+def verify_current(pack, current):
+    if current.get("dist", {}).get("integrity") != pack["integrity"]:
+        raise ValueError(f"Registry integrity differs: {pack['name']}@{pack['version']}")
+    verify_metadata(pack, current)
+
+
+def registry_tarball(root, pack, current):
+    url = current.get("dist", {}).get("tarball")
+    if not isinstance(url, str) or not url.startswith(f"{REGISTRY}/"):
+        raise ValueError("Registry tarball URL invalid")
+    raw = capture(["curl", "--silent", "--show-error", "--max-time", "60",
+                   "--max-filesize", str(64 * 1024 * 1024), url], root)
+    if not 0 < len(raw) <= 64 * 1024 * 1024:
+        raise ValueError("Registry tarball byte budget invalid")
+    return raw
+
+
+def verify_published(root, pack, current):
+    """Accept a byte-identical artifact or a semantically identical repack.
+
+    pnpm rewrites workspace specifiers into a run-dependent key order, so a
+    repack of the same approved source can differ in package.json key order
+    alone. In that case compare the actual registry artifact content; any
+    file-set, file-content or dependency difference still fails closed.
+    """
+    if __package__:
+        from .iris_publish_contract import bounded_bytes
+    else:
+        from iris_publish_contract import bounded_bytes
+    verify_metadata(pack, current)
+    if current.get("dist", {}).get("integrity") == pack["integrity"]:
+        return
+    published = registry_tarball(root, pack, current)
+    approved = bounded_bytes(pack["path"])
+
+    def listing(raw):
+        result = {}
+        with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+            for member in archive.getmembers():
+                if member.isfile():
+                    result[member.name] = archive.extractfile(member).read()
+        return result
+
+    left, right = listing(published), listing(approved)
+    if set(left) != set(right):
+        raise ValueError(f"Registry artifact file set differs: {pack['name']}@{pack['version']}")
+    for name, content in left.items():
+        if name == "package/package.json":
+            if json.loads(content) != json.loads(right[name]):
+                raise ValueError(f"Registry artifact manifest differs: {pack['name']}@{pack['version']}")
+        elif content != right[name]:
+            raise ValueError(f"Registry artifact content differs: {pack['name']}@{pack['version']}")
 
 
 def reconcile_registry(root, pack, attempts=10, delay=15.0):
@@ -133,7 +187,7 @@ def registry_preflight(root, packs):
     for pack in packs:
         current = registry_view(root, pack)
         if current is not None:
-            verify_current(pack, current)
+            verify_published(root, pack, current)
             already.add(pack["name"])
         elif journal.get(pack["name"] + "@" + pack["version"]) == "outcome_unknown":
             raise ValueError("An earlier write remains unknown; inspect registry before any replay")

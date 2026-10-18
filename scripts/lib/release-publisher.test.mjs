@@ -66,6 +66,38 @@ class Contract(unittest.TestCase):
             self.assertEqual(result['status'], 'registry_verified')
             self.assertEqual(registry.publication_journal(root)[pack['name']+'@'+pack['version']], 'registry_verified')
 
+    def test_semantically_identical_repack_is_reconciled(self):
+        def make(path, order, license_bytes=b'MIT'):
+            data = {'name':'@iris-ui-kit/vue','version':'0.3.0','dependencies':{},
+                    'devDependencies':{name:'0.3.0' for name in order}}
+            with tarfile.open(path, 'w:gz') as archive:
+                for name, content in [('package/package.json', json.dumps(data).encode()), ('package/LICENSE', license_bytes)]:
+                    member = tarfile.TarInfo(name); member.size = len(content)
+                    archive.addfile(member, io.BytesIO(content))
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            approved = root/'approved.tgz'; published = root/'published.tgz'
+            make(approved, ['@iris-ui-kit/core','@iris-ui-kit/icons'])
+            make(published, ['@iris-ui-kit/icons','@iris-ui-kit/core'])
+            pack = {'name':'@iris-ui-kit/vue','version':'0.3.0','path':str(approved),
+                    'integrity':'sha512-'+base64.b64encode(hashlib.sha512(approved.read_bytes()).digest()).decode(),
+                    'dependencies':{}, 'optionalDependencies':{}}
+            current = {'name':'@iris-ui-kit/vue','version':'0.3.0','dependencies':{},'optionalDependencies':{},
+                       'dist':{'integrity':'sha512-different','tarball':'https://registry.npmjs.org/@iris-ui-kit/vue/-/vue-0.3.0.tgz'}}
+            with patch.object(registry,'registry_tarball',return_value=published.read_bytes()):
+                registry.verify_published(root, pack, current)
+            make(published, ['@iris-ui-kit/icons','@iris-ui-kit/core'], b'MITX')
+            with patch.object(registry,'registry_tarball',return_value=published.read_bytes()), self.assertRaisesRegex(ValueError, 'content differs'):
+                registry.verify_published(root, pack, current)
+            data = {'name':'@iris-ui-kit/vue','version':'0.3.0','dependencies':{},
+                    'devDependencies':{'@iris-ui-kit/core':'9.9.9','@iris-ui-kit/icons':'0.3.0'}}
+            with tarfile.open(published, 'w:gz') as archive:
+                for name, content in [('package/package.json', json.dumps(data).encode()), ('package/LICENSE', b'MIT')]:
+                    member = tarfile.TarInfo(name); member.size = len(content)
+                    archive.addfile(member, io.BytesIO(content))
+            with patch.object(registry,'registry_tarball',return_value=published.read_bytes()), self.assertRaisesRegex(ValueError, 'manifest differs'):
+                registry.verify_published(root, pack, current)
+
     def test_receipt_failure_prevents_write(self):
         pack = {'name':'@iris-ui-kit/vue', 'version':'0.3.0'}
         receipt = {'published':False, 'publications':[]}
@@ -163,6 +195,6 @@ test('standalone publisher fails closed for authorization, integrity and unknown
   })
   assert.ifError(result.error)
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stderr, /Ran 11 tests/)
+  assert.match(result.stderr, /Ran 12 tests/)
   assert.match(result.stderr, /\bOK\b/)
 })
